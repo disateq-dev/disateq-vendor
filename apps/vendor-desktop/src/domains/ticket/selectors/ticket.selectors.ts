@@ -1,9 +1,13 @@
+import { useShallow } from "zustand/react/shallow";
+
 import { useTicketStore } from "../state/ticket.store";
 
 export const useTicketLines = () =>
-  useTicketStore((state) =>
-    state.lineOrder.map(
-      (id) => state.linesById[id]
+  useTicketStore(
+    useShallow((state) =>
+      state.lineOrder.map(
+        (id) => state.linesById[id]
+      )
     )
   );
 
