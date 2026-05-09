@@ -1,0 +1,114 @@
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
+
+import type { TicketLineDTO } from "../dto/TicketLineDTO";
+
+interface TicketState {
+  linesById: Record<string, TicketLineDTO>;
+
+  lineOrder: string[];
+
+  addLine: (
+    line: TicketLineDTO
+  ) => void;
+
+  removeLine: (
+    lineId: string
+  ) => void;
+
+  updateQuantity: (
+    lineId: string,
+    quantity: number
+  ) => void;
+
+  clearTicket: () => void;
+}
+
+export const useTicketStore =
+  create<TicketState>()(
+    immer((set) => ({
+      linesById: {
+        "line-001": {
+          lineId: "line-001",
+
+          productId: "product-001",
+
+          description:
+            "Coca Cola 500ml",
+
+          quantity: 2,
+
+          unitPrice: 3.5,
+
+          subtotal: 7,
+        },
+      },
+
+      lineOrder: ["line-001"],
+
+      addLine: (line) =>
+        set((state) => {
+          const existing =
+            state.linesById[
+              line.lineId
+            ];
+
+          if (existing) {
+            existing.quantity +=
+              line.quantity;
+
+            existing.subtotal =
+              existing.quantity *
+              existing.unitPrice;
+
+            return;
+          }
+
+          state.linesById[
+            line.lineId
+          ] = line;
+
+          state.lineOrder.push(
+            line.lineId
+          );
+        }),
+
+      removeLine: (lineId) =>
+        set((state) => {
+          delete state.linesById[
+            lineId
+          ];
+
+          state.lineOrder =
+            state.lineOrder.filter(
+              (id) => id !== lineId
+            );
+        }),
+
+      updateQuantity: (
+        lineId,
+        quantity
+      ) =>
+        set((state) => {
+          const line =
+            state.linesById[
+              lineId
+            ];
+
+          if (!line) return;
+
+          line.quantity = quantity;
+
+          line.subtotal =
+            line.quantity *
+            line.unitPrice;
+        }),
+
+      clearTicket: () =>
+        set((state) => {
+          state.linesById = {};
+
+          state.lineOrder = [];
+        }),
+    }))
+  );

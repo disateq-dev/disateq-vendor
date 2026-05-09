@@ -1,10 +1,9 @@
-import './index.css'
-import './App.css'
+import { TicketGrid } from "./domains/ticket/components/TicketGrid";
 
-import { AppShell } from './shared/layout/AppShell'
-
-function App() {
-  return <AppShell />
+export default function App() {
+  return (
+    <main>
+      <TicketGrid />
+    </main>
+  );
 }
-
-export default App
