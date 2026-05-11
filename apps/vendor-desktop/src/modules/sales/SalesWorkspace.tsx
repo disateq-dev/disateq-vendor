@@ -48,11 +48,11 @@ const BEST_SELLERS = new Set(["P001", "P007", "P016", "P017", "P002", "P004", "P
 
 function getSubtitle(p: Product): { text: string; cls: string } {
   switch (p.status) {
-    case "low":      return { text: `${p.id} · ${p.stock} uds. · ⚠ Stock crítico`,  cls: "text-amber-500"  };
+    case "low":      return { text: `${p.id} · ${p.stock} uds. · ⚠ Stock crítico`,  cls: "text-amber-400"  };
     case "out":      return { text: `${p.id} · ⛔ Sin stock`,                        cls: "text-[#c8d0d8]"  };
-    case "promo":    return { text: `${p.id} · ${p.stock} uds. · 🔥 Promoción`,      cls: "text-orange-500" };
-    case "expiring": return { text: `${p.id} · ${p.stock} uds. · ⚠ Vence pronto`,   cls: "text-amber-500"  };
-    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-emerald-400" };
+    case "promo":    return { text: `${p.id} · ${p.stock} uds. · 🔥 Promoción`,      cls: "text-orange-400" };
+    case "expiring": return { text: `${p.id} · ${p.stock} uds. · ⚠ Vence pronto`,   cls: "text-amber-400"  };
+    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-emerald-300" };
   }
 }
 
@@ -290,7 +290,7 @@ export function SalesWorkspace() {
                     Más vendidos
                   </p>
                 )}
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3 p-4 pt-2">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-x-3 gap-y-2 p-4 pt-2">
                 {visualItems.map((product) => {
                   const isOut = product.status === "out";
                   const price = tilePrice(product);
@@ -306,18 +306,18 @@ export function SalesWorkspace() {
                       style={isOut ? { opacity: 0.54 } : undefined}
                     >
                       <div
-                        className="relative h-[72px]"
+                        className="relative h-[52px]"
                         style={{ backgroundColor: product.color }}
                       >
                         <TileBadge p={product} />
                       </div>
 
-                      <div className="p-3">
-                        <p className="line-clamp-2 text-[12px] font-semibold leading-tight text-[#111827]">
+                      <div className="p-2.5">
+                        <p className="line-clamp-1 text-[12px] font-semibold uppercase tracking-[0.02em] leading-tight text-[#111827]">
                           {product.short}
                         </p>
 
-                        <p className={`mt-1.5 text-[13px] font-bold ${price.cls}`}>
+                        <p className={`mt-1 text-[13px] font-bold ${price.cls}`}>
                           {price.prefix}S/ {product.price.toFixed(2)}
                         </p>
                       </div>
