@@ -48,11 +48,11 @@ const BEST_SELLERS = new Set(["P001", "P007", "P016", "P017", "P002", "P004", "P
 
 function getSubtitle(p: Product): { text: string; cls: string } {
   switch (p.status) {
-    case "low":      return { text: `COD: ${p.id} · Stock: ${p.stock} · ⚠ Stock crítico`,    cls: "text-amber-500"   };
-    case "out":      return { text: `COD: ${p.id} · ⛔ Sin stock`,                            cls: "text-[#d1d5db]"   };
-    case "promo":    return { text: `COD: ${p.id} · Stock: ${p.stock} · 🔥 Promoción`,        cls: "text-emerald-600" };
-    case "expiring": return { text: `COD: ${p.id} · Stock: ${p.stock} · ⏱ Vence pronto`,     cls: "text-amber-500"   };
-    default:         return { text: `COD: ${p.id} · Disponible: ${p.stock} · ✓ Con stock`,   cls: "text-[#b0bac8]"   };
+    case "low":      return { text: `${p.id} · ${p.stock} uds. · ⚠ Stock crítico`,  cls: "text-amber-500"  };
+    case "out":      return { text: `${p.id} · ⛔ Sin stock`,                        cls: "text-[#c8d0d8]"  };
+    case "promo":    return { text: `${p.id} · ${p.stock} uds. · 🔥 Promoción`,      cls: "text-orange-500" };
+    case "expiring": return { text: `${p.id} · ${p.stock} uds. · ⚠ Vence pronto`,   cls: "text-amber-500"  };
+    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-[#b0bac8]"  };
   }
 }
 
@@ -66,12 +66,12 @@ function tilePrice(p: Product): { prefix: string; cls: string } {
 }
 
 function dotColor(p: Product): string {
-  if (p.status === "out")      return "#fca5a5";
+  if (p.status === "out")      return "#f87171";
   if (p.status === "low")      return "#fbbf24";
   if (p.status === "promo")    return "#fb923c";
-  if (p.status === "expiring") return "#fcd34d";
-  if (BEST_SELLERS.has(p.id)) return "#93c5fd";
-  return "#86efac";
+  if (p.status === "expiring") return "#f59e0b";
+  if (BEST_SELLERS.has(p.id)) return "#60a5fa";
+  return "#34d399";
 }
 
 function normalize(s: string): string {
@@ -238,19 +238,19 @@ export function SalesWorkspace() {
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <div
-                          className="h-2 w-2 shrink-0 rounded-full"
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
                           style={{ backgroundColor: dotColor(product) }}
                         />
                         <div className="min-w-0">
                           <div
-                            className={`truncate text-[14px] font-semibold leading-tight ${
+                            className={`truncate text-[13px] font-semibold uppercase tracking-[0.03em] leading-tight ${
                               isOut ? "text-[#9ca3af]" : "text-[#111827]"
                             }`}
                           >
                             {product.name}
                           </div>
 
-                          <div className={`mt-0.5 text-[12px] ${sub.cls}`}>
+                          <div className={`mt-0.5 text-[11px] font-medium ${sub.cls}`}>
                             {sub.text}
                           </div>
                         </div>
@@ -291,7 +291,7 @@ export function SalesWorkspace() {
                     Más vendidos
                   </p>
                 )}
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 p-4 pt-2">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 p-4 pt-2">
                 {visualItems.map((product) => {
                   const isOut = product.status === "out";
                   const price = tilePrice(product);
@@ -299,26 +299,26 @@ export function SalesWorkspace() {
                   return (
                     <button
                       key={product.id}
-                      className={`overflow-hidden rounded-2xl border bg-[#fafbfc] text-left transition hover:shadow-[0_4px_14px_rgba(33,84,216,0.09)] ${
+                      className={`overflow-hidden rounded-2xl bg-white text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:shadow-[0_4px_14px_rgba(33,84,216,0.09)] ${
                         isOut
-                          ? "border-red-100 hover:border-red-200"
-                          : "border-[#eef1f6] hover:border-[#c7d7f4]"
+                          ? "border border-[#fef2f2] hover:border-[#fecaca]"
+                          : "border border-[#f0f4f9] hover:border-[#c7d7f4]"
                       }`}
                       style={isOut ? { opacity: 0.54 } : undefined}
                     >
                       <div
-                        className="relative h-[56px]"
+                        className="relative h-[68px]"
                         style={{ backgroundColor: product.color }}
                       >
                         <TileBadge p={product} />
                       </div>
 
-                      <div className="p-2.5">
-                        <p className="line-clamp-2 text-[11.5px] font-semibold leading-tight text-[#111827]">
+                      <div className="p-3">
+                        <p className="line-clamp-2 text-[12px] font-semibold leading-tight text-[#111827]">
                           {product.short}
                         </p>
 
-                        <p className={`mt-1.5 text-[14px] font-bold ${price.cls}`}>
+                        <p className={`mt-1.5 text-[13px] font-bold ${price.cls}`}>
                           {price.prefix}S/ {product.price.toFixed(2)}
                         </p>
                       </div>
