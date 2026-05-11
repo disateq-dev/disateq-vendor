@@ -10,7 +10,6 @@ interface Product {
   short: string;
   price: number;
   code: string;
-  initials: string;
   color: string;
   accent: string;
   stock: number;
@@ -19,40 +18,41 @@ interface Product {
 
 const CATALOG: Product[] = [
   // normal
-  { id: "P001", name: "Aceite Vegetal Primor 1L",          short: "Aceite Primor 1L",      price: 12.00, code: "7751234001", initials: "AP", color: "#FEF3C7", accent: "#B45309", stock: 45, status: "normal"   },
-  { id: "P006", name: "Aceite Capri Vegetal 1L",           short: "Aceite Capri 1L",       price: 11.50, code: "7751234006", initials: "AC", color: "#FEFCE8", accent: "#A16207", stock: 22, status: "normal"   },
-  { id: "P007", name: "Fideos Don Vittorio Spaghetti 500g", short: "Don Vittorio 500g",    price:  3.20, code: "7751234007", initials: "FD", color: "#FFF7ED", accent: "#EA580C", stock: 60, status: "normal"   },
-  { id: "P008", name: "Atún Florida en Aceite 170g",       short: "Atún Florida 170g",     price:  4.50, code: "7751234008", initials: "AF", color: "#E0F2FE", accent: "#0369A1", stock: 34, status: "normal"   },
-  { id: "P016", name: "Gaseosa Inca Kola 1.5L",            short: "Inca Kola 1.5L",        price:  5.50, code: "7751234016", initials: "IK", color: "#F7FEE7", accent: "#4D7C0F", stock: 48, status: "normal"   },
-  { id: "P017", name: "Gaseosa Coca Cola 1.5L",            short: "Coca Cola 1.5L",        price:  5.80, code: "7751234017", initials: "CC", color: "#FFF1F2", accent: "#991B1B", stock: 36, status: "normal"   },
-  { id: "P018", name: "Papel Higiénico Elite x4",          short: "Papel Elite x4",        price:  9.90, code: "7751234018", initials: "PE", color: "#F0FDF4", accent: "#166534", stock: 20, status: "normal"   },
-  { id: "P019", name: "Galletas Soda Field 360g",          short: "Galletas Soda 360g",    price:  3.90, code: "7751234019", initials: "GS", color: "#FAFAF9", accent: "#57534E", stock: 55, status: "normal"   },
-  { id: "P020", name: "Café Nescafé Classic 200g",         short: "Nescafé Classic 200g",  price: 24.50, code: "7751234020", initials: "NC", color: "#FFF7ED", accent: "#7C2D12", stock: 12, status: "normal"   },
+  { id: "P001", name: "Aceite Vegetal Primor 1L",           short: "Aceite Primor 1L",     price: 12.00, code: "7751234001", color: "#FEF3C7", accent: "#B45309", stock: 45, status: "normal"   },
+  { id: "P006", name: "Aceite Capri Vegetal 1L",            short: "Aceite Capri 1L",      price: 11.50, code: "7751234006", color: "#FEFCE8", accent: "#A16207", stock: 22, status: "normal"   },
+  { id: "P007", name: "Fideos Don Vittorio Spaghetti 500g", short: "Don Vittorio 500g",    price:  3.20, code: "7751234007", color: "#FFF7ED", accent: "#EA580C", stock: 60, status: "normal"   },
+  { id: "P008", name: "Atún Florida en Aceite 170g",        short: "Atún Florida 170g",    price:  4.50, code: "7751234008", color: "#E0F2FE", accent: "#0369A1", stock: 34, status: "normal"   },
+  { id: "P016", name: "Gaseosa Inca Kola 1.5L",             short: "Inca Kola 1.5L",       price:  5.50, code: "7751234016", color: "#F7FEE7", accent: "#4D7C0F", stock: 48, status: "normal"   },
+  { id: "P017", name: "Gaseosa Coca Cola 1.5L",             short: "Coca Cola 1.5L",       price:  5.80, code: "7751234017", color: "#FFF1F2", accent: "#991B1B", stock: 36, status: "normal"   },
+  { id: "P018", name: "Papel Higiénico Elite x4",           short: "Papel Elite x4",       price:  9.90, code: "7751234018", color: "#F0FDF4", accent: "#166534", stock: 20, status: "normal"   },
+  { id: "P019", name: "Galletas Soda Field 360g",           short: "Galletas Soda 360g",   price:  3.90, code: "7751234019", color: "#FAFAF9", accent: "#57534E", stock: 55, status: "normal"   },
+  { id: "P020", name: "Café Nescafé Classic 200g",          short: "Nescafé Classic 200g", price: 24.50, code: "7751234020", color: "#FFF7ED", accent: "#7C2D12", stock: 12, status: "normal"   },
   // low
-  { id: "P002", name: "Arroz Extra Familiar 5KG",          short: "Arroz Extra 5KG",       price: 18.50, code: "7751234002", initials: "AE", color: "#ECFDF5", accent: "#065F46", stock:  3, status: "low"      },
-  { id: "P009", name: "Arroz Costeño Selecto 1KG",         short: "Arroz Costeño 1KG",     price:  4.20, code: "7751234009", initials: "CS", color: "#F0FDF4", accent: "#15803D", stock:  2, status: "low"      },
-  { id: "P010", name: "Leche Evaporada Gloria 400g",       short: "Leche Evap. Gloria",    price:  3.80, code: "7751234010", initials: "LE", color: "#EFF6FF", accent: "#1D4ED8", stock:  4, status: "low"      },
+  { id: "P002", name: "Arroz Extra Familiar 5KG",           short: "Arroz Extra 5KG",      price: 18.50, code: "7751234002", color: "#ECFDF5", accent: "#065F46", stock:  3, status: "low"      },
+  { id: "P009", name: "Arroz Costeño Selecto 1KG",          short: "Arroz Costeño 1KG",    price:  4.20, code: "7751234009", color: "#F0FDF4", accent: "#15803D", stock:  2, status: "low"      },
+  { id: "P010", name: "Leche Evaporada Gloria 400g",        short: "Leche Evap. Gloria",   price:  3.80, code: "7751234010", color: "#EFF6FF", accent: "#1D4ED8", stock:  4, status: "low"      },
   // out
-  { id: "P003", name: "Leche Gloria Entera 1L",            short: "Leche Gloria 1L",       price:  4.80, code: "7751234003", initials: "LG", color: "#F0F9FF", accent: "#075985", stock:  0, status: "out"      },
-  { id: "P011", name: "Mantequilla Gloria Con Sal 200g",   short: "Mantequilla Gloria",    price:  7.50, code: "7751234011", initials: "MG", color: "#FFFBEB", accent: "#92400E", stock:  0, status: "out"      },
+  { id: "P003", name: "Leche Gloria Entera 1L",             short: "Leche Gloria 1L",      price:  4.80, code: "7751234003", color: "#F0F9FF", accent: "#075985", stock:  0, status: "out"      },
+  { id: "P011", name: "Mantequilla Gloria Con Sal 200g",    short: "Mantequilla Gloria",   price:  7.50, code: "7751234011", color: "#FFFBEB", accent: "#92400E", stock:  0, status: "out"      },
   // promo
-  { id: "P004", name: "Azúcar Rubia Cartavio 1KG",         short: "Azúcar Rubia 1KG",      price:  3.50, code: "7751234004", initials: "AZ", color: "#FFF7ED", accent: "#C2410C", stock: 18, status: "promo"    },
-  { id: "P012", name: "Detergente Ariel Limón 2KG",        short: "Ariel Limón 2KG",       price: 16.90, code: "7751234012", initials: "AL", color: "#EDE9FE", accent: "#5B21B6", stock: 25, status: "promo"    },
-  { id: "P013", name: "Jabón Bolivar Clásico x3",          short: "Jabón Bolivar x3",      price:  5.50, code: "7751234013", initials: "JB", color: "#F0F9FF", accent: "#0369A1", stock: 40, status: "promo"    },
+  { id: "P004", name: "Azúcar Rubia Cartavio 1KG",          short: "Azúcar Rubia 1KG",     price:  3.50, code: "7751234004", color: "#FFF7ED", accent: "#C2410C", stock: 18, status: "promo"    },
+  { id: "P012", name: "Detergente Ariel Limón 2KG",         short: "Ariel Limón 2KG",      price: 16.90, code: "7751234012", color: "#EDE9FE", accent: "#5B21B6", stock: 25, status: "promo"    },
+  { id: "P013", name: "Jabón Bolivar Clásico x3",           short: "Jabón Bolivar x3",     price:  5.50, code: "7751234013", color: "#F0F9FF", accent: "#0369A1", stock: 40, status: "promo"    },
   // expiring
-  { id: "P005", name: "Huevos Rosados A (30und)",          short: "Huevos Rosados A×30",   price: 22.00, code: "7751234005", initials: "HR", color: "#FFE4E6", accent: "#BE123C", stock:  7, status: "expiring" },
-  { id: "P014", name: "Pan de Molde Bimbo Blanco 500g",    short: "Pan Bimbo 500g",        price:  6.80, code: "7751234014", initials: "PB", color: "#FFFBEB", accent: "#B45309", stock:  5, status: "expiring" },
-  { id: "P015", name: "Yogurt Gloria Fresa 1KG",           short: "Yogurt Gloria Fresa",   price:  8.50, code: "7751234015", initials: "YG", color: "#FDF2F8", accent: "#9D174D", stock:  6, status: "expiring" },
+  { id: "P005", name: "Huevos Rosados A (30und)",           short: "Huevos Rosados A×30",  price: 22.00, code: "7751234005", color: "#FFE4E6", accent: "#BE123C", stock:  7, status: "expiring" },
+  { id: "P014", name: "Pan de Molde Bimbo Blanco 500g",     short: "Pan Bimbo 500g",       price:  6.80, code: "7751234014", color: "#FFFBEB", accent: "#B45309", stock:  5, status: "expiring" },
+  { id: "P015", name: "Yogurt Gloria Fresa 1KG",            short: "Yogurt Gloria Fresa",  price:  8.50, code: "7751234015", color: "#FDF2F8", accent: "#9D174D", stock:  6, status: "expiring" },
 ];
 
-// Dense row: el código SE CONVIERTE en portador del estado — sin tercer línea.
+const BEST_SELLERS = new Set(["P001", "P007", "P016", "P017", "P002", "P004", "P019", "P020"]);
+
 function getSubtitle(p: Product): { text: string; cls: string } {
   switch (p.status) {
-    case "low":      return { text: `${p.code} · ⚠ ${p.stock} uds.`,  cls: "text-amber-500"   };
-    case "out":      return { text: p.code,                             cls: "text-[#d1d5db]"   };
-    case "promo":    return { text: `${p.code} · % Oferta`,             cls: "text-emerald-600" };
-    case "expiring": return { text: `${p.code} · ⏱ Vence pronto`,      cls: "text-amber-500"   };
-    default:         return { text: p.code,                             cls: "text-[#b0bac8]"   };
+    case "low":      return { text: `COD: ${p.id} · Stock: ${p.stock} · ⚠ Stock crítico`,    cls: "text-amber-500"   };
+    case "out":      return { text: `COD: ${p.id} · ⛔ Sin stock`,                            cls: "text-[#d1d5db]"   };
+    case "promo":    return { text: `COD: ${p.id} · Stock: ${p.stock} · 🔥 Promoción`,        cls: "text-emerald-600" };
+    case "expiring": return { text: `COD: ${p.id} · Stock: ${p.stock} · ⏱ Vence pronto`,     cls: "text-amber-500"   };
+    default:         return { text: `COD: ${p.id} · Disponible: ${p.stock} · ✓ Con stock`,   cls: "text-[#b0bac8]"   };
   }
 }
 
@@ -79,15 +79,18 @@ export function SalesWorkspace() {
   const [query, setQuery] = useState("");
 
   const trimmed = query.trim();
-  const isSearching = trimmed.length >= 2;
+  const isSearching = trimmed.length >= 1;
 
   const filtered = isSearching
     ? CATALOG.filter(
         (p) =>
           p.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+          p.id.toLowerCase().includes(trimmed.toLowerCase()) ||
           p.code.includes(trimmed)
       )
     : CATALOG;
+
+  const visualItems = isSearching ? filtered : CATALOG.filter(p => BEST_SELLERS.has(p.id));
 
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
@@ -171,11 +174,7 @@ export function SalesWorkspace() {
                 <Search size={26} className="text-[#dce3ea]" />
 
                 <p className="mt-1 text-[13px] font-medium text-[#b0bac8]">
-                  Digite al menos 2 caracteres
-                </p>
-
-                <p className="text-[12px] text-[#c8d0d8]">
-                  o escanee un código de barras
+                  Escriba nombre, código o referencia para localizar productos rápidamente.
                 </p>
               </div>
             )}
@@ -201,13 +200,6 @@ export function SalesWorkspace() {
                       style={isOut ? { opacity: 0.56 } : undefined}
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <div
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[11px] font-black tracking-tight"
-                          style={{ backgroundColor: product.color, color: product.accent }}
-                        >
-                          {product.initials}
-                        </div>
-
                         <div className="min-w-0">
                           <div
                             className={`truncate text-[14px] font-semibold leading-tight ${
@@ -251,9 +243,15 @@ export function SalesWorkspace() {
               </div>
             )}
 
-            {(!isSearching || filtered.length > 0) && (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2 p-4">
-                {filtered.map((product) => {
+            {(!isSearching || visualItems.length > 0) && (
+              <>
+                {!isSearching && (
+                  <p className="px-5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-widest text-[#c0cad4]">
+                    Más vendidos
+                  </p>
+                )}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 p-4 pt-2">
+                {visualItems.map((product) => {
                   const isOut = product.status === "out";
                   const price = tilePrice(product);
 
@@ -268,16 +266,9 @@ export function SalesWorkspace() {
                       style={isOut ? { opacity: 0.54 } : undefined}
                     >
                       <div
-                        className="relative flex h-[72px] items-center justify-center"
+                        className="relative h-[56px]"
                         style={{ backgroundColor: product.color }}
                       >
-                        <span
-                          className="text-[26px] font-black tracking-tighter"
-                          style={{ color: product.accent }}
-                        >
-                          {product.initials}
-                        </span>
-
                         <TileBadge status={product.status} />
                       </div>
 
@@ -294,6 +285,7 @@ export function SalesWorkspace() {
                   );
                 })}
               </div>
+              </>
             )}
           </>
         )}
