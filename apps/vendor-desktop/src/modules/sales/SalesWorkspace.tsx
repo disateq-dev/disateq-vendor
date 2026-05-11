@@ -56,7 +56,6 @@ function getSubtitle(p: Product): { text: string; cls: string } {
   }
 }
 
-// Visual tile: precio como portador del estado (color + prefijo).
 function tilePrice(p: Product): { prefix: string; cls: string } {
   switch (p.status) {
     case "promo":    return { prefix: "% ", cls: "text-emerald-600" };
@@ -66,11 +65,56 @@ function tilePrice(p: Product): { prefix: string; cls: string } {
   }
 }
 
-// Solo low lleva dot — el resto lo expresa el tile mismo.
-function TileBadge({ status }: { status: StockStatus }) {
-  if (status !== "low") return null;
+function dotColor(p: Product): string {
+  if (p.status === "out")      return "#fca5a5";
+  if (p.status === "low")      return "#fbbf24";
+  if (p.status === "promo")    return "#fb923c";
+  if (p.status === "expiring") return "#fcd34d";
+  if (BEST_SELLERS.has(p.id)) return "#93c5fd";
+  return "#86efac";
+}
+
+function normalize(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function searchCatalog(catalog: Product[], query: string): Product[] {
+  const q = normalize(query);
+  if (!q) return catalog;
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const seen = new Set<string>();
+  const results: Product[] = [];
+
+  for (const p of catalog) {
+    const n = normalize(p.name);
+    if (n.startsWith(q) || normalize(p.id).startsWith(q) || p.code.startsWith(q)) {
+      results.push(p); seen.add(p.id);
+    }
+  }
+  for (const p of catalog) {
+    if (seen.has(p.id)) continue;
+    const n = normalize(p.name);
+    if (n.includes(q) || normalize(p.id).includes(q) || p.code.includes(q)) {
+      results.push(p); seen.add(p.id);
+    }
+  }
+  if (tokens.length > 1) {
+    for (const p of catalog) {
+      if (seen.has(p.id)) continue;
+      const n = normalize(p.name);
+      if (tokens.every(t => n.includes(t))) { results.push(p); seen.add(p.id); }
+    }
+  }
+
+  return results;
+}
+
+function TileBadge({ p }: { p: Product }) {
   return (
-    <div className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-white" />
+    <div
+      className="absolute right-2 top-2 h-2 w-2 rounded-full ring-2 ring-white"
+      style={{ backgroundColor: dotColor(p) }}
+    />
   );
 }
 
@@ -81,14 +125,7 @@ export function SalesWorkspace() {
   const trimmed = query.trim();
   const isSearching = trimmed.length >= 1;
 
-  const filtered = isSearching
-    ? CATALOG.filter(
-        (p) =>
-          p.name.toLowerCase().includes(trimmed.toLowerCase()) ||
-          p.id.toLowerCase().includes(trimmed.toLowerCase()) ||
-          p.code.includes(trimmed)
-      )
-    : CATALOG;
+  const filtered = isSearching ? searchCatalog(CATALOG, trimmed) : CATALOG;
 
   const visualItems = isSearching ? filtered : CATALOG.filter(p => BEST_SELLERS.has(p.id));
 
@@ -200,6 +237,10 @@ export function SalesWorkspace() {
                       style={isOut ? { opacity: 0.56 } : undefined}
                     >
                       <div className="flex min-w-0 items-center gap-3">
+                        <div
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: dotColor(product) }}
+                        />
                         <div className="min-w-0">
                           <div
                             className={`truncate text-[14px] font-semibold leading-tight ${
@@ -269,7 +310,7 @@ export function SalesWorkspace() {
                         className="relative h-[56px]"
                         style={{ backgroundColor: product.color }}
                       >
-                        <TileBadge status={product.status} />
+                        <TileBadge p={product} />
                       </div>
 
                       <div className="p-2.5">
