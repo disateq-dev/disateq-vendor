@@ -52,7 +52,7 @@ function getSubtitle(p: Product): { text: string; cls: string } {
     case "out":      return { text: `${p.id} · ⛔ Sin stock`,                        cls: "text-[#c8d0d8]"  };
     case "promo":    return { text: `${p.id} · ${p.stock} uds. · 🔥 Promoción`,      cls: "text-orange-500" };
     case "expiring": return { text: `${p.id} · ${p.stock} uds. · ⚠ Vence pronto`,   cls: "text-amber-500"  };
-    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-[#b0bac8]"  };
+    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-emerald-400" };
   }
 }
 
@@ -70,7 +70,6 @@ function dotColor(p: Product): string {
   if (p.status === "low")      return "#fbbf24";
   if (p.status === "promo")    return "#fb923c";
   if (p.status === "expiring") return "#f59e0b";
-  if (BEST_SELLERS.has(p.id)) return "#60a5fa";
   return "#34d399";
 }
 
@@ -243,7 +242,7 @@ export function SalesWorkspace() {
                         />
                         <div className="min-w-0">
                           <div
-                            className={`truncate text-[13px] font-semibold uppercase tracking-[0.03em] leading-tight ${
+                            className={`truncate text-[14px] font-bold uppercase tracking-[0.025em] leading-tight ${
                               isOut ? "text-[#9ca3af]" : "text-[#111827]"
                             }`}
                           >
@@ -291,7 +290,7 @@ export function SalesWorkspace() {
                     Más vendidos
                   </p>
                 )}
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 p-4 pt-2">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3 p-4 pt-2">
                 {visualItems.map((product) => {
                   const isOut = product.status === "out";
                   const price = tilePrice(product);
@@ -307,7 +306,7 @@ export function SalesWorkspace() {
                       style={isOut ? { opacity: 0.54 } : undefined}
                     >
                       <div
-                        className="relative h-[68px]"
+                        className="relative h-[72px]"
                         style={{ backgroundColor: product.color }}
                       >
                         <TileBadge p={product} />
