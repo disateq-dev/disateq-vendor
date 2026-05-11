@@ -84,12 +84,23 @@ function searchCatalog(catalog: Product[], query: string): Product[] {
   const seen = new Set<string>();
   const results: Product[] = [];
 
+  // L1 — full name / id / barcode starts with query
   for (const p of catalog) {
     const n = normalize(p.name);
     if (n.startsWith(q) || normalize(p.id).startsWith(q) || p.code.startsWith(q)) {
       results.push(p); seen.add(p.id);
     }
   }
+
+  // L2 — any word in name starts with query  (e.g. "ar" → "Detergente ARIEL" before "azucAR")
+  for (const p of catalog) {
+    if (seen.has(p.id)) continue;
+    if (normalize(p.name).split(" ").some(w => w.startsWith(q))) {
+      results.push(p); seen.add(p.id);
+    }
+  }
+
+  // L3 — name / id / barcode contains query anywhere
   for (const p of catalog) {
     if (seen.has(p.id)) continue;
     const n = normalize(p.name);
@@ -97,6 +108,8 @@ function searchCatalog(catalog: Product[], query: string): Product[] {
       results.push(p); seen.add(p.id);
     }
   }
+
+  // L4 — all tokens present in name (multi-word tolerance: "arr cos" → "Arroz Costeño")
   if (tokens.length > 1) {
     for (const p of catalog) {
       if (seen.has(p.id)) continue;
