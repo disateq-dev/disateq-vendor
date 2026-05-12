@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Trash2 } from "lucide-react";
 import { useTicketLines } from "../selectors/ticket.selectors";
 import { useTicketStore } from "../state/ticket.store";
@@ -14,11 +14,16 @@ export function TicketGrid() {
   const lines = useTicketLines();
   const removeLine = useTicketStore(s => s.removeLine);
   const updateQuantity = useTicketStore(s => s.updateQuantity);
+  const updateNote = useTicketStore(s => s.updateNote);
   const { zone, enterTicket, enterSearch, openCobro } = usePOS();
 
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [saleNumber] = useState(() => String(_saleCounter++).padStart(6, "0"));
   const [currentTime, setCurrentTime] = useState(getCurrentTime);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteInput, setNoteInput] = useState("");
+
+  const noteInputRef = useRef<HTMLInputElement>(null);
 
   // Update clock every minute
   useEffect(() => {
@@ -32,17 +37,36 @@ export function TicketGrid() {
     else if (selectedIdx >= lines.length) setSelectedIdx(lines.length - 1);
   }, [lines.length, selectedIdx]);
 
-  // Use refs to avoid stale closures without re-registering listener on every keystroke
+  // Auto-focus note input when editing starts
+  useEffect(() => {
+    if (editingNoteId) {
+      const t = setTimeout(() => noteInputRef.current?.focus(), 20);
+      return () => clearTimeout(t);
+    }
+  }, [editingNoteId]);
+
+  // Refs to avoid stale closures in global listener
   const linesRef = useRef(lines);
   linesRef.current = lines;
   const selectedIdxRef = useRef(selectedIdx);
   selectedIdxRef.current = selectedIdx;
+  const editingNoteIdRef = useRef(editingNoteId);
+  editingNoteIdRef.current = editingNoteId;
+
+  const saveNote = useCallback(() => {
+    if (!editingNoteId) return;
+    updateNote(editingNoteId, noteInput.trim());
+    setEditingNoteId(null);
+  }, [editingNoteId, noteInput, updateNote]);
 
   // Keyboard handler — only active when zone === 'ticket'
   useEffect(() => {
     if (zone !== "ticket") return;
 
     const handler = (e: KeyboardEvent) => {
+      // Note input is open — let it handle its own keys
+      if (editingNoteIdRef.current) return;
+
       const lines = linesRef.current;
       const idx = selectedIdxRef.current;
 
@@ -76,6 +100,16 @@ export function TicketGrid() {
           if (line) removeLine(line.lineId);
           break;
         }
+        case "n":
+        case "N": {
+          e.preventDefault();
+          const line = lines[idx];
+          if (line) {
+            setEditingNoteId(line.lineId);
+            setNoteInput(line.note ?? "");
+          }
+          break;
+        }
         case "Tab":
         case "Escape":
           e.preventDefault();
@@ -90,9 +124,10 @@ export function TicketGrid() {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [zone, removeLine, updateQuantity, enterSearch, openCobro]);
+  }, [zone, removeLine, updateQuantity, updateNote, enterSearch, openCobro]);
 
   const total = lines.reduce((acc, l) => acc + l.subtotal, 0);
+  const totalQty = lines.reduce((acc, l) => acc + l.quantity, 0);
   const isTicketActive = zone === "ticket";
 
   return (
@@ -100,13 +135,22 @@ export function TicketGrid() {
 
       {/* HEADER */}
       <header className="shrink-0 flex items-center justify-between border-b border-[#f1f5f9] px-5 py-3">
-        <div>
-          <h1 className="text-[12px] font-bold uppercase tracking-widest text-[#9ca3af]">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[11.5px] font-bold uppercase tracking-widest text-[#9ca3af] shrink-0">
             VENTA #{saleNumber}
-          </h1>
-          <p className="text-[11px] text-[#c0cad4]">{currentTime}</p>
+          </span>
+          {lines.length > 0 && (
+            <>
+              <span className="text-[#dde4ec] shrink-0">·</span>
+              <span className="text-[11px] text-[#b8c4cf] shrink-0">
+                {totalQty} {totalQty === 1 ? "ud" : "uds"}
+              </span>
+            </>
+          )}
+          <span className="text-[#dde4ec] shrink-0">·</span>
+          <span className="text-[11px] text-[#b8c4cf] shrink-0">{currentTime}</span>
         </div>
-        <div className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
+        <div className={`ml-3 shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
           isTicketActive
             ? "bg-[#EDF4FF] text-[#2154d8]"
             : "bg-emerald-50 text-emerald-600"
@@ -126,18 +170,20 @@ export function TicketGrid() {
           <div className="flex flex-col gap-0.5">
             {lines.map((line, idx) => {
               const isSelected = isTicketActive && idx === selectedIdx;
+              const isEditingNote = editingNoteId === line.lineId;
+
               return (
                 <article
                   key={line.lineId}
                   onClick={() => { setSelectedIdx(idx); enterTicket(); }}
-                  className={`flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors ${
+                  className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2.5 transition-colors ${
                     isSelected
                       ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20"
                       : "hover:bg-[#f8fafd]"
                   }`}
                 >
-                  {/* Name + price */}
-                  <div className="min-w-0 flex-1">
+                  {/* Name · price · note */}
+                  <div className="min-w-0 flex-1 pt-px">
                     <p className={`truncate text-[13px] font-semibold uppercase tracking-[0.02em] leading-tight ${
                       isSelected ? "text-[#2154d8]" : "text-[#111827]"
                     }`}>
@@ -146,10 +192,37 @@ export function TicketGrid() {
                     <p className="text-[11px] text-[#9ca3af]">
                       S/ {line.unitPrice.toFixed(2)}
                     </p>
+                    {isEditingNote ? (
+                      <input
+                        ref={noteInputRef}
+                        type="text"
+                        value={noteInput}
+                        onChange={e => setNoteInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter")  { e.preventDefault(); saveNote(); }
+                          if (e.key === "Escape") { e.preventDefault(); setEditingNoteId(null); }
+                          e.stopPropagation();
+                        }}
+                        onBlur={saveNote}
+                        placeholder="nota..."
+                        className="mt-1 w-full border-b border-[#e4e9f0] bg-transparent pb-px text-[10.5px] text-[#374151] outline-none placeholder:text-[#d1d9e1]"
+                      />
+                    ) : line.note ? (
+                      <p
+                        onClick={e => {
+                          e.stopPropagation();
+                          setEditingNoteId(line.lineId);
+                          setNoteInput(line.note ?? "");
+                        }}
+                        className="mt-0.5 truncate cursor-text text-[10.5px] text-[#8b95a1]"
+                      >
+                        ↳ {line.note}
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* Qty controls */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 pt-px">
                     <button
                       onClick={e => {
                         e.stopPropagation();
@@ -175,14 +248,14 @@ export function TicketGrid() {
                   </div>
 
                   {/* Subtotal */}
-                  <span className="w-16 text-right text-[13px] font-bold text-[#111827]">
+                  <span className="w-16 shrink-0 pt-px text-right text-[13px] font-bold text-[#111827]">
                     S/ {line.subtotal.toFixed(2)}
                   </span>
 
                   {/* Delete */}
                   <button
                     onClick={e => { e.stopPropagation(); removeLine(line.lineId); }}
-                    className="shrink-0 rounded-lg p-1 text-[#d1d9e1] transition hover:bg-[#fef2f2] hover:text-red-400"
+                    className="shrink-0 rounded-lg p-1 pt-1.5 text-[#d1d9e1] transition hover:bg-[#fef2f2] hover:text-red-400"
                   >
                     <Trash2 size={13} />
                   </button>

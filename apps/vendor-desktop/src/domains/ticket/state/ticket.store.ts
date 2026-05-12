@@ -21,6 +21,11 @@ interface TicketState {
     quantity: number
   ) => void;
 
+  updateNote: (
+    lineId: string,
+    note: string
+  ) => void;
+
   clearTicket: () => void;
 }
 
@@ -98,6 +103,14 @@ export const useTicketStore =
           line.subtotal =
             line.quantity *
             line.unitPrice;
+        }),
+
+      updateNote: (lineId, note) =>
+        set((state) => {
+          const line = state.linesById[lineId];
+          if (!line) return;
+          if (note) line.note = note;
+          else delete line.note;
         }),
 
       clearTicket: () =>

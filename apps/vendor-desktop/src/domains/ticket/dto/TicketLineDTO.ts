@@ -5,6 +5,8 @@ export interface TicketLineDTO {
   description: string;
   barcode?: string;
 
+  note?: string;
+
   quantity: number;
   unitPrice: number;
 

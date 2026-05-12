@@ -14,6 +14,7 @@ const SEARCH: Shortcut[] = [
 const TICKET: Shortcut[] = [
   { key: "↑↓",  label: "Línea"    },
   { key: "+ −", label: "Cantidad" },
+  { key: "N",   label: "Nota"     },
   { key: "Del", label: "Eliminar" },
   { key: "Tab", label: "Volver"   },
   { key: "F4",  label: "Cobrar"   },
