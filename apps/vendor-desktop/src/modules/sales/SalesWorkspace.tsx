@@ -87,23 +87,18 @@ function searchCatalog(catalog: Product[], query: string): Product[] {
   const seen = new Set<string>();
   const results: Product[] = [];
 
-  // L1 — full name / id / barcode starts with query
   for (const p of catalog) {
     const n = normalize(p.name);
     if (n.startsWith(q) || normalize(p.id).startsWith(q) || p.code.startsWith(q)) {
       results.push(p); seen.add(p.id);
     }
   }
-
-  // L2 — any word in name starts with query
   for (const p of catalog) {
     if (seen.has(p.id)) continue;
     if (normalize(p.name).split(" ").some(w => w.startsWith(q))) {
       results.push(p); seen.add(p.id);
     }
   }
-
-  // L3 — name / id / barcode contains query anywhere
   for (const p of catalog) {
     if (seen.has(p.id)) continue;
     const n = normalize(p.name);
@@ -111,8 +106,6 @@ function searchCatalog(catalog: Product[], query: string): Product[] {
       results.push(p); seen.add(p.id);
     }
   }
-
-  // L4 — all tokens present in name
   if (tokens.length > 1) {
     for (const p of catalog) {
       if (seen.has(p.id)) continue;
@@ -135,26 +128,26 @@ function TileBadge({ p }: { p: Product }) {
 
 export function SalesWorkspace() {
   const [view, setView] = useState<ViewMode>("dense");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("");          // controls input value
+  const [searchQuery, setSearchQuery] = useState(""); // drives result list
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const addLine = useTicketStore(s => s.addLine);
   const { enterTicket, enterSearch } = usePOS();
 
-  const trimmed = query.trim();
-  const isSearching = trimmed.length >= 1;
-  const filtered = isSearching ? searchCatalog(CATALOG, trimmed) : CATALOG;
+  const isSearching = searchQuery.length >= 1;
+  const filtered = isSearching ? searchCatalog(CATALOG, searchQuery) : CATALOG;
   const visualItems = isSearching ? filtered : CATALOG.filter(p => BEST_SELLERS.has(p.id));
 
   // Auto-focus on mount
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  // Auto-select first result when query changes
+  // Auto-select first result when search changes
   useEffect(() => {
     setSelectedIndex(isSearching && filtered.length > 0 ? 0 : -1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trimmed]);
+  }, [searchQuery]);
 
   // F2 global → focus search
   useEffect(() => {
@@ -178,8 +171,9 @@ export function SalesWorkspace() {
       quantity: 1,
       unitPrice: p.price,
     }));
+    // Clear input only — searchQuery and selectedIndex stay
+    // so results remain visible and selection stays active
     setQuery("");
-    setSelectedIndex(-1);
     inputRef.current?.focus();
   }, [addLine]);
 
@@ -205,6 +199,8 @@ export function SalesWorkspace() {
       case "Escape":
         e.preventDefault();
         setQuery("");
+        setSearchQuery("");
+        setSelectedIndex(-1);
         break;
       case "Tab":
         e.preventDefault();
@@ -253,7 +249,11 @@ export function SalesWorkspace() {
           ref={inputRef}
           type="text"
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={e => {
+            const v = e.target.value;
+            setQuery(v);
+            setSearchQuery(v.trim());
+          }}
           onKeyDown={handleKeyDown}
           onFocus={() => enterSearch()}
           placeholder="Buscar producto por nombre, código o barra..."
@@ -300,7 +300,7 @@ export function SalesWorkspace() {
             {isSearching && filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
                 <p className="text-[13px] font-medium text-[#b0bac8]">
-                  Sin resultados para «{trimmed}»
+                  Sin resultados para «{searchQuery}»
                 </p>
               </div>
             )}
@@ -372,7 +372,7 @@ export function SalesWorkspace() {
             {isSearching && filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
                 <p className="text-[13px] font-medium text-[#b0bac8]">
-                  Sin resultados para «{trimmed}»
+                  Sin resultados para «{searchQuery}»
                 </p>
               </div>
             )}

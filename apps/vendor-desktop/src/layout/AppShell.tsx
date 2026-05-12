@@ -12,7 +12,7 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <main className="h-screen overflow-hidden bg-[#f4f7fb] text-[#111827]">
       <section className="flex h-full flex-col">
-        <header className="border-b border-[#dde4ec] bg-white/95 backdrop-blur-sm">
+        <header className="border-b border-[#dde4ec]">
           <Topbar />
           <ModulesBar />
           <ContextBar />

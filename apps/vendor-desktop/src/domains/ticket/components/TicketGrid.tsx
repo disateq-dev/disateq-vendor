@@ -143,7 +143,7 @@ export function TicketGrid() {
             <>
               <span className="text-[#dde4ec] shrink-0">·</span>
               <span className="text-[11px] text-[#b8c4cf] shrink-0">
-                {totalQty} {totalQty === 1 ? "ud" : "uds"}
+                {lines.length} {lines.length === 1 ? "item" : "items"}
               </span>
             </>
           )}
@@ -176,7 +176,7 @@ export function TicketGrid() {
                 <article
                   key={line.lineId}
                   onClick={() => { setSelectedIdx(idx); enterTicket(); }}
-                  className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2.5 transition-colors ${
+                  className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 transition-colors ${
                     isSelected
                       ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20"
                       : "hover:bg-[#f8fafd]"
@@ -217,6 +217,17 @@ export function TicketGrid() {
                         className="mt-0.5 truncate cursor-text text-[10.5px] text-[#8b95a1]"
                       >
                         ↳ {line.note}
+                      </p>
+                    ) : isSelected ? (
+                      <p
+                        onClick={e => {
+                          e.stopPropagation();
+                          setEditingNoteId(line.lineId);
+                          setNoteInput("");
+                        }}
+                        className="mt-0.5 cursor-text text-[10px] text-[#c8d4e0]"
+                      >
+                        📝 Agregar nota
                       </p>
                     ) : null}
                   </div>
