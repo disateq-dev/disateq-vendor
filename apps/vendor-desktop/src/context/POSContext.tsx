@@ -34,6 +34,62 @@ const BOX_DEFS: { code: string; type: CashBoxType }[] = [
 const OPERATOR = "Fernando T.";
 const TERMINAL = "PC-VENTAS01";
 
+// ── localStorage keys ──────────────────────────────────────────
+const LS_SESSION  = "disateq.pos.cashSession";
+const LS_USED     = "disateq.pos.usedCodes";
+
+const NULL_SESSION: CashSession = {
+  isOpen: false,
+  cashBox: null,
+  operator: OPERATOR,
+  terminal: TERMINAL,
+  openedAt: null,
+};
+
+function safeDate(val: unknown): Date | null {
+  if (!val) return null;
+  const d = new Date(val as string);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function loadSession(): CashSession {
+  try {
+    const raw = localStorage.getItem(LS_SESSION);
+    if (!raw) return NULL_SESSION;
+    const p = JSON.parse(raw) as Partial<CashSession> & { openedAt?: unknown; cashBox?: unknown };
+    return {
+      isOpen:    typeof p.isOpen === "boolean" ? p.isOpen : false,
+      cashBox:   (p.cashBox && typeof (p.cashBox as CashBox).code === "string") ? p.cashBox as CashBox : null,
+      operator:  typeof p.operator === "string" ? p.operator : OPERATOR,
+      terminal:  typeof p.terminal === "string" ? p.terminal : TERMINAL,
+      openedAt:  safeDate(p.openedAt),
+    };
+  } catch {
+    return NULL_SESSION;
+  }
+}
+
+function loadUsedCodes(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LS_USED);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(arr.filter((v): v is string => typeof v === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSession(s: CashSession): void {
+  try { localStorage.setItem(LS_SESSION, JSON.stringify(s)); } catch { /* quota or disabled */ }
+}
+
+function saveUsedCodes(codes: Set<string>): void {
+  try { localStorage.setItem(LS_USED, JSON.stringify([...codes])); } catch { /* quota or disabled */ }
+}
+
+// ── derivation ─────────────────────────────────────────────────
 function deriveBoxes(usedCodes: Set<string>): CashBox[] {
   return BOX_DEFS.map(def => {
     const used = usedCodes.has(def.code);
@@ -51,6 +107,7 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
   });
 }
 
+// ── context interface ──────────────────────────────────────────
 interface POSContextValue {
   zone: FocusZone;
   enterTicket: () => void;
@@ -72,17 +129,17 @@ const POSContext = createContext<POSContextValue | null>(null);
 export function POSProvider({ children }: { children: ReactNode }) {
   const [zone, setZone] = useState<FocusZone>("search");
   const [cobroOpen, setCobroOpen] = useState(false);
-  const [usedCodes, setUsedCodes] = useState<Set<string>>(new Set());
-  const [cashSession, setCashSession] = useState<CashSession>({
-    isOpen: false,
-    cashBox: null,
-    operator: OPERATOR,
-    terminal: TERMINAL,
-    openedAt: null,
-  });
+
+  // Lazy-initialize from localStorage — runs once on mount
+  const [usedCodes, setUsedCodes] = useState<Set<string>>(loadUsedCodes);
+  const [cashSession, setCashSession] = useState<CashSession>(loadSession);
 
   const cashSessionRef = useRef(cashSession);
   cashSessionRef.current = cashSession;
+
+  // Persist on every change
+  useEffect(() => { saveSession(cashSession); }, [cashSession]);
+  useEffect(() => { saveUsedCodes(usedCodes); }, [usedCodes]);
 
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
   const suggestedCashBox = useMemo(() => cashBoxes.find(b => b.available) ?? null, [cashBoxes]);

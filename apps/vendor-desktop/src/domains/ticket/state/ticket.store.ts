@@ -32,24 +32,9 @@ interface TicketState {
 export const useTicketStore =
   create<TicketState>()(
     immer((set) => ({
-      linesById: {
-        "line-001": {
-          lineId: "line-001",
+      linesById: {},
 
-          productId: "product-001",
-
-          description:
-            "Coca Cola 500ml",
-
-          quantity: 2,
-
-          unitPrice: 3.5,
-
-          subtotal: 7,
-        },
-      },
-
-      lineOrder: ["line-001"],
+      lineOrder: [],
 
       addLine: (line) =>
         set((state) => {

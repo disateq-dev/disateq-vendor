@@ -171,9 +171,8 @@ export function SalesWorkspace() {
       quantity: 1,
       unitPrice: p.price,
     }));
-    // Clear input only — searchQuery and selectedIndex stay
-    // so results remain visible and selection stays active
     setQuery("");
+    setSearchQuery("");
     inputRef.current?.focus();
   }, [addLine]);
 
