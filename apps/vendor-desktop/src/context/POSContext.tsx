@@ -63,6 +63,8 @@ interface POSContextValue {
   suggestedCashBox: CashBox | null;
   openCashSession: (boxCode: string) => void;
   closeCashSession: () => void;
+  sessionNotice: string | null;
+  showNotice: (msg: string) => void;
 }
 
 const POSContext = createContext<POSContextValue | null>(null);
@@ -85,9 +87,27 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
   const suggestedCashBox = useMemo(() => cashBoxes.find(b => b.available) ?? null, [cashBoxes]);
 
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showNotice = useCallback((msg: string) => {
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    setSessionNotice(msg);
+    noticeTimer.current = setTimeout(() => setSessionNotice(null), 2800);
+  }, []);
+
   const enterTicket = useCallback(() => setZone("ticket"), []);
   const enterSearch = useCallback(() => setZone("search"), []);
-  const openCobro = useCallback(() => { setCobroOpen(true); setZone("cobro"); }, []);
+
+  const openCobro = useCallback(() => {
+    if (!cashSessionRef.current.isOpen) {
+      showNotice("Apertura de caja requerida para cobrar");
+      return;
+    }
+    setCobroOpen(true);
+    setZone("cobro");
+  }, [showNotice]);
+
   const closeCobro = useCallback(() => { setCobroOpen(false); setZone("search"); }, []);
 
   const openCashSession = useCallback((boxCode: string) => {
@@ -118,6 +138,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cobroOpen, openCobro, closeCobro,
       cashSession, cashBoxes, suggestedCashBox,
       openCashSession, closeCashSession,
+      sessionNotice, showNotice,
     }}>
       {children}
     </POSContext.Provider>

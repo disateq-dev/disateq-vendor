@@ -15,7 +15,7 @@ export function TicketGrid() {
   const removeLine = useTicketStore(s => s.removeLine);
   const updateQuantity = useTicketStore(s => s.updateQuantity);
   const updateNote = useTicketStore(s => s.updateNote);
-  const { zone, enterTicket, enterSearch, openCobro } = usePOS();
+  const { zone, enterTicket, enterSearch, openCobro, cashSession } = usePOS();
 
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [saleNumber] = useState(() => String(_saleCounter++).padStart(6, "0"));
@@ -290,7 +290,13 @@ export function TicketGrid() {
         <button
           onClick={openCobro}
           disabled={lines.length === 0}
-          className="w-full rounded-2xl bg-[#2154d8] py-3.5 text-[15px] font-bold uppercase tracking-widest text-white shadow-[0_4px_18px_rgba(33,84,216,0.3)] transition hover:bg-[#1a43b0] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+          className={`w-full rounded-2xl py-3.5 text-[15px] font-bold uppercase tracking-widest text-white transition ${
+            lines.length === 0
+              ? "cursor-not-allowed bg-[#2154d8] opacity-35 shadow-none"
+              : !cashSession.isOpen
+              ? "bg-[#2154d8] opacity-55 shadow-[0_2px_6px_rgba(33,84,216,0.12)] hover:opacity-65"
+              : "bg-[#2154d8] shadow-[0_4px_18px_rgba(33,84,216,0.3)] hover:bg-[#1a43b0] active:scale-[0.98]"
+          }`}
         >
           → COBRAR
         </button>

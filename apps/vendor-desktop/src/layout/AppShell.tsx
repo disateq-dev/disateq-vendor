@@ -4,12 +4,26 @@ import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { StatusBar } from "./StatusBar";
+import { usePOS } from "../context/POSContext";
 import { type ActiveModule } from "../App";
 
 interface AppShellProps {
   children: ReactNode;
   activeModule: ActiveModule;
   onModuleChange: (m: ActiveModule) => void;
+}
+
+function OperationalNotice() {
+  const { sessionNotice } = usePOS();
+  if (!sessionNotice) return null;
+  return (
+    <div className="shrink-0 flex items-center justify-center gap-2 border-t border-amber-100 bg-amber-50 px-5 py-1.5">
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+      <span className="select-none text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-700">
+        {sessionNotice}
+      </span>
+    </div>
+  );
 }
 
 export function AppShell({ children, activeModule, onModuleChange }: AppShellProps) {
@@ -26,6 +40,7 @@ export function AppShell({ children, activeModule, onModuleChange }: AppShellPro
           {children}
         </section>
 
+        <OperationalNotice />
         <ShortcutsBar />
         <StatusBar />
       </section>

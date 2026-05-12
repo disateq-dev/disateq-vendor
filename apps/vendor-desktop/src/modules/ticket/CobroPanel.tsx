@@ -22,7 +22,7 @@ const QUICK_AMOUNTS = [20, 50, 100, 200];
 export function CobroPanel() {
   const lines = useTicketLines();
   const clearTicket = useTicketStore(s => s.clearTicket);
-  const { cobroOpen, closeCobro } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice } = usePOS();
 
   const [docType, setDocType] = useState<DocType>("ticket");
   const [payMethod, setPayMethod] = useState<PayMethod>("efectivo");
@@ -42,11 +42,16 @@ export function CobroPanel() {
   const needsReceived = payMethod === "efectivo";
 
   const canConfirm =
+    cashSession.isOpen &&
     total > 0 &&
     (!needsReceived || receivedNum >= total) &&
     (docType !== "factura" || (customerRuc.length >= 11 && customerRazon.trim().length > 0));
 
   function confirmEmit() {
+    if (!cashSession.isOpen) {
+      showNotice("Apertura de caja requerida para emitir");
+      return;
+    }
     if (!canConfirm) return;
     clearTicket();
     closeCobro();
