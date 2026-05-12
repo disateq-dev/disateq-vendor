@@ -3,6 +3,7 @@ import { ContextBar } from "./ContextBar";
 import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
+import { StatusBar } from "./StatusBar";
 import { type ActiveModule } from "../App";
 
 interface AppShellProps {
@@ -26,6 +27,7 @@ export function AppShell({ children, activeModule, onModuleChange }: AppShellPro
         </section>
 
         <ShortcutsBar />
+        <StatusBar />
       </section>
     </main>
   );
