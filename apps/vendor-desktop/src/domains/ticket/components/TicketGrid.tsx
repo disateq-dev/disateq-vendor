@@ -127,7 +127,6 @@ export function TicketGrid() {
   }, [zone, removeLine, updateQuantity, updateNote, enterSearch, openCobro]);
 
   const total = lines.reduce((acc, l) => acc + l.subtotal, 0);
-  const totalQty = lines.reduce((acc, l) => acc + l.quantity, 0);
   const isTicketActive = zone === "ticket";
 
   return (
@@ -167,7 +166,7 @@ export function TicketGrid() {
             <p className="text-[11px] text-[#d1d9e1]">Agregue productos desde el catálogo</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {lines.map((line, idx) => {
               const isSelected = isTicketActive && idx === selectedIdx;
               const isEditingNote = editingNoteId === line.lineId;
@@ -204,7 +203,7 @@ export function TicketGrid() {
                           e.stopPropagation();
                         }}
                         onBlur={saveNote}
-                        placeholder="nota..."
+                        placeholder="observación..."
                         className="mt-1 w-full border-b border-[#e4e9f0] bg-transparent pb-px text-[10.5px] text-[#374151] outline-none placeholder:text-[#d1d9e1]"
                       />
                     ) : line.note ? (
@@ -227,7 +226,7 @@ export function TicketGrid() {
                         }}
                         className="mt-0.5 cursor-text text-[10px] text-[#c8d4e0]"
                       >
-                        📝 Agregar nota
+                        📝 Observación
                       </p>
                     ) : null}
                   </div>
@@ -278,10 +277,12 @@ export function TicketGrid() {
       </div>
 
       {/* STICKY FOOTER */}
-      <footer className="shrink-0 border-t border-[#f1f5f9] px-5 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-[13px] font-medium text-[#6b7280]">Total</span>
-          <strong className="text-[22px] font-bold tracking-tight text-[#111827]">
+      <footer className="shrink-0 border-t border-[#f1f5f9] px-5 py-3.5">
+        <div className="mb-3 flex items-end justify-between">
+          <span className="text-[10.5px] font-semibold uppercase tracking-widest text-[#b8c4cf]">
+            Total
+          </span>
+          <strong className="text-[26px] font-bold leading-none tracking-tight text-[#111827]">
             S/ {total.toFixed(2)}
           </strong>
         </div>
@@ -289,7 +290,7 @@ export function TicketGrid() {
         <button
           onClick={openCobro}
           disabled={lines.length === 0}
-          className="w-full rounded-2xl bg-[#2154d8] py-3 text-[14px] font-bold uppercase tracking-widest text-white shadow-[0_4px_14px_rgba(33,84,216,0.22)] transition hover:bg-[#1a43b0] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+          className="w-full rounded-2xl bg-[#2154d8] py-3.5 text-[15px] font-bold uppercase tracking-widest text-white shadow-[0_4px_18px_rgba(33,84,216,0.3)] transition hover:bg-[#1a43b0] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
         >
           → COBRAR
         </button>
