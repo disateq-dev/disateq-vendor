@@ -73,7 +73,7 @@ export function Topbar() {
         </div>
 
         {/* POWER */}
-        <button className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-white/8 bg-white/5 text-[#ef4444] transition hover:border-red-500/30 hover:bg-red-500/10">
+        <button className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-[#dc2626] text-white shadow-[0_2px_8px_rgba(220,38,38,0.28)] transition hover:bg-[#b91c1c]">
           <Power size={17} />
         </button>
       </section>
