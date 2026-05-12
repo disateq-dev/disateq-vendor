@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ScanLine, Search } from "lucide-react";
+import { createTicketLine } from "../../domains/ticket/state/ticket.actions";
+import { useTicketStore } from "../../domains/ticket/state/ticket.store";
+import { usePOS } from "../../context/POSContext";
 
 type StockStatus = "normal" | "low" | "out" | "promo" | "expiring";
 type ViewMode = "dense" | "visual";
@@ -92,7 +95,7 @@ function searchCatalog(catalog: Product[], query: string): Product[] {
     }
   }
 
-  // L2 — any word in name starts with query  (e.g. "ar" → "Detergente ARIEL" before "azucAR")
+  // L2 — any word in name starts with query
   for (const p of catalog) {
     if (seen.has(p.id)) continue;
     if (normalize(p.name).split(" ").some(w => w.startsWith(q))) {
@@ -109,7 +112,7 @@ function searchCatalog(catalog: Product[], query: string): Product[] {
     }
   }
 
-  // L4 — all tokens present in name (multi-word tolerance: "arr cos" → "Arroz Costeño")
+  // L4 — all tokens present in name
   if (tokens.length > 1) {
     for (const p of catalog) {
       if (seen.has(p.id)) continue;
@@ -133,36 +136,101 @@ function TileBadge({ p }: { p: Product }) {
 export function SalesWorkspace() {
   const [view, setView] = useState<ViewMode>("dense");
   const [query, setQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const addLine = useTicketStore(s => s.addLine);
+  const { enterTicket, enterSearch } = usePOS();
 
   const trimmed = query.trim();
   const isSearching = trimmed.length >= 1;
-
   const filtered = isSearching ? searchCatalog(CATALOG, trimmed) : CATALOG;
-
   const visualItems = isSearching ? filtered : CATALOG.filter(p => BEST_SELLERS.has(p.id));
+
+  // Auto-focus on mount
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // Auto-select first result when query changes
+  useEffect(() => {
+    setSelectedIndex(isSearching && filtered.length > 0 ? 0 : -1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trimmed]);
+
+  // F2 global → focus search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "F2") {
+        e.preventDefault();
+        enterSearch();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [enterSearch]);
+
+  const addProductToTicket = useCallback((p: Product) => {
+    if (p.status === "out") return;
+    addLine(createTicketLine({
+      productId: p.id,
+      description: p.name,
+      barcode: p.code,
+      quantity: 1,
+      unitPrice: p.price,
+    }));
+    setQuery("");
+    setSelectedIndex(-1);
+    inputRef.current?.focus();
+  }, [addLine]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (e.key) {
+      case "ArrowDown":
+        if (!isSearching) return;
+        e.preventDefault();
+        setSelectedIndex(i => Math.min(i + 1, filtered.length - 1));
+        break;
+      case "ArrowUp":
+        if (!isSearching) return;
+        e.preventDefault();
+        setSelectedIndex(i => Math.max(i - 1, 0));
+        break;
+      case "Enter": {
+        if (!isSearching) return;
+        e.preventDefault();
+        const product = selectedIndex >= 0 ? filtered[selectedIndex] : filtered[0];
+        if (product) addProductToTicket(product);
+        break;
+      }
+      case "Escape":
+        e.preventDefault();
+        setQuery("");
+        break;
+      case "Tab":
+        e.preventDefault();
+        enterTicket();
+        break;
+    }
+  }, [isSearching, filtered, selectedIndex, addProductToTicket, enterTicket]);
 
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
-      {/* TOOLBAR — Visual mode: categories + toggle */}
+      {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
         <div className="flex shrink-0 items-center gap-2 border-b border-[#f1f5f9] px-5 py-3.5">
           <div className="flex items-center gap-1.5">
             <button className="rounded-2xl bg-[#2154d8] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(33,84,216,0.18)]">
               General
             </button>
-
             <button className="rounded-2xl border border-[#e4e7ec] px-4 py-2 text-[13px] font-medium text-[#475467] transition hover:border-[#d0d5dd] hover:text-[#111827]">
               Productos
             </button>
-
             <button className="rounded-2xl border border-[#e4e7ec] px-4 py-2 text-[13px] font-medium text-[#475467] transition hover:border-[#d0d5dd] hover:text-[#111827]">
               Servicios
             </button>
           </div>
-
           <div className="flex-1" />
-
           <div className="flex items-center gap-1 rounded-xl bg-[#f1f5f9] p-1">
             <button
               onClick={() => setView("dense")}
@@ -170,7 +238,6 @@ export function SalesWorkspace() {
             >
               Lista
             </button>
-
             <button className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-[#111827] shadow-sm">
               Visual
             </button>
@@ -183,11 +250,15 @@ export function SalesWorkspace() {
         <Search size={17} className="shrink-0 text-[#2154d8]" />
 
         <input
+          ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => enterSearch()}
           placeholder="Buscar producto por nombre, código o barra..."
           className="w-full bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#b8c4cf]"
+          autoComplete="off"
         />
 
         <div className="h-4 w-px shrink-0 bg-[#eaecf0]" />
@@ -201,7 +272,6 @@ export function SalesWorkspace() {
             <button className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-[#111827] shadow-sm">
               Lista
             </button>
-
             <button
               onClick={() => setView("visual")}
               className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-[#64748b] transition hover:text-[#111827]"
@@ -221,7 +291,6 @@ export function SalesWorkspace() {
             {!isSearching && (
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
                 <Search size={26} className="text-[#dce3ea]" />
-
                 <p className="mt-1 text-[13px] font-medium text-[#b0bac8]">
                   Escriba nombre, código o referencia para localizar productos rápidamente.
                 </p>
@@ -238,14 +307,20 @@ export function SalesWorkspace() {
 
             {isSearching && filtered.length > 0 && (
               <div className="flex flex-col px-3 py-2">
-                {filtered.map((product) => {
+                {filtered.map((product, idx) => {
                   const sub = getSubtitle(product);
                   const isOut = product.status === "out";
+                  const isSelected = idx === selectedIndex;
 
                   return (
                     <div
                       key={product.id}
-                      className="flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition hover:bg-[#f4f7fb]"
+                      onClick={() => addProductToTicket(product)}
+                      className={`flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition ${
+                        isSelected
+                          ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20"
+                          : "hover:bg-[#f4f7fb]"
+                      }`}
                       style={isOut ? { opacity: 0.56 } : undefined}
                     >
                       <div className="flex min-w-0 items-center gap-3">
@@ -256,12 +331,11 @@ export function SalesWorkspace() {
                         <div className="min-w-0">
                           <div
                             className={`truncate text-[14px] font-bold uppercase tracking-[0.025em] leading-tight ${
-                              isOut ? "text-[#9ca3af]" : "text-[#111827]"
+                              isSelected ? "text-[#2154d8]" : isOut ? "text-[#9ca3af]" : "text-[#111827]"
                             }`}
                           >
                             {product.name}
                           </div>
-
                           <div className={`mt-0.5 text-[11px] font-medium ${sub.cls}`}>
                             {sub.text}
                           </div>
@@ -273,7 +347,14 @@ export function SalesWorkspace() {
                           S/ {product.price.toFixed(2)}
                         </span>
 
-                        <button className="rounded-xl bg-[#edf4ff] px-3.5 py-1.5 text-[12px] font-semibold text-[#2154d8] transition hover:bg-[#dbeafe]">
+                        <button
+                          onClick={e => { e.stopPropagation(); addProductToTicket(product); }}
+                          className={`rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
+                            isSelected
+                              ? "bg-[#2154d8] text-white hover:bg-[#1a43b0]"
+                              : "bg-[#edf4ff] text-[#2154d8] hover:bg-[#dbeafe]"
+                          }`}
+                        >
                           Agregar
                         </button>
                       </div>
@@ -303,41 +384,37 @@ export function SalesWorkspace() {
                     Más vendidos
                   </p>
                 )}
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-x-3 gap-y-2 p-4 pt-2">
-                {visualItems.map((product) => {
-                  const isOut = product.status === "out";
-                  const price = tilePrice(product);
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-x-3 gap-y-2 p-4 pt-2">
+                  {visualItems.map((product) => {
+                    const isOut = product.status === "out";
+                    const price = tilePrice(product);
 
-                  return (
-                    <button
-                      key={product.id}
-                      className={`overflow-hidden rounded-2xl bg-white text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:shadow-[0_4px_14px_rgba(33,84,216,0.09)] ${
-                        isOut
-                          ? "border border-[#fef2f2] hover:border-[#fecaca]"
-                          : "border border-[#f0f4f9] hover:border-[#c7d7f4]"
-                      }`}
-                      style={isOut ? { opacity: 0.54 } : undefined}
-                    >
-                      <div
-                        className="relative h-[52px]"
-                        style={{ backgroundColor: product.color }}
+                    return (
+                      <button
+                        key={product.id}
+                        onClick={() => addProductToTicket(product)}
+                        className={`overflow-hidden rounded-2xl bg-white text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:shadow-[0_4px_14px_rgba(33,84,216,0.09)] ${
+                          isOut
+                            ? "border border-[#fef2f2] hover:border-[#fecaca]"
+                            : "border border-[#f0f4f9] hover:border-[#c7d7f4]"
+                        }`}
+                        style={isOut ? { opacity: 0.54 } : undefined}
                       >
-                        <TileBadge p={product} />
-                      </div>
-
-                      <div className="p-2.5">
-                        <p className="line-clamp-1 text-[12px] font-semibold uppercase tracking-[0.02em] leading-tight text-[#111827]">
-                          {product.short}
-                        </p>
-
-                        <p className={`mt-1 text-[13px] font-bold ${price.cls}`}>
-                          {price.prefix}S/ {product.price.toFixed(2)}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                        <div className="relative h-[52px]" style={{ backgroundColor: product.color }}>
+                          <TileBadge p={product} />
+                        </div>
+                        <div className="p-2.5">
+                          <p className="line-clamp-1 text-[12px] font-semibold uppercase tracking-[0.02em] leading-tight text-[#111827]">
+                            {product.short}
+                          </p>
+                          <p className={`mt-1 text-[13px] font-bold ${price.cls}`}>
+                            {price.prefix}S/ {product.price.toFixed(2)}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </>
             )}
           </>

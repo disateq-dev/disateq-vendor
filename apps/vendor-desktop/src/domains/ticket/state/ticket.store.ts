@@ -48,29 +48,25 @@ export const useTicketStore =
 
       addLine: (line) =>
         set((state) => {
-          const existing =
-            state.linesById[
-              line.lineId
-            ];
-
-          if (existing) {
-            existing.quantity +=
-              line.quantity;
-
-            existing.subtotal =
-              existing.quantity *
-              existing.unitPrice;
-
+          // Check by lineId
+          if (state.linesById[line.lineId]) {
+            const ex = state.linesById[line.lineId];
+            ex.quantity += line.quantity;
+            ex.subtotal = ex.quantity * ex.unitPrice;
             return;
           }
-
-          state.linesById[
-            line.lineId
-          ] = line;
-
-          state.lineOrder.push(
-            line.lineId
+          // Check by productId — same product added again
+          const existingId = state.lineOrder.find(
+            (id) => state.linesById[id]?.productId === line.productId
           );
+          if (existingId) {
+            const ex = state.linesById[existingId];
+            ex.quantity += line.quantity;
+            ex.subtotal = ex.quantity * ex.unitPrice;
+            return;
+          }
+          state.linesById[line.lineId] = line;
+          state.lineOrder.push(line.lineId);
         }),
 
       removeLine: (lineId) =>
