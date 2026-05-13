@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Trash2, X } from "lucide-react";
+import { Pin, Trash2 } from "lucide-react";
 import { useTicketLines } from "../selectors/ticket.selectors";
 import { useTicketStore } from "../state/ticket.store";
 import { usePOS } from "../../../context/POSContext";
@@ -8,10 +8,12 @@ let _saleCounter = 1;
 
 export function TicketGrid() {
   const lines = useTicketLines();
-  const removeLine    = useTicketStore(s => s.removeLine);
-  const updateQuantity = useTicketStore(s => s.updateQuantity);
-  const updateNote    = useTicketStore(s => s.updateNote);
-  const clearTicket   = useTicketStore(s => s.clearTicket);
+  const removeLine         = useTicketStore(s => s.removeLine);
+  const updateQuantity     = useTicketStore(s => s.updateQuantity);
+  const updateNote         = useTicketStore(s => s.updateNote);
+  const clearTicket        = useTicketStore(s => s.clearTicket);
+  const pendingNoteLineId  = useTicketStore(s => s.pendingNoteLineId);
+  const clearPendingNote   = useTicketStore(s => s.clearPendingNote);
   const { zone, enterTicket, enterSearch, openCobro, cashSession } = usePOS();
 
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -20,12 +22,22 @@ export function TicketGrid() {
   const [noteInput, setNoteInput] = useState("");
 
   const noteInputRef = useRef<HTMLInputElement>(null);
+  const listRef      = useRef<HTMLDivElement>(null);
 
 
   useEffect(() => {
     if (lines.length === 0) setSelectedIdx(0);
     else if (selectedIdx >= lines.length) setSelectedIdx(lines.length - 1);
   }, [lines.length, selectedIdx]);
+
+  // Auto-scroll to last line when a new item is added
+  const prevLinesLengthRef = useRef(lines.length);
+  useEffect(() => {
+    if (lines.length > prevLinesLengthRef.current && listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+    prevLinesLengthRef.current = lines.length;
+  }, [lines.length]);
 
   useEffect(() => {
     if (editingNoteId) {
@@ -40,6 +52,14 @@ export function TicketGrid() {
   selectedIdxRef.current = selectedIdx;
   const editingNoteIdRef = useRef(editingNoteId);
   editingNoteIdRef.current = editingNoteId;
+
+  // Open note editor when triggered from search zone via openNoteFor()
+  useEffect(() => {
+    if (!pendingNoteLineId) return;
+    const line = lines.find(l => l.lineId === pendingNoteLineId);
+    if (line) { setEditingNoteId(pendingNoteLineId); setNoteInput(line.note ?? ""); }
+    clearPendingNote();
+  }, [pendingNoteLineId, lines, clearPendingNote]);
 
   const saveNote = useCallback(() => {
     if (!editingNoteId) return;
@@ -86,52 +106,21 @@ export function TicketGrid() {
   }, [zone, removeLine, updateQuantity, updateNote, enterSearch, openCobro]);
 
   const total      = lines.reduce((acc, l) => acc + l.subtotal, 0);
-  const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
   const isTicketActive = zone === "ticket";
 
   return (
     <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* HEADER */}
-      <header className="shrink-0 flex items-center gap-2 border-b border-[#f1f5f9] px-4 py-2.5">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-          <span className="shrink-0 text-[11px] font-bold uppercase tracking-widest text-[#9ca3af]">
-            #{saleNumber}
-          </span>
-          {lines.length > 0 && (
-            <>
-              <span className="shrink-0 text-[#dde4ec]">·</span>
-              <span className="shrink-0 text-[11px] font-semibold text-[#374151]">
-                {lines.length} {lines.length === 1 ? "ítem" : "ítems"}
-              </span>
-              <span className="shrink-0 text-[#dde4ec]">·</span>
-              <span className="shrink-0 text-[11px] font-bold text-[#111827]">
-                S/ {total.toFixed(2)}
-              </span>
-            </>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          {lines.length > 0 && (
-            <button
-              onClick={clearTicket}
-              title="Limpiar ticket"
-              className="rounded-lg p-1 text-[#d1d9e1] transition hover:bg-[#fef2f2] hover:text-red-400"
-            >
-              <X size={13} />
-            </button>
-          )}
-          <div className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
-            isTicketActive ? "bg-[#EDF4FF] text-[#2154d8]" : "bg-emerald-50 text-emerald-600"
-          }`}>
-            {isTicketActive ? "TICKET" : "ACTIVO"}
-          </div>
-        </div>
+      <header className="shrink-0 flex items-center justify-between border-b border-[#f1f5f9] px-4 py-2.5">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-[#9ca3af]">PRE-VENTA</span>
+        <span className="text-[11px] font-bold uppercase tracking-widest text-[#9ca3af]">
+          VENTA N° {saleNumber}{lines.length > 0 ? ` · ${lines.length} ${lines.length === 1 ? "ÍTEM" : "ÍTEMS"}` : ""}
+        </span>
       </header>
 
       {/* LINES */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-1.5">
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-1.5">
         {lines.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
             <p className="text-[13px] font-medium text-[#c0cad4]">Ticket vacío</p>
@@ -140,7 +129,8 @@ export function TicketGrid() {
         ) : (
           <div className="flex flex-col gap-0.5">
             {lines.map((line, idx) => {
-              const isSelected   = isTicketActive && idx === selectedIdx;
+              const isSelected    = isTicketActive && idx === selectedIdx;
+              const isLastLine    = !isTicketActive && idx === lines.length - 1;
               const isEditingNote = editingNoteId === line.lineId;
 
               return (
@@ -148,7 +138,11 @@ export function TicketGrid() {
                   key={line.lineId}
                   onClick={() => { setSelectedIdx(idx); enterTicket(); }}
                   className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 transition-colors ${
-                    isSelected ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20" : "hover:bg-[#f8fafd]"
+                    isSelected
+                      ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20"
+                      : isLastLine
+                      ? "bg-[#f8fafd] ring-1 ring-[#e8eef5]"
+                      : "hover:bg-[#f8fafd]"
                   }`}
                 >
                   {/* Name + price + note */}
@@ -183,13 +177,6 @@ export function TicketGrid() {
                       >
                         ↳ {line.note}
                       </p>
-                    ) : isSelected ? (
-                      <p
-                        onClick={e => { e.stopPropagation(); setEditingNoteId(line.lineId); setNoteInput(""); }}
-                        className="mt-0.5 cursor-text text-[10px] text-[#c8d4e0]"
-                      >
-                        📝 Observación
-                      </p>
                     ) : null}
                   </div>
 
@@ -201,7 +188,7 @@ export function TicketGrid() {
                         if (line.quantity > 1) updateQuantity(line.lineId, line.quantity - 1);
                         else removeLine(line.lineId);
                       }}
-                      className="flex h-6 w-6 items-center justify-center rounded-lg text-[15px] font-bold text-[#c0cad4] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f4f7fb] text-[15px] font-bold text-[#7c8b97] transition hover:bg-[#e4edff] hover:text-[#2154d8]"
                     >
                       −
                     </button>
@@ -212,7 +199,7 @@ export function TicketGrid() {
                     </span>
                     <button
                       onClick={e => { e.stopPropagation(); updateQuantity(line.lineId, line.quantity + 1); }}
-                      className="flex h-6 w-6 items-center justify-center rounded-lg text-[15px] font-bold text-[#c0cad4] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f4f7fb] text-[15px] font-bold text-[#7c8b97] transition hover:bg-[#e4edff] hover:text-[#2154d8]"
                     >
                       +
                     </button>
@@ -225,13 +212,32 @@ export function TicketGrid() {
                     S/ {line.subtotal.toFixed(2)}
                   </span>
 
-                  {/* Delete */}
-                  <button
-                    onClick={e => { e.stopPropagation(); removeLine(line.lineId); }}
-                    className="shrink-0 rounded-lg p-1 pt-1.5 text-[#d1d9e1] transition hover:bg-[#fef2f2] hover:text-red-400"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  {/* Note + Delete */}
+                  <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setSelectedIdx(idx);
+                        enterTicket();
+                        setEditingNoteId(line.lineId);
+                        setNoteInput(line.note ?? "");
+                      }}
+                      title="Nota"
+                      className={`rounded-lg p-1 transition ${
+                        line.note
+                          ? "text-[#60a5fa] hover:bg-[#eff6ff] hover:text-[#2154d8]"
+                          : "text-[#c8d4e0] hover:bg-[#f0f5ff] hover:text-[#7c8b97]"
+                      }`}
+                    >
+                      <Pin size={12} />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); removeLine(line.lineId); }}
+                      className="rounded-lg p-1 text-[#fca5a5] transition hover:bg-[#fef2f2] hover:text-red-500"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </article>
               );
             })}
@@ -240,35 +246,42 @@ export function TicketGrid() {
       </div>
 
       {/* FOOTER */}
-      <footer className="shrink-0 border-t border-[#f1f5f9] px-5 py-4">
-        <div className="mb-3 flex items-end justify-between">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[9.5px] font-bold uppercase tracking-[0.15em] text-[#c8d4e0]">
-              {lines.length > 0 ? `${lines.length} ${lines.length === 1 ? "ítem" : "ítems"}` : "Sin ítems"}
-            </span>
-            {totalUnits > 0 && (
-              <span className="text-[10.5px] font-semibold text-[#b8c4cf]">
-                {totalUnits} {totalUnits === 1 ? "unidad" : "unidades"}
-              </span>
-            )}
-          </div>
-          <strong className="text-[30px] font-bold leading-none tracking-tight text-[#111827]">
+      <footer className="shrink-0 flex items-stretch gap-2 border-t border-[#f1f5f9] px-3 py-3">
+
+        {/* LIMPIAR ~30% */}
+        <button
+          onClick={clearTicket}
+          disabled={lines.length === 0}
+          className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[12px] font-bold uppercase tracking-wider transition ${
+            lines.length === 0
+              ? "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+              : "bg-[#fee2e2] text-[#dc2626] hover:bg-[#fecaca] active:scale-[0.97]"
+          }`}
+        >
+          Limpiar
+        </button>
+
+        {/* TOTAL ~40% */}
+        <div className="flex min-w-0 flex-1 flex-col items-center justify-center py-1">
+          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#c8d4e0]">Total</p>
+          <strong className="text-[22px] font-bold leading-none tracking-tight text-[#111827]">
             S/ {total.toFixed(2)}
           </strong>
         </div>
 
+        {/* COBRAR ~30% */}
         <button
           onClick={openCobro}
           disabled={lines.length === 0}
-          className={`w-full rounded-2xl py-3.5 text-[15px] font-bold uppercase tracking-widest text-white transition ${
+          className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[12px] font-bold uppercase tracking-wider text-white transition ${
             lines.length === 0
-              ? "cursor-not-allowed bg-[#2154d8] opacity-30 shadow-none"
+              ? "cursor-not-allowed bg-[#e4e9f0] text-[#b4bfcb]"
               : !cashSession.isOpen
-              ? "bg-[#2154d8] opacity-55 shadow-[0_2px_6px_rgba(33,84,216,0.12)] hover:opacity-65"
-              : "bg-[#2154d8] shadow-[0_4px_18px_rgba(33,84,216,0.3)] hover:bg-[#1a43b0] active:scale-[0.98]"
+              ? "bg-[#6ea4e0] hover:bg-[#5a94d0] active:scale-[0.97]"
+              : "bg-[#2154d8] shadow-[0_4px_18px_rgba(33,84,216,0.32)] hover:bg-[#1a43b0] active:scale-[0.97]"
           }`}
         >
-          → COBRAR
+          COBRAR →
         </button>
       </footer>
     </section>

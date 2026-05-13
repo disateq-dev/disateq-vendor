@@ -13,10 +13,12 @@
     "windows": [
       {
         "title": "DisateQ VENDOR™",
-        "width": 800,
-        "height": 600,
+        "width": 1366,
+        "height": 768,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "maximized": false,
+        "center": true
       }
     ],
     "security": {

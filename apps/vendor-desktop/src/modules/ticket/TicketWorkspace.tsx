@@ -1,11 +1,12 @@
 import { TicketGrid } from "../../domains/ticket/components/TicketGrid";
 import { CobroPanel } from "./CobroPanel";
+import { usePOS } from "../../context/POSContext";
 
 export function TicketWorkspace() {
+  const { cobroOpen } = usePOS();
   return (
-    <section className="relative h-full w-[480px]">
-      <TicketGrid />
-      <CobroPanel />
+    <section className="h-full w-[480px]">
+      {cobroOpen ? <CobroPanel /> : <TicketGrid />}
     </section>
   );
 }

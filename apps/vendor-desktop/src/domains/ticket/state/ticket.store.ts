@@ -27,6 +27,9 @@ interface TicketState {
   ) => void;
 
   clearTicket: () => void;
+  pendingNoteLineId: string | null;
+  openNoteFor: (lineId: string) => void;
+  clearPendingNote: () => void;
 }
 
 export const useTicketStore =
@@ -101,8 +104,13 @@ export const useTicketStore =
       clearTicket: () =>
         set((state) => {
           state.linesById = {};
-
           state.lineOrder = [];
         }),
+
+      pendingNoteLineId: null,
+      openNoteFor: (lineId) =>
+        set((state) => { state.pendingNoteLineId = lineId; }),
+      clearPendingNote: () =>
+        set((state) => { state.pendingNoteLineId = null; }),
     }))
   );

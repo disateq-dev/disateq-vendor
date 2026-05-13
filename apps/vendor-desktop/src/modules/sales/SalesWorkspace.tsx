@@ -133,15 +133,27 @@ export function SalesWorkspace() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const addLine = useTicketStore(s => s.addLine);
-  const { enterTicket, enterSearch, cashSession } = usePOS();
+  const addLine        = useTicketStore(s => s.addLine);
+  const removeLine     = useTicketStore(s => s.removeLine);
+  const updateQuantity = useTicketStore(s => s.updateQuantity);
+  const openNoteFor    = useTicketStore(s => s.openNoteFor);
+  const lastLine = useTicketStore(s => {
+    const lastId = s.lineOrder[s.lineOrder.length - 1];
+    return lastId ? s.linesById[lastId] : null;
+  });
+  const { enterTicket, enterSearch, cashSession, zone, cobroOpen, closeCobro } = usePOS();
 
   const isSearching = searchQuery.length >= 1;
   const filtered = isSearching ? searchCatalog(CATALOG, searchQuery) : CATALOG;
   const visualItems = isSearching ? filtered : CATALOG.filter(p => BEST_SELLERS.has(p.id));
 
-  // Auto-focus on mount
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  // Focus search input whenever zone returns to "search" (post-cobro, Tab from ticket, etc.)
+  useEffect(() => {
+    if (zone === "search") {
+      const t = setTimeout(() => inputRef.current?.focus(), 40);
+      return () => clearTimeout(t);
+    }
+  }, [zone]);
 
   // Auto-select first result when search changes
   useEffect(() => {
@@ -164,6 +176,7 @@ export function SalesWorkspace() {
 
   const addProductToTicket = useCallback((p: Product) => {
     if (p.status === "out") return;
+    if (cobroOpen) closeCobro();
     addLine(createTicketLine({
       productId: p.id,
       description: p.name,
@@ -174,7 +187,7 @@ export function SalesWorkspace() {
     setQuery("");
     setSearchQuery("");
     inputRef.current?.focus();
-  }, [addLine]);
+  }, [addLine, cobroOpen, closeCobro]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     switch (e.key) {
@@ -205,8 +218,37 @@ export function SalesWorkspace() {
         e.preventDefault();
         enterTicket();
         break;
+      // Last-line operations — only when input is empty
+      case "+":
+      case "*": {
+        if (query !== "") break;
+        e.preventDefault();
+        if (lastLine) updateQuantity(lastLine.lineId, lastLine.quantity + 1);
+        break;
+      }
+      case "-": {
+        if (query !== "") break;
+        e.preventDefault();
+        if (!lastLine) break;
+        if (lastLine.quantity > 1) updateQuantity(lastLine.lineId, lastLine.quantity - 1);
+        else removeLine(lastLine.lineId);
+        break;
+      }
+      case "Delete": {
+        if (query !== "") break;
+        e.preventDefault();
+        if (lastLine) removeLine(lastLine.lineId);
+        break;
+      }
+      case "n":
+      case "N": {
+        if (query !== "") break;
+        e.preventDefault();
+        if (lastLine) openNoteFor(lastLine.lineId);
+        break;
+      }
     }
-  }, [isSearching, filtered, selectedIndex, addProductToTicket, enterTicket]);
+  }, [isSearching, filtered, selectedIndex, addProductToTicket, enterTicket, query, lastLine, updateQuantity, removeLine, openNoteFor]);
 
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
