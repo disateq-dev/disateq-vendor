@@ -7,28 +7,23 @@ import { usePOS } from "../../../context/POSContext";
 let _saleCounter = 1;
 
 export function TicketGrid() {
-  const lines = useTicketLines();
-  const removeLine         = useTicketStore(s => s.removeLine);
-  const updateQuantity     = useTicketStore(s => s.updateQuantity);
-  const updateNote         = useTicketStore(s => s.updateNote);
-  const clearTicket        = useTicketStore(s => s.clearTicket);
-  const pendingNoteLineId  = useTicketStore(s => s.pendingNoteLineId);
-  const clearPendingNote   = useTicketStore(s => s.clearPendingNote);
-  const { zone, enterTicket, enterSearch, openCobro, cashSession } = usePOS();
+  const lines            = useTicketLines();
+  const removeLine       = useTicketStore(s => s.removeLine);
+  const updateQuantity   = useTicketStore(s => s.updateQuantity);
+  const updateNote       = useTicketStore(s => s.updateNote);
+  const clearTicket      = useTicketStore(s => s.clearTicket);
+  const pendingNoteLineId = useTicketStore(s => s.pendingNoteLineId);
+  const clearPendingNote = useTicketStore(s => s.clearPendingNote);
+  const activeLineIdx    = useTicketStore(s => s.activeLineIdx);
+  const setActiveLineIdx = useTicketStore(s => s.setActiveLineIdx);
+  const { openCobro, cashSession } = usePOS();
 
-  const [selectedIdx, setSelectedIdx] = useState(0);
   const [saleNumber] = useState(() => String(_saleCounter++).padStart(6, "0"));
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
   const noteInputRef = useRef<HTMLInputElement>(null);
   const listRef      = useRef<HTMLDivElement>(null);
-
-
-  useEffect(() => {
-    if (lines.length === 0) setSelectedIdx(0);
-    else if (selectedIdx >= lines.length) setSelectedIdx(lines.length - 1);
-  }, [lines.length, selectedIdx]);
 
   // Auto-scroll to last line when a new item is added
   const prevLinesLengthRef = useRef(lines.length);
@@ -39,19 +34,19 @@ export function TicketGrid() {
     prevLinesLengthRef.current = lines.length;
   }, [lines.length]);
 
+  // Auto-scroll active line into view
+  useEffect(() => {
+    if (activeLineIdx < 0 || !listRef.current) return;
+    const articles = listRef.current.querySelectorAll("article");
+    articles[activeLineIdx]?.scrollIntoView({ block: "nearest" });
+  }, [activeLineIdx]);
+
   useEffect(() => {
     if (editingNoteId) {
       const t = setTimeout(() => noteInputRef.current?.focus(), 20);
       return () => clearTimeout(t);
     }
   }, [editingNoteId]);
-
-  const linesRef = useRef(lines);
-  linesRef.current = lines;
-  const selectedIdxRef = useRef(selectedIdx);
-  selectedIdxRef.current = selectedIdx;
-  const editingNoteIdRef = useRef(editingNoteId);
-  editingNoteIdRef.current = editingNoteId;
 
   // Open note editor when triggered from search zone via openNoteFor()
   useEffect(() => {
@@ -67,56 +62,26 @@ export function TicketGrid() {
     setEditingNoteId(null);
   }, [editingNoteId, noteInput, updateNote]);
 
-  useEffect(() => {
-    if (zone !== "ticket") return;
-    const handler = (e: KeyboardEvent) => {
-      if (editingNoteIdRef.current) return;
-      const lines = linesRef.current;
-      const idx = selectedIdxRef.current;
-      switch (e.key) {
-        case "ArrowDown": e.preventDefault(); setSelectedIdx(i => Math.min(i + 1, lines.length - 1)); break;
-        case "ArrowUp":   e.preventDefault(); setSelectedIdx(i => Math.max(i - 1, 0)); break;
-        case "+":
-        case "*": {
-          e.preventDefault();
-          const l = lines[idx]; if (l) updateQuantity(l.lineId, l.quantity + 1);
-          break;
-        }
-        case "-": {
-          e.preventDefault();
-          const l = lines[idx]; if (!l) break;
-          if (l.quantity > 1) updateQuantity(l.lineId, l.quantity - 1); else removeLine(l.lineId);
-          break;
-        }
-        case "Delete": { e.preventDefault(); const l = lines[idx]; if (l) removeLine(l.lineId); break; }
-        case "n":
-        case "N": {
-          e.preventDefault();
-          const l = lines[idx];
-          if (l) { setEditingNoteId(l.lineId); setNoteInput(l.note ?? ""); }
-          break;
-        }
-        case "Tab":
-        case "Escape": e.preventDefault(); enterSearch(); break;
-        case "F4": e.preventDefault(); openCobro(); break;
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [zone, removeLine, updateQuantity, updateNote, enterSearch, openCobro]);
-
   const total      = lines.reduce((acc, l) => acc + l.subtotal, 0);
-  const isTicketActive = zone === "ticket";
+  const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#E9E4DC] bg-[#FDFBF7] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* HEADER */}
-      <header className="shrink-0 flex items-center justify-between border-b border-[#f1f5f9] px-4 py-2.5">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-[#9ca3af]">PRE-VENTA</span>
-        <span className="text-[11px] font-bold uppercase tracking-widest text-[#9ca3af]">
-          VENTA N° {saleNumber}{lines.length > 0 ? ` · ${lines.length} ${lines.length === 1 ? "ÍTEM" : "ÍTEMS"}` : ""}
-        </span>
+      <header className="shrink-0 flex flex-col border-b border-amber-100/70 bg-[#fffdf8] px-4 pt-2.5 pb-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-bold tracking-wide text-[#2F3E46]">
+            PRE-VENTA <span className="text-[#374151]">#{saleNumber}</span>
+          </span>
+          {lines.length > 0 ? (
+            <span className="text-[13px] font-bold tracking-widest text-[#2F3E46]">
+              {lines.length} {lines.length === 1 ? "ÍT." : "ÍTEMS"} · {totalUnits} UND
+            </span>
+          ) : (
+            <span className="text-[13px] text-[#c0cad4]">—</span>
+          )}
+        </div>
       </header>
 
       {/* LINES */}
@@ -129,14 +94,14 @@ export function TicketGrid() {
         ) : (
           <div className="flex flex-col gap-0.5">
             {lines.map((line, idx) => {
-              const isSelected    = isTicketActive && idx === selectedIdx;
-              const isLastLine    = !isTicketActive && idx === lines.length - 1;
+              const isSelected    = idx === activeLineIdx;
+              const isLastLine    = activeLineIdx < 0 && idx === lines.length - 1;
               const isEditingNote = editingNoteId === line.lineId;
 
               return (
                 <article
                   key={line.lineId}
-                  onClick={() => { setSelectedIdx(idx); enterTicket(); }}
+                  onClick={() => setActiveLineIdx(isSelected ? -1 : idx)}
                   className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 transition-colors ${
                     isSelected
                       ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20"
@@ -148,7 +113,7 @@ export function TicketGrid() {
                   {/* Name + price + note */}
                   <div className="min-w-0 flex-1 pt-px">
                     <p className={`truncate text-[13px] font-semibold uppercase leading-tight tracking-[0.02em] ${
-                      isSelected ? "text-[#2154d8]" : "text-[#111827]"
+                      isSelected ? "text-[#2154d8]" : "text-[#2F3E46]"
                     }`}>
                       {line.description}
                     </p>
@@ -162,7 +127,7 @@ export function TicketGrid() {
                         value={noteInput}
                         onChange={e => setNoteInput(e.target.value)}
                         onKeyDown={e => {
-                          if (e.key === "Enter")  { e.preventDefault(); saveNote(); }
+                          if (e.key === "Enter")  { e.preventDefault(); saveNote(); document.dispatchEvent(new CustomEvent("pos:focusSearch")); }
                           if (e.key === "Escape") { e.preventDefault(); setEditingNoteId(null); }
                           e.stopPropagation();
                         }}
@@ -188,18 +153,18 @@ export function TicketGrid() {
                         if (line.quantity > 1) updateQuantity(line.lineId, line.quantity - 1);
                         else removeLine(line.lineId);
                       }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f4f7fb] text-[15px] font-bold text-[#7c8b97] transition hover:bg-[#e4edff] hover:text-[#2154d8]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-[15px] font-bold text-orange-500 transition hover:bg-orange-100 hover:text-orange-600"
                     >
                       −
                     </button>
                     <span className={`w-6 text-center text-[13px] font-bold tabular-nums ${
-                      isSelected ? "text-[#2154d8]" : "text-[#111827]"
+                      isSelected ? "text-[#2154d8]" : "text-[#2F3E46]"
                     }`}>
                       {line.quantity}
                     </span>
                     <button
                       onClick={e => { e.stopPropagation(); updateQuantity(line.lineId, line.quantity + 1); }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f4f7fb] text-[15px] font-bold text-[#7c8b97] transition hover:bg-[#e4edff] hover:text-[#2154d8]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[15px] font-bold text-[#2154d8] transition hover:bg-blue-100 hover:text-[#1a43b0]"
                     >
                       +
                     </button>
@@ -207,7 +172,7 @@ export function TicketGrid() {
 
                   {/* Subtotal */}
                   <span className={`w-16 shrink-0 pt-px text-right text-[13px] font-bold tabular-nums ${
-                    isSelected ? "text-[#2154d8]" : "text-[#111827]"
+                    isSelected ? "text-[#2154d8]" : "text-[#2F3E46]"
                   }`}>
                     S/ {line.subtotal.toFixed(2)}
                   </span>
@@ -217,25 +182,23 @@ export function TicketGrid() {
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        setSelectedIdx(idx);
-                        enterTicket();
+                        setActiveLineIdx(idx);
                         setEditingNoteId(line.lineId);
                         setNoteInput(line.note ?? "");
                       }}
-                      title="Nota"
-                      className={`rounded-lg p-1 transition ${
+                      className={`flex items-center justify-center rounded-lg p-1.5 transition ${
                         line.note
-                          ? "text-[#60a5fa] hover:bg-[#eff6ff] hover:text-[#2154d8]"
-                          : "text-[#c8d4e0] hover:bg-[#f0f5ff] hover:text-[#7c8b97]"
+                          ? "text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+                          : "text-[#d4b896] hover:bg-amber-50 hover:text-amber-500"
                       }`}
                     >
                       <Pin size={12} />
                     </button>
                     <button
                       onClick={e => { e.stopPropagation(); removeLine(line.lineId); }}
-                      className="rounded-lg p-1 text-[#fca5a5] transition hover:bg-[#fef2f2] hover:text-red-500"
+                      className="flex items-center justify-center rounded-lg p-1.5 text-red-400 transition hover:bg-red-50 hover:text-red-500"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </article>
@@ -246,15 +209,15 @@ export function TicketGrid() {
       </div>
 
       {/* FOOTER */}
-      <footer className="shrink-0 flex items-stretch gap-2 border-t border-[#f1f5f9] px-3 py-3">
+      <footer className="shrink-0 flex items-stretch gap-2 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-4">
 
         {/* LIMPIAR ~30% */}
         <button
           onClick={clearTicket}
           disabled={lines.length === 0}
-          className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[12px] font-bold uppercase tracking-wider transition ${
+          className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider transition ${
             lines.length === 0
-              ? "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+              ? "cursor-not-allowed bg-amber-50/60 text-[#d4c4a4]"
               : "bg-[#fee2e2] text-[#dc2626] hover:bg-[#fecaca] active:scale-[0.97]"
           }`}
         >
@@ -263,8 +226,8 @@ export function TicketGrid() {
 
         {/* TOTAL ~40% */}
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center py-1">
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#c8d4e0]">Total</p>
-          <strong className="text-[22px] font-bold leading-none tracking-tight text-[#111827]">
+          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#c4a87c]">Total</p>
+          <strong className="text-[22px] font-bold leading-none tracking-tight text-[#2F3E46] tabular-nums">
             S/ {total.toFixed(2)}
           </strong>
         </div>
@@ -273,7 +236,7 @@ export function TicketGrid() {
         <button
           onClick={openCobro}
           disabled={lines.length === 0}
-          className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[12px] font-bold uppercase tracking-wider text-white transition ${
+          className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider text-white transition ${
             lines.length === 0
               ? "cursor-not-allowed bg-[#e4e9f0] text-[#b4bfcb]"
               : !cashSession.isOpen

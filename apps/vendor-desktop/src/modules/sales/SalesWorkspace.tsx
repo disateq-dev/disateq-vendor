@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ScanLine, Search } from "lucide-react";
 import { createTicketLine } from "../../domains/ticket/state/ticket.actions";
 import { useTicketStore } from "../../domains/ticket/state/ticket.store";
+import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
 import { usePOS } from "../../context/POSContext";
 
 type StockStatus = "normal" | "low" | "out" | "promo" | "expiring";
@@ -132,16 +133,20 @@ export function SalesWorkspace() {
   const [searchQuery, setSearchQuery] = useState(""); // drives result list
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
-  const addLine        = useTicketStore(s => s.addLine);
-  const removeLine     = useTicketStore(s => s.removeLine);
-  const updateQuantity = useTicketStore(s => s.updateQuantity);
-  const openNoteFor    = useTicketStore(s => s.openNoteFor);
+  const lines            = useTicketLines();
+  const addLine          = useTicketStore(s => s.addLine);
+  const removeLine       = useTicketStore(s => s.removeLine);
+  const updateQuantity   = useTicketStore(s => s.updateQuantity);
+  const openNoteFor      = useTicketStore(s => s.openNoteFor);
+  const activeLineIdx    = useTicketStore(s => s.activeLineIdx);
+  const setActiveLineIdx = useTicketStore(s => s.setActiveLineIdx);
   const lastLine = useTicketStore(s => {
     const lastId = s.lineOrder[s.lineOrder.length - 1];
     return lastId ? s.linesById[lastId] : null;
   });
-  const { enterTicket, enterSearch, cashSession, zone, cobroOpen, closeCobro } = usePOS();
+  const { enterSearch, cashSession, zone, cobroOpen, closeCobro } = usePOS();
 
   const isSearching = searchQuery.length >= 1;
   const filtered = isSearching ? searchCatalog(CATALOG, searchQuery) : CATALOG;
@@ -161,6 +166,11 @@ export function SalesWorkspace() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
+  // Scroll selected item into view on navigation
+  useEffect(() => {
+    selectedItemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
+
   // F2 global → focus search
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -173,6 +183,13 @@ export function SalesWorkspace() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [enterSearch]);
+
+  // pos:focusSearch — restore focus after note save without zone change
+  useEffect(() => {
+    const handler = () => inputRef.current?.focus();
+    document.addEventListener("pos:focusSearch", handler);
+    return () => document.removeEventListener("pos:focusSearch", handler);
+  }, []);
 
   const addProductToTicket = useCallback((p: Product) => {
     if (p.status === "out") return;
@@ -190,72 +207,102 @@ export function SalesWorkspace() {
   }, [addLine, cobroOpen, closeCobro]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Helper: target line for operations — active (navigated) or fallback to last
+    const targetLine = activeLineIdx >= 0 ? lines[activeLineIdx] : lastLine;
+
     switch (e.key) {
       case "ArrowDown":
-        if (!isSearching) return;
-        e.preventDefault();
-        setSelectedIndex(i => Math.min(i + 1, filtered.length - 1));
+        if (isSearching) {
+          e.preventDefault();
+          setSelectedIndex(i => i + 1 >= filtered.length ? 0 : i + 1);
+        } else if (lines.length > 0) {
+          e.preventDefault();
+          setActiveLineIdx(activeLineIdx < 0 ? 0 : activeLineIdx + 1 >= lines.length ? 0 : activeLineIdx + 1);
+        }
         break;
       case "ArrowUp":
-        if (!isSearching) return;
-        e.preventDefault();
-        setSelectedIndex(i => Math.max(i - 1, 0));
+        if (isSearching) {
+          e.preventDefault();
+          setSelectedIndex(i => i <= 0 ? filtered.length - 1 : i - 1);
+        } else if (lines.length > 0) {
+          e.preventDefault();
+          setActiveLineIdx(activeLineIdx <= 0 ? lines.length - 1 : activeLineIdx - 1);
+        }
         break;
       case "Enter": {
-        if (!isSearching) return;
-        e.preventDefault();
-        const product = selectedIndex >= 0 ? filtered[selectedIndex] : filtered[0];
-        if (product) addProductToTicket(product);
+        if (isSearching) {
+          e.preventDefault();
+          const product = selectedIndex >= 0 ? filtered[selectedIndex] : filtered[0];
+          if (product) addProductToTicket(product);
+        } else if (activeLineIdx >= 0) {
+          e.preventDefault();
+          setActiveLineIdx(-1); // clear ticket navigation, return to search
+        }
         break;
       }
       case "Escape":
         e.preventDefault();
+        setActiveLineIdx(-1);
         setQuery("");
         setSearchQuery("");
         setSelectedIndex(-1);
         break;
       case "Tab":
-        e.preventDefault();
-        enterTicket();
+        e.preventDefault(); // keep focus on search input
         break;
-      // Last-line operations — only when input is empty
+      // Line operations — only when input is empty
       case "+":
       case "*": {
         if (query !== "") break;
         e.preventDefault();
-        if (lastLine) updateQuantity(lastLine.lineId, lastLine.quantity + 1);
+        if (targetLine) updateQuantity(targetLine.lineId, targetLine.quantity + 1);
         break;
       }
       case "-": {
         if (query !== "") break;
         e.preventDefault();
-        if (!lastLine) break;
-        if (lastLine.quantity > 1) updateQuantity(lastLine.lineId, lastLine.quantity - 1);
-        else removeLine(lastLine.lineId);
+        if (!targetLine) break;
+        if (targetLine.quantity > 1) updateQuantity(targetLine.lineId, targetLine.quantity - 1);
+        else removeLine(targetLine.lineId);
         break;
       }
       case "Delete": {
         if (query !== "") break;
         e.preventDefault();
-        if (lastLine) removeLine(lastLine.lineId);
+        if (targetLine) removeLine(targetLine.lineId);
         break;
       }
-      case "n":
-      case "N": {
+      case "ArrowRight": {
         if (query !== "") break;
         e.preventDefault();
-        if (lastLine) openNoteFor(lastLine.lineId);
+        if (targetLine) updateQuantity(targetLine.lineId, targetLine.quantity + 1);
+        break;
+      }
+      case "ArrowLeft": {
+        if (query !== "") break;
+        e.preventDefault();
+        if (!targetLine) break;
+        if (targetLine.quantity > 1) updateQuantity(targetLine.lineId, targetLine.quantity - 1);
+        else removeLine(targetLine.lineId);
+        break;
+      }
+      case "Insert":
+      case "n":
+      case "N": {
+        if (e.key !== "Insert" && query !== "") break;
+        e.preventDefault();
+        if (targetLine) openNoteFor(targetLine.lineId);
         break;
       }
     }
-  }, [isSearching, filtered, selectedIndex, addProductToTicket, enterTicket, query, lastLine, updateQuantity, removeLine, openNoteFor]);
+  }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, updateQuantity, removeLine, openNoteFor]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#E9E4DC] bg-[#FDFBF7] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#f1f5f9] px-5 py-3.5">
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#E9E4DC] px-5 py-3.5">
           <div className="flex items-center gap-1.5">
             <button className="rounded-2xl bg-[#2154d8] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(33,84,216,0.18)]">
               General
@@ -283,7 +330,7 @@ export function SalesWorkspace() {
       )}
 
       {/* SEARCH ROW */}
-      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#f1f5f9] px-5">
+      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#E9E4DC] px-5">
         <Search size={17} className="shrink-0 text-[#2154d8]" />
 
         <input
@@ -362,6 +409,7 @@ export function SalesWorkspace() {
                   return (
                     <div
                       key={product.id}
+                      ref={idx === selectedIndex ? selectedItemRef : null}
                       onClick={() => addProductToTicket(product)}
                       className={`flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition ${
                         isSelected
@@ -378,7 +426,7 @@ export function SalesWorkspace() {
                         <div className="min-w-0">
                           <div
                             className={`truncate text-[14px] font-bold uppercase tracking-[0.025em] leading-tight ${
-                              isSelected ? "text-[#2154d8]" : isOut ? "text-[#9ca3af]" : "text-[#111827]"
+                              isSelected ? "text-[#2154d8]" : isOut ? "text-[#9ca3af]" : "text-[#2F3E46]"
                             }`}
                           >
                             {product.name}
@@ -390,7 +438,7 @@ export function SalesWorkspace() {
                       </div>
 
                       <div className="ml-4 flex shrink-0 items-center gap-3">
-                        <span className="text-[14px] font-semibold text-[#111827]">
+                        <span className="text-[14px] font-semibold text-[#2F3E46]">
                           S/ {product.price.toFixed(2)}
                         </span>
 
@@ -440,7 +488,7 @@ export function SalesWorkspace() {
                       <button
                         key={product.id}
                         onClick={() => addProductToTicket(product)}
-                        className={`overflow-hidden rounded-2xl bg-white text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:shadow-[0_4px_14px_rgba(33,84,216,0.09)] ${
+                        className={`overflow-hidden rounded-2xl bg-[#FDFBF7] text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:shadow-[0_4px_14px_rgba(33,84,216,0.09)] ${
                           isOut
                             ? "border border-[#fef2f2] hover:border-[#fecaca]"
                             : "border border-[#f0f4f9] hover:border-[#c7d7f4]"
@@ -451,7 +499,7 @@ export function SalesWorkspace() {
                           <TileBadge p={product} />
                         </div>
                         <div className="p-2.5">
-                          <p className="line-clamp-1 text-[12px] font-semibold uppercase tracking-[0.02em] leading-tight text-[#111827]">
+                          <p className="line-clamp-1 text-[12px] font-semibold uppercase tracking-[0.02em] leading-tight text-[#2F3E46]">
                             {product.short}
                           </p>
                           <p className={`mt-1 text-[13px] font-bold ${price.cls}`}>

@@ -30,6 +30,8 @@ interface TicketState {
   pendingNoteLineId: string | null;
   openNoteFor: (lineId: string) => void;
   clearPendingNote: () => void;
+  activeLineIdx: number;
+  setActiveLineIdx: (idx: number) => void;
 }
 
 export const useTicketStore =
@@ -46,6 +48,7 @@ export const useTicketStore =
             const ex = state.linesById[line.lineId];
             ex.quantity += line.quantity;
             ex.subtotal = ex.quantity * ex.unitPrice;
+            state.activeLineIdx = -1;
             return;
           }
           // Check by productId — same product added again
@@ -56,22 +59,21 @@ export const useTicketStore =
             const ex = state.linesById[existingId];
             ex.quantity += line.quantity;
             ex.subtotal = ex.quantity * ex.unitPrice;
+            state.activeLineIdx = -1;
             return;
           }
           state.linesById[line.lineId] = line;
           state.lineOrder.push(line.lineId);
+          state.activeLineIdx = -1;
         }),
 
       removeLine: (lineId) =>
         set((state) => {
-          delete state.linesById[
-            lineId
-          ];
-
-          state.lineOrder =
-            state.lineOrder.filter(
-              (id) => id !== lineId
-            );
+          delete state.linesById[lineId];
+          state.lineOrder = state.lineOrder.filter((id) => id !== lineId);
+          const newLen = state.lineOrder.length;
+          if (newLen === 0) state.activeLineIdx = -1;
+          else if (state.activeLineIdx >= newLen) state.activeLineIdx = newLen - 1;
         }),
 
       updateQuantity: (
@@ -105,6 +107,7 @@ export const useTicketStore =
         set((state) => {
           state.linesById = {};
           state.lineOrder = [];
+          state.activeLineIdx = -1;
         }),
 
       pendingNoteLineId: null,
@@ -112,5 +115,9 @@ export const useTicketStore =
         set((state) => { state.pendingNoteLineId = lineId; }),
       clearPendingNote: () =>
         set((state) => { state.pendingNoteLineId = null; }),
+
+      activeLineIdx: -1,
+      setActiveLineIdx: (idx) =>
+        set((state) => { state.activeLineIdx = idx; }),
     }))
   );
