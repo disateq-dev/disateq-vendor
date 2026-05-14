@@ -3,7 +3,6 @@ import { ContextBar } from "./ContextBar";
 import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
-import { StatusBar } from "./StatusBar";
 import { usePOS } from "../context/POSContext";
 import { type ActiveModule } from "../App";
 
@@ -27,12 +26,13 @@ function OperationalNotice() {
 }
 
 export function AppShell({ children, activeModule, onModuleChange }: AppShellProps) {
+  const { closeCobro } = usePOS();
   return (
     <main className="h-screen overflow-hidden bg-[#f4f7fb] text-[#111827]">
       <section className="flex h-full flex-col">
         <header className="border-b border-[#dde4ec]">
           <Topbar />
-          <ModulesBar active={activeModule} onChange={onModuleChange} />
+          <ModulesBar active={activeModule} onChange={m => { closeCobro(); onModuleChange(m); }} />
           <ContextBar />
         </header>
 
@@ -42,7 +42,6 @@ export function AppShell({ children, activeModule, onModuleChange }: AppShellPro
 
         <OperationalNotice />
         <ShortcutsBar />
-        <StatusBar />
       </section>
     </main>
   );

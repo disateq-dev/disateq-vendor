@@ -183,11 +183,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (cobroOpen) return;
       if (e.key === "F4") { e.preventDefault(); openCobro(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [openCobro]);
+  }, [openCobro, cobroOpen]);
 
   return (
     <POSContext.Provider value={{

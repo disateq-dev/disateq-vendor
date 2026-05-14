@@ -152,13 +152,12 @@ export function SalesWorkspace() {
   const filtered = isSearching ? searchCatalog(CATALOG, searchQuery) : CATALOG;
   const visualItems = isSearching ? filtered : CATALOG.filter(p => BEST_SELLERS.has(p.id));
 
-  // Focus search input whenever zone returns to "search" (post-cobro, Tab from ticket, etc.)
+  // Focus search input whenever zone returns to "search" — guard against cobro stealing focus
   useEffect(() => {
-    if (zone === "search") {
-      const t = setTimeout(() => inputRef.current?.focus(), 40);
-      return () => clearTimeout(t);
-    }
-  }, [zone]);
+    if (cobroOpen || zone !== "search") return;
+    const t = setTimeout(() => inputRef.current?.focus(), 40);
+    return () => clearTimeout(t);
+  }, [zone, cobroOpen]);
 
   // Auto-select first result when search changes
   useEffect(() => {
@@ -171,9 +170,10 @@ export function SalesWorkspace() {
     selectedItemRef.current?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  // F2 global → focus search
+  // F2 global → focus search (blocked when cobro is open)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (cobroOpen) return;
       if (e.key === "F2") {
         e.preventDefault();
         enterSearch();
@@ -182,14 +182,14 @@ export function SalesWorkspace() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [enterSearch]);
+  }, [enterSearch, cobroOpen]);
 
-  // pos:focusSearch — restore focus after note save without zone change
+  // pos:focusSearch — restore focus after note save (blocked when cobro is open)
   useEffect(() => {
-    const handler = () => inputRef.current?.focus();
+    const handler = () => { if (!cobroOpen) inputRef.current?.focus(); };
     document.addEventListener("pos:focusSearch", handler);
     return () => document.removeEventListener("pos:focusSearch", handler);
-  }, []);
+  }, [cobroOpen]);
 
   const addProductToTicket = useCallback((p: Product) => {
     if (p.status === "out") return;
@@ -207,6 +207,7 @@ export function SalesWorkspace() {
   }, [addLine, cobroOpen, closeCobro]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (cobroOpen) return;
     // Helper: target line for operations — active (navigated) or fallback to last
     const targetLine = activeLineIdx >= 0 ? lines[activeLineIdx] : lastLine;
 
@@ -295,7 +296,7 @@ export function SalesWorkspace() {
         break;
       }
     }
-  }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, updateQuantity, removeLine, openNoteFor]);
+  }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, updateQuantity, removeLine, openNoteFor, cobroOpen]);
 
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#E9E4DC] bg-[#FDFBF7] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">

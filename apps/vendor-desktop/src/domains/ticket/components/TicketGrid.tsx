@@ -148,6 +148,7 @@ export function TicketGrid() {
                   {/* Qty strip */}
                   <div className="flex items-center gap-1 pt-px">
                     <button
+                      title="Tecla [←]"
                       onClick={e => {
                         e.stopPropagation();
                         if (line.quantity > 1) updateQuantity(line.lineId, line.quantity - 1);
@@ -163,6 +164,7 @@ export function TicketGrid() {
                       {line.quantity}
                     </span>
                     <button
+                      title="Tecla [→]"
                       onClick={e => { e.stopPropagation(); updateQuantity(line.lineId, line.quantity + 1); }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[15px] font-bold text-[#2154d8] transition hover:bg-blue-100 hover:text-[#1a43b0]"
                     >
@@ -180,6 +182,7 @@ export function TicketGrid() {
                   {/* Note + Delete */}
                   <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
                     <button
+                      title="Tecla [Insert]"
                       onClick={e => {
                         e.stopPropagation();
                         setActiveLineIdx(idx);
@@ -195,6 +198,7 @@ export function TicketGrid() {
                       <Pin size={12} />
                     </button>
                     <button
+                      title="Tecla [Supr]"
                       onClick={e => { e.stopPropagation(); removeLine(line.lineId); }}
                       className="flex items-center justify-center rounded-lg p-1.5 text-red-400 transition hover:bg-red-50 hover:text-red-500"
                     >
