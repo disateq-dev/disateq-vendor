@@ -39,6 +39,17 @@ export interface PrintData {
   change:      number;
 }
 
+export interface VoucherMoveData {
+  businessName: string;
+  moveType: "ingreso" | "egreso";
+  amount: number;
+  motivo: string;
+  operator: string;
+  cashBoxCode: string;
+  terminal: string;
+  dateTime: string;
+}
+
 const DOC_LABEL: Record<string, string> = {
   nota:       "NOTA DE VENTA",
   boleta:     "BOLETA DE VENTA",
@@ -186,4 +197,51 @@ export function printTicket(data: PrintData): void {
 
 export async function printTicketThermal(printer: string, data: PrintData): Promise<void> {
   await invoke("print_ticket", { printer, data });
+}
+
+function buildVoucherHTML(d: VoucherMoveData): string {
+  const typeLabel  = d.moveType === "ingreso" ? "INGRESO" : "EGRESO";
+  const typeColor  = d.moveType === "ingreso" ? "#065f46" : "#991b1b";
+  const amtColor   = d.moveType === "ingreso" ? "#059669" : "#dc2626";
+  return `
+<style>
+@page { size: 80mm auto; margin: 0; }
+@media print {
+  body > *:not(#pt-overlay) { display: none !important; }
+  #pt-overlay { display: block !important; }
+}
+#pt-overlay { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; line-height: 1.5; background: #fff; }
+</style>
+<div id="pt-ticket" style="padding: 4mm 2mm 10mm; font-family: 'Courier New', Courier, monospace;">
+  <div style="text-align:center; margin-bottom:4px;">
+    <div style="font-size:13px; font-weight:bold;">${esc(d.businessName)}</div>
+    <div style="font-size:12px; font-weight:bold; margin:3px 0;">MOVIMIENTO DE CAJA</div>
+    <div style="color:${typeColor}; font-weight:bold; font-size:12px; letter-spacing:1px;">${typeLabel}</div>
+  </div>
+  <div style="border-top:1px solid #000; margin:4px 0;"></div>
+  <div style="display:flex; justify-content:space-between; align-items:baseline; margin:3px 0;">
+    <span style="font-size:11px; font-weight:bold;">MONTO</span>
+    <span style="font-size:20px; font-weight:bold; color:${amtColor};">S/ ${d.amount.toFixed(2)}</span>
+  </div>
+  <div style="border-top:1px dashed #555; margin:4px 0;"></div>
+  <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Motivo</span><span style="font-weight:bold;">${esc(d.motivo)}</span></div>
+  <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Operador</span><span>${esc(d.operator)}</span></div>
+  <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Caja</span><span>${esc(d.cashBoxCode)}</span></div>
+  <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Terminal</span><span>${esc(d.terminal)}</span></div>
+  <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Fecha/Hora</span><span>${esc(d.dateTime)}</span></div>
+  <div style="border-top:1px dashed #555; margin:4px 0;"></div>
+  <div style="text-align:center; font-size:9px; color:#555;">Conserve este comprobante</div>
+</div>`;
+}
+
+export function printCashMoveVoucher(d: VoucherMoveData): void {
+  let overlay = document.getElementById("pt-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "pt-overlay";
+    overlay.style.display = "none";
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = buildVoucherHTML(d);
+  window.print();
 }

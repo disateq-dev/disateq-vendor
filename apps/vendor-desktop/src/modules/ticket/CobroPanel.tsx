@@ -51,7 +51,7 @@ const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 export function CobroPanel() {
   const lines       = useTicketLines();
   const clearTicket = useTicketStore(s => s.clearTicket);
-  const { cobroOpen, closeCobro, cashSession, showNotice } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale } = usePOS();
 
   // ── main state ──────────────────────────────────────────────────────────────
   const [docType,       setDocType]       = useState<DocType>("nota");
@@ -76,11 +76,14 @@ export function CobroPanel() {
   const [cPhone,    setCPhone]    = useState("");
   const [cEmail,    setCEmail]    = useState("");
 
-  const receivedRef     = useRef<HTMLInputElement>(null);
-  const confirmRef      = useRef<() => void>(() => {});
-  const openClientRef   = useRef<() => void>(() => {});
-  const canConfirmRef   = useRef(false);
-  const imprimirRef     = useRef<() => void>(() => {});
+  const receivedRef         = useRef<HTMLInputElement>(null);
+  const mixtoEfectivoRef    = useRef<HTMLInputElement>(null);
+  const confirmRef          = useRef<() => void>(() => {});
+  const openClientRef       = useRef<() => void>(() => {});
+  const canConfirmRef       = useRef(false);
+  const imprimirRef         = useRef<() => void>(() => {});
+  const netTotalRef         = useRef(0);
+  const activatedMethodsRef = useRef<Set<PayMethod>>(new Set<PayMethod>());
 
   // ── derived ─────────────────────────────────────────────────────────────────
   const total        = lines.reduce((acc, l) => acc + l.subtotal, 0);
@@ -89,10 +92,15 @@ export function CobroPanel() {
   const isGravado    = affectation === "gravado-onerosa" || affectation === "gravado-retiro";
   const baseImponible = isGravado ? netTotal / 1.18 : netTotal;
   const igv           = isGravado ? netTotal - baseImponible : 0;
-  const receivedNum   = parseFloat(received) || 0;
-  const change        = receivedNum - netTotal;
-  const needsCustomer = docType === "factura" || (docType === "boleta" && netTotal > BOLETA_THRESHOLD);
-  const canConfirm    = cashSession.isOpen && netTotal > 0 && (payMethod !== "efectivo" || receivedNum >= netTotal) && (!needsCustomer || customer !== null);
+  const receivedNum      = parseFloat(received) || 0;
+  const mixtoEfectivoNum = parseFloat(mixtoEfectivo) || 0;
+  const change           = receivedNum - netTotal;
+  const needsCustomer    = docType === "factura" || (docType === "boleta" && netTotal > BOLETA_THRESHOLD);
+  const canConfirm       = cashSession.isOpen && netTotal > 0
+    && (payMethod !== "efectivo" || receivedNum >= netTotal)
+    && (payMethod !== "mixto"    || (mixtoEfectivoNum > 0 && mixtoEfectivoNum <= netTotal))
+    && (!needsCustomer || customer !== null);
+  netTotalRef.current = netTotal;
 
   // client form derived
   const showDocInput       = docType === "boleta" || docType === "factura" || docType === "cotizacion";
@@ -159,6 +167,7 @@ export function CobroPanel() {
   function confirmEmit() {
     if (!cashSession.isOpen) { showNotice("Apertura de caja requerida para emitir"); return; }
     if (!canConfirm) return;
+    recordSale(netTotal, payMethod === "efectivo");
     clearTicket();
     closeCobro();
   }
@@ -200,6 +209,7 @@ export function CobroPanel() {
       showNotice(`Error impresora: ${err}`);
       return;
     }
+    recordSale(netTotal, payMethod === "efectivo");
     clearTicket();
     closeCobro();
   }
@@ -216,14 +226,15 @@ export function CobroPanel() {
 
   useEffect(() => {
     if (!cobroOpen) return;
-    setDocType("nota"); setPayMethod("efectivo"); setReceived(""); setDiscount("");
+    activatedMethodsRef.current = new Set(["efectivo"]);
+    setDocType("nota"); setPayMethod("efectivo"); setReceived(netTotalRef.current.toFixed(2)); setDiscount("");
     setMixtoEfectivo(""); setCustomer(null); setCDoc(""); setCName("");
     setCobroView("main"); setAffectation("gravado-onerosa");
     const t = setTimeout(() => receivedRef.current?.focus(), 80);
     return () => clearTimeout(t);
   }, [cobroOpen]);
 
-  // F1-F4 doc · F5 cliente · F6-F9 pago · F10 guardar · F11 enviar · F12 imprimir
+  // F1-F4 doc · F5-F8 pago · F10 guardar · F11 enviar · F12 imprimir · Ctrl+Enter cliente
   useEffect(() => {
     if (!cobroOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -231,11 +242,10 @@ export function CobroPanel() {
       else if (e.key === "F2")  { e.preventDefault(); setDocType("boleta"); }
       else if (e.key === "F3")  { e.preventDefault(); setDocType("factura"); }
       else if (e.key === "F4")  { e.preventDefault(); setDocType("cotizacion"); }
-      else if (e.key === "F5")  { e.preventDefault(); if (cobroView === "main") openClientForm(); }
-      else if (e.key === "F6")  { e.preventDefault(); setPayMethod("efectivo"); }
-      else if (e.key === "F7")  { e.preventDefault(); setPayMethod("yape"); }
-      else if (e.key === "F8")  { e.preventDefault(); setPayMethod("tarjeta"); }
-      else if (e.key === "F9")  { e.preventDefault(); setPayMethod("mixto"); }
+      else if (e.key === "F5")  { e.preventDefault(); setPayMethod("efectivo"); }
+      else if (e.key === "F6")  { e.preventDefault(); setPayMethod("yape"); }
+      else if (e.key === "F7")  { e.preventDefault(); setPayMethod("tarjeta"); }
+      else if (e.key === "F8")  { e.preventDefault(); setPayMethod("mixto"); }
       else if (e.key === "F10") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
       else if (e.key === "F11") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
       else if (e.key === "F12") { e.preventDefault(); if (cobroView === "main") imprimirRef.current(); }
@@ -244,16 +254,16 @@ export function CobroPanel() {
     return () => window.removeEventListener("keydown", handler);
   }, [cobroOpen, cobroView]);
 
-  // Main view: Esc → close · Enter → open client (unless amount input has a valid total)
+  // Main view: Esc → close · Ctrl+Enter → cliente · Enter → imprimir si canConfirm
   useEffect(() => {
     if (!cobroOpen || cobroView !== "main") return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") { e.preventDefault(); closeCobro(); return; }
+      if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); openClientRef.current(); return; }
       if (e.key === "Enter") {
         const tag = (document.activeElement as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") { e.preventDefault(); return; }
-        e.preventDefault();
-        openClientRef.current();
+        if (canConfirmRef.current) { e.preventDefault(); imprimirRef.current(); }
       }
     };
     window.addEventListener("keydown", handler);
@@ -274,6 +284,23 @@ export function CobroPanel() {
     return () => window.removeEventListener("keydown", handler);
   }, [cobroOpen, cobroView, handleEstablecer]);
 
+  // Autofocus + prefill por primera activación de método, y al volver de sheet cliente
+  useEffect(() => {
+    if (!cobroOpen || cobroView !== "main") return;
+    const isFirst = !activatedMethodsRef.current.has(payMethod);
+    activatedMethodsRef.current.add(payMethod);
+    if (payMethod === "efectivo") {
+      if (isFirst) setReceived(netTotalRef.current.toFixed(2));
+      const t = setTimeout(() => receivedRef.current?.focus(), 20);
+      return () => clearTimeout(t);
+    }
+    if (payMethod === "mixto") {
+      if (isFirst) setMixtoEfectivo(netTotalRef.current.toFixed(2));
+      const t = setTimeout(() => mixtoEfectivoRef.current?.focus(), 20);
+      return () => clearTimeout(t);
+    }
+  }, [payMethod, cobroOpen, cobroView]);
+
   // ── render ───────────────────────────────────────────────────────────────────
   const cfg            = DOC_SERIES[docType];
   const docNumber      = `${cfg.series}-${String(cfg.correlative + 1).padStart(8, "0")}`;
@@ -291,7 +318,7 @@ export function CobroPanel() {
           className="flex shrink-0 items-center gap-1 text-[13px] font-bold text-[#2F3E46] transition hover:text-[#111827]"
         >
           <ArrowLeft size={12} />
-          {cobroView === "client" ? "Cobro" : "PRE-VENTA"}
+          {cobroView === "client" ? "COBRO" : "PRE-VENTA"}
         </button>
 
         <div className="flex flex-1 justify-center">
@@ -322,7 +349,7 @@ export function CobroPanel() {
           {/* CLIENTE strip */}
           <div className="shrink-0 px-4 pt-3 pb-1">
             <button
-              title="Tecla [F5]"
+              title="Tecla [Ctrl+Enter]"
               onClick={openClientForm}
               className={`flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left transition ${
                 rowWarn && !customerDisplay
@@ -408,10 +435,10 @@ export function CobroPanel() {
             {/* MÉTODOS DE PAGO */}
             <div className="grid grid-cols-4 gap-1">
               {([
-                { id: "efectivo", label: "Efectivo", Icon: Banknote,   fkey: "F6" },
-                { id: "yape",     label: "Yape",     Icon: Smartphone, fkey: "F7" },
-                { id: "tarjeta",  label: "Tarjeta",  Icon: CreditCard, fkey: "F8" },
-                { id: "mixto",    label: "Mixto",    Icon: Plus,       fkey: "F9" },
+                { id: "efectivo", label: "Efectivo", Icon: Banknote,   fkey: "F5" },
+                { id: "yape",     label: "Yape",     Icon: Smartphone, fkey: "F6" },
+                { id: "tarjeta",  label: "Tarjeta",  Icon: CreditCard, fkey: "F7" },
+                { id: "mixto",    label: "Mixto",    Icon: Plus,       fkey: "F8" },
               ] as { id: PayMethod; label: string; Icon: React.ElementType; fkey: string }[]).map(({ id, label, Icon, fkey }) => (
                 <button
                   key={id}
@@ -450,7 +477,7 @@ export function CobroPanel() {
                     value={received}
                     onChange={e => setReceived(e.target.value)}
                     onKeyDown={e => {
-                      if (e.key === "Enter" && canConfirm) { e.preventDefault(); imprimirRef.current(); }
+                      if (e.key === "Enter" && !e.ctrlKey && canConfirm) { e.preventDefault(); imprimirRef.current(); }
                     }}
                     placeholder="0.00"
                     min="0"
@@ -502,9 +529,13 @@ export function CobroPanel() {
                   <div className="flex flex-col flex-1 gap-1">
                     <span className="text-[10px] font-semibold text-[#9ca3af]">Efectivo S/</span>
                     <input
+                      ref={mixtoEfectivoRef}
                       type="number"
                       value={mixtoEfectivo}
                       onChange={e => setMixtoEfectivo(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && !e.ctrlKey && canConfirm) { e.preventDefault(); imprimirRef.current(); }
+                      }}
                       placeholder="0.00"
                       min="0"
                       max={netTotal}
@@ -530,7 +561,7 @@ export function CobroPanel() {
       ) : (
 
         /* ── CLIENT FORM ── */
-        <div className="flex-1 overflow-y-auto flex flex-col px-5 pt-4 pb-3 gap-3">
+        <div className="flex-1 overflow-y-auto flex flex-col px-5 pt-4 pb-2 gap-3">
 
           <p className="shrink-0 text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">
             {docType === "factura" ? "Datos de facturación" :
@@ -653,32 +684,6 @@ export function CobroPanel() {
             </div>
           </div>
 
-          {/* BOTONES */}
-          <div className="shrink-0 flex gap-1.5 pt-1">
-            <button
-              title="Tecla [Esc]"
-              onClick={resetForm}
-              className="flex-1 rounded-2xl border border-[#e4e9f0] py-2.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd]"
-            >
-              Cancelar
-            </button>
-            <button
-              title="Tecla [Enter]"
-              onClick={() => handleEstablecer(false)}
-              disabled={!canEstablecer}
-              className="flex-[1.5] rounded-2xl bg-[#2154d8] py-2.5 text-[13px] font-bold uppercase tracking-widest text-white transition hover:bg-[#1a43b0] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35"
-            >
-              Establecer
-            </button>
-            <button
-              onClick={() => handleEstablecer(true)}
-              disabled={!canEstablecer}
-              className="flex-1 rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-2.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-35"
-            >
-              Guardar
-            </button>
-          </div>
-
           {customer && (
             <button
               onClick={() => { setCustomer(null); resetForm(); }}
@@ -691,38 +696,67 @@ export function CobroPanel() {
         </div>
       )}
 
-      {/* FOOTER */}
-      <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
-        <div className="flex gap-1.5 items-stretch">
-          <button
-            title="Tecla [F10]"
-            onClick={confirmEmit}
-            disabled={!canConfirm}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
-          >
-            <Save size={13} strokeWidth={2} />
-            Guardar
-          </button>
-          <button
-            title="Tecla [F12]"
-            onClick={handleImprimir}
-            disabled={!canConfirm}
-            className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#166534] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(22,101,52,0.32)] transition hover:bg-[#14532d] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
-          >
-            <Printer size={15} strokeWidth={2} />
-            Imprimir
-          </button>
-          <button
-            title="Tecla [F11]"
-            onClick={confirmEmit}
-            disabled={!canConfirm}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
-          >
-            <Send size={13} strokeWidth={2} />
-            Enviar
-          </button>
+      {/* FOOTER — condicional por sheet activa */}
+      {cobroView === "main" ? (
+        <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
+          <div className="flex gap-1.5 items-stretch">
+            <button
+              title="Tecla [F10]"
+              onClick={confirmEmit}
+              disabled={!canConfirm}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+            >
+              <Save size={13} strokeWidth={2} />
+              Guardar
+            </button>
+            <button
+              title="Tecla [F12]"
+              onClick={handleImprimir}
+              disabled={!canConfirm}
+              className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#166534] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(22,101,52,0.32)] transition hover:bg-[#14532d] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+            >
+              <Printer size={15} strokeWidth={2} />
+              Imprimir
+            </button>
+            <button
+              title="Tecla [F11]"
+              onClick={confirmEmit}
+              disabled={!canConfirm}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+            >
+              <Send size={13} strokeWidth={2} />
+              Enviar
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
+          <div className="flex gap-1.5 items-stretch">
+            <button
+              title="Tecla [Esc]"
+              onClick={resetForm}
+              className="flex flex-1 items-center justify-center rounded-2xl border border-[#e4e9f0] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
+            >
+              Cancelar
+            </button>
+            <button
+              title="Tecla [Enter]"
+              onClick={() => handleEstablecer(false)}
+              disabled={!canEstablecer}
+              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#2154d8] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a43b0] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              Establecer
+            </button>
+            <button
+              onClick={() => handleEstablecer(true)}
+              disabled={!canEstablecer}
+              className="flex flex-1 items-center justify-center rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              Guardar
+            </button>
+          </div>
+        </div>
+      )}
 
     </section>
   );

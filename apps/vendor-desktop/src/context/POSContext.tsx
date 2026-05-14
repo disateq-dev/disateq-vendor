@@ -1,8 +1,22 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useTicketStore } from "../domains/ticket/state/ticket.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
 export type CashBoxType = "normal" | "contingency-1" | "contingency-2";
+
+export type MoveType = "ingreso" | "egreso";
+
+export type CashMove = {
+  id: string;
+  type: MoveType;
+  amount: number;
+  motivo: string;
+  operator: string;
+  cashBoxCode: string;
+  terminal: string;
+  timestamp: string;
+};
 
 export type CashBox = {
   code: string;
@@ -37,6 +51,7 @@ const TERMINAL = "PC-VENTAS01";
 // ── localStorage keys ──────────────────────────────────────────
 const LS_SESSION  = "disateq.pos.cashSession";
 const LS_USED     = "disateq.pos.usedCodes";
+const LS_MOVES    = "disateq.pos.cashMoves";
 
 const NULL_SESSION: CashSession = {
   isOpen: false,
@@ -70,15 +85,7 @@ function loadSession(): CashSession {
 }
 
 function loadUsedCodes(): Set<string> {
-  try {
-    const raw = localStorage.getItem(LS_USED);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return new Set();
-    return new Set(arr.filter((v): v is string => typeof v === "string"));
-  } catch {
-    return new Set();
-  }
+  return new Set(); // temp: reset on every start for testing
 }
 
 function saveSession(s: CashSession): void {
@@ -87,6 +94,19 @@ function saveSession(s: CashSession): void {
 
 function saveUsedCodes(codes: Set<string>): void {
   try { localStorage.setItem(LS_USED, JSON.stringify([...codes])); } catch { /* quota or disabled */ }
+}
+
+function loadMoves(): CashMove[] {
+  try {
+    const raw = localStorage.getItem(LS_MOVES);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+
+function saveMoves(moves: CashMove[]): void {
+  try { localStorage.setItem(LS_MOVES, JSON.stringify(moves)); } catch { /* quota or disabled */ }
 }
 
 // ── derivation ─────────────────────────────────────────────────
@@ -107,6 +127,10 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
   });
 }
 
+// ── session stats ───────────────────────────────────────────────
+export type SessionStats = { count: number; total: number; cash: number };
+const NULL_STATS: SessionStats = { count: 0, total: 0, cash: 0 };
+
 // ── context interface ──────────────────────────────────────────
 interface POSContextValue {
   zone: FocusZone;
@@ -120,6 +144,10 @@ interface POSContextValue {
   suggestedCashBox: CashBox | null;
   openCashSession: (boxCode: string) => void;
   closeCashSession: () => void;
+  sessionStats: SessionStats;
+  recordSale: (netTotal: number, isEfectivo: boolean) => void;
+  cashMoves: CashMove[];
+  addCashMove: (type: MoveType, amount: number, motivo: string) => CashMove;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
 }
@@ -143,6 +171,34 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
   const suggestedCashBox = useMemo(() => cashBoxes.find(b => b.available) ?? null, [cashBoxes]);
+
+  const [sessionStats, setSessionStats] = useState<SessionStats>(NULL_STATS);
+  const [cashMoves,    setCashMoves]    = useState<CashMove[]>(loadMoves);
+  useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
+
+  const recordSale = useCallback((netTotal: number, isEfectivo: boolean) => {
+    setSessionStats(prev => ({
+      count: prev.count + 1,
+      total: prev.total + netTotal,
+      cash:  prev.cash  + (isEfectivo ? netTotal : 0),
+    }));
+  }, []);
+
+  const addCashMove = useCallback((type: MoveType, amount: number, motivo: string): CashMove => {
+    const s = cashSessionRef.current;
+    const move: CashMove = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      amount,
+      motivo,
+      operator:    s.operator,
+      cashBoxCode: s.cashBox?.code ?? "",
+      terminal:    s.terminal,
+      timestamp:   new Date().toISOString(),
+    };
+    setCashMoves(prev => [...prev, move]);
+    return move;
+  }, []);
 
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -170,6 +226,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const openCashSession = useCallback((boxCode: string) => {
     const box = cashBoxes.find(b => b.code === boxCode);
     if (!box || !box.available) return;
+    setSessionStats(NULL_STATS);
+    setCashMoves([]);
     setCashSession({ isOpen: true, cashBox: box, operator: OPERATOR, terminal: TERMINAL, openedAt: new Date() });
   }, [cashBoxes]);
 
@@ -177,6 +235,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const s = cashSessionRef.current;
     if (!s.isOpen || !s.cashBox) return;
     const code = s.cashBox.code;
+    // Cleanup operational context
+    setCobroOpen(false);
+    setZone("search");
+    useTicketStore.getState().clearTicket();
+    setSessionStats(NULL_STATS);
+    setCashMoves([]);
     setUsedCodes(prev => { const next = new Set(prev); next.add(code); return next; });
     setCashSession({ isOpen: false, cashBox: null, operator: OPERATOR, terminal: TERMINAL, openedAt: null });
   }, []);
@@ -196,6 +260,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cobroOpen, openCobro, closeCobro,
       cashSession, cashBoxes, suggestedCashBox,
       openCashSession, closeCashSession,
+      sessionStats, recordSale,
+      cashMoves, addCashMove,
       sessionNotice, showNotice,
     }}>
       {children}

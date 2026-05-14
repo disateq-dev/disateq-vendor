@@ -19,7 +19,7 @@ export default function App() {
             <TicketWorkspace />
           </>
         )}
-        {activeModule === "cash" && <CashWorkspace />}
+        {activeModule === "cash" && <CashWorkspace onOpened={() => setActiveModule("sales")} />}
       </AppShell>
     </POSProvider>
   );
