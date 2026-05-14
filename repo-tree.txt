@@ -1,0 +1,69 @@
+Listado de rutas de carpetas para el volumen DATOS
+El número de serie del volumen es 540B-1B77
+D:\DISATEQ-DEV\PROYECTOS\DISATEQ-VENDOR\APPS\VENDOR-DESKTOP\SRC
+|   App.css
+|   App.tsx
+|   index.css
+|   main.tsx
+|   
++---app
+|       AppShell.tsx
+|       
++---context
+|       POSContext.tsx
+|       
++---domains
+|   \---ticket
+|       +---components
+|       |       TicketGrid.tsx
+|       |       
+|       +---dto
+|       |       TicketLineDTO.ts
+|       |       
+|       +---selectors
+|       |       ticket.selectors.ts
+|       |       
+|       +---services
+|       |       ticket-calculation.service.ts
+|       |       
+|       \---state
+|               ticket.actions.ts
+|               ticket.store.ts
+|               
++---layout
+|       AppShell.tsx
+|       ContextBar.tsx
+|       ModulesBar.tsx
+|       ShortcutsBar.tsx
+|       Sidebar.tsx
+|       StatusBar.tsx
+|       Topbar.tsx
+|       
++---modules
+|   +---cash
+|   |       CashWorkspace.tsx
+|   |       
+|   +---products
+|   |   \---components
+|   |           ProductsPanel.tsx
+|   |           
+|   +---sales
+|   |   |   SalesWorkspace.tsx
+|   |   |   
+|   |   \---components
+|   |           SalesPanel.tsx
+|   |           
+|   \---ticket
+|           CobroPanel.tsx
+|           TicketWorkspace.tsx
+|           
++---print
+|       printTicket.ts
+|       
+\---shared
+    \---layout
+            AppShell.tsx
+            Sidebar.tsx
+            StatusBar.tsx
+            Topbar.tsx
+            
