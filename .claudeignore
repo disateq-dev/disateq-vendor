@@ -1,31 +1,41 @@
-# Dependencies
-node_modules/
+node_modules
+dist
+target
+build
+coverage
+.next
+.turbo
+.cache
 
-# Build outputs
-dist/
-build/
-out/
-
-# Tauri artifacts
-target/
-
-# Logs
 *.log
+*.tmp
+*.temp
 
-# IDE
-.vscode/
-.idea/
-
-# Git internals
-.git/
-
-# Binaries
 *.exe
-*.zip
-*.7z
+*.dll
+*.so
+*.dylib
 
-# Media
 *.png
 *.jpg
 *.jpeg
+*.gif
+*.webp
 *.mp4
+*.zip
+
+**/node_modules/**
+**/dist/**
+**/target/**
+**/build/**
+
+apps/vendor-desktop/src-tauri/target
+
+pnpm-lock.yaml
+package-lock.json
+
+.git
+
+.vscode
+
+docs/archive
