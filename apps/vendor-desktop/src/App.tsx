@@ -3,9 +3,10 @@ import { AppShell } from "./layout/AppShell";
 import { SalesWorkspace } from "./modules/sales/SalesWorkspace";
 import { TicketWorkspace } from "./modules/ticket/TicketWorkspace";
 import { CashWorkspace } from "./modules/cash/CashWorkspace";
+import { ConfigWorkspace } from "./modules/config/ConfigWorkspace";
 import { POSProvider } from "./context/POSContext";
 
-export type ActiveModule = "sales" | "cash";
+export type ActiveModule = "sales" | "cash" | "config";
 
 export default function App() {
   const [activeModule, setActiveModule] = useState<ActiveModule>("sales");
@@ -19,7 +20,8 @@ export default function App() {
             <TicketWorkspace />
           </>
         )}
-        {activeModule === "cash" && <CashWorkspace onOpened={() => setActiveModule("sales")} />}
+        {activeModule === "cash"   && <CashWorkspace onOpened={() => setActiveModule("sales")} />}
+        {activeModule === "config" && <ConfigWorkspace />}
       </AppShell>
     </POSProvider>
   );

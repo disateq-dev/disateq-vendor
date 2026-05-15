@@ -33,7 +33,7 @@ export function ModulesBar({ active, onChange }: ModulesBarProps) {
         <span>INVENTARIO</span>
       </button>
 
-      <button className={OFF}>
+      <button onClick={() => onChange("config")} className={active === "config" ? ON_BLUE : OFF}>
         <Settings size={17} />
         <span>CONFIGURACIÓN</span>
       </button>

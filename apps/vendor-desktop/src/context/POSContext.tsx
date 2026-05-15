@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useTicketStore } from "../domains/ticket/state/ticket.store";
+import { type Rubro } from "../data/catalogs";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -52,6 +53,13 @@ const TERMINAL = "PC-VENTAS01";
 const LS_SESSION  = "disateq.pos.cashSession";
 const LS_USED     = "disateq.pos.usedCodes";
 const LS_MOVES    = "disateq.pos.cashMoves";
+const LS_RUBRO    = "disateq.pos.rubro";
+
+function loadRubro(): Rubro {
+  const raw = localStorage.getItem(LS_RUBRO);
+  if (raw === "abarrotes" || raw === "food-fast" || raw === "panaderia" || raw === "farmacia") return raw;
+  return "panaderia";
+}
 
 const NULL_SESSION: CashSession = {
   isOpen: false,
@@ -150,6 +158,8 @@ interface POSContextValue {
   addCashMove: (type: MoveType, amount: number, motivo: string) => CashMove;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
+  rubro: Rubro;
+  setRubro: (r: Rubro) => void;
 }
 
 const POSContext = createContext<POSContextValue | null>(null);
@@ -198,6 +208,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
     };
     setCashMoves(prev => [...prev, move]);
     return move;
+  }, []);
+
+  const [rubro, setRubroState] = useState<Rubro>(loadRubro);
+  const setRubro = useCallback((r: Rubro) => {
+    setRubroState(r);
+    try { localStorage.setItem(LS_RUBRO, r); } catch { /* quota */ }
   }, []);
 
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
@@ -263,6 +279,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       sessionStats, recordSale,
       cashMoves, addCashMove,
       sessionNotice, showNotice,
+      rubro, setRubro,
     }}>
       {children}
     </POSContext.Provider>

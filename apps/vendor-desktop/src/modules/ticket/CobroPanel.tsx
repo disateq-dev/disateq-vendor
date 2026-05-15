@@ -4,9 +4,10 @@ import {
   Printer, Send, Save, User, AlertCircle, Plus,
 } from "lucide-react";
 import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
-import { useTicketStore } from "../../domains/ticket/state/ticket.store";
+import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
-import { printTicketThermal } from "../../print/printTicket";
+import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatch, printDispatchTicket, type DispatchData } from "../../print/printTicket";
+import { RUBROS } from "../../data/catalogs";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
@@ -24,6 +25,8 @@ type CustomerData = {
   phone?:     string;
   email?:     string;
 };
+
+let _dispatchCorrelative = 1;
 
 const DOC_SERIES: Record<DocType, { series: string; correlative: number }> = {
   nota:       { series: "T001", correlative: 1253 },
@@ -49,9 +52,8 @@ const BOLETA_THRESHOLD   = 700;
 const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
-  const lines       = useTicketLines();
-  const clearTicket = useTicketStore(s => s.clearTicket);
-  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale } = usePOS();
+  const lines = useTicketLines();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, rubro } = usePOS();
 
   // ── main state ──────────────────────────────────────────────────────────────
   const [docType,       setDocType]       = useState<DocType>("nota");
@@ -78,6 +80,7 @@ export function CobroPanel() {
 
   const receivedRef         = useRef<HTMLInputElement>(null);
   const mixtoEfectivoRef    = useRef<HTMLInputElement>(null);
+  const discountRef         = useRef<HTMLInputElement>(null);
   const confirmRef          = useRef<() => void>(() => {});
   const openClientRef       = useRef<() => void>(() => {});
   const canConfirmRef       = useRef(false);
@@ -167,50 +170,62 @@ export function CobroPanel() {
   function confirmEmit() {
     if (!cashSession.isOpen) { showNotice("Apertura de caja requerida para emitir"); return; }
     if (!canConfirm) return;
+    const now = new Date();
+    const p2  = (n: number) => String(n).padStart(2, "0");
+    const dt  = `${p2(now.getDate())}/${p2(now.getMonth() + 1)}/${now.getFullYear()} ${p2(now.getHours())}:${p2(now.getMinutes())}`;
+    if (RUBROS[rubro].hasDispatch) {
+      printDispatchTicket({
+        correlative: _dispatchCorrelative++,
+        dateTime:    dt,
+        lines:       lines.map(l => ({ description: l.description, quantity: l.quantity, note: l.note })),
+        opNumber:    docNumber,
+      } satisfies DispatchData);
+    }
     recordSale(netTotal, payMethod === "efectivo");
-    clearTicket();
+    ticketService.clear();
     closeCobro();
   }
 
   async function handleImprimir() {
     if (!cashSession.isOpen) { showNotice("Apertura de caja requerida para emitir"); return; }
     if (!canConfirm) return;
-    const now = new Date();
-    const p   = (n: number) => String(n).padStart(2, "0");
+    const now      = new Date();
+    const p        = (n: number) => String(n).padStart(2, "0");
     const dateTime = `${p(now.getDate())}/${p(now.getMonth() + 1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`;
-    try {
-      await printTicketThermal("TIQUE", {
-        businessName:   "DISATEQ TIENDA",
-        businessRuc:    "20123456789",
-        businessAddr:   "Jr. Comercio 456, Lima",
-        businessPhone:  "01-234-5678",
-        docType,
-        docSeries:      cfg.series,
-        docCorrelative: cfg.correlative,
-        dateTime,
-        customer,
-        lines: lines.map(l => ({
-          description: l.description,
-          quantity:    l.quantity,
-          unitPrice:   l.unitPrice,
-          subtotal:    l.subtotal,
-          note:        l.note,
-        })),
-        baseImponible,
-        igv,
-        discountNum,
-        total,
-        netTotal,
-        payMethod,
-        receivedNum,
-        change,
-      });
-    } catch (err) {
-      showNotice(`Error impresora: ${err}`);
-      return;
+    const receiptData = {
+      businessName:   "DISATEQ TIENDA",
+      businessRuc:    "20123456789",
+      businessAddr:   "Jr. Comercio 456, Lima",
+      businessPhone:  "01-234-5678",
+      docType,
+      docSeries:      cfg.series,
+      docCorrelative: cfg.correlative,
+      dateTime,
+      customer,
+      lines: lines.map(l => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, subtotal: l.subtotal, note: l.note })),
+      baseImponible, igv, discountNum, total, netTotal, payMethod, receivedNum, change,
+    };
+    const dispatchData: DispatchData = {
+      correlative: _dispatchCorrelative++,
+      dateTime,
+      lines:       lines.map(l => ({ description: l.description, quantity: l.quantity, note: l.note })),
+      opNumber:    docNumber,
+    };
+    if (RUBROS[rubro].hasDispatch) {
+      try {
+        await printTicketWithDispatch("TIQUE", receiptData, dispatchData);
+      } catch {
+        printReceiptWithDispatch(receiptData, dispatchData);
+      }
+    } else {
+      try {
+        await printTicketThermal("TIQUE", receiptData);
+      } catch {
+        printTicket(receiptData);
+      }
     }
     recordSale(netTotal, payMethod === "efectivo");
-    clearTicket();
+    ticketService.clear();
     closeCobro();
   }
 
@@ -238,15 +253,23 @@ export function CobroPanel() {
   useEffect(() => {
     if (!cobroOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if      (e.key === "F1")  { e.preventDefault(); setDocType("nota"); }
-      else if (e.key === "F2")  { e.preventDefault(); setDocType("boleta"); }
-      else if (e.key === "F3")  { e.preventDefault(); setDocType("factura"); }
-      else if (e.key === "F4")  { e.preventDefault(); setDocType("cotizacion"); }
-      else if (e.key === "F5")  { e.preventDefault(); setPayMethod("efectivo"); }
-      else if (e.key === "F6")  { e.preventDefault(); setPayMethod("yape"); }
-      else if (e.key === "F7")  { e.preventDefault(); setPayMethod("tarjeta"); }
-      else if (e.key === "F8")  { e.preventDefault(); setPayMethod("mixto"); }
-      else if (e.key === "F10") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      const inInput = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+      if (e.ctrlKey) {
+        if      (e.key === "1") { e.preventDefault(); setDocType("nota"); }
+        else if (e.key === "2") { e.preventDefault(); setDocType("boleta"); }
+        else if (e.key === "3") { e.preventDefault(); setDocType("factura"); }
+        else if (e.key === "4") { e.preventDefault(); setDocType("cotizacion"); }
+        else if (e.key.toLowerCase() === "d" && cobroView === "main") { e.preventDefault(); discountRef.current?.focus(); }
+        return;
+      }
+      if (!inInput && cobroView === "main") {
+        if      (e.key.toLowerCase() === "e") { e.preventDefault(); setPayMethod("efectivo"); }
+        else if (e.key.toLowerCase() === "y") { e.preventDefault(); setPayMethod("yape"); }
+        else if (e.key.toLowerCase() === "t") { e.preventDefault(); setPayMethod("tarjeta"); }
+        else if (e.key.toLowerCase() === "m") { e.preventDefault(); setPayMethod("mixto"); }
+      }
+      if      (e.key === "F10") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
       else if (e.key === "F11") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
       else if (e.key === "F12") { e.preventDefault(); if (cobroView === "main") imprimirRef.current(); }
     };
@@ -326,7 +349,7 @@ export function CobroPanel() {
             {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt, i) => (
               <button
                 key={dt}
-                title={`Tecla [F${i + 1}]`}
+                title={`Tecla [Ctrl + ${i + 1}]`}
                 onClick={() => setDocType(dt)}
                 className={`rounded-[5px] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
                   docType === dt ? "bg-white text-[#2154d8] shadow-sm" : "text-[#b89a6c] hover:text-[#7c6240]"
@@ -413,8 +436,9 @@ export function CobroPanel() {
 
               {/* Descuento */}
               <div className="flex items-center gap-2 border-t border-[#e8edf4] pt-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Dto. S/</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]" title="Tecla [Ctrl + D]">Dto. S/</span>
                 <input
+                  ref={discountRef}
                   type="number"
                   value={discount}
                   onChange={e => setDiscount(e.target.value)}
@@ -435,10 +459,10 @@ export function CobroPanel() {
             {/* MÉTODOS DE PAGO */}
             <div className="grid grid-cols-4 gap-1">
               {([
-                { id: "efectivo", label: "Efectivo", Icon: Banknote,   fkey: "F5" },
-                { id: "yape",     label: "Yape",     Icon: Smartphone, fkey: "F6" },
-                { id: "tarjeta",  label: "Tarjeta",  Icon: CreditCard, fkey: "F7" },
-                { id: "mixto",    label: "Mixto",    Icon: Plus,       fkey: "F8" },
+                { id: "efectivo", label: "Efectivo", Icon: Banknote,   fkey: "E" },
+                { id: "yape",     label: "Yape",     Icon: Smartphone, fkey: "Y" },
+                { id: "tarjeta",  label: "Tarjeta",  Icon: CreditCard, fkey: "T" },
+                { id: "mixto",    label: "Mixto",    Icon: Plus,       fkey: "M" },
               ] as { id: PayMethod; label: string; Icon: React.ElementType; fkey: string }[]).map(({ id, label, Icon, fkey }) => (
                 <button
                   key={id}
@@ -704,7 +728,7 @@ export function CobroPanel() {
               title="Tecla [F10]"
               onClick={confirmEmit}
               disabled={!canConfirm}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-[#f8fafd] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f1f5f9] hover:border-[#d0d5dd] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
             >
               <Save size={13} strokeWidth={2} />
               Guardar
@@ -722,7 +746,7 @@ export function CobroPanel() {
               title="Tecla [F11]"
               onClick={confirmEmit}
               disabled={!canConfirm}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-[#16a34a] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(22,163,74,0.22)] transition hover:bg-[#15803d] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Send size={13} strokeWidth={2} />
               Enviar
@@ -743,14 +767,14 @@ export function CobroPanel() {
               title="Tecla [Enter]"
               onClick={() => handleEstablecer(false)}
               disabled={!canEstablecer}
-              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#2154d8] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a43b0] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#166534] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(22,101,52,0.28)] transition hover:bg-[#14532d] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
             >
               Establecer
             </button>
             <button
               onClick={() => handleEstablecer(true)}
               disabled={!canEstablecer}
-              className="flex flex-1 items-center justify-center rounded-2xl border border-[#ddd0b0] bg-[#fefaef] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#2F3E46] shadow-[0_1px_4px_rgba(160,120,40,0.10)] transition hover:bg-[#fef3d8] hover:border-[#c8a860] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex flex-1 items-center justify-center rounded-2xl border border-[#e4e9f0] bg-[#f8fafd] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f1f5f9] hover:border-[#d0d5dd] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
             >
               Guardar
             </button>

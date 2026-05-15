@@ -1,56 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ScanLine, Search } from "lucide-react";
-import { createTicketLine } from "../../domains/ticket/state/ticket.actions";
 import { useTicketStore } from "../../domains/ticket/state/ticket.store";
 import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
+import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
+import { RUBROS, type CatalogProduct } from "../../data/catalogs";
 
-type StockStatus = "normal" | "low" | "out" | "promo" | "expiring";
 type ViewMode = "dense" | "visual";
 
-interface Product {
-  id: string;
-  name: string;
-  short: string;
-  price: number;
-  code: string;
-  color: string;
-  accent: string;
-  stock: number;
-  status: StockStatus;
-}
-
-const CATALOG: Product[] = [
-  // normal
-  { id: "P001", name: "Aceite Vegetal Primor 1L",           short: "Aceite Primor 1L",     price: 12.00, code: "7751234001", color: "#FEF3C7", accent: "#B45309", stock: 45, status: "normal"   },
-  { id: "P006", name: "Aceite Capri Vegetal 1L",            short: "Aceite Capri 1L",      price: 11.50, code: "7751234006", color: "#FEFCE8", accent: "#A16207", stock: 22, status: "normal"   },
-  { id: "P007", name: "Fideos Don Vittorio Spaghetti 500g", short: "Don Vittorio 500g",    price:  3.20, code: "7751234007", color: "#FFF7ED", accent: "#EA580C", stock: 60, status: "normal"   },
-  { id: "P008", name: "Atún Florida en Aceite 170g",        short: "Atún Florida 170g",    price:  4.50, code: "7751234008", color: "#E0F2FE", accent: "#0369A1", stock: 34, status: "normal"   },
-  { id: "P016", name: "Gaseosa Inca Kola 1.5L",             short: "Inca Kola 1.5L",       price:  5.50, code: "7751234016", color: "#F7FEE7", accent: "#4D7C0F", stock: 48, status: "normal"   },
-  { id: "P017", name: "Gaseosa Coca Cola 1.5L",             short: "Coca Cola 1.5L",       price:  5.80, code: "7751234017", color: "#FFF1F2", accent: "#991B1B", stock: 36, status: "normal"   },
-  { id: "P018", name: "Papel Higiénico Elite x4",           short: "Papel Elite x4",       price:  9.90, code: "7751234018", color: "#F0FDF4", accent: "#166534", stock: 20, status: "normal"   },
-  { id: "P019", name: "Galletas Soda Field 360g",           short: "Galletas Soda 360g",   price:  3.90, code: "7751234019", color: "#FAFAF9", accent: "#57534E", stock: 55, status: "normal"   },
-  { id: "P020", name: "Café Nescafé Classic 200g",          short: "Nescafé Classic 200g", price: 24.50, code: "7751234020", color: "#FFF7ED", accent: "#7C2D12", stock: 12, status: "normal"   },
-  // low
-  { id: "P002", name: "Arroz Extra Familiar 5KG",           short: "Arroz Extra 5KG",      price: 18.50, code: "7751234002", color: "#ECFDF5", accent: "#065F46", stock:  3, status: "low"      },
-  { id: "P009", name: "Arroz Costeño Selecto 1KG",          short: "Arroz Costeño 1KG",    price:  4.20, code: "7751234009", color: "#F0FDF4", accent: "#15803D", stock:  2, status: "low"      },
-  { id: "P010", name: "Leche Evaporada Gloria 400g",        short: "Leche Evap. Gloria",   price:  3.80, code: "7751234010", color: "#EFF6FF", accent: "#1D4ED8", stock:  4, status: "low"      },
-  // out
-  { id: "P003", name: "Leche Gloria Entera 1L",             short: "Leche Gloria 1L",      price:  4.80, code: "7751234003", color: "#F0F9FF", accent: "#075985", stock:  0, status: "out"      },
-  { id: "P011", name: "Mantequilla Gloria Con Sal 200g",    short: "Mantequilla Gloria",   price:  7.50, code: "7751234011", color: "#FFFBEB", accent: "#92400E", stock:  0, status: "out"      },
-  // promo
-  { id: "P004", name: "Azúcar Rubia Cartavio 1KG",          short: "Azúcar Rubia 1KG",     price:  3.50, code: "7751234004", color: "#FFF7ED", accent: "#C2410C", stock: 18, status: "promo"    },
-  { id: "P012", name: "Detergente Ariel Limón 2KG",         short: "Ariel Limón 2KG",      price: 16.90, code: "7751234012", color: "#EDE9FE", accent: "#5B21B6", stock: 25, status: "promo"    },
-  { id: "P013", name: "Jabón Bolivar Clásico x3",           short: "Jabón Bolivar x3",     price:  5.50, code: "7751234013", color: "#F0F9FF", accent: "#0369A1", stock: 40, status: "promo"    },
-  // expiring
-  { id: "P005", name: "Huevos Rosados A (30und)",           short: "Huevos Rosados A×30",  price: 22.00, code: "7751234005", color: "#FFE4E6", accent: "#BE123C", stock:  7, status: "expiring" },
-  { id: "P014", name: "Pan de Molde Bimbo Blanco 500g",     short: "Pan Bimbo 500g",       price:  6.80, code: "7751234014", color: "#FFFBEB", accent: "#B45309", stock:  5, status: "expiring" },
-  { id: "P015", name: "Yogurt Gloria Fresa 1KG",            short: "Yogurt Gloria Fresa",  price:  8.50, code: "7751234015", color: "#FDF2F8", accent: "#9D174D", stock:  6, status: "expiring" },
-];
-
-const BEST_SELLERS = new Set(["P001", "P007", "P016", "P017", "P002", "P004", "P019", "P020"]);
-
-function getSubtitle(p: Product): { text: string; cls: string } {
+function getSubtitle(p: CatalogProduct): { text: string; cls: string } {
   switch (p.status) {
     case "low":      return { text: `${p.id} · ${p.stock} uds. · ⚠ Stock crítico`,  cls: "text-amber-400"  };
     case "out":      return { text: `${p.id} · ⛔ Sin stock`,                        cls: "text-[#c8d0d8]"  };
@@ -60,7 +18,7 @@ function getSubtitle(p: Product): { text: string; cls: string } {
   }
 }
 
-function tilePrice(p: Product): { prefix: string; cls: string } {
+function tilePrice(p: CatalogProduct): { prefix: string; cls: string } {
   switch (p.status) {
     case "promo":    return { prefix: "% ", cls: "text-emerald-600" };
     case "expiring": return { prefix: "⏱ ", cls: "text-amber-500"  };
@@ -69,7 +27,7 @@ function tilePrice(p: Product): { prefix: string; cls: string } {
   }
 }
 
-function dotColor(p: Product): string {
+function dotColor(p: CatalogProduct): string {
   if (p.status === "out")      return "#f87171";
   if (p.status === "low")      return "#fbbf24";
   if (p.status === "promo")    return "#fb923c";
@@ -81,7 +39,7 @@ function normalize(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-function searchCatalog(catalog: Product[], query: string): Product[] {
+function searchCatalog(catalog: CatalogProduct[], query: string): CatalogProduct[] {
   const q = normalize(query);
   if (!q) return catalog;
   const tokens = q.split(/\s+/).filter(Boolean);
@@ -118,7 +76,7 @@ function searchCatalog(catalog: Product[], query: string): Product[] {
   return results;
 }
 
-function TileBadge({ p }: { p: Product }) {
+function TileBadge({ p }: { p: CatalogProduct }) {
   return (
     <div
       className="absolute right-2 top-2 h-2 w-2 rounded-full ring-2 ring-white"
@@ -128,29 +86,42 @@ function TileBadge({ p }: { p: Product }) {
 }
 
 export function SalesWorkspace() {
-  const [view, setView] = useState<ViewMode>("dense");
-  const [query, setQuery] = useState("");          // controls input value
-  const [searchQuery, setSearchQuery] = useState(""); // drives result list
+  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, rubro } = usePOS();
+  const rubroConfig = RUBROS[rubro];
+
+  const [view, setView] = useState<ViewMode>(() => rubroConfig.defaultViewMode);
+  const [visualCategory, setVisualCategory] = useState<string>("all");
+  const [query, setQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
   const lines            = useTicketLines();
-  const addLine          = useTicketStore(s => s.addLine);
-  const removeLine       = useTicketStore(s => s.removeLine);
-  const updateQuantity   = useTicketStore(s => s.updateQuantity);
-  const openNoteFor      = useTicketStore(s => s.openNoteFor);
   const activeLineIdx    = useTicketStore(s => s.activeLineIdx);
   const setActiveLineIdx = useTicketStore(s => s.setActiveLineIdx);
   const lastLine = useTicketStore(s => {
     const lastId = s.lineOrder[s.lineOrder.length - 1];
     return lastId ? s.linesById[lastId] : null;
   });
-  const { enterSearch, cashSession, zone, cobroOpen, closeCobro } = usePOS();
 
-  const isSearching = searchQuery.length >= 1;
-  const filtered = isSearching ? searchCatalog(CATALOG, searchQuery) : CATALOG;
-  const visualItems = isSearching ? filtered : CATALOG.filter(p => BEST_SELLERS.has(p.id));
+  // Reset view + filters when rubro changes
+  useEffect(() => {
+    setView(rubroConfig.defaultViewMode);
+    setVisualCategory("all");
+    setQuery("");
+    setSearchQuery("");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rubro]);
+
+  const catalog = rubroConfig.catalog;
+
+  const isSearching   = searchQuery.length >= 1;
+  const filtered      = isSearching ? searchCatalog(catalog, searchQuery) : catalog;
+  const visualCatalog = isSearching ? filtered : catalog;
+  const visualItems   = visualCategory === "all"
+    ? visualCatalog
+    : visualCatalog.filter(p => p.category === visualCategory);
 
   // Focus search input whenever zone returns to "search" — guard against cobro stealing focus
   useEffect(() => {
@@ -179,10 +150,14 @@ export function SalesWorkspace() {
         enterSearch();
         inputRef.current?.focus();
       }
+      if (e.key === "F9") {
+        e.preventDefault();
+        if (lines.length > 0) openCobro();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [enterSearch, cobroOpen]);
+  }, [enterSearch, cobroOpen, lines.length, openCobro]);
 
   // pos:focusSearch — restore focus after note save (blocked when cobro is open)
   useEffect(() => {
@@ -191,20 +166,19 @@ export function SalesWorkspace() {
     return () => document.removeEventListener("pos:focusSearch", handler);
   }, [cobroOpen]);
 
-  const addProductToTicket = useCallback((p: Product) => {
+  const addProductToTicket = useCallback((p: CatalogProduct) => {
     if (p.status === "out") return;
     if (cobroOpen) closeCobro();
-    addLine(createTicketLine({
+    ticketService.addProduct({
       productId: p.id,
       description: p.name,
       barcode: p.code,
-      quantity: 1,
       unitPrice: p.price,
-    }));
+    });
     setQuery("");
     setSearchQuery("");
     inputRef.current?.focus();
-  }, [addLine, cobroOpen, closeCobro]);
+  }, [cobroOpen, closeCobro]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (cobroOpen) return;
@@ -256,35 +230,31 @@ export function SalesWorkspace() {
       case "*": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) updateQuantity(targetLine.lineId, targetLine.quantity + 1);
+        if (targetLine) ticketService.incrementLine(targetLine.lineId);
         break;
       }
       case "-": {
         if (query !== "") break;
         e.preventDefault();
-        if (!targetLine) break;
-        if (targetLine.quantity > 1) updateQuantity(targetLine.lineId, targetLine.quantity - 1);
-        else removeLine(targetLine.lineId);
+        if (targetLine) ticketService.decrementLine(targetLine.lineId);
         break;
       }
       case "Delete": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) removeLine(targetLine.lineId);
+        if (targetLine) ticketService.removeLine(targetLine.lineId);
         break;
       }
       case "ArrowRight": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) updateQuantity(targetLine.lineId, targetLine.quantity + 1);
+        if (targetLine) ticketService.incrementLine(targetLine.lineId);
         break;
       }
       case "ArrowLeft": {
         if (query !== "") break;
         e.preventDefault();
-        if (!targetLine) break;
-        if (targetLine.quantity > 1) updateQuantity(targetLine.lineId, targetLine.quantity - 1);
-        else removeLine(targetLine.lineId);
+        if (targetLine) ticketService.decrementLine(targetLine.lineId);
         break;
       }
       case "Insert":
@@ -292,31 +262,35 @@ export function SalesWorkspace() {
       case "N": {
         if (e.key !== "Insert" && query !== "") break;
         e.preventDefault();
-        if (targetLine) openNoteFor(targetLine.lineId);
+        if (targetLine) ticketService.openLineNote(targetLine.lineId);
         break;
       }
     }
-  }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, updateQuantity, removeLine, openNoteFor, cobroOpen]);
+  }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
 
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#E9E4DC] bg-[#FDFBF7] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#E9E4DC] px-5 py-3.5">
-          <div className="flex items-center gap-1.5">
-            <button className="rounded-2xl bg-[#2154d8] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(33,84,216,0.18)]">
-              General
-            </button>
-            <button className="rounded-2xl border border-[#e4e7ec] px-4 py-2 text-[13px] font-medium text-[#475467] transition hover:border-[#d0d5dd] hover:text-[#111827]">
-              Productos
-            </button>
-            <button className="rounded-2xl border border-[#e4e7ec] px-4 py-2 text-[13px] font-medium text-[#475467] transition hover:border-[#d0d5dd] hover:text-[#111827]">
-              Servicios
-            </button>
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#E9E4DC] px-4 py-3">
+          <div className="flex items-center gap-1 flex-wrap">
+            {rubroConfig.categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setVisualCategory(cat.id)}
+                className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition ${
+                  visualCategory === cat.id
+                    ? "bg-[#2154d8] text-white shadow-[0_2px_8px_rgba(33,84,216,0.18)]"
+                    : "border border-[#e4e7ec] text-[#475467] hover:border-[#d0d5dd] hover:text-[#111827]"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
           </div>
           <div className="flex-1" />
-          <div className="flex items-center gap-1 rounded-xl bg-[#f1f5f9] p-1">
+          <div className="flex items-center gap-1 rounded-xl bg-[#f1f5f9] p-1 shrink-0">
             <button
               onClick={() => setView("dense")}
               className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-[#64748b] transition hover:text-[#111827]"
@@ -444,6 +418,7 @@ export function SalesWorkspace() {
                         </span>
 
                         <button
+                          title="Tecla [Enter]"
                           onClick={e => { e.stopPropagation(); addProductToTicket(product); }}
                           className={`rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
                             isSelected
@@ -465,45 +440,52 @@ export function SalesWorkspace() {
         {/* ── VISUAL MODE ── */}
         {view === "visual" && (
           <>
-            {isSearching && filtered.length === 0 && (
+            {visualItems.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
                 <p className="text-[13px] font-medium text-[#b0bac8]">
-                  Sin resultados para «{searchQuery}»
+                  {isSearching ? `Sin resultados para «${searchQuery}»` : "Sin productos en esta categoría"}
                 </p>
               </div>
             )}
 
-            {(!isSearching || visualItems.length > 0) && (
+            {visualItems.length > 0 && (
               <>
-                {!isSearching && (
-                  <p className="px-5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-widest text-[#c0cad4]">
-                    Más vendidos
-                  </p>
-                )}
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-x-3 gap-y-2 p-4 pt-2">
+                <p className="px-4 pb-0.5 pt-3 text-[10px] font-bold uppercase tracking-widest text-[#c0cad4]">
+                  {isSearching
+                    ? `${visualItems.length} resultado${visualItems.length !== 1 ? "s" : ""}`
+                    : visualCategory === "all"
+                      ? "Todos los productos"
+                      : (rubroConfig.categories.find(c => c.id === visualCategory)?.label ?? visualCategory)
+                  }
+                </p>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 px-3 pb-3 pt-1">
                   {visualItems.map((product) => {
-                    const isOut = product.status === "out";
-                    const price = tilePrice(product);
+                    const isOut  = product.status === "out";
+                    const price  = tilePrice(product);
 
                     return (
                       <button
                         key={product.id}
                         onClick={() => addProductToTicket(product)}
-                        className={`overflow-hidden rounded-2xl bg-[#FDFBF7] text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:shadow-[0_4px_14px_rgba(33,84,216,0.09)] ${
+                        disabled={isOut}
+                        className={`overflow-hidden rounded-2xl bg-white text-left transition active:scale-[0.96] ${
                           isOut
-                            ? "border border-[#fef2f2] hover:border-[#fecaca]"
-                            : "border border-[#f0f4f9] hover:border-[#c7d7f4]"
+                            ? "border border-[#fef2f2] opacity-50 cursor-not-allowed shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+                            : "border border-[#eef2f8] shadow-[0_1px_4px_rgba(15,23,42,0.07)] hover:border-[#c7d7f4] hover:shadow-[0_4px_14px_rgba(33,84,216,0.10)] cursor-pointer"
                         }`}
-                        style={isOut ? { opacity: 0.54 } : undefined}
                       >
-                        <div className="relative h-[52px]" style={{ backgroundColor: product.color }}>
+                        <div
+                          className="relative flex items-center justify-center h-[68px]"
+                          style={{ backgroundColor: product.color }}
+                        >
+                          <span className="text-[38px] leading-none select-none">{product.emoji}</span>
                           <TileBadge p={product} />
                         </div>
-                        <div className="p-2.5">
-                          <p className="line-clamp-1 text-[12px] font-semibold uppercase tracking-[0.02em] leading-tight text-[#2F3E46]">
+                        <div className="px-2.5 pt-2 pb-2.5">
+                          <p className="line-clamp-2 text-[11px] font-bold uppercase tracking-[0.025em] leading-snug text-[#2F3E46]">
                             {product.short}
                           </p>
-                          <p className={`mt-1 text-[13px] font-bold ${price.cls}`}>
+                          <p className={`mt-1.5 text-[13px] font-extrabold tabular-nums ${price.cls}`}>
                             {price.prefix}S/ {product.price.toFixed(2)}
                           </p>
                         </div>
