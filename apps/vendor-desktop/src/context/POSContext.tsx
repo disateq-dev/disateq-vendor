@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useTicketStore } from "../domains/ticket/state/ticket.store";
-import { type Rubro } from "../data/catalogs";
+import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -53,12 +53,30 @@ const TERMINAL = "PC-VENTAS01";
 const LS_SESSION  = "disateq.pos.cashSession";
 const LS_USED     = "disateq.pos.usedCodes";
 const LS_MOVES    = "disateq.pos.cashMoves";
-const LS_RUBRO    = "disateq.pos.rubro";
+const LS_RUBRO       = "disateq.pos.rubro";
+const LS_VISUAL_MODE = "disateq.pos.visualMode";
+const LS_PRINT_FLOW  = "disateq.pos.printFlow";
 
 function loadRubro(): Rubro {
   const raw = localStorage.getItem(LS_RUBRO);
   if (raw === "abarrotes" || raw === "food-fast" || raw === "panaderia" || raw === "farmacia") return raw;
   return "panaderia";
+}
+
+function loadVisualMode(): VisualMode {
+  const raw = localStorage.getItem(LS_VISUAL_MODE);
+  if (raw === "lista" || raw === "visual" || raw === "mixto") return raw;
+  return "visual";
+}
+
+function loadPrintFlow(): PrintFlow {
+  const raw = localStorage.getItem(LS_PRINT_FLOW);
+  if (
+    raw === "solo-comprobante"     || raw === "comprobante-despacho" ||
+    raw === "comprobante-comanda"  || raw === "comprobante-precuenta" ||
+    raw === "comprobante-turno"    || raw === "comprobante-embarque"
+  ) return raw as PrintFlow;
+  return "comprobante-despacho";
 }
 
 const NULL_SESSION: CashSession = {
@@ -160,6 +178,10 @@ interface POSContextValue {
   showNotice: (msg: string) => void;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
+  visualMode: VisualMode;
+  setVisualMode: (m: VisualMode) => void;
+  printFlow: PrintFlow;
+  setPrintFlow: (f: PrintFlow) => void;
 }
 
 const POSContext = createContext<POSContextValue | null>(null);
@@ -214,6 +236,18 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const setRubro = useCallback((r: Rubro) => {
     setRubroState(r);
     try { localStorage.setItem(LS_RUBRO, r); } catch { /* quota */ }
+  }, []);
+
+  const [visualMode, setVisualModeState] = useState<VisualMode>(loadVisualMode);
+  const setVisualMode = useCallback((m: VisualMode) => {
+    setVisualModeState(m);
+    try { localStorage.setItem(LS_VISUAL_MODE, m); } catch { /* quota */ }
+  }, []);
+
+  const [printFlow, setPrintFlowState] = useState<PrintFlow>(loadPrintFlow);
+  const setPrintFlow = useCallback((f: PrintFlow) => {
+    setPrintFlowState(f);
+    try { localStorage.setItem(LS_PRINT_FLOW, f); } catch { /* quota */ }
   }, []);
 
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
@@ -280,6 +314,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cashMoves, addCashMove,
       sessionNotice, showNotice,
       rubro, setRubro,
+      visualMode, setVisualMode,
+      printFlow, setPrintFlow,
     }}>
       {children}
     </POSContext.Provider>

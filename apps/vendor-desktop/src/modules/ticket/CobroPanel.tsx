@@ -7,7 +7,6 @@ import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors"
 import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
 import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatch, printDispatchTicket, type DispatchData } from "../../print/printTicket";
-import { RUBROS } from "../../data/catalogs";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
@@ -53,7 +52,7 @@ const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
   const lines = useTicketLines();
-  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, rubro } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, printFlow } = usePOS();
 
   // ── main state ──────────────────────────────────────────────────────────────
   const [docType,       setDocType]       = useState<DocType>("nota");
@@ -173,7 +172,7 @@ export function CobroPanel() {
     const now = new Date();
     const p2  = (n: number) => String(n).padStart(2, "0");
     const dt  = `${p2(now.getDate())}/${p2(now.getMonth() + 1)}/${now.getFullYear()} ${p2(now.getHours())}:${p2(now.getMinutes())}`;
-    if (RUBROS[rubro].hasDispatch) {
+    if (printFlow === "comprobante-despacho") {
       printDispatchTicket({
         correlative: _dispatchCorrelative++,
         dateTime:    dt,
@@ -211,13 +210,14 @@ export function CobroPanel() {
       lines:       lines.map(l => ({ description: l.description, quantity: l.quantity, note: l.note })),
       opNumber:    docNumber,
     };
-    if (RUBROS[rubro].hasDispatch) {
+    if (printFlow === "comprobante-despacho") {
       try {
         await printTicketWithDispatch("TIQUE", receiptData, dispatchData);
       } catch {
         printReceiptWithDispatch(receiptData, dispatchData);
       }
     } else {
+      // solo-comprobante + flujos no implementados aún → solo receipt
       try {
         await printTicketThermal("TIQUE", receiptData);
       } catch {

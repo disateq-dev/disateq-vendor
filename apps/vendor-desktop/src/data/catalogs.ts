@@ -2,6 +2,16 @@ export type Rubro = "abarrotes" | "food-fast" | "panaderia" | "farmacia";
 
 export type StockStatus = "normal" | "low" | "out" | "promo" | "expiring";
 
+export type VisualMode = "lista" | "visual" | "mixto";
+
+export type PrintFlow =
+  | "solo-comprobante"
+  | "comprobante-despacho"
+  | "comprobante-comanda"
+  | "comprobante-precuenta"
+  | "comprobante-turno"
+  | "comprobante-embarque";
+
 export interface CatalogProduct {
   id:       string;
   name:     string;
@@ -17,20 +27,20 @@ export interface CatalogProduct {
 }
 
 export interface RubroConfig {
-  label:           string;
-  description:     string;
-  defaultViewMode: "dense" | "visual";
-  hasDispatch:     boolean;
-  categories:      { id: string; label: string }[];
-  catalog:         CatalogProduct[];
+  label:              string;
+  description:        string;
+  defaultVisualMode:  VisualMode;
+  defaultPrintFlow:   PrintFlow;
+  categories:         { id: string; label: string }[];
+  catalog:            CatalogProduct[];
 }
 
 export const RUBROS: Record<Rubro, RubroConfig> = {
   abarrotes: {
-    label:           "Abarrotes",
-    description:     "Scanner · Lista · Velocidad extrema",
-    defaultViewMode: "dense",
-    hasDispatch:     false,
+    label:             "Abarrotes",
+    description:       "Scanner · Lista · Velocidad extrema",
+    defaultVisualMode: "lista",
+    defaultPrintFlow:  "solo-comprobante",
     categories: [
       { id: "all",       label: "Todo"          },
       { id: "lacteos",   label: "🥛 Lácteos"    },
@@ -54,10 +64,10 @@ export const RUBROS: Record<Rubro, RubroConfig> = {
   },
 
   "food-fast": {
-    label:           "Food Fast",
-    description:     "Visual · Touch · Notas · Despacho",
-    defaultViewMode: "visual",
-    hasDispatch:     true,
+    label:             "Food Fast",
+    description:       "Visual · Touch · Notas · Despacho",
+    defaultVisualMode: "visual",
+    defaultPrintFlow:  "comprobante-despacho",
     categories: [
       { id: "all",     label: "Todo"          },
       { id: "comidas", label: "🍔 Comidas"    },
@@ -81,10 +91,10 @@ export const RUBROS: Record<Rubro, RubroConfig> = {
   },
 
   panaderia: {
-    label:           "Panadería",
-    description:     "Visual híbrido · Notas · Ticket despacho",
-    defaultViewMode: "visual",
-    hasDispatch:     true,
+    label:             "Panadería",
+    description:       "Visual híbrido · Notas · Ticket despacho",
+    defaultVisualMode: "visual",
+    defaultPrintFlow:  "comprobante-despacho",
     categories: [
       { id: "all",     label: "Todo"         },
       { id: "panes",   label: "🥖 Panes"     },
@@ -115,10 +125,10 @@ export const RUBROS: Record<Rubro, RubroConfig> = {
   },
 
   farmacia: {
-    label:           "Farmacia",
-    description:     "Control lotes · Vencimientos · Trazabilidad",
-    defaultViewMode: "dense",
-    hasDispatch:     false,
+    label:             "Farmacia",
+    description:       "Control lotes · Vencimientos · Trazabilidad",
+    defaultVisualMode: "lista",
+    defaultPrintFlow:  "solo-comprobante",
     categories: [
       { id: "all",         label: "Todo"            },
       { id: "analgesicos", label: "💊 Analgésicos"  },

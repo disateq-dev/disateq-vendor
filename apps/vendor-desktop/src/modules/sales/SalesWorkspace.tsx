@@ -6,8 +6,6 @@ import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type CatalogProduct } from "../../data/catalogs";
 
-type ViewMode = "dense" | "visual";
-
 function getSubtitle(p: CatalogProduct): { text: string; cls: string } {
   switch (p.status) {
     case "low":      return { text: `${p.id} · ${p.stock} uds. · ⚠ Stock crítico`,  cls: "text-amber-400"  };
@@ -76,6 +74,34 @@ function searchCatalog(catalog: CatalogProduct[], query: string): CatalogProduct
   return results;
 }
 
+import type { VisualMode } from "../../data/catalogs";
+
+const VIEW_OPTS: { id: VisualMode; label: string }[] = [
+  { id: "lista",  label: "Lista"   },
+  { id: "visual", label: "Visual"  },
+  { id: "mixto",  label: "Mixto"   },
+];
+
+function ViewToggle({ current, onChange }: { current: VisualMode; onChange: (m: VisualMode) => void }) {
+  return (
+    <div className="flex items-center gap-px rounded-xl bg-[#f1f5f9] p-1 shrink-0">
+      {VIEW_OPTS.map(opt => (
+        <button
+          key={opt.id}
+          onClick={() => onChange(opt.id)}
+          className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
+            current === opt.id
+              ? "bg-white text-[#111827] shadow-sm"
+              : "text-[#64748b] hover:text-[#111827]"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function TileBadge({ p }: { p: CatalogProduct }) {
   return (
     <div
@@ -86,10 +112,12 @@ function TileBadge({ p }: { p: CatalogProduct }) {
 }
 
 export function SalesWorkspace() {
-  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, rubro } = usePOS();
+  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, rubro, visualMode, setVisualMode } = usePOS();
   const rubroConfig = RUBROS[rubro];
 
-  const [view, setView] = useState<ViewMode>(() => rubroConfig.defaultViewMode);
+  // "mixto" renders as visual for now — a split layout can be explored in runtime validation
+  const view = visualMode === "lista" ? "dense" : "visual";
+
   const [visualCategory, setVisualCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,9 +133,8 @@ export function SalesWorkspace() {
     return lastId ? s.linesById[lastId] : null;
   });
 
-  // Reset view + filters when rubro changes
+  // Reset category filter when rubro changes
   useEffect(() => {
-    setView(rubroConfig.defaultViewMode);
     setVisualCategory("all");
     setQuery("");
     setSearchQuery("");
@@ -290,17 +317,7 @@ export function SalesWorkspace() {
             ))}
           </div>
           <div className="flex-1" />
-          <div className="flex items-center gap-1 rounded-xl bg-[#f1f5f9] p-1 shrink-0">
-            <button
-              onClick={() => setView("dense")}
-              className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-[#64748b] transition hover:text-[#111827]"
-            >
-              Lista
-            </button>
-            <button className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-[#111827] shadow-sm">
-              Visual
-            </button>
-          </div>
+          <ViewToggle current={visualMode} onChange={setVisualMode} />
         </div>
       )}
 
@@ -330,19 +347,7 @@ export function SalesWorkspace() {
           <ScanLine size={16} />
         </button>
 
-        {view === "dense" && (
-          <div className="flex shrink-0 items-center gap-1 rounded-xl bg-[#f1f5f9] p-1">
-            <button className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-[#111827] shadow-sm">
-              Lista
-            </button>
-            <button
-              onClick={() => setView("visual")}
-              className="rounded-lg px-3 py-1.5 text-[12px] font-semibold text-[#64748b] transition hover:text-[#111827]"
-            >
-              Visual
-            </button>
-          </div>
-        )}
+        {view === "dense" && <ViewToggle current={visualMode} onChange={setVisualMode} />}
       </div>
 
       {/* RESULTS */}
