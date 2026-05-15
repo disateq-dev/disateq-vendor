@@ -32,7 +32,10 @@ export type CashSession = {
   operator: string;
   terminal: string;
   openedAt: Date | null;
+  apertura: number;
 };
+
+export type OpLog = { id: string; ts: string; text: string };
 
 const BOX_DEFS: { code: string; type: CashBoxType }[] = [
   { code: "100", type: "normal" },
@@ -46,13 +49,19 @@ const BOX_DEFS: { code: string; type: CashBoxType }[] = [
   { code: "302", type: "contingency-2" },
 ];
 
-const OPERATOR = "Fernando T.";
 const TERMINAL = "PC-VENTAS01";
+
+const BLOCK_OPERATORS: Record<string, string> = {
+  "1": "Ricardo Aguinaga",
+  "2": "Lucía Rebaza",
+  "3": "Administrador",
+};
 
 // ── localStorage keys ──────────────────────────────────────────
 const LS_SESSION  = "disateq.pos.cashSession";
 const LS_USED     = "disateq.pos.usedCodes";
 const LS_MOVES    = "disateq.pos.cashMoves";
+const LS_OPLOGS      = "disateq.pos.opLogs";
 const LS_RUBRO       = "disateq.pos.rubro";
 const LS_VISUAL_MODE = "disateq.pos.visualMode";
 const LS_PRINT_FLOW  = "disateq.pos.printFlow";
@@ -82,9 +91,10 @@ function loadPrintFlow(): PrintFlow {
 const NULL_SESSION: CashSession = {
   isOpen: false,
   cashBox: null,
-  operator: OPERATOR,
+  operator: "",
   terminal: TERMINAL,
   openedAt: null,
+  apertura: 0,
 };
 
 function safeDate(val: unknown): Date | null {
@@ -101,9 +111,10 @@ function loadSession(): CashSession {
     return {
       isOpen:    typeof p.isOpen === "boolean" ? p.isOpen : false,
       cashBox:   (p.cashBox && typeof (p.cashBox as CashBox).code === "string") ? p.cashBox as CashBox : null,
-      operator:  typeof p.operator === "string" ? p.operator : OPERATOR,
+      operator:  typeof p.operator === "string" ? p.operator : "",
       terminal:  typeof p.terminal === "string" ? p.terminal : TERMINAL,
       openedAt:  safeDate(p.openedAt),
+      apertura:  typeof p.apertura === "number" ? p.apertura : 0,
     };
   } catch {
     return NULL_SESSION;
@@ -153,9 +164,22 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
   });
 }
 
+function loadOpLogs(): OpLog[] {
+  try {
+    const raw = localStorage.getItem(LS_OPLOGS);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+
+function saveOpLogs(logs: OpLog[]): void {
+  try { localStorage.setItem(LS_OPLOGS, JSON.stringify(logs)); } catch { /* quota or disabled */ }
+}
+
 // ── session stats ───────────────────────────────────────────────
-export type SessionStats = { count: number; total: number; cash: number };
-const NULL_STATS: SessionStats = { count: 0, total: 0, cash: 0 };
+export type SessionStats = { count: number; total: number; cash: number; yape: number; tarjeta: number };
+const NULL_STATS: SessionStats = { count: 0, total: 0, cash: 0, yape: 0, tarjeta: 0 };
 
 // ── context interface ──────────────────────────────────────────
 interface POSContextValue {
@@ -168,12 +192,14 @@ interface POSContextValue {
   cashSession: CashSession;
   cashBoxes: CashBox[];
   suggestedCashBox: CashBox | null;
-  openCashSession: (boxCode: string) => void;
+  openCashSession: (boxCode: string, apertura: number) => void;
   closeCashSession: () => void;
   sessionStats: SessionStats;
-  recordSale: (netTotal: number, isEfectivo: boolean) => void;
+  recordSale: (netTotal: number, payMethod: string) => void;
   cashMoves: CashMove[];
   addCashMove: (type: MoveType, amount: number, motivo: string) => CashMove;
+  opLogs: OpLog[];
+  addOpLog: (text: string) => void;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
   rubro: Rubro;
@@ -208,11 +234,25 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const [cashMoves,    setCashMoves]    = useState<CashMove[]>(loadMoves);
   useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
 
-  const recordSale = useCallback((netTotal: number, isEfectivo: boolean) => {
+  const [opLogs, setOpLogs] = useState<OpLog[]>(loadOpLogs);
+  useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
+
+  const addOpLog = useCallback((text: string) => {
+    const entry: OpLog = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      ts: new Date().toISOString(),
+      text,
+    };
+    setOpLogs(prev => [...prev, entry]);
+  }, []);
+
+  const recordSale = useCallback((netTotal: number, payMethod: string) => {
     setSessionStats(prev => ({
-      count: prev.count + 1,
-      total: prev.total + netTotal,
-      cash:  prev.cash  + (isEfectivo ? netTotal : 0),
+      count:   prev.count + 1,
+      total:   prev.total + netTotal,
+      cash:    prev.cash    + (payMethod === "efectivo" ? netTotal : 0),
+      yape:    prev.yape    + (payMethod === "yape"     ? netTotal : 0),
+      tarjeta: prev.tarjeta + (payMethod === "tarjeta"  ? netTotal : 0),
     }));
   }, []);
 
@@ -273,13 +313,16 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const closeCobro = useCallback(() => { setCobroOpen(false); setZone("search"); }, []);
 
-  const openCashSession = useCallback((boxCode: string) => {
+  const openCashSession = useCallback((boxCode: string, apertura: number) => {
     const box = cashBoxes.find(b => b.code === boxCode);
     if (!box || !box.available) return;
+    const operator = BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
     setSessionStats(NULL_STATS);
     setCashMoves([]);
-    setCashSession({ isOpen: true, cashBox: box, operator: OPERATOR, terminal: TERMINAL, openedAt: new Date() });
-  }, [cashBoxes]);
+    setOpLogs([]);
+    setCashSession({ isOpen: true, cashBox: box, operator, terminal: TERMINAL, openedAt: new Date(), apertura });
+    addOpLog(`${operator} abrió CAJA ${boxCode} con apertura S/ ${apertura.toFixed(2)}`);
+  }, [cashBoxes, addOpLog]);
 
   const closeCashSession = useCallback(() => {
     const s = cashSessionRef.current;
@@ -291,9 +334,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
     useTicketStore.getState().clearTicket();
     setSessionStats(NULL_STATS);
     setCashMoves([]);
+    const op = s.operator;
     setUsedCodes(prev => { const next = new Set(prev); next.add(code); return next; });
-    setCashSession({ isOpen: false, cashBox: null, operator: OPERATOR, terminal: TERMINAL, openedAt: null });
-  }, []);
+    setCashSession({ isOpen: false, cashBox: null, operator: "", terminal: TERMINAL, openedAt: null, apertura: 0 });
+    addOpLog(`${op} cerró CAJA ${code}`);
+  }, [addOpLog]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -312,6 +357,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       openCashSession, closeCashSession,
       sessionStats, recordSale,
       cashMoves, addCashMove,
+      opLogs, addOpLog,
       sessionNotice, showNotice,
       rubro, setRubro,
       visualMode, setVisualMode,
