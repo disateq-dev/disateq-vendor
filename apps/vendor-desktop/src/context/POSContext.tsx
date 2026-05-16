@@ -37,6 +37,7 @@ export type CashSession = {
   terminal: string;
   openedAt: Date | null;
   apertura: number;
+  motivo?: string;
 };
 
 export type OpLog = { id: string; ts: string; text: string };
@@ -51,6 +52,9 @@ const BOX_DEFS: { code: string; type: CashBoxType }[] = [
   { code: "300", type: "normal" },
   { code: "301", type: "contingency-1" },
   { code: "302", type: "contingency-2" },
+  { code: "500", type: "normal" },
+  { code: "501", type: "contingency-1" },
+  { code: "502", type: "contingency-2" },
 ];
 
 const TERMINAL = "PC-VENTAS01";
@@ -59,6 +63,7 @@ const BLOCK_OPERATORS: Record<string, string> = {
   "1": "Ricardo Aguinaga",
   "2": "Lucía Rebaza",
   "3": "Administrador",
+  "5": "Supervisor",
 };
 
 // ── localStorage keys ──────────────────────────────────────────
@@ -120,6 +125,7 @@ function loadSession(): CashSession {
       terminal:  typeof p.terminal === "string" ? p.terminal : TERMINAL,
       openedAt:  safeDate(p.openedAt),
       apertura:  typeof p.apertura === "number" ? p.apertura : 0,
+      motivo:    typeof p.motivo === "string" ? p.motivo : undefined,
     };
   } catch {
     return NULL_SESSION;
@@ -473,9 +479,10 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setSessionStats(NULL_STATS);
     setCashMoves([]);
     setOpLogs([]);
-    setCashSession({ isOpen: true, cashBox: box, operator, terminal: TERMINAL, openedAt: new Date(), apertura });
-    const base = `${operator} abrió CAJA ${boxCode} con apertura S/ ${apertura.toFixed(2)}`;
-    addOpLog(motivo ? `${base} — Motivo: ${motivo}` : base);
+    const trimmedMotivo = motivo?.trim() || undefined;
+    setCashSession({ isOpen: true, cashBox: box, operator, terminal: TERMINAL, openedAt: new Date(), apertura, motivo: trimmedMotivo });
+    const base = `${operator} abrió CAJA ${boxCode} · fondo S/ ${apertura.toFixed(2)}`;
+    addOpLog(trimmedMotivo ? `${base} — Motivo: ${trimmedMotivo}` : base);
   }, [cashBoxes, addOpLog]);
 
   const closeCashSession = useCallback(() => {

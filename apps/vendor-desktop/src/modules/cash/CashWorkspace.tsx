@@ -41,7 +41,7 @@ const MOTIVOS: Record<MoveType, string[]> = {
   ingreso: ["Cambio inicial", "Reposición", "Ajuste", "Ingreso manual"],
   egreso:  ["Taxi", "Compra rápida", "Retiro dueño", "Gasto operativo", "Cambio externo"],
 };
-const SERIES = ["1", "2", "3"] as const;
+const SERIES = ["1", "2", "3", "5"] as const;
 
 type ClosingStage = 0 | 1 | 2 | 3 | 4;
 
@@ -115,7 +115,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     sessionStats, cashMoves, addCashMove,
     opLogs, showNotice,
   } = usePOS();
-  const { isOpen, cashBox: activeBox, operator, openedAt, apertura } = cashSession;
+  const { isOpen, cashBox: activeBox, operator, openedAt, apertura, motivo: sessionMotivo } = cashSession;
 
   // ── pre-open state ────────────────────────────────────────────
   const [selectedCode, setSelectedCode] = useState<string>(() => suggestedCashBox?.code ?? "100");
@@ -301,6 +301,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               {apertura > 0 && <InfoRow label="Fondo" value={`S/ ${apertura.toFixed(2)}`} />}
+              {sessionMotivo && <InfoRow label="Motivo" value={sessionMotivo} />}
             </div>
 
             {sessionStats.count > 0 && closingStage === 0 && (
@@ -518,7 +519,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
             {SERIES.map(prefix => {
               const seriesBoxes = cashBoxes.filter(b => b.code.startsWith(prefix));
-              const opName = { "1": "Ricardo Aguinaga", "2": "Lucía Rebaza", "3": "Administrador" }[prefix] ?? "";
+              const opName = { "1": "Ricardo Aguinaga", "2": "Lucía Rebaza", "3": "Administrador", "5": "Supervisor" }[prefix] ?? "";
               return (
                 <div key={prefix} className="mb-4 last:mb-0">
                   <p className="mb-0.5 px-1 text-[9.5px] font-bold uppercase tracking-[0.18em] text-[#c8d4e0]">BLOQUE {prefix}xx</p>
