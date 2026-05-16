@@ -362,7 +362,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             })()}
 
             {closingStage === 0 && (ingresosTotal > 0 || egresosTotal > 0) && (
-              <div className="flex items-center gap-1.5 flex-wrap px-1 py-0">
+              <div className="flex items-center gap-1.5 flex-wrap rounded-xl bg-[#f8fafd] px-3.5 py-1.5">
                 {ingresosTotal > 0 && (
                   <span className="text-[10px] font-semibold tabular-nums text-emerald-600">↑ Ingresos S/ {ingresosTotal.toFixed(2)}</span>
                 )}
