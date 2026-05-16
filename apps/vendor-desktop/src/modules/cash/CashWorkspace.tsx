@@ -336,11 +336,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </div>
                 {/* L2: breakdown right-aligned, pegado arriba */}
                 {breakdown.length > 0 && (
-                  <div className="flex justify-end">
-                    <span className="text-[9px] font-semibold tabular-nums text-[#9ca3af]">
-                      {breakdown.map((m, i) => <span key={m.key}>{i > 0 && " · "}{m.key} {m.n}</span>)}
-                    </span>
-                  </div>
+                  <p className="text-right text-[9px] font-semibold tabular-nums text-[#9ca3af]">
+                    {breakdown.map((m, i) => <span key={m.key}>{i > 0 && " · "}{m.key} {m.n}</span>)}
+                  </p>
                 )}
                 {/* correlativos: media línea de separación */}
                 {Object.entries(sessionStats.docRanges).map(([type, r]) => {
