@@ -14,6 +14,7 @@ export type CashMove = {
   type: MoveType;
   amount: number;
   motivo: string;
+  observacion?: string;
   operator: string;
   cashBoxCode: string;
   terminal: string;
@@ -329,7 +330,7 @@ interface POSContextValue {
   sessionStats: SessionStats;
   recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number) => void;
   cashMoves: CashMove[];
-  addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number) => CashMove;
+  addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string) => CashMove;
   opLogs: OpLog[];
   addOpLog: (text: string) => void;
   sessionNotice: string | null;
@@ -425,11 +426,13 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const addCashMove = useCallback((
     type: MoveType, amount: number, motivo: string,
     sourceType: MoveSource, fromApertura: number, fromVendido: number,
+    observacion?: string,
   ): CashMove => {
     const s = cashSessionRef.current;
     const move: CashMove = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type, amount, motivo,
+      ...(observacion ? { observacion } : {}),
       operator:    s.operator,
       cashBoxCode: s.cashBox?.code ?? "",
       terminal:    s.terminal,
@@ -437,15 +440,10 @@ export function POSProvider({ children }: { children: ReactNode }) {
       sourceType, fromApertura, fromVendido,
     };
     setCashMoves(prev => [...prev, move]);
-    // human log
     const verb   = type === "ingreso" ? "registró ingreso" : "registró egreso";
-    const prep   = type === "ingreso" ? "Destino" : "Origen";
-    const detail = sourceType === "apertura"
-      ? `${prep}: apertura`
-      : sourceType === "vendido"
-        ? `${prep}: vendido`
-        : `${prep}: S/ ${fromApertura.toFixed(2)} apertura + S/ ${fromVendido.toFixed(2)} vendido`;
-    addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} — ${detail} — ${motivo}`);
+    const srcLbl = sourceType === "apertura" ? "fondo" : sourceType === "vendido" ? "venta" : `fondo S/${fromApertura.toFixed(2)} + venta S/${fromVendido.toFixed(2)}`;
+    const obs    = observacion ? ` · ${observacion}` : "";
+    addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}`);
     return move;
   }, [addOpLog]);
 

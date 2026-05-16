@@ -44,6 +44,7 @@ export interface VoucherMoveData {
   moveType: "ingreso" | "egreso";
   amount: number;
   motivo: string;
+  observacion?: string;
   operator: string;
   cashBoxCode: string;
   terminal: string;
@@ -233,6 +234,7 @@ function buildVoucherHTML(d: VoucherMoveData): string {
   </div>
   <div style="border-top:1px dashed #555; margin:4px 0;"></div>
   <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Motivo</span><span style="font-weight:bold;">${esc(d.motivo)}</span></div>
+  ${d.observacion ? `<div style="font-size:10px; color:#555; margin:2px 0; padding-left:4px;">${esc(d.observacion)}</div>` : ""}
   <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Operador</span><span>${esc(d.operator)}</span></div>
   <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Caja</span><span>${esc(d.cashBoxCode)}</span></div>
   <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Terminal</span><span>${esc(d.terminal)}</span></div>
