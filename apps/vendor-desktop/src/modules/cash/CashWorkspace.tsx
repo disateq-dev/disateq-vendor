@@ -284,7 +284,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     <section className="flex min-h-0 flex-1 gap-3">
 
       {/* ── LEFT ── */}
-      <div className="flex w-[252px] shrink-0 flex-col gap-3">
+      <div className="flex w-[270px] shrink-0 flex-col gap-3">
 
         {/* Status / pre-open card */}
         {isOpen ? (
@@ -316,7 +316,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal" value={terminal} />
               {apertura > 0 && <InfoRow label="Fondo" value={`S/ ${apertura.toFixed(2)}`} />}
-              {sessionMotivo && <InfoRow label="Contexto turno" value={sessionMotivo} />}
+              {sessionMotivo && <InfoRow label="Motivo turno" value={sessionMotivo} />}
             </div>
 
             {sessionStats.count > 0 && closingStage === 0 && (() => {
@@ -328,17 +328,21 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 { key: "MIX", n: mix },
               ].filter(m => m.n > 0);
               return (
-              <div className="flex flex-col gap-1 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
-                <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col rounded-xl bg-[#f8fafd] px-3.5 py-2">
+                {/* L1: OPERACIONES  14 */}
+                <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">Operaciones</span>
-                  {breakdown.length > 0 ? (
-                    <span className="text-[9.5px] font-semibold tabular-nums text-[#374151] shrink-0">
+                  <span className="text-[11px] font-bold tabular-nums text-[#374151]">{sessionStats.count}</span>
+                </div>
+                {/* L2: breakdown right-aligned, pegado arriba */}
+                {breakdown.length > 0 && (
+                  <div className="flex justify-end">
+                    <span className="text-[9px] font-semibold tabular-nums text-[#9ca3af]">
                       {breakdown.map((m, i) => <span key={m.key}>{i > 0 && " · "}{m.key} {m.n}</span>)}
                     </span>
-                  ) : (
-                    <span className="text-[13px] font-bold text-[#374151]">{sessionStats.count}</span>
-                  )}
-                </div>
+                  </div>
+                )}
+                {/* correlativos: media línea de separación */}
                 {Object.entries(sessionStats.docRanges).map(([type, r]) => {
                   if (!r) return null;
                   const fmt = (n: number) => String(n).padStart(6, "0");
@@ -347,7 +351,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     ? `${r.series}-${fmt(r.first)}`
                     : `${r.series}-${fmt(r.first)} → ${r.series}-${fmt(r.last)}`;
                   return (
-                    <div key={type} className="flex items-center justify-between gap-2">
+                    <div key={type} className="flex items-center justify-between gap-2 mt-1.5">
                       <span className="text-[9.5px] font-semibold text-[#c0cad4]">{label[type] ?? type}</span>
                       <span className="text-[9.5px] font-mono font-semibold text-[#374151] tabular-nums">{range}</span>
                     </div>
@@ -358,15 +362,15 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             })()}
 
             {closingStage === 0 && (ingresosTotal > 0 || egresosTotal > 0) && (
-              <div className="flex items-center gap-2 flex-wrap rounded-xl bg-[#f8fafd] px-3.5 py-2">
+              <div className="flex items-center gap-1.5 flex-wrap px-1 py-0">
                 {ingresosTotal > 0 && (
-                  <span className="text-[10.5px] font-semibold tabular-nums text-emerald-600">↑ Ingresos S/ {ingresosTotal.toFixed(2)}</span>
+                  <span className="text-[10px] font-semibold tabular-nums text-emerald-600">↑ Ingresos S/ {ingresosTotal.toFixed(2)}</span>
                 )}
                 {ingresosTotal > 0 && egresosTotal > 0 && (
                   <span className="text-[#c0cad4]">·</span>
                 )}
                 {egresosTotal > 0 && (
-                  <span className="text-[10.5px] font-semibold tabular-nums text-[#ef4444]">↓ Egresos S/ {egresosTotal.toFixed(2)}</span>
+                  <span className="text-[10px] font-semibold tabular-nums text-[#ef4444]">↓ Egresos S/ {egresosTotal.toFixed(2)}</span>
                 )}
               </div>
             )}
