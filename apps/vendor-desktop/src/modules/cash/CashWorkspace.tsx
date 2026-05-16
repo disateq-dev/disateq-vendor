@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText } from "lucide-react";
-import { usePOS, type CashBox, type CashBoxType, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
+import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
 import { printCashMoveVoucher } from "../../print/printTicket";
 
 // ── helpers ────────────────────────────────────────────────────
@@ -14,12 +14,6 @@ function formatDuration(from: Date): string {
   const h = Math.floor(mins / 60);
   const m = String(mins % 60).padStart(2, "0");
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
-function typeLabel(t: CashBoxType): string {
-  if (t === "normal") return "OPERACIONAL";
-  if (t === "contingency-1") return "CONTINGENCIA 1";
-  return "CONTINGENCIA 2";
 }
 
 function prereqCode(box: CashBox): string {
@@ -70,7 +64,7 @@ function BoxStatusBadge({ box, isActive }: { box: CashBox; isActive: boolean }) 
   );
   if (!box.available) return (
     <span className="flex items-center gap-1 rounded-lg bg-[#fef9f0] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-[#c08000]">
-      <Lock size={8} strokeWidth={2.5} />REQ. {prereqCode(box)}
+      <Lock size={8} strokeWidth={2.5} />REQ. CAJA {prereqCode(box)}
     </span>
   );
   return (
@@ -87,16 +81,12 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
   else if (isSelected) cls += " bg-[#edf4ff] ring-1 ring-[#2154d8]/20";
   else if (clickable)  cls += " cursor-pointer hover:bg-[#f4f7fb]";
   else                 cls += " opacity-50 cursor-default";
-  const dotColor   = isActive ? "bg-emerald-500" : isSelected ? "bg-[#2154d8]" : box.available ? "bg-[#34d399]" : "bg-[#d1d5db]";
-  const codeColor  = isActive ? "text-emerald-700" : isSelected ? "text-[#2154d8]" : box.used || !box.available ? "text-[#c0cad4]" : "text-[#111827]";
-  const labelColor = isActive ? "text-emerald-600" : isSelected ? "text-[#4b75e6]" : "text-[#c0cad4]";
+  const dotColor  = isActive ? "bg-emerald-500" : isSelected ? "bg-[#2154d8]" : box.available ? "bg-[#34d399]" : "bg-[#d1d5db]";
+  const nameColor = isActive ? "text-emerald-700" : isSelected ? "text-[#2154d8]" : box.used || !box.available ? "text-[#c0cad4]" : "text-[#111827]";
   return (
     <div className={cls} onClick={clickable ? onSelect : undefined}>
       <div className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
-      <div className="flex flex-1 items-baseline gap-2">
-        <span className={`text-[14px] font-bold tabular-nums ${codeColor}`}>{box.code}</span>
-        <span className={`text-[11px] font-semibold ${labelColor}`}>{typeLabel(box.type)}</span>
-      </div>
+      <span className={`flex-1 text-[13px] font-bold tabular-nums ${nameColor}`}>CAJA {box.code}</span>
       <BoxStatusBadge box={box} isActive={isActive} />
     </div>
   );
@@ -280,7 +270,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   </span>
                 </div>
                 <p className="mt-0.5 truncate text-[12px] font-semibold text-[#374151]">
-                  CAJA {activeBox?.code} · {activeBox ? typeLabel(activeBox.type) : ""}
+                  CAJA {activeBox?.code}
                 </p>
               </div>
             </div>
@@ -608,7 +598,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   El turno se cerrará definitivamente. Esta acción no se puede deshacer.
                 </p>
                 <div className="rounded-2xl bg-[#f8fafd] border border-[#e4e9f0] px-5 py-3 flex flex-col gap-1.5">
-                  <InfoRow label="Caja"      value={`${activeBox?.code} · ${activeBox ? typeLabel(activeBox.type) : ""}`} />
+                  <InfoRow label="Caja"      value={`CAJA ${activeBox?.code}`} />
                   <InfoRow label="Operador"  value={operator} />
                   <InfoRow label="Ventas"    value={`${sessionStats.count} op. · S/ ${sessionStats.total.toFixed(2)}`} />
                   <InfoRow label="Diferencia" value={`${diferencia >= 0 ? "+" : ""}S/ ${diferencia.toFixed(2)}`} accent={diferencia >= 0} />
