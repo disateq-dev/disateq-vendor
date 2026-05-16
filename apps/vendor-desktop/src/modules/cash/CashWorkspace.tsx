@@ -575,17 +575,56 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
         /* CLOSING FLOW */
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-red-200 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
-          <div className="shrink-0 border-b border-[#fecaca] px-5 py-3 flex items-center gap-3">
-            <div className="flex gap-1">
-              {([1, 2, 3, 4] as const).map(s => (
-                <div key={s} className={`h-1.5 rounded-full transition-all ${
-                  s < closingStage ? "w-6 bg-red-400" : s === closingStage ? "w-8 bg-red-600" : "w-4 bg-[#fecaca]"
+          <div className="shrink-0 border-b border-[#fecaca] px-5 py-3 flex items-center justify-between">
+
+            {/* Semáforos operacionales */}
+            <div className="flex items-center gap-3 select-none">
+              {/* CONTEO */}
+              <span className="flex items-center gap-1.5">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${closingStage >= 2 ? "bg-emerald-500" : "bg-amber-400"}`} />
+                <span className={`text-[9.5px] font-bold uppercase tracking-[0.13em] ${closingStage >= 2 ? "text-emerald-700" : "text-amber-600"}`}>
+                  Conteo
+                </span>
+              </span>
+              <span className="text-[#fecaca]">·</span>
+              {/* CONCILIACIÓN */}
+              <span className="flex items-center gap-1.5">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${
+                  closingStage >= 3
+                    ? Math.abs(diferencia) < 0.01 ? "bg-emerald-500" : "bg-amber-400"
+                    : "bg-red-400"
                 }`} />
-              ))}
+                <span className={`text-[9.5px] font-bold uppercase tracking-[0.13em] ${
+                  closingStage >= 3
+                    ? Math.abs(diferencia) < 0.01 ? "text-emerald-700" : "text-amber-600"
+                    : "text-red-400"
+                }`}>
+                  Conciliación
+                </span>
+              </span>
+              <span className="text-[#fecaca]">·</span>
+              {/* CIERRE */}
+              <span className="flex items-center gap-1.5">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${
+                  closingStage >= 4
+                    ? diferencia >= 0 ? "bg-emerald-500" : "bg-amber-400"
+                    : "bg-red-400"
+                }`} />
+                <span className={`text-[9.5px] font-bold uppercase tracking-[0.13em] ${
+                  closingStage >= 4
+                    ? diferencia >= 0 ? "text-emerald-700" : "text-amber-600"
+                    : "text-red-400"
+                }`}>
+                  Cierre
+                </span>
+              </span>
             </div>
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-red-500">
+
+            {/* Paso activo */}
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
               {closingStage === 1 ? "Conteo ciego" : closingStage === 2 ? "Validar conteo" : closingStage === 3 ? "Conciliación" : "Confirmar cierre"}
             </span>
+
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
