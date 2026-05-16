@@ -1,7 +1,6 @@
 import { type ReactNode } from "react";
 import { ContextBar } from "./ContextBar";
 import { ModulesBar } from "./ModulesBar";
-import { StatusBar } from "./StatusBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { usePOS } from "../context/POSContext";
@@ -35,7 +34,6 @@ export function AppShell({ children, activeModule, onModuleChange }: AppShellPro
           <Topbar />
           <ModulesBar active={activeModule} onChange={m => { closeCobro(); onModuleChange(m); }} />
           <ContextBar />
-          <StatusBar />
         </header>
 
         <section className="flex min-h-0 flex-1 gap-3 p-3">
