@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText } from "lucide-react";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
 import { printCashMoveVoucher } from "../../print/printTicket";
+import { calcConciliation } from "./services/cash-conciliation.service";
 
 // ── helpers ────────────────────────────────────────────────────
 
@@ -181,18 +182,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const canAddMove = totalAmt > 0 && !!moveMotivo.trim() && mixtoValid
                      && (sourceType !== "mixto" || (mixAptNum > 0 || mixVndNum > 0));
 
-  // fondo breakdown for conciliation
-  const egApertura  = cashMoves.filter(m => m.type === "egreso").reduce((s, m)  => s + m.fromApertura, 0);
-  const egVendido   = cashMoves.filter(m => m.type === "egreso").reduce((s, m)  => s + m.fromVendido,  0);
-  const ingApertura = cashMoves.filter(m => m.type === "ingreso").reduce((s, m) => s + m.fromApertura, 0);
-  const ingVendido  = cashMoves.filter(m => m.type === "ingreso").reduce((s, m) => s + m.fromVendido,  0);
-  const ingresosTotal    = cashMoves.filter(m => m.type === "ingreso").reduce((s, m) => s + m.amount, 0);
-  const egresosTotal     = cashMoves.filter(m => m.type === "egreso").reduce((s, m)  => s + m.amount, 0);
-  const fondoApertEsp    = apertura + ingApertura - egApertura;
-  const fondoVendidoEsp  = sessionStats.cash + ingVendido - egVendido;
-  const efectivoEsperado = fondoApertEsp + fondoVendidoEsp;
-  const contadoNum       = parseFloat(contado) || 0;
-  const diferencia       = contadoNum - efectivoEsperado;
+  // fondo breakdown — delegated to service
+  const {
+    ingApertura, egApertura, ingVendido, egVendido,
+    ingresosTotal, egresosTotal,
+    fondoApertEsp, fondoVendidoEsp, efectivoEsperado,
+  } = calcConciliation(cashMoves, sessionStats.cash, apertura);
+  const contadoNum = parseFloat(contado) || 0;
+  const diferencia = contadoNum - efectivoEsperado;
 
   // ── handlers ──────────────────────────────────────────────────
 
