@@ -7,6 +7,17 @@ async fn print_ticket(printer: String, data: thermal::TicketPrintData) -> Result
 }
 
 #[tauri::command]
+async fn print_ticket_with_dispatch(
+    printer: String,
+    receipt: thermal::TicketPrintData,
+    dispatch: thermal::DispatchPrintData,
+) -> Result<(), String> {
+    let mut bytes = thermal::build_escpos(&receipt);
+    bytes.extend(thermal::build_dispatch_escpos(&dispatch));
+    thermal::print_raw(&printer, &bytes)
+}
+
+#[tauri::command]
 fn app_exit(app: tauri::AppHandle) {
     app.exit(0);
 }
@@ -24,7 +35,7 @@ pub fn run() {
       }
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![print_ticket, app_exit])
+    .invoke_handler(tauri::generate_handler![print_ticket, print_ticket_with_dispatch, app_exit])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

@@ -349,3 +349,65 @@ pub fn print_raw(printer_name: &str, data: &[u8]) -> Result<(), String> {
 pub fn print_raw(_printer_name: &str, _data: &[u8]) -> Result<(), String> {
     Err("Raw thermal printing is only supported on Windows".into())
 }
+
+// ─── DISPATCH TICKET ─────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DispatchLine {
+    pub description: String,
+    pub quantity:    u32,
+    pub note:        Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DispatchPrintData {
+    pub correlative: u32,
+    pub date_time:   String,
+    pub lines:       Vec<DispatchLine>,
+    pub op_number:   String,
+}
+
+pub fn build_dispatch_escpos(d: &DispatchPrintData) -> Vec<u8> {
+    let mut b = Buf::new();
+    b.init();
+
+    b.align_center();
+    b.bold_on();
+    b.line("TICKET DESPACHO");
+    b.bold_off();
+
+    b.bold_on();
+    b.dbl_h_on();
+    b.line(&format!("#{:0>4}", d.correlative));
+    b.dbl_h_off();
+    b.bold_off();
+
+    b.line(&normalize(&d.date_time));
+    b.align_left();
+    b.dashes();
+
+    for line in &d.lines {
+        let qty_str  = format!("{}x", line.quantity);
+        let desc_up  = normalize(&line.description.to_uppercase());
+        let max_desc = COLS.saturating_sub(qty_str.len() + 1);
+        let desc_out = if desc_up.len() <= max_desc { desc_up } else { desc_up[..max_desc].to_string() };
+        b.line(&format!("{} {}", qty_str, desc_out));
+        if let Some(ref note) = line.note {
+            b.line(&format!("  > {}", normalize(note)));
+        }
+    }
+
+    b.dashes();
+    b.align_center();
+    b.line(&normalize(&format!("OP: {}", d.op_number)));
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+
+    b.cut();
+    b.0
+}

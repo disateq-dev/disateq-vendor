@@ -2,28 +2,26 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Pin, Trash2 } from "lucide-react";
 import { useTicketLines } from "../selectors/ticket.selectors";
 import { useTicketStore } from "../state/ticket.store";
+import { ticketService } from "../services/ticket.service";
 import { usePOS } from "../../../context/POSContext";
 
 let _saleCounter = 1;
 
 export function TicketGrid() {
-  const lines            = useTicketLines();
-  const removeLine       = useTicketStore(s => s.removeLine);
-  const updateQuantity   = useTicketStore(s => s.updateQuantity);
-  const updateNote       = useTicketStore(s => s.updateNote);
-  const clearTicket      = useTicketStore(s => s.clearTicket);
+  const lines             = useTicketLines();
   const pendingNoteLineId = useTicketStore(s => s.pendingNoteLineId);
-  const clearPendingNote = useTicketStore(s => s.clearPendingNote);
-  const activeLineIdx    = useTicketStore(s => s.activeLineIdx);
-  const setActiveLineIdx = useTicketStore(s => s.setActiveLineIdx);
+  const clearPendingNote  = useTicketStore(s => s.clearPendingNote);
+  const activeLineIdx     = useTicketStore(s => s.activeLineIdx);
+  const setActiveLineIdx  = useTicketStore(s => s.setActiveLineIdx);
   const { openCobro, cashSession } = usePOS();
 
   const [saleNumber] = useState(() => String(_saleCounter++).padStart(6, "0"));
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
-  const noteInputRef = useRef<HTMLInputElement>(null);
-  const listRef      = useRef<HTMLDivElement>(null);
+  const noteInputRef    = useRef<HTMLInputElement>(null);
+  const listRef         = useRef<HTMLDivElement>(null);
+  const noteKeyHandled  = useRef(false);
 
   // Auto-scroll to last line when a new item is added
   const prevLinesLengthRef = useRef(lines.length);
@@ -58,9 +56,9 @@ export function TicketGrid() {
 
   const saveNote = useCallback(() => {
     if (!editingNoteId) return;
-    updateNote(editingNoteId, noteInput.trim());
+    ticketService.saveLineNote(editingNoteId, noteInput.trim());
     setEditingNoteId(null);
-  }, [editingNoteId, noteInput, updateNote]);
+  }, [editingNoteId, noteInput]);
 
   const total      = lines.reduce((acc, l) => acc + l.subtotal, 0);
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
@@ -127,11 +125,24 @@ export function TicketGrid() {
                         value={noteInput}
                         onChange={e => setNoteInput(e.target.value)}
                         onKeyDown={e => {
-                          if (e.key === "Enter")  { e.preventDefault(); saveNote(); document.dispatchEvent(new CustomEvent("pos:focusSearch")); }
-                          if (e.key === "Escape") { e.preventDefault(); setEditingNoteId(null); }
                           e.stopPropagation();
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            noteKeyHandled.current = true;
+                            saveNote();
+                            document.dispatchEvent(new CustomEvent("pos:focusSearch"));
+                            return;
+                          }
+                          if (e.key === "Escape") {
+                            e.preventDefault();
+                            noteKeyHandled.current = true;
+                            setEditingNoteId(null);
+                          }
                         }}
-                        onBlur={saveNote}
+                        onBlur={() => {
+                          if (noteKeyHandled.current) { noteKeyHandled.current = false; return; }
+                          saveNote();
+                        }}
                         placeholder="observación..."
                         className="mt-1 w-full border-b border-[#e4e9f0] bg-transparent pb-px text-[10.5px] text-[#374151] outline-none placeholder:text-[#d1d9e1]"
                       />
@@ -151,8 +162,7 @@ export function TicketGrid() {
                       title="Tecla [←]"
                       onClick={e => {
                         e.stopPropagation();
-                        if (line.quantity > 1) updateQuantity(line.lineId, line.quantity - 1);
-                        else removeLine(line.lineId);
+                        ticketService.decrementLine(line.lineId);
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-[15px] font-bold text-orange-500 transition hover:bg-orange-100 hover:text-orange-600"
                     >
@@ -165,7 +175,7 @@ export function TicketGrid() {
                     </span>
                     <button
                       title="Tecla [→]"
-                      onClick={e => { e.stopPropagation(); updateQuantity(line.lineId, line.quantity + 1); }}
+                      onClick={e => { e.stopPropagation(); ticketService.incrementLine(line.lineId); }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[15px] font-bold text-[#2154d8] transition hover:bg-blue-100 hover:text-[#1a43b0]"
                     >
                       +
@@ -191,15 +201,15 @@ export function TicketGrid() {
                       }}
                       className={`flex items-center justify-center rounded-lg p-1.5 transition ${
                         line.note
-                          ? "text-amber-500 hover:bg-amber-50 hover:text-amber-600"
-                          : "text-[#d4b896] hover:bg-amber-50 hover:text-amber-500"
+                          ? "text-[#2154d8] hover:bg-blue-50 hover:text-[#1a43b0]"
+                          : "text-[#93c5fd] hover:bg-blue-50 hover:text-[#2154d8]"
                       }`}
                     >
                       <Pin size={12} />
                     </button>
                     <button
                       title="Tecla [Supr]"
-                      onClick={e => { e.stopPropagation(); removeLine(line.lineId); }}
+                      onClick={e => { e.stopPropagation(); ticketService.removeLine(line.lineId); }}
                       className="flex items-center justify-center rounded-lg p-1.5 text-red-400 transition hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 size={12} />
@@ -217,7 +227,7 @@ export function TicketGrid() {
 
         {/* LIMPIAR ~30% */}
         <button
-          onClick={clearTicket}
+          onClick={() => ticketService.clear()}
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider transition ${
             lines.length === 0
@@ -231,21 +241,22 @@ export function TicketGrid() {
         {/* TOTAL ~40% */}
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center py-1">
           <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#c4a87c]">Total</p>
-          <strong className="text-[22px] font-bold leading-none tracking-tight text-[#2F3E46] tabular-nums">
+          <strong className="text-[26px] font-extrabold leading-none tracking-tight text-[#111827] tabular-nums">
             S/ {total.toFixed(2)}
           </strong>
         </div>
 
         {/* COBRAR ~30% */}
         <button
+          title="Tecla [F9]"
           onClick={openCobro}
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider text-white transition ${
             lines.length === 0
               ? "cursor-not-allowed bg-[#e4e9f0] text-[#b4bfcb]"
               : !cashSession.isOpen
-              ? "bg-[#6ea4e0] hover:bg-[#5a94d0] active:scale-[0.97]"
-              : "bg-[#2154d8] shadow-[0_4px_18px_rgba(33,84,216,0.32)] hover:bg-[#1a43b0] active:scale-[0.97]"
+              ? "bg-[#6abd8a] hover:bg-[#5aad7a] active:scale-[0.97]"
+              : "bg-[#16a34a] shadow-[0_4px_18px_rgba(22,163,74,0.32)] hover:bg-[#15803d] active:scale-[0.97]"
           }`}
         >
           COBRAR →

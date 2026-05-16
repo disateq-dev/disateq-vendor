@@ -26,6 +26,11 @@ interface TicketState {
     note: string
   ) => void;
 
+  splitLine: (
+    lineId: string,
+    note: string
+  ) => void;
+
   clearTicket: () => void;
   pendingNoteLineId: string | null;
   openNoteFor: (lineId: string) => void;
@@ -51,9 +56,9 @@ export const useTicketStore =
             state.activeLineIdx = -1;
             return;
           }
-          // Check by productId — same product added again
+          // Merge only with lines that have no note — noted lines are individual
           const existingId = state.lineOrder.find(
-            (id) => state.linesById[id]?.productId === line.productId
+            (id) => state.linesById[id]?.productId === line.productId && !state.linesById[id]?.note
           );
           if (existingId) {
             const ex = state.linesById[existingId];
@@ -101,6 +106,58 @@ export const useTicketStore =
           if (!line) return;
           if (note) line.note = note;
           else delete line.note;
+        }),
+
+      splitLine: (lineId, note) =>
+        set((state) => {
+          const line = state.linesById[lineId];
+          if (!line) return;
+
+          if (!note) {
+            // Note cleared — try to reverse-merge into an unnoted sibling
+            delete line.note;
+            const siblingId = state.lineOrder.find(
+              id => id !== lineId &&
+                    state.linesById[id]?.productId === line.productId &&
+                    !state.linesById[id]?.note
+            );
+            if (siblingId) {
+              state.linesById[siblingId].quantity += line.quantity;
+              state.linesById[siblingId].subtotal =
+                state.linesById[siblingId].quantity * state.linesById[siblingId].unitPrice;
+              delete state.linesById[lineId];
+              state.lineOrder = state.lineOrder.filter(id => id !== lineId);
+              state.activeLineIdx = -1;
+            }
+            return;
+          }
+
+          if (line.quantity <= 1) {
+            line.note = note;
+            return;
+          }
+
+          // Disaggregate: original keeps qty-1, new line gets qty=1 + note
+          line.quantity -= 1;
+          line.subtotal  = line.quantity * line.unitPrice;
+
+          const noted: TicketLineDTO = {
+            lineId:      crypto.randomUUID(),
+            productId:   line.productId,
+            description: line.description,
+            barcode:     line.barcode,
+            quantity:    1,
+            unitPrice:   line.unitPrice,
+            subtotal:    line.unitPrice,
+            note,
+            flags:       { isManualPrice: line.flags?.isManualPrice ?? false, isRecovered: false },
+          };
+
+          const idx = state.lineOrder.indexOf(lineId);
+          state.linesById[noted.lineId] = noted;
+          if (idx >= 0) state.lineOrder.splice(idx + 1, 0, noted.lineId);
+          else          state.lineOrder.push(noted.lineId);
+          state.activeLineIdx = -1;
         }),
 
       clearTicket: () =>

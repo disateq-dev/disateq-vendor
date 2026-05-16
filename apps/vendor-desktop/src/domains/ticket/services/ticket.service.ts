@@ -34,16 +34,8 @@ export const ticketService = {
 
   decrementLine(lineId: string) {
     const state = useTicketStore.getState();
-
     const line = state.linesById[lineId];
-
-    if (!line) return;
-
-    if (line.quantity <= 1) {
-      state.removeLine(lineId);
-      return;
-    }
-
+    if (!line || line.quantity <= 1) return;
     state.updateQuantity(lineId, line.quantity - 1);
   },
 
@@ -53,6 +45,10 @@ export const ticketService = {
 
   openLineNote(lineId: string) {
     useTicketStore.getState().openNoteFor(lineId);
+  },
+
+  saveLineNote(lineId: string, note: string) {
+    useTicketStore.getState().splitLine(lineId, note);
   },
 
   clear() {
