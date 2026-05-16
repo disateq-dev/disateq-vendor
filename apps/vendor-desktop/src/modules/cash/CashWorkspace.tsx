@@ -128,14 +128,33 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }, [openedAt]);
 
   // ── closing state ─────────────────────────────────────────────
-  const [closingStage, setClosingStage] = useState<ClosingStage>(0);
-  const [contado,      setContado]      = useState("");
+  const [closingStage, setClosingStage] = useState<ClosingStage>(() => {
+    try {
+      const n = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
+      return ([0,1,2,3,4].includes(n) ? n : 0) as ClosingStage;
+    } catch { return 0; }
+  });
+  const [contado,      setContado]      = useState(() => {
+    try { return localStorage.getItem("disateq.pos.ui.contado") ?? ""; } catch { return ""; }
+  });
   const [observations, setObservations] = useState("");
   const contadoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (closingStage > 0) localStorage.setItem("disateq.pos.ui.closingStage", String(closingStage));
+    else localStorage.removeItem("disateq.pos.ui.closingStage");
+  }, [closingStage]);
+
+  useEffect(() => {
+    if (contado) localStorage.setItem("disateq.pos.ui.contado", contado);
+    else localStorage.removeItem("disateq.pos.ui.contado");
+  }, [contado]);
+
+  useEffect(() => {
     if (!isOpen) {
       setClosingStage(0); setContado(""); setObservations("");
+      localStorage.removeItem("disateq.pos.ui.closingStage");
+      localStorage.removeItem("disateq.pos.ui.contado");
       setAperturaInput(""); setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
     }
   }, [isOpen]);
@@ -228,6 +247,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     setClosingStage(0);
     setContado("");
     setObservations("");
+    localStorage.removeItem("disateq.pos.ui.closingStage");
+    localStorage.removeItem("disateq.pos.ui.contado");
   }
 
   // ── render ────────────────────────────────────────────────────

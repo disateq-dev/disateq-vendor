@@ -62,13 +62,14 @@ const BLOCK_OPERATORS: Record<string, string> = {
 };
 
 // ── localStorage keys ──────────────────────────────────────────
-const LS_SESSION  = "disateq.pos.cashSession";
-const LS_USED     = "disateq.pos.usedCodes";
-const LS_MOVES    = "disateq.pos.cashMoves";
-const LS_OPLOGS      = "disateq.pos.opLogs";
-const LS_RUBRO       = "disateq.pos.rubro";
-const LS_VISUAL_MODE = "disateq.pos.visualMode";
-const LS_PRINT_FLOW  = "disateq.pos.printFlow";
+const LS_SESSION      = "disateq.pos.cashSession";
+const LS_USED         = "disateq.pos.usedCodes";
+const LS_MOVES        = "disateq.pos.cashMoves";
+const LS_SESSION_STATS = "disateq.pos.sessionStats";
+const LS_OPLOGS       = "disateq.pos.opLogs";
+const LS_RUBRO        = "disateq.pos.rubro";
+const LS_VISUAL_MODE  = "disateq.pos.visualMode";
+const LS_PRINT_FLOW   = "disateq.pos.printFlow";
 
 function loadRubro(): Rubro {
   const raw = localStorage.getItem(LS_RUBRO);
@@ -126,7 +127,12 @@ function loadSession(): CashSession {
 }
 
 function loadUsedCodes(): Set<string> {
-  return new Set(); // temp: reset on every start for testing
+  try {
+    const raw = localStorage.getItem(LS_USED);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr.filter((v: unknown) => typeof v === "string")) : new Set();
+  } catch { return new Set(); }
 }
 
 function saveSession(s: CashSession): void {
@@ -189,6 +195,35 @@ export type SessionStats = {
 };
 const NULL_STATS: SessionStats = { count: 0, total: 0, cash: 0, yape: 0, tarjeta: 0, docRanges: {} };
 
+function loadSessionStats(): SessionStats {
+  try {
+    const raw = localStorage.getItem(LS_SESSION_STATS);
+    if (!raw) return NULL_STATS;
+    const p = JSON.parse(raw) as Partial<SessionStats>;
+    const ranges: Partial<Record<string, DocRange>> = {};
+    if (p.docRanges && typeof p.docRanges === "object") {
+      for (const [k, v] of Object.entries(p.docRanges)) {
+        if (v && typeof v.series === "string" && typeof v.first === "number"
+            && typeof v.last === "number" && typeof v.count === "number") {
+          ranges[k] = v as DocRange;
+        }
+      }
+    }
+    return {
+      count:     typeof p.count    === "number" ? p.count    : 0,
+      total:     typeof p.total    === "number" ? p.total    : 0,
+      cash:      typeof p.cash     === "number" ? p.cash     : 0,
+      yape:      typeof p.yape     === "number" ? p.yape     : 0,
+      tarjeta:   typeof p.tarjeta  === "number" ? p.tarjeta  : 0,
+      docRanges: ranges,
+    };
+  } catch { return NULL_STATS; }
+}
+
+function saveSessionStats(s: SessionStats): void {
+  try { localStorage.setItem(LS_SESSION_STATS, JSON.stringify(s)); } catch { /* quota */ }
+}
+
 // ── context interface ──────────────────────────────────────────
 interface POSContextValue {
   zone: FocusZone;
@@ -238,9 +273,10 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
   const suggestedCashBox = useMemo(() => cashBoxes.find(b => b.available) ?? null, [cashBoxes]);
 
-  const [sessionStats, setSessionStats] = useState<SessionStats>(NULL_STATS);
+  const [sessionStats, setSessionStats] = useState<SessionStats>(loadSessionStats);
   const [cashMoves,    setCashMoves]    = useState<CashMove[]>(loadMoves);
   useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
+  useEffect(() => { saveSessionStats(sessionStats); }, [sessionStats]);
 
   const [opLogs, setOpLogs] = useState<OpLog[]>(loadOpLogs);
   useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
