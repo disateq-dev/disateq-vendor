@@ -16,9 +16,13 @@ function fmtRange(r: DocRange): string {
 const SEP = <span className="mx-[7px] text-[#1e3060]">·</span>;
 
 export function StatusBar() {
-  const { cashSession, sessionStats } = usePOS();
+  const { cashSession, sessionStats, cashMoves } = usePOS();
   const { isOpen, cashBox, terminal, openedAt } = cashSession;
   const isCtg = !!cashBox && cashBox.type !== "normal";
+
+  const ingTotal = cashMoves.reduce((s, m) => m.type === "ingreso" ? s + m.amount : s, 0);
+  const egTotal  = cashMoves.reduce((s, m) => m.type === "egreso"  ? s + m.amount : s, 0);
+  const hasMoves = cashMoves.length > 0;
 
   const [duration, setDuration] = useState("");
   useEffect(() => {
@@ -59,6 +63,14 @@ export function StatusBar() {
         {duration && <>{SEP}<span className="text-[#3d5a8a]">{duration}</span></>}
         {SEP}
         <span className="text-[#3d5a8a]">{sessionStats.count}&nbsp;ops</span>
+        {hasMoves && (
+          <>
+            {SEP}
+            <span className="text-[#3d5a8a]">mov</span>
+            <span className="ml-1 text-emerald-400/75">↑{Math.round(ingTotal)}</span>
+            <span className="ml-1 text-red-400/75">↓{Math.round(egTotal)}</span>
+          </>
+        )}
       </span>
 
       {/* RIGHT — correlativos runtime */}
