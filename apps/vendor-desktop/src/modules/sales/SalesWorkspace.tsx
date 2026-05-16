@@ -341,6 +341,13 @@ export function SalesWorkspace() {
           autoComplete="off"
         />
 
+        {!cashSession.isOpen && (
+          <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-500">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+            Sin turno
+          </span>
+        )}
+
         <div className="h-4 w-px shrink-0 bg-[#eaecf0]" />
 
         <button className="shrink-0 rounded-lg p-1.5 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#6b7280]">

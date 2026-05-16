@@ -52,7 +52,9 @@ const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
   const lines = useTicketLines();
-  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, printFlow } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, printFlow, sessionStats } = usePOS();
+  const { cashBox } = cashSession;
+  const isCtg = !!cashBox && cashBox.type !== "normal";
 
   // ── main state ──────────────────────────────────────────────────────────────
   const [docType,       setDocType]       = useState<DocType>("nota");
@@ -180,7 +182,8 @@ export function CobroPanel() {
         opNumber:    docNumber,
       } satisfies DispatchData);
     }
-    recordSale(netTotal, payMethod, docType, cfg.series, cfg.correlative + 1);
+    recordSale(netTotal, payMethod, docType, cfg.series, nextCorrelative,
+      payMethod === "mixto" ? mixtoEfectivoNum : undefined);
     ticketService.clear();
     closeCobro();
   }
@@ -198,7 +201,7 @@ export function CobroPanel() {
       businessPhone:  "01-234-5678",
       docType,
       docSeries:      cfg.series,
-      docCorrelative: cfg.correlative,
+      docCorrelative: nextCorrelative,
       dateTime,
       customer,
       lines: lines.map(l => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, subtotal: l.subtotal, note: l.note })),
@@ -224,7 +227,8 @@ export function CobroPanel() {
         printTicket(receiptData);
       }
     }
-    recordSale(netTotal, payMethod, docType, cfg.series, cfg.correlative + 1);
+    recordSale(netTotal, payMethod, docType, cfg.series, nextCorrelative,
+      payMethod === "mixto" ? mixtoEfectivoNum : undefined);
     ticketService.clear();
     closeCobro();
   }
@@ -325,8 +329,12 @@ export function CobroPanel() {
   }, [payMethod, cobroOpen, cobroView]);
 
   // ── render ───────────────────────────────────────────────────────────────────
-  const cfg            = DOC_SERIES[docType];
-  const docNumber      = `${cfg.series}-${String(cfg.correlative + 1).padStart(8, "0")}`;
+  const cfg             = DOC_SERIES[docType];
+  const lastCorrelative = cashSession.isOpen
+    ? (sessionStats.docRanges[docType]?.last ?? cfg.correlative)
+    : cfg.correlative;
+  const nextCorrelative = lastCorrelative + 1;
+  const docNumber       = `${cfg.series}-${String(nextCorrelative).padStart(8, "0")}`;
   const customerDisplay = getCustomerDisplay();
   const { text: rowLabel, warn: rowWarn } = getRowLabel();
 
@@ -361,9 +369,12 @@ export function CobroPanel() {
           </div>
         </div>
 
-        <span className="shrink-0 font-mono text-[11px] font-semibold text-[#374151]">
-          {docNumber}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isCtg && (
+            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-extrabold tracking-widest text-amber-500">CTG</span>
+          )}
+          <span className="font-mono text-[11px] font-semibold text-[#374151]">{docNumber}</span>
+        </div>
       </header>
 
       {/* BODY */}

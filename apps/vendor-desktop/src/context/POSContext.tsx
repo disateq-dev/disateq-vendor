@@ -309,7 +309,7 @@ interface POSContextValue {
   openCashSession: (boxCode: string, apertura: number) => void;
   closeCashSession: () => void;
   sessionStats: SessionStats;
-  recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number) => void;
+  recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number) => void;
   cashMoves: CashMove[];
   addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number) => CashMove;
   opLogs: OpLog[];
@@ -374,6 +374,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const recordSale = useCallback((
     netTotal: number, payMethod: string,
     docType?: string, docSeries?: string, docCorrelative?: number,
+    cashComponent?: number,
   ) => {
     setSessionStats(prev => {
       const ranges = { ...prev.docRanges };
@@ -383,12 +384,15 @@ export function POSProvider({ children }: { children: ReactNode }) {
           ? { series: docSeries, first: existing.first, last: docCorrelative, count: existing.count + 1 }
           : { series: docSeries, first: docCorrelative, last: docCorrelative, count: 1 };
       }
+      const addCash = payMethod === "efectivo" ? netTotal
+                    : payMethod === "mixto"    ? (cashComponent ?? 0)
+                    : 0;
       return {
-        count:   prev.count + 1,
-        total:   prev.total + netTotal,
-        cash:    prev.cash    + (payMethod === "efectivo" ? netTotal : 0),
-        yape:    prev.yape    + (payMethod === "yape"     ? netTotal : 0),
-        tarjeta: prev.tarjeta + (payMethod === "tarjeta"  ? netTotal : 0),
+        count:     prev.count + 1,
+        total:     prev.total + netTotal,
+        cash:      prev.cash    + addCash,
+        yape:      prev.yape    + (payMethod === "yape"    ? netTotal : 0),
+        tarjeta:   prev.tarjeta + (payMethod === "tarjeta" ? netTotal : 0),
         docRanges: ranges,
       };
     });
