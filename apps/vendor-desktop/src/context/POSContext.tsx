@@ -201,11 +201,16 @@ function saveOpLogs(logs: OpLog[]): void {
 
 // ── session stats ───────────────────────────────────────────────
 export type DocRange  = { series: string; first: number; last: number; count: number };
+export type ByMethod = { efe: number; yap: number; tar: number; mix: number };
 export type SessionStats = {
   count: number; total: number; cash: number; yape: number; tarjeta: number;
   docRanges: Partial<Record<string, DocRange>>;
+  byMethod: ByMethod;
 };
-const NULL_STATS: SessionStats = { count: 0, total: 0, cash: 0, yape: 0, tarjeta: 0, docRanges: {} };
+const NULL_STATS: SessionStats = {
+  count: 0, total: 0, cash: 0, yape: 0, tarjeta: 0, docRanges: {},
+  byMethod: { efe: 0, yap: 0, tar: 0, mix: 0 },
+};
 
 function loadSessionStats(): SessionStats {
   try {
@@ -221,6 +226,7 @@ function loadSessionStats(): SessionStats {
         }
       }
     }
+    const bm = (p.byMethod && typeof p.byMethod === "object") ? p.byMethod as Partial<ByMethod> : {};
     return {
       count:     typeof p.count    === "number" ? p.count    : 0,
       total:     typeof p.total    === "number" ? p.total    : 0,
@@ -228,6 +234,12 @@ function loadSessionStats(): SessionStats {
       yape:      typeof p.yape     === "number" ? p.yape     : 0,
       tarjeta:   typeof p.tarjeta  === "number" ? p.tarjeta  : 0,
       docRanges: ranges,
+      byMethod: {
+        efe: typeof bm.efe === "number" ? bm.efe : 0,
+        yap: typeof bm.yap === "number" ? bm.yap : 0,
+        tar: typeof bm.tar === "number" ? bm.tar : 0,
+        mix: typeof bm.mix === "number" ? bm.mix : 0,
+      },
     };
   } catch { return NULL_STATS; }
 }
@@ -400,6 +412,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
         yape:      prev.yape    + (payMethod === "yape"    ? netTotal : 0),
         tarjeta:   prev.tarjeta + (payMethod === "tarjeta" ? netTotal : 0),
         docRanges: ranges,
+        byMethod: {
+          efe: prev.byMethod.efe + (payMethod === "efectivo" ? 1 : 0),
+          yap: prev.byMethod.yap + (payMethod === "yape"     ? 1 : 0),
+          tar: prev.byMethod.tar + (payMethod === "tarjeta"  ? 1 : 0),
+          mix: prev.byMethod.mix + (payMethod === "mixto"    ? 1 : 0),
+        },
       };
     });
   }, []);

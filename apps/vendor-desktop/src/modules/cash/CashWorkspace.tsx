@@ -115,7 +115,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     sessionStats, cashMoves, addCashMove,
     opLogs, showNotice,
   } = usePOS();
-  const { isOpen, cashBox: activeBox, operator, openedAt, apertura, motivo: sessionMotivo } = cashSession;
+  const { isOpen, cashBox: activeBox, operator, terminal, openedAt, apertura, motivo: sessionMotivo } = cashSession;
 
   // ── pre-open state ────────────────────────────────────────────
   const [selectedCode, setSelectedCode] = useState<string>(() => suggestedCashBox?.code ?? "100");
@@ -300,16 +300,30 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               <InfoRow label="Operador" value={operator} />
               {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
+              <InfoRow label="Terminal" value={terminal} />
               {apertura > 0 && <InfoRow label="Fondo" value={`S/ ${apertura.toFixed(2)}`} />}
               {sessionMotivo && <InfoRow label="Motivo" value={sessionMotivo} />}
             </div>
 
-            {sessionStats.count > 0 && closingStage === 0 && (
+            {sessionStats.count > 0 && closingStage === 0 && (() => {
+              const { efe, yap, tar, mix } = sessionStats.byMethod;
+              const breakdown = [
+                { key: "EFE", n: efe },
+                { key: "YAP", n: yap },
+                { key: "TAR", n: tar },
+                { key: "MIX", n: mix },
+              ].filter(m => m.n > 0);
+              return (
               <div className="flex flex-col gap-1 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">Operaciones</span>
                   <span className="text-[13px] font-bold text-[#374151]">{sessionStats.count}</span>
                 </div>
+                {breakdown.length > 0 && (
+                  <p className="text-[9.5px] font-semibold tabular-nums text-[#9ca3af]">
+                    {breakdown.map((m, i) => <span key={m.key}>{i > 0 && " · "}{m.key} {m.n}</span>)}
+                  </p>
+                )}
                 {Object.entries(sessionStats.docRanges).map(([type, r]) => {
                   if (!r) return null;
                   const fmt = (n: number) => String(n).padStart(6, "0");
@@ -325,7 +339,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   );
                 })}
               </div>
-            )}
+              );
+            })()}
 
             {closingStage === 0 && (
               <div className="flex flex-col gap-2 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
