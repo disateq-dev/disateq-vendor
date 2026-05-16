@@ -317,6 +317,19 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 })}
               </div>
             )}
+
+            {closingStage === 0 && (
+              <div className="flex flex-col gap-2 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-semibold uppercase tracking-widest text-[#c0cad4]">Ingresos ↑</span>
+                  <span className="text-[14px] font-bold leading-tight tabular-nums text-emerald-600">S/ {ingresosTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-semibold uppercase tracking-widest text-[#c0cad4]">Egresos ↓</span>
+                  <span className="text-[14px] font-bold leading-tight tabular-nums text-[#ef4444]">S/ {egresosTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
           </div>
 
         ) : (
