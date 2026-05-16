@@ -3,6 +3,11 @@ import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileTe
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
 import { printCashMoveVoucher } from "../../print/printTicket";
 import { calcConciliation } from "./services/cash-conciliation.service";
+import {
+  prereqCode, operatorFromCode, isContingencyBox,
+  canOpenSession, validateMixto, validateCanAddMove,
+  CTG_PIN, CTG_JUSTIFS,
+} from "./services/cash-rules.service";
 
 // ── helpers ────────────────────────────────────────────────────
 
@@ -17,17 +22,6 @@ function formatDuration(from: Date): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function prereqCode(box: CashBox): string {
-  if (box.type === "contingency-1") return box.code.slice(0, 2) + "0";
-  if (box.type === "contingency-2") return box.code.slice(0, 2) + "1";
-  return "";
-}
-
-function operatorFromCode(code: string): string {
-  const BLOCK: Record<string, string> = { "1": "Ricardo Aguinaga", "2": "Lucía Rebaza", "3": "Administrador" };
-  return BLOCK[code[0]] ?? "Operador";
-}
-
 function fmtTs(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -35,8 +29,6 @@ function fmtTs(iso: string): string {
 
 // ── constants ──────────────────────────────────────────────────
 
-const CTG_PIN = "1234";
-const CTG_JUSTIFS = ["Falla técnica caja normal", "Saturación operacional", "Mantenimiento programado", "Otro"];
 const MOTIVOS: Record<MoveType, string[]> = {
   ingreso: ["Cambio inicial", "Reposición", "Ajuste", "Ingreso manual"],
   egreso:  ["Taxi", "Compra rápida", "Retiro dueño", "Gasto operativo", "Cambio externo"],
@@ -170,17 +162,15 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // ── derived ───────────────────────────────────────────────────
   const selectedBox   = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
-  const isContingency = selectedBox?.type !== "normal";
-  const canOpen       = !isOpen && !!selectedBox?.available && parseFloat(aperturaInput) >= 0
-                        && (!isContingency || (ctgPin === CTG_PIN && ctgJustif !== ""));
+  const isContingency = isContingencyBox(selectedBox);
+  const canOpen       = canOpenSession(isOpen, selectedBox, aperturaInput, isContingency, ctgPin, ctgJustif);
 
   // move form derived
   const totalAmt   = parseFloat(moveAmount) || 0;
   const mixAptNum  = parseFloat(mixApertura) || 0;
   const mixVndNum  = parseFloat(mixVendido)  || 0;
-  const mixtoValid = sourceType !== "mixto" || Math.abs(mixAptNum + mixVndNum - totalAmt) < 0.005;
-  const canAddMove = totalAmt > 0 && !!moveMotivo.trim() && mixtoValid
-                     && (sourceType !== "mixto" || (mixAptNum > 0 || mixVndNum > 0));
+  const mixtoValid = sourceType !== "mixto" || validateMixto(totalAmt, mixAptNum, mixVndNum);
+  const canAddMove = validateCanAddMove(totalAmt, moveMotivo, sourceType, mixAptNum, mixVndNum);
 
   // fondo breakdown — delegated to service
   const {
