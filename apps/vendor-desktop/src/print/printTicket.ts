@@ -42,6 +42,7 @@ export interface PrintData {
 export interface VoucherMoveData {
   businessName: string;
   moveType: "ingreso" | "egreso";
+  sourceLabel?: string;
   amount: number;
   motivo: string;
   observacion?: string;
@@ -209,9 +210,9 @@ export async function printTicketWithDispatch(
 }
 
 function buildVoucherHTML(d: VoucherMoveData): string {
-  const typeLabel  = d.moveType === "ingreso" ? "INGRESO" : "EGRESO";
-  const typeColor  = d.moveType === "ingreso" ? "#065f46" : "#991b1b";
-  const amtColor   = d.moveType === "ingreso" ? "#059669" : "#dc2626";
+  const typeLabel  = d.sourceLabel ?? (d.moveType === "ingreso" ? "INGRESO" : "EGRESO");
+  const typeColor  = d.sourceLabel ? "#065f46" : d.moveType === "ingreso" ? "#065f46" : "#991b1b";
+  const amtColor   = d.sourceLabel ? "#059669" : d.moveType === "ingreso" ? "#059669" : "#dc2626";
   return `
 <style>
 @page { size: 80mm auto; margin: 0; }

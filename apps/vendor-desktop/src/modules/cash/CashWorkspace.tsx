@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText, X, Wallet, ShoppingCart, ArrowLeftRight } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText, X, Wallet, ShoppingCart, ArrowLeftRight, RotateCcw } from "lucide-react";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
 import { printCashMoveVoucher } from "../../print/printTicket";
 import { calcConciliation } from "./services/cash-conciliation.service";
@@ -185,14 +185,22 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const moveAmountRef = useRef<HTMLInputElement>(null);
   const motivoRef     = useRef<HTMLInputElement>(null);
 
+  // ── reposición state ──────────────────────────────────────────
+  const [reposingMoveId,  setReposingMoveId]  = useState<string | null>(null);
+  const [repoAmount,      setRepoAmount]      = useState("");
+  const [repoMotivo,      setRepoMotivo]      = useState("");
+  const [repoObservacion, setRepoObservacion] = useState("");
+  const repoAmountRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     setLastMove(null); setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
     setSourceType("apertura"); setMixApertura(""); setMixVendido("");
     setLogOpen(false);
+    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion("");
   }, [isOpen]);
 
   useEffect(() => {
-    if (closingStage > 0) setLogOpen(false);
+    if (closingStage > 0) { setLogOpen(false); setReposingMoveId(null); }
   }, [closingStage]);
 
   useEffect(() => {
@@ -254,12 +262,44 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     setTimeout(() => moveAmountRef.current?.focus(), 10);
   }
 
+  function closeRepo() {
+    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion("");
+  }
+
+  function openRepo(original: CashMove) {
+    setReposingMoveId(original.id);
+    setRepoAmount(original.amount.toFixed(2));
+    setRepoMotivo(`Devolución: ${original.motivo}`);
+    setRepoObservacion("");
+    setTimeout(() => repoAmountRef.current?.focus(), 50);
+  }
+
+  function handleReposicion() {
+    const original = cashMoves.find(m => m.id === reposingMoveId);
+    if (!original) return;
+    const amt = parseFloat(repoAmount) || 0;
+    if (amt <= 0 || !repoMotivo.trim()) return;
+    let fa = 0, fv = 0;
+    if (original.sourceType === "apertura") { fa = amt; fv = 0; }
+    else if (original.sourceType === "vendido") { fa = 0; fv = amt; }
+    else {
+      const ratio = original.amount > 0 ? original.fromApertura / original.amount : 1;
+      fa = parseFloat((amt * ratio).toFixed(2));
+      fv = parseFloat((amt - fa).toFixed(2));
+    }
+    addCashMove("ingreso", amt, repoMotivo.trim(), original.sourceType, fa, fv,
+      repoObservacion.trim() || undefined, original.id);
+    showNotice(`Reposición registrada · S/ ${amt.toFixed(2)}`);
+    closeRepo();
+  }
+
   function handlePrintVoucher(move: CashMove) {
     const ts = new Date(move.timestamp);
     const p  = (n: number) => String(n).padStart(2, "0");
     printCashMoveVoucher({
       businessName: "DISATEQ TIENDA",
       moveType:     move.type,
+      sourceLabel:  move.refId ? "REPOSICIÓN" : undefined,
       amount:       move.amount,
       motivo:       move.motivo,
       observacion:  move.observacion,
@@ -774,7 +814,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <div className="flex items-stretch gap-2">
 
                   {/* Monto */}
-                  <div className="flex items-center gap-1.5 w-[148px] shrink-0">
+                  <div className="flex flex-col gap-0.5 w-[148px] shrink-0">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
+                    <div className="flex items-center gap-1.5 flex-1">
                     <span className="shrink-0 text-[10px] font-bold text-[#9ca3af]">S/</span>
                     <input
                       ref={moveAmountRef}
@@ -787,6 +829,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       step="0.01"
                       className="w-full min-w-0 rounded-xl border border-[#e4e9f0] px-2.5 py-1.5 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                     />
+                    </div>
                   </div>
 
                   {/* Origen operacional */}
@@ -913,24 +956,94 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       const srcLabel = m.sourceType === "mixto"
                         ? `fondo S/${m.fromApertura.toFixed(0)} · vnd S/${m.fromVendido.toFixed(0)}`
                         : m.sourceType === "apertura" ? "fondo" : m.sourceType;
+                      const isRepoing = reposingMoveId === m.id;
+                      const canRepo = parseFloat(repoAmount) > 0 && repoMotivo.trim().length > 0;
                       return (
-                        <div key={m.id} className="rounded-xl px-3 py-2 hover:bg-[#f8fafd] group">
-                          <div className="flex items-center gap-2.5">
+                        <div key={m.id} className="flex flex-col rounded-xl hover:bg-[#f8fafd] group">
+                          <div className="flex items-center gap-2.5 px-3 py-1.5">
                             <span className={`shrink-0 text-[11px] font-bold ${m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
                               {m.type === "ingreso" ? "↑" : "↓"}
                             </span>
-                            <span className="flex-1 text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</span>
-                            <span className="text-[10px] text-[#9ca3af] tabular-nums">{hm}</span>
-                            <span className={`text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[11px] font-semibold text-[#374151] truncate block">{m.motivo}</span>
+                              {m.refId && (
+                                <span className="text-[8.5px] font-bold uppercase tracking-wide text-emerald-600">↩ reposición</span>
+                              )}
+                            </div>
+                            <span className="shrink-0 text-[10px] text-[#9ca3af] tabular-nums">{hm}</span>
+                            <span className={`shrink-0 text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
                               {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
                             </span>
-                            <button onClick={() => handlePrintVoucher(m)} title="Imprimir voucher"
-                              className="shrink-0 opacity-0 group-hover:opacity-100 transition text-[#c0cad4] hover:text-[#2154d8]"
-                            >
-                              <Printer size={11} strokeWidth={2} />
-                            </button>
+                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition">
+                              <button onClick={() => handlePrintVoucher(m)} title="Imprimir voucher"
+                                className="text-[#c0cad4] hover:text-[#2154d8]"
+                              >
+                                <Printer size={11} strokeWidth={2} />
+                              </button>
+                              {m.type === "egreso" && (
+                                <button
+                                  onClick={() => isRepoing ? closeRepo() : openRepo(m)}
+                                  title="Registrar reposición"
+                                  className={`transition ${isRepoing ? "text-emerald-500" : "text-[#c0cad4] hover:text-emerald-500"}`}
+                                >
+                                  <RotateCcw size={11} strokeWidth={2} />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <p className="ml-[22px] text-[9.5px] text-[#c0cad4] tabular-nums">{srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}</p>
+                          <p className="ml-[34px] -mt-1 pb-1 text-[9.5px] text-[#c0cad4] tabular-nums">{srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}</p>
+
+                          {/* Formulario inline de reposición */}
+                          {isRepoing && (
+                            <div className="mx-3 mb-2 flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">Reposición</span>
+                                <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition">
+                                  <X size={12} />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9.5px] font-bold text-[#9ca3af]">S/</span>
+                                <input
+                                  ref={repoAmountRef}
+                                  type="number"
+                                  value={repoAmount}
+                                  onChange={e => setRepoAmount(e.target.value)}
+                                  placeholder={m.amount.toFixed(2)}
+                                  min="0.01" step="0.01"
+                                  className="w-[100px] rounded-lg border border-emerald-200 bg-white px-2 py-1 text-[14px] font-bold text-[#2F3E46] outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={repoMotivo}
+                                onChange={e => setRepoMotivo(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter" && canRepo) handleReposicion(); if (e.key === "Escape") closeRepo(); }}
+                                placeholder="Ej: Devolución mototaxi, reposición proveedor..."
+                                maxLength={120}
+                                className="w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
+                              />
+                              <input
+                                type="text"
+                                value={repoObservacion}
+                                onChange={e => setRepoObservacion(e.target.value)}
+                                placeholder="Observación operacional (opcional)"
+                                maxLength={200}
+                                className="w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
+                              />
+                              <button
+                                onClick={handleReposicion}
+                                disabled={!canRepo}
+                                className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                                  canRepo
+                                    ? "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]"
+                                    : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                                }`}
+                              >
+                                <RotateCcw size={10} strokeWidth={2} /> Registrar reposición
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
