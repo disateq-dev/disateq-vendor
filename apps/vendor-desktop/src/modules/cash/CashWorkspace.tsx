@@ -316,7 +316,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal" value={terminal} />
               {apertura > 0 && <InfoRow label="Fondo" value={`S/ ${apertura.toFixed(2)}`} />}
-              {sessionMotivo && <InfoRow label="Motivo" value={sessionMotivo} />}
+              {sessionMotivo && <InfoRow label="Contexto turno" value={sessionMotivo} />}
             </div>
 
             {sessionStats.count > 0 && closingStage === 0 && (() => {
@@ -329,15 +329,16 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               ].filter(m => m.n > 0);
               return (
               <div className="flex flex-col gap-1 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">Operaciones</span>
-                  <span className="text-[13px] font-bold text-[#374151]">{sessionStats.count}</span>
+                  {breakdown.length > 0 ? (
+                    <span className="text-[9.5px] font-semibold tabular-nums text-[#374151] shrink-0">
+                      {breakdown.map((m, i) => <span key={m.key}>{i > 0 && " · "}{m.key} {m.n}</span>)}
+                    </span>
+                  ) : (
+                    <span className="text-[13px] font-bold text-[#374151]">{sessionStats.count}</span>
+                  )}
                 </div>
-                {breakdown.length > 0 && (
-                  <p className="text-[9.5px] font-semibold tabular-nums text-[#9ca3af]">
-                    {breakdown.map((m, i) => <span key={m.key}>{i > 0 && " · "}{m.key} {m.n}</span>)}
-                  </p>
-                )}
                 {Object.entries(sessionStats.docRanges).map(([type, r]) => {
                   if (!r) return null;
                   const fmt = (n: number) => String(n).padStart(6, "0");
@@ -356,16 +357,17 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               );
             })()}
 
-            {closingStage === 0 && (
-              <div className="flex flex-col gap-2 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9.5px] font-semibold uppercase tracking-widest text-[#c0cad4]">Ingresos ↑</span>
-                  <span className="text-[14px] font-bold leading-tight tabular-nums text-emerald-600">S/ {ingresosTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9.5px] font-semibold uppercase tracking-widest text-[#c0cad4]">Egresos ↓</span>
-                  <span className="text-[14px] font-bold leading-tight tabular-nums text-[#ef4444]">S/ {egresosTotal.toFixed(2)}</span>
-                </div>
+            {closingStage === 0 && (ingresosTotal > 0 || egresosTotal > 0) && (
+              <div className="flex items-center gap-2 flex-wrap rounded-xl bg-[#f8fafd] px-3.5 py-2">
+                {ingresosTotal > 0 && (
+                  <span className="text-[10.5px] font-semibold tabular-nums text-emerald-600">↑ Ingresos S/ {ingresosTotal.toFixed(2)}</span>
+                )}
+                {ingresosTotal > 0 && egresosTotal > 0 && (
+                  <span className="text-[#c0cad4]">·</span>
+                )}
+                {egresosTotal > 0 && (
+                  <span className="text-[10.5px] font-semibold tabular-nums text-[#ef4444]">↓ Egresos S/ {egresosTotal.toFixed(2)}</span>
+                )}
               </div>
             )}
           </div>
