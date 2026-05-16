@@ -129,13 +129,18 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // ── closing state ─────────────────────────────────────────────
   const [closingStage, setClosingStage] = useState<ClosingStage>(() => {
+    if (!isOpen) return 0; // no session → no closing in progress
     try {
       const n = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
       return ([0,1,2,3,4].includes(n) ? n : 0) as ClosingStage;
     } catch { return 0; }
   });
-  const [contado,      setContado]      = useState(() => {
-    try { return localStorage.getItem("disateq.pos.ui.contado") ?? ""; } catch { return ""; }
+  const [contado, setContado] = useState(() => {
+    if (!isOpen) return "";
+    try {
+      const stage = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
+      return stage >= 1 ? (localStorage.getItem("disateq.pos.ui.contado") ?? "") : "";
+    } catch { return ""; }
   });
   const [observations, setObservations] = useState("");
   const contadoRef = useRef<HTMLInputElement>(null);

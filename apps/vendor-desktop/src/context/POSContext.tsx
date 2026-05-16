@@ -148,7 +148,13 @@ function loadMoves(): CashMove[] {
     const raw = localStorage.getItem(LS_MOVES);
     if (!raw) return [];
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((m: unknown): m is CashMove => {
+      if (!m || typeof m !== "object") return false;
+      const o = m as Record<string, unknown>;
+      return typeof o.id === "string" && typeof o.type === "string"
+          && typeof o.amount === "number" && typeof o.motivo === "string";
+    });
   } catch { return []; }
 }
 
@@ -224,6 +230,71 @@ function saveSessionStats(s: SessionStats): void {
   try { localStorage.setItem(LS_SESSION_STATS, JSON.stringify(s)); } catch { /* quota */ }
 }
 
+// ── startup recovery ────────────────────────────────────────────
+
+type RecoveredState = {
+  session:     CashSession;
+  usedCodes:   Set<string>;
+  stats:       SessionStats;
+  moves:       CashMove[];
+  recoveryLog: string | null;
+};
+
+function recoverOperationalState(): RecoveredState {
+  const session = loadSession();
+  const codes   = loadUsedCodes();
+  const stats   = loadSessionStats();
+  const moves   = loadMoves();
+
+  // Guard 1: session open but box invalid or openedAt missing
+  if (session.isOpen && (!session.cashBox || !BOX_DEFS.some(d => d.code === session.cashBox!.code) || !session.openedAt)) {
+    try {
+      localStorage.setItem(LS_SESSION, JSON.stringify(NULL_SESSION));
+      localStorage.removeItem(LS_SESSION_STATS);
+      localStorage.removeItem(LS_MOVES);
+    } catch { /* ignore */ }
+    return {
+      session: NULL_SESSION, usedCodes: codes, stats: NULL_STATS, moves: [],
+      recoveryLog: "Sesión inválida detectada — se cerró automáticamente",
+    };
+  }
+
+  // Guard 2: session closed but stale stats remain
+  let resolvedStats = stats;
+  if (!session.isOpen && stats.count > 0) {
+    resolvedStats = NULL_STATS;
+    try { localStorage.removeItem(LS_SESSION_STATS); } catch { /* ignore */ }
+  }
+
+  // Guard 3: session closed but moves remain (crash during close sequence)
+  let resolvedMoves = moves;
+  if (!session.isOpen && moves.length > 0) {
+    resolvedMoves = [];
+    try { localStorage.removeItem(LS_MOVES); } catch { /* ignore */ }
+  }
+
+  // Guard 4: contingency session active but prerequisite missing from usedCodes
+  let resolvedCodes = codes;
+  let recoveryLog: string | null = null;
+  if (session.isOpen && session.cashBox && session.cashBox.type !== "normal") {
+    const box    = session.cashBox;
+    const prereq = box.code.slice(0, 2) + (box.type === "contingency-1" ? "0" : "1");
+    if (!codes.has(prereq)) {
+      const next = new Set(codes);
+      next.add(prereq);
+      resolvedCodes = next;
+      try { localStorage.setItem(LS_USED, JSON.stringify([...next])); } catch { /* ignore */ }
+      recoveryLog = `Prereq CAJA ${prereq} restaurado para contingencia activa CAJA ${box.code}`;
+    }
+  }
+
+  return {
+    session, usedCodes: resolvedCodes,
+    stats: resolvedStats, moves: resolvedMoves,
+    recoveryLog,
+  };
+}
+
 // ── context interface ──────────────────────────────────────────
 interface POSContextValue {
   zone: FocusZone;
@@ -259,9 +330,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const [zone, setZone] = useState<FocusZone>("search");
   const [cobroOpen, setCobroOpen] = useState(false);
 
-  // Lazy-initialize from localStorage — runs once on mount
-  const [usedCodes, setUsedCodes] = useState<Set<string>>(loadUsedCodes);
-  const [cashSession, setCashSession] = useState<CashSession>(loadSession);
+  // Recover consistent state from localStorage — runs once on mount
+  const [initState] = useState(recoverOperationalState);
+  const recoveryLogRef = useRef(initState.recoveryLog);
+  const [usedCodes,   setUsedCodes]   = useState(() => initState.usedCodes);
+  const [cashSession, setCashSession] = useState(() => initState.session);
 
   const cashSessionRef = useRef(cashSession);
   cashSessionRef.current = cashSession;
@@ -273,8 +346,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
   const suggestedCashBox = useMemo(() => cashBoxes.find(b => b.available) ?? null, [cashBoxes]);
 
-  const [sessionStats, setSessionStats] = useState<SessionStats>(loadSessionStats);
-  const [cashMoves,    setCashMoves]    = useState<CashMove[]>(loadMoves);
+  const [sessionStats, setSessionStats] = useState(() => initState.stats);
+  const [cashMoves,    setCashMoves]    = useState(() => initState.moves);
   useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
   useEffect(() => { saveSessionStats(sessionStats); }, [sessionStats]);
 
@@ -289,6 +362,14 @@ export function POSProvider({ children }: { children: ReactNode }) {
     };
     setOpLogs(prev => [...prev, entry]);
   }, []);
+
+  // Emit recovery log once if startup found inconsistencies
+  useEffect(() => {
+    if (recoveryLogRef.current) {
+      addOpLog(`[RECOVERY] ${recoveryLogRef.current}`);
+      recoveryLogRef.current = null;
+    }
+  }, [addOpLog]);
 
   const recordSale = useCallback((
     netTotal: number, payMethod: string,
