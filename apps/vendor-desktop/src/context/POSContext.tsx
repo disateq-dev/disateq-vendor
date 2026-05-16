@@ -6,7 +6,8 @@ type FocusZone = "search" | "ticket" | "cobro";
 
 export type CashBoxType = "normal" | "contingency-1" | "contingency-2";
 
-export type MoveType = "ingreso" | "egreso";
+export type MoveType   = "ingreso" | "egreso";
+export type MoveSource = "apertura" | "vendido" | "mixto";
 
 export type CashMove = {
   id: string;
@@ -17,6 +18,9 @@ export type CashMove = {
   cashBoxCode: string;
   terminal: string;
   timestamp: string;
+  sourceType:   MoveSource;
+  fromApertura: number;
+  fromVendido:  number;
 };
 
 export type CashBox = {
@@ -197,7 +201,7 @@ interface POSContextValue {
   sessionStats: SessionStats;
   recordSale: (netTotal: number, payMethod: string) => void;
   cashMoves: CashMove[];
-  addCashMove: (type: MoveType, amount: number, motivo: string) => CashMove;
+  addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number) => CashMove;
   opLogs: OpLog[];
   addOpLog: (text: string) => void;
   sessionNotice: string | null;
@@ -256,21 +260,32 @@ export function POSProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const addCashMove = useCallback((type: MoveType, amount: number, motivo: string): CashMove => {
+  const addCashMove = useCallback((
+    type: MoveType, amount: number, motivo: string,
+    sourceType: MoveSource, fromApertura: number, fromVendido: number,
+  ): CashMove => {
     const s = cashSessionRef.current;
     const move: CashMove = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      type,
-      amount,
-      motivo,
+      type, amount, motivo,
       operator:    s.operator,
       cashBoxCode: s.cashBox?.code ?? "",
       terminal:    s.terminal,
       timestamp:   new Date().toISOString(),
+      sourceType, fromApertura, fromVendido,
     };
     setCashMoves(prev => [...prev, move]);
+    // human log
+    const verb   = type === "ingreso" ? "registró ingreso" : "registró egreso";
+    const prep   = type === "ingreso" ? "Destino" : "Origen";
+    const detail = sourceType === "apertura"
+      ? `${prep}: apertura`
+      : sourceType === "vendido"
+        ? `${prep}: vendido`
+        : `${prep}: S/ ${fromApertura.toFixed(2)} apertura + S/ ${fromVendido.toFixed(2)} vendido`;
+    addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} — ${detail} — ${motivo}`);
     return move;
-  }, []);
+  }, [addOpLog]);
 
   const [rubro, setRubroState] = useState<Rubro>(loadRubro);
   const setRubro = useCallback((r: Rubro) => {

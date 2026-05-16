@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText } from "lucide-react";
-import { usePOS, type CashBox, type CashBoxType, type MoveType, type CashMove, type OpLog } from "../../context/POSContext";
+import { usePOS, type CashBox, type CashBoxType, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
 import { printCashMoveVoucher } from "../../print/printTicket";
 
 // ── helpers ────────────────────────────────────────────────────
@@ -162,23 +162,45 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }, [isOpen, suggestedCashBox]);
 
   // ── movements state ───────────────────────────────────────────
-  const [activeTab,  setActiveTab]  = useState<"moves" | "logs">("moves");
-  const [moveType,   setMoveType]   = useState<MoveType>("ingreso");
-  const [moveAmount, setMoveAmount] = useState("");
-  const [moveMotivo, setMoveMotivo] = useState("");
-  const [lastMove,   setLastMove]   = useState<CashMove | null>(null);
+  const [activeTab,   setActiveTab]   = useState<"moves" | "logs">("moves");
+  const [moveType,    setMoveType]    = useState<MoveType>("ingreso");
+  const [moveAmount,  setMoveAmount]  = useState("");
+  const [moveMotivo,  setMoveMotivo]  = useState("");
+  const [sourceType,  setSourceType]  = useState<MoveSource>("apertura");
+  const [mixApertura, setMixApertura] = useState("");
+  const [mixVendido,  setMixVendido]  = useState("");
+  const [lastMove,    setLastMove]    = useState<CashMove | null>(null);
   const moveAmountRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setLastMove(null); setMoveAmount(""); setMoveMotivo(""); }, [isOpen]);
+  useEffect(() => {
+    setLastMove(null); setMoveAmount(""); setMoveMotivo("");
+    setSourceType("apertura"); setMixApertura(""); setMixVendido("");
+  }, [isOpen]);
 
   // ── derived ───────────────────────────────────────────────────
-  const selectedBox      = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
-  const isContingency    = selectedBox?.type !== "normal";
-  const canOpen          = !isOpen && !!selectedBox?.available && parseFloat(aperturaInput) >= 0
-                           && (!isContingency || (ctgPin === CTG_PIN && ctgJustif !== ""));
+  const selectedBox   = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
+  const isContingency = selectedBox?.type !== "normal";
+  const canOpen       = !isOpen && !!selectedBox?.available && parseFloat(aperturaInput) >= 0
+                        && (!isContingency || (ctgPin === CTG_PIN && ctgJustif !== ""));
+
+  // move form derived
+  const totalAmt   = parseFloat(moveAmount) || 0;
+  const mixAptNum  = parseFloat(mixApertura) || 0;
+  const mixVndNum  = parseFloat(mixVendido)  || 0;
+  const mixtoValid = sourceType !== "mixto" || Math.abs(mixAptNum + mixVndNum - totalAmt) < 0.005;
+  const canAddMove = totalAmt > 0 && !!moveMotivo.trim() && mixtoValid
+                     && (sourceType !== "mixto" || (mixAptNum > 0 || mixVndNum > 0));
+
+  // fondo breakdown for conciliation
+  const egApertura  = cashMoves.filter(m => m.type === "egreso").reduce((s, m)  => s + m.fromApertura, 0);
+  const egVendido   = cashMoves.filter(m => m.type === "egreso").reduce((s, m)  => s + m.fromVendido,  0);
+  const ingApertura = cashMoves.filter(m => m.type === "ingreso").reduce((s, m) => s + m.fromApertura, 0);
+  const ingVendido  = cashMoves.filter(m => m.type === "ingreso").reduce((s, m) => s + m.fromVendido,  0);
   const ingresosTotal    = cashMoves.filter(m => m.type === "ingreso").reduce((s, m) => s + m.amount, 0);
-  const egresosTotal     = cashMoves.filter(m => m.type === "egreso").reduce((s, m) => s + m.amount, 0);
-  const efectivoEsperado = sessionStats.cash + apertura + ingresosTotal - egresosTotal;
+  const egresosTotal     = cashMoves.filter(m => m.type === "egreso").reduce((s, m)  => s + m.amount, 0);
+  const fondoApertEsp    = apertura + ingApertura - egApertura;
+  const fondoVendidoEsp  = sessionStats.cash + ingVendido - egVendido;
+  const efectivoEsperado = fondoApertEsp + fondoVendidoEsp;
   const contadoNum       = parseFloat(contado) || 0;
   const diferencia       = contadoNum - efectivoEsperado;
 
@@ -196,11 +218,15 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }
 
   function handleAddMove() {
-    const amt = parseFloat(moveAmount);
-    if (!amt || amt <= 0 || !moveMotivo.trim()) return;
-    const move = addCashMove(moveType, amt, moveMotivo.trim());
+    if (!canAddMove) return;
+    const amt = totalAmt;
+    let fa = 0, fv = 0;
+    if (sourceType === "apertura") { fa = amt; fv = 0; }
+    else if (sourceType === "vendido") { fa = 0; fv = amt; }
+    else { fa = mixAptNum; fv = mixVndNum; }
+    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv);
     setLastMove(move);
-    setMoveAmount("");
+    setMoveAmount(""); setMixApertura(""); setMixVendido("");
     showNotice(`${moveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => moveAmountRef.current?.focus(), 10);
   }
@@ -534,56 +560,42 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
             {closingStage === 3 && (
               <>
-                <p className="text-[12px] text-[#6b7280] leading-relaxed">Diferencia entre lo esperado y lo contado:</p>
-                <div className="flex flex-col gap-3">
-                  <div className="rounded-2xl bg-[#f8fafd] border border-[#e4e9f0] px-5 py-3 flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[#9ca3af]">Apertura</span>
-                      <span className="text-[12px] font-bold text-[#374151] tabular-nums">S/ {apertura.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[#9ca3af]">Ventas efectivo</span>
-                      <span className="text-[12px] font-bold text-[#374151] tabular-nums">+S/ {sessionStats.cash.toFixed(2)}</span>
-                    </div>
-                    {ingresosTotal > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[#9ca3af]">Ingresos</span>
-                        <span className="text-[12px] font-bold text-emerald-600 tabular-nums">+S/ {ingresosTotal.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {egresosTotal > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[#9ca3af]">Egresos</span>
-                        <span className="text-[12px] font-bold text-red-500 tabular-nums">−S/ {egresosTotal.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="pt-1 border-t border-[#e4e9f0] flex justify-between items-center">
-                      <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#374151]">Esperado</span>
-                      <span className="text-[14px] font-bold text-[#374151] tabular-nums">S/ {efectivoEsperado.toFixed(2)}</span>
-                    </div>
+                <p className="text-[12px] text-[#6b7280] leading-relaxed">Conciliación por fondo operacional:</p>
+                <div className="flex flex-col gap-2">
+                  {/* Fondo apertura */}
+                  <div className="rounded-xl bg-[#f8fafd] border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
+                    <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-0.5">Fondo apertura</p>
+                    <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Apertura inicial</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span></div>
+                    {ingApertura > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ingresos →</span><span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingApertura.toFixed(2)}</span></div>}
+                    {egApertura  > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Egresos ←</span><span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egApertura.toFixed(2)}</span></div>}
+                    <div className="pt-1 border-t border-[#e4e9f0] flex justify-between"><span className="text-[10.5px] font-bold text-[#374151]">Subtotal</span><span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {fondoApertEsp.toFixed(2)}</span></div>
                   </div>
-
-                  <div className={`rounded-2xl border px-5 py-3 flex justify-between items-center ${
-                    Math.abs(diferencia) < 0.01
-                      ? "border-emerald-200 bg-emerald-50"
-                      : diferencia > 0 ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"
+                  {/* Fondo vendido */}
+                  <div className="rounded-xl bg-[#f8fafd] border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
+                    <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-0.5">Fondo vendido</p>
+                    <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ventas efectivo</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {sessionStats.cash.toFixed(2)}</span></div>
+                    {ingVendido > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ingresos →</span><span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingVendido.toFixed(2)}</span></div>}
+                    {egVendido  > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Egresos ←</span><span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egVendido.toFixed(2)}</span></div>}
+                    <div className="pt-1 border-t border-[#e4e9f0] flex justify-between"><span className="text-[10.5px] font-bold text-[#374151]">Subtotal</span><span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {fondoVendidoEsp.toFixed(2)}</span></div>
+                  </div>
+                  {/* Total + contado + diff */}
+                  <div className="rounded-xl border border-[#e4e9f0] px-4 py-2.5 flex justify-between items-center">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#374151]">Total esperado</span>
+                    <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {efectivoEsperado.toFixed(2)}</span>
+                  </div>
+                  <div className={`rounded-xl border px-4 py-2.5 flex justify-between items-center ${
+                    Math.abs(diferencia) < 0.01 ? "border-emerald-200 bg-emerald-50" : diferencia > 0 ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"
                   }`}>
                     <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#374151]">Contado</span>
-                    <span className="text-[14px] font-bold text-[#374151] tabular-nums">S/ {contadoNum.toFixed(2)}</span>
+                    <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoNum.toFixed(2)}</span>
                   </div>
-
-                  <div className={`rounded-2xl border px-5 py-4 flex flex-col gap-1 ${
-                    Math.abs(diferencia) < 0.01
-                      ? "border-emerald-300 bg-emerald-50"
-                      : diferencia > 0 ? "border-emerald-300 bg-[#f0fdf4]" : "border-red-300 bg-[#fef2f2]"
+                  <div className={`rounded-xl border px-4 py-3 flex flex-col gap-0.5 ${
+                    Math.abs(diferencia) < 0.01 ? "border-emerald-300 bg-[#f0fdf4]" : diferencia > 0 ? "border-emerald-300 bg-[#f0fdf4]" : "border-red-300 bg-[#fef2f2]"
                   }`}>
-                    <span className="text-[9.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Diferencia</span>
-                    <span className={`text-[22px] font-bold tabular-nums ${
-                      Math.abs(diferencia) < 0.01 ? "text-emerald-600"
-                        : diferencia > 0 ? "text-emerald-600" : "text-red-600"
-                    }`}>
+                    <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Diferencia</span>
+                    <span className={`text-[20px] font-bold tabular-nums ${Math.abs(diferencia) < 0.01 || diferencia > 0 ? "text-emerald-600" : "text-red-600"}`}>
                       {diferencia >= 0 ? "+" : ""}S/ {diferencia.toFixed(2)}
-                      {Math.abs(diferencia) < 0.01 ? " · Cuadre exacto" : diferencia > 0 ? " · Sobrante" : " · Faltante"}
+                      <span className="text-[11px] ml-2 font-semibold">{Math.abs(diferencia) < 0.01 ? "Cuadre exacto" : diferencia > 0 ? "Sobrante" : "Faltante"}</span>
                     </span>
                   </div>
                 </div>
@@ -658,9 +670,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <>
               {/* Move form */}
               <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-3 flex flex-col gap-2.5">
+
+                {/* Type toggle */}
                 <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                   {(["ingreso", "egreso"] as MoveType[]).map(t => (
-                    <button key={t} onClick={() => { setMoveType(t); setMoveMotivo(""); }}
+                    <button key={t} onClick={() => { setMoveType(t); setMoveMotivo(""); setSourceType("apertura"); setMixApertura(""); setMixVendido(""); }}
                       className={`flex-1 rounded-[9px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
                         moveType === t
                           ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
@@ -671,14 +685,16 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     </button>
                   ))}
                 </div>
+
+                {/* Amount + register */}
                 <div className="flex gap-2 items-center">
                   <span className="text-[11px] font-semibold text-[#9ca3af] shrink-0">S/</span>
                   <input
                     ref={moveAmountRef}
                     type="number"
                     value={moveAmount}
-                    onChange={e => setMoveAmount(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && moveMotivo) handleAddMove(); }}
+                    onChange={e => { setMoveAmount(e.target.value); setMixApertura(""); setMixVendido(""); }}
+                    onKeyDown={e => { if (e.key === "Enter" && canAddMove) handleAddMove(); }}
                     placeholder="0.00"
                     min="0.01"
                     step="0.01"
@@ -686,9 +702,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   />
                   <button
                     onClick={handleAddMove}
-                    disabled={!(parseFloat(moveAmount) > 0) || !moveMotivo}
+                    disabled={!canAddMove}
                     className={`shrink-0 rounded-xl px-4 py-2 text-[12px] font-bold uppercase tracking-wide transition ${
-                      parseFloat(moveAmount) > 0 && moveMotivo
+                      canAddMove
                         ? moveType === "ingreso"
                           ? "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.97]"
                           : "bg-red-500 text-white hover:bg-red-600 active:scale-[0.97]"
@@ -698,6 +714,68 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     Registrar
                   </button>
                 </div>
+
+                {/* Source / Destination selector */}
+                {totalAmt > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
+                      {moveType === "ingreso" ? "Destino" : "Origen"}
+                    </span>
+                    <div className="flex gap-1.5">
+                      {(["apertura", "vendido", "mixto"] as MoveSource[]).map(s => (
+                        <button key={s} onClick={() => { setSourceType(s); setMixApertura(""); setMixVendido(""); }}
+                          className={`flex-1 rounded-lg py-1.5 text-[10.5px] font-semibold transition ${
+                            sourceType === s
+                              ? "bg-[#2154d8] text-white"
+                              : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
+                          }`}
+                        >
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Mixto sub-inputs */}
+                    {sourceType === "mixto" && (
+                      <div className="flex gap-2 items-center">
+                        <div className="flex-1 flex flex-col gap-0.5">
+                          <span className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wide">Apertura S/</span>
+                          <input
+                            type="number"
+                            value={mixApertura}
+                            onChange={e => setMixApertura(e.target.value)}
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                          />
+                        </div>
+                        <span className="text-[11px] text-[#c0cad4] mt-4">+</span>
+                        <div className="flex-1 flex flex-col gap-0.5">
+                          <span className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wide">Vendido S/</span>
+                          <input
+                            type="number"
+                            value={mixVendido}
+                            onChange={e => setMixVendido(e.target.value)}
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-0.5 mt-4">
+                          {mixAptNum + mixVndNum > 0 && (
+                            <span className={`text-[10px] font-bold tabular-nums ${mixtoValid ? "text-emerald-600" : "text-red-500"}`}>
+                              {mixtoValid ? "✓" : `≠ S/ ${totalAmt.toFixed(2)}`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Motivo chips */}
                 <div className="flex flex-wrap gap-1">
                   {MOTIVOS[moveType].map(m => (
                     <button key={m} onClick={() => setMoveMotivo(m === moveMotivo ? "" : m)}
@@ -709,14 +787,25 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     </button>
                   ))}
                 </div>
+
+                {/* Last registered */}
                 {lastMove && (
                   <div className="flex items-center gap-2 rounded-xl bg-[#f8fafd] px-3 py-2">
                     <span className={`text-[11px] font-bold ${lastMove.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
                       {lastMove.type === "ingreso" ? "↑" : "↓"}
                     </span>
-                    <span className="flex-1 text-[10.5px] font-semibold text-[#374151] truncate">
-                      {lastMove.motivo} · S/ {lastMove.amount.toFixed(2)}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10.5px] font-semibold text-[#374151] truncate">
+                        {lastMove.motivo} · S/ {lastMove.amount.toFixed(2)}
+                      </p>
+                      {lastMove.sourceType === "mixto" ? (
+                        <p className="text-[9.5px] text-[#9ca3af]">
+                          apertura S/ {lastMove.fromApertura.toFixed(2)} + vendido S/ {lastMove.fromVendido.toFixed(2)}
+                        </p>
+                      ) : (
+                        <p className="text-[9.5px] text-[#9ca3af]">{lastMove.sourceType}</p>
+                      )}
+                    </div>
                     <button onClick={() => handlePrintVoucher(lastMove)}
                       className="flex items-center gap-1 rounded-lg border border-[#e4e9f0] px-2 py-0.5 text-[10px] font-semibold text-[#374151] transition hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
                     >
@@ -725,6 +814,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   </div>
                 )}
               </div>
+
+              {/* Moves list */}
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2">
                 {cashMoves.length === 0 ? (
                   <p className="py-8 text-center text-[10.5px] text-[#c8d4e0]">Sin movimientos en este turno</p>
@@ -733,21 +824,27 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     {[...cashMoves].reverse().map(m => {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
+                      const srcLabel = m.sourceType === "mixto"
+                        ? `apt S/${m.fromApertura.toFixed(0)} · vnd S/${m.fromVendido.toFixed(0)}`
+                        : m.sourceType;
                       return (
-                        <div key={m.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2 hover:bg-[#f8fafd] group">
-                          <span className={`shrink-0 text-[11px] font-bold ${m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
-                            {m.type === "ingreso" ? "↑" : "↓"}
-                          </span>
-                          <span className="flex-1 text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</span>
-                          <span className="text-[10px] text-[#9ca3af] tabular-nums">{hm}</span>
-                          <span className={`text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
-                            {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
-                          </span>
-                          <button onClick={() => handlePrintVoucher(m)} title="Imprimir voucher"
-                            className="shrink-0 opacity-0 group-hover:opacity-100 transition text-[#c0cad4] hover:text-[#2154d8]"
-                          >
-                            <Printer size={11} strokeWidth={2} />
-                          </button>
+                        <div key={m.id} className="rounded-xl px-3 py-2 hover:bg-[#f8fafd] group">
+                          <div className="flex items-center gap-2.5">
+                            <span className={`shrink-0 text-[11px] font-bold ${m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
+                              {m.type === "ingreso" ? "↑" : "↓"}
+                            </span>
+                            <span className="flex-1 text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</span>
+                            <span className="text-[10px] text-[#9ca3af] tabular-nums">{hm}</span>
+                            <span className={`text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
+                              {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
+                            </span>
+                            <button onClick={() => handlePrintVoucher(m)} title="Imprimir voucher"
+                              className="shrink-0 opacity-0 group-hover:opacity-100 transition text-[#c0cad4] hover:text-[#2154d8]"
+                            >
+                              <Printer size={11} strokeWidth={2} />
+                            </button>
+                          </div>
+                          <p className="ml-[22px] text-[9.5px] text-[#c0cad4] tabular-nums">{srcLabel}</p>
                         </div>
                       );
                     })}
