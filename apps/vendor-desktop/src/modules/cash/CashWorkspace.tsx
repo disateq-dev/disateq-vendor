@@ -332,7 +332,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 {/* L1: OPERACIONES  14 */}
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">Operaciones</span>
-                  <span className="text-[11px] font-bold tabular-nums text-[#374151]">{sessionStats.count}</span>
+                  <span className="text-[13px] font-bold tabular-nums text-[#374151]">{sessionStats.count}</span>
                 </div>
                 {/* L2: breakdown right-aligned, pegado arriba */}
                 {breakdown.length > 0 && (
@@ -360,15 +360,18 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             })()}
 
             {closingStage === 0 && (ingresosTotal > 0 || egresosTotal > 0) && (
-              <div className="flex items-center gap-1.5 flex-wrap rounded-xl bg-[#f8fafd] px-3.5 py-1.5">
+              <div className="flex flex-col gap-2 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
                 {ingresosTotal > 0 && (
-                  <span className="text-[10px] font-semibold tabular-nums text-emerald-600">↑ Ingresos S/ {ingresosTotal.toFixed(2)}</span>
-                )}
-                {ingresosTotal > 0 && egresosTotal > 0 && (
-                  <span className="text-[#c0cad4]">·</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9.5px] font-semibold uppercase tracking-widest text-[#c0cad4]">Ingresos ↑</span>
+                    <span className="text-[14px] font-bold leading-tight tabular-nums text-emerald-600">S/ {ingresosTotal.toFixed(2)}</span>
+                  </div>
                 )}
                 {egresosTotal > 0 && (
-                  <span className="text-[10px] font-semibold tabular-nums text-[#ef4444]">↓ Egresos S/ {egresosTotal.toFixed(2)}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9.5px] font-semibold uppercase tracking-widest text-[#c0cad4]">Egresos ↓</span>
+                    <span className="text-[14px] font-bold leading-tight tabular-nums text-[#ef4444]">S/ {egresosTotal.toFixed(2)}</span>
+                  </div>
                 )}
               </div>
             )}
