@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText, X } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText, X, Wallet, ShoppingCart, ArrowLeftRight } from "lucide-react";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
 import { printCashMoveVoucher } from "../../print/printTicket";
 import { calcConciliation } from "./services/cash-conciliation.service";
@@ -753,84 +753,95 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
           <>
               {/* Move form */}
-              <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-3 flex flex-col gap-2.5">
+              <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-2 flex flex-col gap-2">
 
                 {/* Type toggle */}
                 <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                   {(["ingreso", "egreso"] as MoveType[]).map(t => (
                     <button key={t} onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setSourceType("apertura"); setMixApertura(""); setMixVendido(""); setLastMove(null); }}
-                      className={`flex-1 rounded-[9px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                      className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
                         moveType === t
                           ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
                           : "text-[#9ca3af] hover:text-[#374151]"
                       }`}
                     >
-                      {t === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
+                      {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
                     </button>
                   ))}
                 </div>
 
-                {/* Monto */}
-                <div className="flex items-center gap-2">
-                  <span className="shrink-0 text-[11px] font-semibold text-[#9ca3af]">S/</span>
-                  <input
-                    ref={moveAmountRef}
-                    type="number"
-                    value={moveAmount}
-                    onChange={e => { setMoveAmount(e.target.value); setMixApertura(""); setMixVendido(""); }}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    className="flex-1 min-w-0 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                  />
-                </div>
+                {/* Monto + Origen — misma fila */}
+                <div className="flex items-stretch gap-2">
 
-                {/* Origen operacional */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">Origen operacional</span>
-                  <div className="flex gap-1.5">
-                    {(["apertura", "vendido", "mixto"] as MoveSource[]).map(s => (
-                      <button key={s} onClick={() => { setSourceType(s); setMixApertura(""); setMixVendido(""); }}
-                        className={`flex-1 rounded-lg py-1.5 text-[10.5px] font-semibold transition ${
-                          sourceType === s
-                            ? "bg-[#2154d8] text-white"
-                            : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
-                        }`}
-                      >
-                        {s === "apertura" ? "Fondo" : s === "vendido" ? "Venta" : "Ambos"}
-                      </button>
-                    ))}
+                  {/* Monto */}
+                  <div className="flex items-center gap-1.5 w-[148px] shrink-0">
+                    <span className="shrink-0 text-[10px] font-bold text-[#9ca3af]">S/</span>
+                    <input
+                      ref={moveAmountRef}
+                      type="number"
+                      value={moveAmount}
+                      onChange={e => { setMoveAmount(e.target.value); setMixApertura(""); setMixVendido(""); }}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
+                      placeholder="0.00"
+                      min="0.01"
+                      step="0.01"
+                      className="w-full min-w-0 rounded-xl border border-[#e4e9f0] px-2.5 py-1.5 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                    />
                   </div>
 
-                  {sourceType === "mixto" && (
-                    <div className="flex gap-2 items-center">
-                      <div className="flex-1 flex flex-col gap-0.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af]">Fondo S/</span>
-                        <input type="number" value={mixApertura} onChange={e => setMixApertura(e.target.value)} placeholder="0.00" min="0" step="0.01"
-                          className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10" />
-                      </div>
-                      <span className="mt-4 text-[11px] text-[#c0cad4]">+</span>
-                      <div className="flex-1 flex flex-col gap-0.5">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af]">Venta S/</span>
-                        <input type="number" value={mixVendido} onChange={e => setMixVendido(e.target.value)} placeholder="0.00" min="0" step="0.01"
-                          className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10" />
-                      </div>
-                      {mixAptNum + mixVndNum > 0 && (
-                        <div className="mt-4">
-                          <span className={`text-[10px] font-bold tabular-nums ${mixtoValid ? "text-emerald-600" : "text-red-500"}`}>
-                            {mixtoValid ? "✓" : `≠ S/ ${totalAmt.toFixed(2)}`}
-                          </span>
-                        </div>
-                      )}
+                  {/* Origen operacional */}
+                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">ORIGEN</span>
+                    <div className="flex gap-1 flex-1">
+                      {([
+                        { src: "apertura" as MoveSource, label: "FONDO", Icon: Wallet },
+                        { src: "vendido"  as MoveSource, label: "VENTA", Icon: ShoppingCart },
+                        { src: "mixto"    as MoveSource, label: "AMBOS", Icon: ArrowLeftRight },
+                      ]).map(({ src, label, Icon }) => (
+                        <button key={src}
+                          onClick={() => { setSourceType(src); setMixApertura(""); setMixVendido(""); }}
+                          className={`flex-1 flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 text-[9px] font-bold uppercase tracking-wide transition ${
+                            sourceType === src
+                              ? "bg-[#2154d8] text-white"
+                              : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
+                          }`}
+                        >
+                          <Icon size={11} strokeWidth={2} />
+                          {label}
+                        </button>
+                      ))}
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Motivo turno — obligatorio */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
-                    Motivo <span className="text-red-400">*</span>
+                {/* Ambos sub-inputs */}
+                {sourceType === "mixto" && (
+                  <div className="flex gap-2 items-center">
+                    <div className="flex-1 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-[#9ca3af]">FONDO S/</span>
+                      <input type="number" value={mixApertura} onChange={e => setMixApertura(e.target.value)} placeholder="0.00" min="0" step="0.01"
+                        className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10" />
+                    </div>
+                    <span className="mt-4 text-[11px] text-[#c0cad4]">+</span>
+                    <div className="flex-1 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-[#9ca3af]">VENTA S/</span>
+                      <input type="number" value={mixVendido} onChange={e => setMixVendido(e.target.value)} placeholder="0.00" min="0" step="0.01"
+                        className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10" />
+                    </div>
+                    {mixAptNum + mixVndNum > 0 && (
+                      <div className="mt-4">
+                        <span className={`text-[10px] font-bold tabular-nums ${mixtoValid ? "text-emerald-600" : "text-red-500"}`}>
+                          {mixtoValid ? "✓" : `≠ S/ ${totalAmt.toFixed(2)}`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* MOTIVO — obligatorio */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
+                    MOTIVO <span className="text-red-400">*</span>
                   </span>
                   <input
                     ref={motivoRef}
@@ -846,7 +857,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   />
                 </div>
 
-                {/* Observación — opcional */}
+                {/* OBSERVACIÓN — opcional */}
                 <input
                   type="text"
                   value={moveObservacion}
@@ -860,7 +871,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <button
                   onClick={handleAddMove}
                   disabled={!canAddMove}
-                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-bold uppercase tracking-wide transition ${
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                     canAddMove
                       ? moveType === "ingreso"
                         ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
@@ -868,23 +879,23 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
                   }`}
                 >
-                  Registrar {moveType === "ingreso" ? "ingreso" : "egreso"}
+                  {moveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
                 </button>
 
                 {/* Feedback último movimiento */}
                 {lastMove && (
-                  <div className="flex items-center gap-2 rounded-xl bg-[#f0fdf4] border border-emerald-200 px-3 py-2">
-                    <CheckCircle size={12} className="text-emerald-500 shrink-0" />
+                  <div className="flex items-center gap-2 rounded-xl bg-[#f0fdf4] border border-emerald-200 px-3 py-1.5">
+                    <CheckCircle size={11} className="text-emerald-500 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10.5px] font-bold text-emerald-700">Movimiento registrado</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Movimiento registrado</p>
                       <p className="text-[9.5px] text-[#9ca3af] truncate">
                         {lastMove.type === "ingreso" ? "↑" : "↓"} S/ {lastMove.amount.toFixed(2)} · {lastMove.motivo}
                       </p>
                     </div>
                     <button onClick={() => handlePrintVoucher(lastMove)}
-                      className="flex items-center gap-1 rounded-lg border border-emerald-200 px-2 py-1 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                      className="flex items-center gap-1 rounded-lg border border-emerald-200 px-2 py-1 text-[9.5px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-100"
                     >
-                      <Printer size={10} strokeWidth={2} /> Imprimir
+                      <Printer size={9} strokeWidth={2} /> Imprimir
                     </button>
                   </div>
                 )}
