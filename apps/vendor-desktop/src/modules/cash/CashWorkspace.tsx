@@ -283,12 +283,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             {sessionStats.count > 0 && closingStage === 0 && (
-              <div className="flex flex-col gap-1 rounded-xl bg-[#f8fafd] px-3.5 py-3">
-                <InfoRow label="Ventas"   value={`${sessionStats.count} op.`} />
-                <InfoRow label="Total"    value={`S/ ${sessionStats.total.toFixed(2)}`} accent />
-                {sessionStats.cash    > 0 && <InfoRow label="Efectivo" value={`S/ ${sessionStats.cash.toFixed(2)}`} />}
-                {sessionStats.yape    > 0 && <InfoRow label="Yape"     value={`S/ ${sessionStats.yape.toFixed(2)}`} />}
-                {sessionStats.tarjeta > 0 && <InfoRow label="Tarjeta"  value={`S/ ${sessionStats.tarjeta.toFixed(2)}`} />}
+              <div className="flex items-center justify-between rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">Operaciones</span>
+                <span className="text-[13px] font-bold text-[#374151]">{sessionStats.count}</span>
               </div>
             )}
           </div>
