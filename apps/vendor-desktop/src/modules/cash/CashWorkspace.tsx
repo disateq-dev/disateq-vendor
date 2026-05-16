@@ -283,9 +283,25 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             {sessionStats.count > 0 && closingStage === 0 && (
-              <div className="flex items-center justify-between rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">Operaciones</span>
-                <span className="text-[13px] font-bold text-[#374151]">{sessionStats.count}</span>
+              <div className="flex flex-col gap-1 rounded-xl bg-[#f8fafd] px-3.5 py-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">Operaciones</span>
+                  <span className="text-[13px] font-bold text-[#374151]">{sessionStats.count}</span>
+                </div>
+                {Object.entries(sessionStats.docRanges).map(([type, r]) => {
+                  if (!r) return null;
+                  const fmt = (n: number) => String(n).padStart(6, "0");
+                  const label: Record<string, string> = { nota: "Notas", boleta: "Boletas", factura: "Facturas", cotizacion: "Cotiza" };
+                  const range = r.count === 1
+                    ? `${r.series}-${fmt(r.first)}`
+                    : `${r.series}-${fmt(r.first)} → ${r.series}-${fmt(r.last)}`;
+                  return (
+                    <div key={type} className="flex items-center justify-between gap-2">
+                      <span className="text-[9.5px] font-semibold text-[#c0cad4]">{label[type] ?? type}</span>
+                      <span className="text-[9.5px] font-mono font-semibold text-[#374151] tabular-nums">{range}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

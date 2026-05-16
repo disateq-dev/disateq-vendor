@@ -182,8 +182,12 @@ function saveOpLogs(logs: OpLog[]): void {
 }
 
 // ── session stats ───────────────────────────────────────────────
-export type SessionStats = { count: number; total: number; cash: number; yape: number; tarjeta: number };
-const NULL_STATS: SessionStats = { count: 0, total: 0, cash: 0, yape: 0, tarjeta: 0 };
+export type DocRange  = { series: string; first: number; last: number; count: number };
+export type SessionStats = {
+  count: number; total: number; cash: number; yape: number; tarjeta: number;
+  docRanges: Partial<Record<string, DocRange>>;
+};
+const NULL_STATS: SessionStats = { count: 0, total: 0, cash: 0, yape: 0, tarjeta: 0, docRanges: {} };
 
 // ── context interface ──────────────────────────────────────────
 interface POSContextValue {
@@ -199,7 +203,7 @@ interface POSContextValue {
   openCashSession: (boxCode: string, apertura: number) => void;
   closeCashSession: () => void;
   sessionStats: SessionStats;
-  recordSale: (netTotal: number, payMethod: string) => void;
+  recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number) => void;
   cashMoves: CashMove[];
   addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number) => CashMove;
   opLogs: OpLog[];
@@ -250,14 +254,27 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setOpLogs(prev => [...prev, entry]);
   }, []);
 
-  const recordSale = useCallback((netTotal: number, payMethod: string) => {
-    setSessionStats(prev => ({
-      count:   prev.count + 1,
-      total:   prev.total + netTotal,
-      cash:    prev.cash    + (payMethod === "efectivo" ? netTotal : 0),
-      yape:    prev.yape    + (payMethod === "yape"     ? netTotal : 0),
-      tarjeta: prev.tarjeta + (payMethod === "tarjeta"  ? netTotal : 0),
-    }));
+  const recordSale = useCallback((
+    netTotal: number, payMethod: string,
+    docType?: string, docSeries?: string, docCorrelative?: number,
+  ) => {
+    setSessionStats(prev => {
+      const ranges = { ...prev.docRanges };
+      if (docType && docSeries && docCorrelative !== undefined) {
+        const existing = ranges[docType];
+        ranges[docType] = existing
+          ? { series: docSeries, first: existing.first, last: docCorrelative, count: existing.count + 1 }
+          : { series: docSeries, first: docCorrelative, last: docCorrelative, count: 1 };
+      }
+      return {
+        count:   prev.count + 1,
+        total:   prev.total + netTotal,
+        cash:    prev.cash    + (payMethod === "efectivo" ? netTotal : 0),
+        yape:    prev.yape    + (payMethod === "yape"     ? netTotal : 0),
+        tarjeta: prev.tarjeta + (payMethod === "tarjeta"  ? netTotal : 0),
+        docRanges: ranges,
+      };
+    });
   }, []);
 
   const addCashMove = useCallback((

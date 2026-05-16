@@ -180,7 +180,7 @@ export function CobroPanel() {
         opNumber:    docNumber,
       } satisfies DispatchData);
     }
-    recordSale(netTotal, payMethod);
+    recordSale(netTotal, payMethod, docType, cfg.series, cfg.correlative + 1);
     ticketService.clear();
     closeCobro();
   }
@@ -224,7 +224,7 @@ export function CobroPanel() {
         printTicket(receiptData);
       }
     }
-    recordSale(netTotal, payMethod);
+    recordSale(netTotal, payMethod, docType, cfg.series, cfg.correlative + 1);
     ticketService.clear();
     closeCobro();
   }
