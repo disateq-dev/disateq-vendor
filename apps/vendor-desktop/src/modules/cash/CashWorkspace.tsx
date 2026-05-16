@@ -15,6 +15,14 @@ function formatTime(d: Date): string {
   return d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
 }
 
+function formatDate(d: Date): string {
+  const days = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${days[d.getDay()]} ${dd}/${mm}/${yyyy}`;
+}
+
 function formatDuration(from: Date): string {
   const mins = Math.floor((Date.now() - from.getTime()) / 60_000);
   const h = Math.floor(mins / 60);
@@ -53,7 +61,7 @@ function BoxStatusBadge({ box, isActive }: { box: CashBox; isActive: boolean }) 
     <span className="rounded-lg bg-emerald-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-emerald-700">ACTIVA</span>
   );
   if (box.used) return (
-    <span className="rounded-lg bg-[#f4f7fb] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-[#c0cad4]">CERRADA</span>
+    <span className="rounded-lg bg-[#f4f7fb] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-[#c0cad4]">CERRADO</span>
   );
   if (!box.available) return (
     <span className="flex items-center gap-1 rounded-lg bg-[#fef9f0] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-[#c08000]">
@@ -107,7 +115,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     sessionStats, cashMoves, addCashMove,
     opLogs, showNotice,
   } = usePOS();
-  const { isOpen, cashBox: activeBox, operator, terminal, openedAt, apertura } = cashSession;
+  const { isOpen, cashBox: activeBox, operator, openedAt, apertura } = cashSession;
 
   // ── pre-open state ────────────────────────────────────────────
   const [selectedCode, setSelectedCode] = useState<string>(() => suggestedCashBox?.code ?? "100");
@@ -290,9 +298,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
             <div className="flex flex-col gap-2">
               <InfoRow label="Operador" value={operator} />
-              <InfoRow label="Terminal" value={terminal} />
-              {openedAt && <InfoRow label="Activo" value={`${formatTime(openedAt)} · ${duration}`} accent />}
-              {apertura > 0 && <InfoRow label="Apertura" value={`S/ ${apertura.toFixed(2)}`} />}
+              {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
+              {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
+              {apertura > 0 && <InfoRow label="Fondo" value={`S/ ${apertura.toFixed(2)}`} />}
             </div>
 
             {sessionStats.count > 0 && closingStage === 0 && (
@@ -348,7 +356,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Monto de apertura S/</span>
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Fondo inicial S/</span>
               <input
                 ref={aperturaRef}
                 type="number"
@@ -595,7 +603,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   {/* Fondo apertura */}
                   <div className="rounded-xl bg-[#f8fafd] border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
                     <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-0.5">Fondo apertura</p>
-                    <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Apertura inicial</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Fondo inicial</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span></div>
                     {ingApertura > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ingresos →</span><span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingApertura.toFixed(2)}</span></div>}
                     {egApertura  > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Egresos ←</span><span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egApertura.toFixed(2)}</span></div>}
                     <div className="pt-1 border-t border-[#e4e9f0] flex justify-between"><span className="text-[10.5px] font-bold text-[#374151]">Subtotal</span><span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {fondoApertEsp.toFixed(2)}</span></div>
@@ -760,7 +768,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                               : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
                           }`}
                         >
-                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                          {s === "apertura" ? "Fondo" : s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
                       ))}
                     </div>
@@ -769,7 +777,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     {sourceType === "mixto" && (
                       <div className="flex gap-2 items-center">
                         <div className="flex-1 flex flex-col gap-0.5">
-                          <span className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wide">Apertura S/</span>
+                          <span className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wide">Fondo S/</span>
                           <input
                             type="number"
                             value={mixApertura}
@@ -830,10 +838,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       </p>
                       {lastMove.sourceType === "mixto" ? (
                         <p className="text-[9.5px] text-[#9ca3af]">
-                          apertura S/ {lastMove.fromApertura.toFixed(2)} + vendido S/ {lastMove.fromVendido.toFixed(2)}
+                          fondo S/ {lastMove.fromApertura.toFixed(2)} + vendido S/ {lastMove.fromVendido.toFixed(2)}
                         </p>
                       ) : (
-                        <p className="text-[9.5px] text-[#9ca3af]">{lastMove.sourceType}</p>
+                        <p className="text-[9.5px] text-[#9ca3af]">{lastMove.sourceType === "apertura" ? "fondo" : lastMove.sourceType}</p>
                       )}
                     </div>
                     <button onClick={() => handlePrintVoucher(lastMove)}
@@ -855,8 +863,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
                       const srcLabel = m.sourceType === "mixto"
-                        ? `apt S/${m.fromApertura.toFixed(0)} · vnd S/${m.fromVendido.toFixed(0)}`
-                        : m.sourceType;
+                        ? `fondo S/${m.fromApertura.toFixed(0)} · vnd S/${m.fromVendido.toFixed(0)}`
+                        : m.sourceType === "apertura" ? "fondo" : m.sourceType;
                       return (
                         <div key={m.id} className="rounded-xl px-3 py-2 hover:bg-[#f8fafd] group">
                           <div className="flex items-center gap-2.5">
