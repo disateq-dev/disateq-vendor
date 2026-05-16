@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText, X } from "lucide-react";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
 import { printCashMoveVoucher } from "../../print/printTicket";
 import { calcConciliation } from "./services/cash-conciliation.service";
@@ -177,7 +177,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }, [isOpen, suggestedCashBox]);
 
   // ── movements state ───────────────────────────────────────────
-  const [activeTab,   setActiveTab]   = useState<"moves" | "logs">("moves");
+  const [logOpen, setLogOpen] = useState(false);
   const [moveType,    setMoveType]    = useState<MoveType>("ingreso");
   const [moveAmount,  setMoveAmount]  = useState("");
   const [moveMotivo,  setMoveMotivo]  = useState("");
@@ -190,7 +190,21 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   useEffect(() => {
     setLastMove(null); setMoveAmount(""); setMoveMotivo("");
     setSourceType("apertura"); setMixApertura(""); setMixVendido("");
+    setLogOpen(false);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (closingStage > 0) setLogOpen(false);
+  }, [closingStage]);
+
+  useEffect(() => {
+    if (!logOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); setLogOpen(false); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [logOpen]);
 
   // ── derived ───────────────────────────────────────────────────
   const selectedBox   = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
@@ -685,43 +699,33 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
       ) : (
 
-        /* MOVEMENTS + OP LOGS */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        /* MOVEMENTS — main operational surface */
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
-          {/* Tab bar */}
+          {/* Header */}
           <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-2.5 flex items-center justify-between">
-            <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Movimientos</span>
+            <div className="flex items-center gap-3">
+              {cashMoves.length > 0 && (
+                <div className="flex gap-3">
+                  {ingresosTotal > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingresosTotal.toFixed(2)}</span>}
+                  {egresosTotal  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egresosTotal.toFixed(2)}</span>}
+                </div>
+              )}
               <button
-                onClick={() => setActiveTab("moves")}
-                className={`rounded-[9px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
-                  activeTab === "moves" ? "bg-white text-[#111827] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
-                }`}
-              >
-                Movimientos
-              </button>
-              <button
-                onClick={() => setActiveTab("logs")}
-                className={`flex items-center gap-1 rounded-[9px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
-                  activeTab === "logs" ? "bg-white text-[#111827] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
-                }`}
+                onClick={() => setLogOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-[#e4e9f0] px-2.5 py-1 text-[10px] font-semibold text-[#374151] transition hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
               >
                 <FileText size={10} strokeWidth={2.5} />
                 Bitácora
                 {opLogs.length > 0 && (
-                  <span className="ml-0.5 rounded-md bg-[#e4e9f0] px-1 text-[9px] font-bold text-[#6b7280]">{opLogs.length}</span>
+                  <span className="rounded-md bg-[#e4e9f0] px-1 text-[9px] font-bold text-[#6b7280]">{opLogs.length}</span>
                 )}
               </button>
             </div>
-            {activeTab === "moves" && cashMoves.length > 0 && (
-              <div className="flex gap-3">
-                {ingresosTotal > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingresosTotal.toFixed(2)}</span>}
-                {egresosTotal  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egresosTotal.toFixed(2)}</span>}
-              </div>
-            )}
           </div>
 
-          {activeTab === "moves" ? (
-            <>
+          <>
               {/* Move form */}
               <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-3 flex flex-col gap-2.5">
 
@@ -906,16 +910,34 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 )}
               </div>
             </>
-          ) : (
-            /* BITÁCORA */
-            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
-              {opLogs.length === 0 ? (
-                <p className="py-8 text-center text-[10.5px] text-[#c8d4e0]">Sin eventos registrados</p>
-              ) : (
-                <div className="flex flex-col gap-0.5">
-                  {[...opLogs].reverse().map(log => <LogEntry key={log.id} log={log} />)}
+
+          {/* Bitácora — drawer overlay */}
+          {logOpen && (
+            <div className="absolute inset-0 z-10 flex flex-col rounded-[24px] bg-white">
+              <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText size={12} strokeWidth={2.5} className="text-[#9ca3af]" />
+                  <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Bitácora operacional</span>
+                  {opLogs.length > 0 && (
+                    <span className="rounded-md bg-[#e4e9f0] px-1.5 py-px text-[9px] font-bold text-[#6b7280]">{opLogs.length}</span>
+                  )}
                 </div>
-              )}
+                <button
+                  onClick={() => setLogOpen(false)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+                {opLogs.length === 0 ? (
+                  <p className="py-8 text-center text-[10.5px] text-[#c8d4e0]">Sin eventos registrados</p>
+                ) : (
+                  <div className="flex flex-col gap-0.5">
+                    {[...opLogs].reverse().map(log => <LogEntry key={log.id} log={log} />)}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
