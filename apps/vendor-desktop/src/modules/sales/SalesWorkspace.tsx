@@ -296,11 +296,11 @@ export function SalesWorkspace() {
   }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#E9E4DC] bg-[#FDFBF7] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#E9E4DC] px-4 py-3">
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#f1f5f9] px-4 py-3">
           <div className="flex items-center gap-1 flex-wrap">
             {rubroConfig.categories.map(cat => (
               <button
@@ -322,7 +322,7 @@ export function SalesWorkspace() {
       )}
 
       {/* SEARCH ROW */}
-      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#E9E4DC] px-5">
+      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#f1f5f9] px-5">
         <Search size={17} className="shrink-0 text-[#2154d8]" />
 
         <input

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, FileText, X, Wallet, ShoppingCart, ArrowLeftRight, RotateCcw } from "lucide-react";
-import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type OpLog } from "../../context/POSContext";
-import { printCashMoveVoucher } from "../../print/printTicket";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, RotateCcw } from "lucide-react";
+import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
+import { printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData } from "../../print/printTicket";
 import { calcConciliation } from "./services/cash-conciliation.service";
 import {
   prereqCode, operatorFromCode, isContingencyBox,
-  canOpenSession, validateMixto, validateCanAddMove,
+  canOpenSession, validateCanAddMove,
   CTG_PIN, MIN_MOTIVO_LEN,
 } from "./services/cash-rules.service";
 
@@ -28,11 +28,6 @@ function formatDuration(from: Date): string {
   const h = Math.floor(mins / 60);
   const m = String(mins % 60).padStart(2, "0");
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
-function fmtTs(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 // ── constants ──────────────────────────────────────────────────
@@ -74,8 +69,8 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
 }) {
   const clickable = !isActive && box.available && !!onSelect;
   let cls = "flex items-center gap-3 rounded-2xl px-4 py-2.5 transition select-none";
-  if (isActive)        cls += " bg-emerald-50 ring-1 ring-emerald-200";
-  else if (isSelected) cls += " bg-[#edf4ff] ring-1 ring-[#2154d8]/20";
+  if (isActive)        cls += " bg-[#f8fafd] ring-2 ring-emerald-200";
+  else if (isSelected) cls += " bg-[#f8fafd] ring-1 ring-[#2154d8]/30";
   else if (clickable)  cls += " cursor-pointer hover:bg-[#f4f7fb]";
   else                 cls += " opacity-50 cursor-default";
   const dotColor  = isActive ? "bg-emerald-500" : isSelected ? "bg-[#2154d8]" : box.available ? "bg-[#34d399]" : "bg-[#d1d5db]";
@@ -85,15 +80,6 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
       <div className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
       <span className={`flex-1 text-[13px] font-bold tabular-nums ${nameColor}`}>CAJA {box.code}</span>
       <BoxStatusBadge box={box} isActive={isActive} />
-    </div>
-  );
-}
-
-function LogEntry({ log }: { log: OpLog }) {
-  return (
-    <div className="flex items-start gap-2.5 px-3 py-1.5 hover:bg-[#f8fafd] rounded-xl">
-      <span className="shrink-0 mt-0.5 text-[9px] font-mono text-[#c0cad4] tabular-nums">{fmtTs(log.ts)}</span>
-      <span className="text-[10.5px] text-[#374151] leading-snug">{log.text}</span>
     </div>
   );
 }
@@ -109,7 +95,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     cashSession, cashBoxes, suggestedCashBox,
     openCashSession, closeCashSession,
     sessionStats, cashMoves, addCashMove,
-    opLogs, showNotice,
+    showNotice,
   } = usePOS();
   const { isOpen, cashBox: activeBox, operator, terminal, openedAt, apertura, motivo: sessionMotivo } = cashSession;
 
@@ -173,14 +159,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }, [isOpen, suggestedCashBox]);
 
   // ── movements state ───────────────────────────────────────────
-  const [logOpen, setLogOpen] = useState(false);
   const [moveType,       setMoveType]       = useState<MoveType>("ingreso");
   const [moveAmount,     setMoveAmount]     = useState("");
   const [moveMotivo,     setMoveMotivo]     = useState("");
   const [moveObservacion,setMoveObservacion]= useState("");
   const [sourceType,     setSourceType]     = useState<MoveSource>("apertura");
-  const [mixApertura,    setMixApertura]    = useState("");
-  const [mixVendido,     setMixVendido]     = useState("");
   const [lastMove,       setLastMove]       = useState<CashMove | null>(null);
   const moveAmountRef = useRef<HTMLInputElement>(null);
   const motivoRef     = useRef<HTMLInputElement>(null);
@@ -190,27 +173,18 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const [repoAmount,      setRepoAmount]      = useState("");
   const [repoMotivo,      setRepoMotivo]      = useState("");
   const [repoObservacion, setRepoObservacion] = useState("");
+  const [lastRepoMove,    setLastRepoMove]    = useState<CashMove | null>(null);
   const repoAmountRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLastMove(null); setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
-    setSourceType("apertura"); setMixApertura(""); setMixVendido("");
-    setLogOpen(false);
-    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion("");
+    setSourceType("apertura");
+    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
   }, [isOpen]);
 
   useEffect(() => {
-    if (closingStage > 0) { setLogOpen(false); setReposingMoveId(null); }
+    if (closingStage > 0) { setReposingMoveId(null); }
   }, [closingStage]);
-
-  useEffect(() => {
-    if (!logOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); setLogOpen(false); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [logOpen]);
 
   // ── derived ───────────────────────────────────────────────────
   const selectedBox   = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
@@ -219,10 +193,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // move form derived
   const totalAmt   = parseFloat(moveAmount) || 0;
-  const mixAptNum  = parseFloat(mixApertura) || 0;
-  const mixVndNum  = parseFloat(mixVendido)  || 0;
-  const mixtoValid = sourceType !== "mixto" || validateMixto(totalAmt, mixAptNum, mixVndNum);
-  const canAddMove = validateCanAddMove(totalAmt, moveMotivo, sourceType, mixAptNum, mixVndNum);
+  const canAddMove = validateCanAddMove(totalAmt, moveMotivo, sourceType, 0, 0);
 
   // fondo breakdown — delegated to service
   const {
@@ -249,21 +220,18 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   function handleAddMove() {
     if (!canAddMove) return;
     const amt = totalAmt;
-    let fa = 0, fv = 0;
-    if (sourceType === "apertura") { fa = amt; fv = 0; }
-    else if (sourceType === "vendido") { fa = 0; fv = amt; }
-    else { fa = mixAptNum; fv = mixVndNum; }
+    const fa  = sourceType === "apertura" ? amt : 0;
+    const fv  = sourceType === "vendido"  ? amt : 0;
     const obs = moveObservacion.trim() || undefined;
     const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs);
     setLastMove(move);
     setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
-    setMixApertura(""); setMixVendido("");
     showNotice(`${moveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => moveAmountRef.current?.focus(), 10);
   }
 
   function closeRepo() {
-    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion("");
+    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
   }
 
   function openRepo(original: CashMove) {
@@ -287,16 +255,17 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       fa = parseFloat((amt * ratio).toFixed(2));
       fv = parseFloat((amt - fa).toFixed(2));
     }
-    addCashMove("ingreso", amt, repoMotivo.trim(), original.sourceType, fa, fv,
+    const move = addCashMove("ingreso", amt, repoMotivo.trim(), original.sourceType, fa, fv,
       repoObservacion.trim() || undefined, original.id);
+    handlePrintVoucher(move);
+    setLastRepoMove(move);
     showNotice(`Reposición registrada · S/ ${amt.toFixed(2)}`);
-    closeRepo();
   }
 
-  function handlePrintVoucher(move: CashMove) {
+  async function handlePrintVoucher(move: CashMove) {
     const ts = new Date(move.timestamp);
     const p  = (n: number) => String(n).padStart(2, "0");
-    printCashMoveVoucher({
+    const data: VoucherMoveData = {
       businessName: "DISATEQ TIENDA",
       moveType:     move.type,
       sourceLabel:  move.refId ? "REPOSICIÓN" : undefined,
@@ -307,7 +276,12 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       cashBoxCode:  move.cashBoxCode,
       terminal:     move.terminal,
       dateTime:     `${p(ts.getDate())}/${p(ts.getMonth() + 1)}/${ts.getFullYear()} ${p(ts.getHours())}:${p(ts.getMinutes())}`,
-    });
+    };
+    try {
+      await printCashMoveVoucherThermal("TIQUE", data);
+    } catch {
+      printCashMoveVoucher(data);
+    }
   }
 
   function handleConfirmClose() {
@@ -329,12 +303,12 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
         {/* Status / pre-open card */}
         {isOpen ? (
-          <div className={`flex flex-col gap-4 rounded-[24px] border bg-white px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)] ${
+          <div className={`flex flex-col gap-4 rounded-[24px] border bg-[#f8fafd] px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)] ${
             closingStage > 0 ? "border-red-200" : "border-emerald-200"
           }`}>
             <div className="flex items-center gap-3">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${
-                closingStage > 0 ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-600"
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f4f7fb] ${
+                closingStage > 0 ? "text-[#b91c1c]" : "text-emerald-600"
               }`}>
                 {closingStage > 0 ? <LogOut size={20} strokeWidth={1.5} /> : <Clock size={20} strokeWidth={1.5} />}
               </div>
@@ -399,7 +373,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
         ) : (
           /* Pre-open: operator + apertura card */
-          <div className="flex flex-col gap-4 rounded-[24px] border border-[#e4e9f0] bg-white px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-col gap-4 rounded-[24px] border border-[#e4e9f0] bg-[#f8fafd] px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f1f5f9] text-[#9ca3af]">
                 <Clock size={20} strokeWidth={1.5} />
@@ -483,9 +457,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <>
               <button
                 onClick={() => { setClosingStage(1); setContado(""); setTimeout(() => contadoRef.current?.focus(), 50); }}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#fca5a5] bg-[#fef2f2] py-3 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f8c3c3] bg-[#fef2f2] py-3 text-[12px] font-bold uppercase tracking-widest text-[#b91c1c] transition hover:bg-[#fee2e2] active:scale-[0.98]"
               >
-                <LogOut size={14} strokeWidth={2} />
+                <LogOut size={13} strokeWidth={2.5} />
                 Cierre de turno
               </button>
             </>
@@ -531,7 +505,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <>
               <button
                 onClick={() => setClosingStage(4)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_14px_rgba(220,38,38,0.24)] transition hover:bg-red-700 active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
               >
                 <CheckCircle size={14} strokeWidth={2.5} />
                 Confirmar cierre
@@ -548,10 +522,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <>
               <button
                 onClick={handleConfirmClose}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_14px_rgba(220,38,38,0.24)] transition hover:bg-red-700 active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
               >
                 <CheckCircle size={14} strokeWidth={2.5} />
-                Cerrar turno
+                CERRAR TURNO
               </button>
               <button
                 onClick={() => setClosingStage(0)}
@@ -568,7 +542,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       {!isOpen ? (
 
         /* BOX SELECTOR */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
           <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-3">
             <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Selección operacional de caja</span>
           </div>
@@ -600,7 +574,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       ) : closingStage > 0 ? (
 
         /* CLOSING FLOW */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-red-200 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-red-200 bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
           <div className="shrink-0 border-b border-[#fecaca] px-5 py-3 flex items-center justify-between">
 
@@ -697,7 +671,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <p className="text-[12px] text-[#6b7280] leading-relaxed">Conciliación por fondo operacional:</p>
                 <div className="flex flex-col gap-2">
                   {/* Fondo apertura */}
-                  <div className="rounded-xl bg-[#f8fafd] border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
+                  <div className="rounded-xl bg-white border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
                     <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-0.5">Fondo apertura</p>
                     <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Fondo inicial</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span></div>
                     {ingApertura > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ingresos →</span><span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingApertura.toFixed(2)}</span></div>}
@@ -705,7 +679,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     <div className="pt-1 border-t border-[#e4e9f0] flex justify-between"><span className="text-[10.5px] font-bold text-[#374151]">Subtotal</span><span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {fondoApertEsp.toFixed(2)}</span></div>
                   </div>
                   {/* Fondo vendido */}
-                  <div className="rounded-xl bg-[#f8fafd] border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
+                  <div className="rounded-xl bg-white border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
                     <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-0.5">Fondo vendido</p>
                     <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ventas efectivo</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {sessionStats.cash.toFixed(2)}</span></div>
                     {ingVendido > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ingresos →</span><span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingVendido.toFixed(2)}</span></div>}
@@ -741,7 +715,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <p className="text-[12px] text-[#6b7280] leading-relaxed">
                   El turno se cerrará definitivamente. Esta acción no se puede deshacer.
                 </p>
-                <div className="rounded-2xl bg-[#f8fafd] border border-[#e4e9f0] px-5 py-3 flex flex-col gap-1.5">
+                <div className="rounded-2xl bg-white border border-[#e4e9f0] px-5 py-3 flex flex-col gap-1.5">
                   <InfoRow label="Caja"      value={`CAJA ${activeBox?.code}`} />
                   <InfoRow label="Operador"  value={operator} />
                   <InfoRow label="Ventas"    value={`${sessionStats.count} op. · S/ ${sessionStats.total.toFixed(2)}`} />
@@ -765,217 +739,194 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
       ) : (
 
-        /* MOVEMENTS — main operational surface */
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        /* MOVEMENTS — 45/55 operational split */
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
-          {/* Header */}
-          <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-2.5 flex items-center justify-between">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Movimientos</span>
-            <div className="flex items-center gap-3">
+          {/* ─── LEFT: form operacional (45%) ─── */}
+          <div className="flex w-[45%] shrink-0 flex-col border-r border-[#f1f5f9]">
+
+            <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-2 flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Movimientos</span>
               {cashMoves.length > 0 && (
-                <div className="flex gap-3">
+                <div className="flex items-center gap-2.5">
                   {ingresosTotal > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingresosTotal.toFixed(2)}</span>}
                   {egresosTotal  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egresosTotal.toFixed(2)}</span>}
                 </div>
               )}
-              <button
-                onClick={() => setLogOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-[#e4e9f0] px-2.5 py-1 text-[10px] font-semibold text-[#374151] transition hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
-              >
-                <FileText size={10} strokeWidth={2.5} />
-                Bitácora
-                {opLogs.length > 0 && (
-                  <span className="rounded-md bg-[#e4e9f0] px-1 text-[9px] font-bold text-[#6b7280]">{opLogs.length}</span>
-                )}
-              </button>
             </div>
-          </div>
 
-          <>
-              {/* Move form */}
-              <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-2 flex flex-col gap-2">
+            <div className="flex flex-col gap-2 px-4 py-3">
 
-                {/* Type toggle */}
-                <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
-                  {(["ingreso", "egreso"] as MoveType[]).map(t => (
-                    <button key={t} onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setSourceType("apertura"); setMixApertura(""); setMixVendido(""); setLastMove(null); }}
-                      className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
-                        moveType === t
-                          ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
-                          : "text-[#9ca3af] hover:text-[#374151]"
-                      }`}
-                    >
-                      {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
-                    </button>
-                  ))}
-                </div>
+              {/* Tipo */}
+              <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+                {(["ingreso", "egreso"] as MoveType[]).map(t => (
+                  <button key={t}
+                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setSourceType("apertura"); setLastMove(null); }}
+                    className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
+                      moveType === t
+                        ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
+                        : "text-[#9ca3af] hover:text-[#374151]"
+                    }`}
+                  >
+                    {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
+                  </button>
+                ))}
+              </div>
 
-                {/* Monto + Origen — misma fila */}
-                <div className="flex items-stretch gap-2">
-
-                  {/* Monto */}
-                  <div className="flex flex-col gap-0.5 w-[148px] shrink-0">
-                    <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
-                    <div className="flex items-center gap-1.5 flex-1">
+              {/* Monto + Origen */}
+              <div className="flex items-stretch gap-2">
+                <div className="flex flex-col gap-0.5 w-[120px] shrink-0">
+                  <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
+                  <div className="flex items-center gap-1 flex-1">
                     <span className="shrink-0 text-[10px] font-bold text-[#9ca3af]">S/</span>
                     <input
                       ref={moveAmountRef}
                       type="number"
                       value={moveAmount}
-                      onChange={e => { setMoveAmount(e.target.value); setMixApertura(""); setMixVendido(""); }}
+                      onChange={e => setMoveAmount(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
                       placeholder="0.00"
                       min="0.01"
                       step="0.01"
-                      className="w-full min-w-0 rounded-xl border border-[#e4e9f0] px-2.5 py-1.5 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                      className="w-full min-w-0 rounded-xl border border-[#e4e9f0] px-2 py-1.5 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15"
                     />
-                    </div>
-                  </div>
-
-                  {/* Origen operacional */}
-                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                    <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">ORIGEN</span>
-                    <div className="flex gap-1 flex-1">
-                      {([
-                        { src: "apertura" as MoveSource, label: "FONDO", Icon: Wallet },
-                        { src: "vendido"  as MoveSource, label: "VENTA", Icon: ShoppingCart },
-                        { src: "mixto"    as MoveSource, label: "AMBOS", Icon: ArrowLeftRight },
-                      ]).map(({ src, label, Icon }) => (
-                        <button key={src}
-                          onClick={() => { setSourceType(src); setMixApertura(""); setMixVendido(""); }}
-                          className={`flex-1 flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 text-[9px] font-bold uppercase tracking-wide transition ${
-                            sourceType === src
-                              ? "bg-[#2154d8] text-white"
-                              : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
-                          }`}
-                        >
-                          <Icon size={11} strokeWidth={2} />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 </div>
-
-                {/* Ambos sub-inputs */}
-                {sourceType === "mixto" && (
-                  <div className="flex gap-2 items-center">
-                    <div className="flex-1 flex flex-col gap-0.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-[#9ca3af]">FONDO S/</span>
-                      <input type="number" value={mixApertura} onChange={e => setMixApertura(e.target.value)} placeholder="0.00" min="0" step="0.01"
-                        className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10" />
-                    </div>
-                    <span className="mt-4 text-[11px] text-[#c0cad4]">+</span>
-                    <div className="flex-1 flex flex-col gap-0.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-[#9ca3af]">VENTA S/</span>
-                      <input type="number" value={mixVendido} onChange={e => setMixVendido(e.target.value)} placeholder="0.00" min="0" step="0.01"
-                        className="w-full rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[13px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10" />
-                    </div>
-                    {mixAptNum + mixVndNum > 0 && (
-                      <div className="mt-4">
-                        <span className={`text-[10px] font-bold tabular-nums ${mixtoValid ? "text-emerald-600" : "text-red-500"}`}>
-                          {mixtoValid ? "✓" : `≠ S/ ${totalAmt.toFixed(2)}`}
-                        </span>
-                      </div>
-                    )}
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">ORIGEN</span>
+                  <div className="flex gap-1 flex-1">
+                    {([
+                      { src: "apertura" as MoveSource, label: "FONDO APT.", Icon: Wallet },
+                      { src: "vendido"  as MoveSource, label: "FONDO VENTA", Icon: ShoppingCart },
+                    ]).map(({ src, label, Icon }) => (
+                      <button key={src}
+                        onClick={() => setSourceType(src)}
+                        className={`flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[9px] font-bold uppercase tracking-wide transition ${
+                          sourceType === src
+                            ? "bg-[#2154d8] text-white"
+                            : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
+                        }`}
+                      >
+                        <Icon size={10} strokeWidth={2} />
+                        {label}
+                      </button>
+                    ))}
                   </div>
-                )}
-
-                {/* MOTIVO — obligatorio */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
-                    MOTIVO <span className="text-red-400">*</span>
-                  </span>
-                  <input
-                    ref={motivoRef}
-                    type="text"
-                    value={moveMotivo}
-                    onChange={e => setMoveMotivo(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && canAddMove) handleAddMove(); }}
-                    placeholder={moveType === "egreso"
-                      ? "Ej: Pago mototaxi, pago proveedor, pago servicio..."
-                      : "Ej: Sencillo monedas, devolución, reposición..."}
-                    maxLength={120}
-                    className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                  />
                 </div>
-
-                {/* OBSERVACIÓN — opcional */}
-                <input
-                  type="text"
-                  value={moveObservacion}
-                  onChange={e => setMoveObservacion(e.target.value)}
-                  placeholder="Observación operacional (opcional)"
-                  maxLength={200}
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                />
-
-                {/* Registrar */}
-                <button
-                  onClick={handleAddMove}
-                  disabled={!canAddMove}
-                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
-                    canAddMove
-                      ? moveType === "ingreso"
-                        ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
-                        : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
-                      : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
-                  }`}
-                >
-                  {moveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
-                </button>
-
-                {/* Feedback último movimiento */}
-                {lastMove && (
-                  <div className="flex items-center gap-2 rounded-xl bg-[#f0fdf4] border border-emerald-200 px-3 py-1.5">
-                    <CheckCircle size={11} className="text-emerald-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Movimiento registrado</p>
-                      <p className="text-[9.5px] text-[#9ca3af] truncate">
-                        {lastMove.type === "ingreso" ? "↑" : "↓"} S/ {lastMove.amount.toFixed(2)} · {lastMove.motivo}
-                      </p>
-                    </div>
-                    <button onClick={() => handlePrintVoucher(lastMove)}
-                      className="flex items-center gap-1 rounded-lg border border-emerald-200 px-2 py-1 text-[9.5px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-100"
-                    >
-                      <Printer size={9} strokeWidth={2} /> Imprimir
-                    </button>
-                  </div>
-                )}
               </div>
 
-              {/* Moves list */}
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2">
-                {cashMoves.length === 0 ? (
-                  <p className="py-8 text-center text-[10.5px] text-[#c8d4e0]">Sin movimientos en este turno</p>
-                ) : (
-                  <div className="flex flex-col gap-0.5">
-                    {[...cashMoves].reverse().map(m => {
+              {/* Motivo */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
+                  MOTIVO <span className="text-red-400">*</span>
+                </span>
+                <input
+                  ref={motivoRef}
+                  type="text"
+                  value={moveMotivo}
+                  onChange={e => setMoveMotivo(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && canAddMove) handleAddMove(); }}
+                  placeholder={moveType === "egreso"
+                    ? "Ej: Pago mototaxi, pago proveedor..."
+                    : "Ej: Sencillo monedas, devolución..."}
+                  maxLength={120}
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15"
+                />
+              </div>
+
+              {/* Observación */}
+              <input
+                type="text"
+                value={moveObservacion}
+                onChange={e => setMoveObservacion(e.target.value)}
+                placeholder="Observación operacional (opcional)"
+                maxLength={200}
+                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/15"
+              />
+
+              {/* Registrar */}
+              <button
+                onClick={handleAddMove}
+                disabled={!canAddMove}
+                className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                  canAddMove
+                    ? moveType === "ingreso"
+                      ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
+                      : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
+                    : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                }`}
+              >
+                {moveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
+              </button>
+
+              {/* Feedback */}
+              {lastMove && (
+                <div className="flex items-center gap-2 rounded-xl bg-[#f8fafd] border border-emerald-200 px-3 py-1.5">
+                  <CheckCircle size={11} className="text-emerald-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Movimiento registrado</p>
+                    <p className="text-[9.5px] text-[#9ca3af] truncate">
+                      {lastMove.type === "ingreso" ? "↑" : "↓"} S/ {lastMove.amount.toFixed(2)} · {lastMove.motivo}
+                    </p>
+                  </div>
+                  <button onClick={() => void handlePrintVoucher(lastMove)}
+                    className="flex items-center gap-1 rounded-lg border border-emerald-200 px-2 py-1 text-[9.5px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-[#f0fdf4]"
+                  >
+                    <Printer size={9} strokeWidth={2} /> Imprimir
+                  </button>
+                </div>
+              )}
+
+            </div>
+          </div>
+
+          {/* ─── RIGHT: timeline operacional (55%) ─── */}
+          <div className="flex min-h-0 flex-1 flex-col">
+
+            <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-2 flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Histórico</span>
+              {cashMoves.length > 0 && (
+                <span className="text-[9px] font-semibold text-[#c0cad4] tabular-nums">{cashMoves.length} mov.</span>
+              )}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+              {cashMoves.length === 0 ? (
+                <p className="py-8 text-center text-[10.5px] text-[#c8d4e0]">Sin movimientos en este turno</p>
+              ) : (() => {
+                const reposByEgresoId = cashMoves.reduce<Record<string, CashMove[]>>((acc, m) => {
+                  if (m.refId) { (acc[m.refId] ??= []).push(m); }
+                  return acc;
+                }, {});
+                const primaryMoves = [...cashMoves].reverse().filter(m => !m.refId);
+                return (
+                  <div className="flex flex-col gap-px">
+                    {primaryMoves.map(m => {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
                       const srcLabel = m.sourceType === "mixto"
                         ? `fondo S/${m.fromApertura.toFixed(0)} · vnd S/${m.fromVendido.toFixed(0)}`
-                        : m.sourceType === "apertura" ? "fondo" : m.sourceType;
+                        : m.sourceType === "apertura" ? "fondo" : "venta";
+                      const linkedRepos: CashMove[] = m.type === "egreso" ? (reposByEgresoId[m.id] ?? []) : [];
                       const isRepoing = reposingMoveId === m.id;
-                      const canRepo = parseFloat(repoAmount) > 0 && repoMotivo.trim().length > 0;
+                      const canRepo   = parseFloat(repoAmount) > 0 && repoMotivo.trim().length > 0;
                       return (
-                        <div key={m.id} className="flex flex-col rounded-xl hover:bg-[#f8fafd] group">
-                          <div className="flex items-center gap-2.5 px-3 py-1.5">
+                        <div key={m.id} className="group/move">
+                          {/* Fila principal */}
+                          <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white">
+                            <span className="shrink-0 w-[28px] text-[9px] font-mono tabular-nums text-[#c0cad4]">{hm}</span>
                             <span className={`shrink-0 text-[11px] font-bold ${m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
                               {m.type === "ingreso" ? "↑" : "↓"}
                             </span>
                             <div className="flex-1 min-w-0">
-                              <span className="text-[11px] font-semibold text-[#374151] truncate block">{m.motivo}</span>
-                              {m.refId && (
-                                <span className="text-[8.5px] font-bold uppercase tracking-wide text-emerald-600">↩ reposición</span>
-                              )}
+                              <p className="text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</p>
+                              <p className="text-[9.5px] text-[#c0cad4] truncate">{srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}</p>
                             </div>
-                            <span className="shrink-0 text-[10px] text-[#9ca3af] tabular-nums">{hm}</span>
                             <span className={`shrink-0 text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
                               {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
                             </span>
-                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition">
-                              <button onClick={() => handlePrintVoucher(m)} title="Imprimir voucher"
+                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/move:opacity-100 transition">
+                              <button onClick={() => void handlePrintVoucher(m)} title="Imprimir voucher"
                                 className="text-[#c0cad4] hover:text-[#2154d8]"
                               >
                                 <Printer size={11} strokeWidth={2} />
@@ -991,96 +942,109 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                               )}
                             </div>
                           </div>
-                          <p className="ml-[34px] -mt-1 pb-1 text-[9.5px] text-[#c0cad4] tabular-nums">{srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}</p>
 
-                          {/* Formulario inline de reposición */}
-                          {isRepoing && (
-                            <div className="mx-3 mb-2 flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">Reposición</span>
-                                <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition">
-                                  <X size={12} />
+                          {/* Reposiciones vinculadas — compactas, anidadas */}
+                          {linkedRepos.map(repo => {
+                            const rts = new Date(repo.timestamp);
+                            const rhm = `${String(rts.getHours()).padStart(2, "0")}:${String(rts.getMinutes()).padStart(2, "0")}`;
+                            return (
+                              <div key={repo.id} className="group/repo ml-10 flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white">
+                                <span className="shrink-0 text-[9px] font-bold text-emerald-500">↩</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[10px] font-semibold text-emerald-700 truncate">{repo.motivo}</p>
+                                </div>
+                                <span className="shrink-0 text-[9px] font-mono tabular-nums text-[#c0cad4]">{rhm}</span>
+                                <span className="shrink-0 text-[10px] font-bold text-emerald-600 tabular-nums">+S/ {repo.amount.toFixed(2)}</span>
+                                <button
+                                  onClick={() => void handlePrintVoucher(repo)}
+                                  className="shrink-0 opacity-0 group-hover/repo:opacity-100 text-[#c0cad4] hover:text-emerald-500 transition"
+                                >
+                                  <Printer size={10} strokeWidth={2} />
                                 </button>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[9.5px] font-bold text-[#9ca3af]">S/</span>
-                                <input
-                                  ref={repoAmountRef}
-                                  type="number"
-                                  value={repoAmount}
-                                  onChange={e => setRepoAmount(e.target.value)}
-                                  placeholder={m.amount.toFixed(2)}
-                                  min="0.01" step="0.01"
-                                  className="w-[100px] rounded-lg border border-emerald-200 bg-white px-2 py-1 text-[14px] font-bold text-[#2F3E46] outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
-                                />
-                              </div>
-                              <input
-                                type="text"
-                                value={repoMotivo}
-                                onChange={e => setRepoMotivo(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Enter" && canRepo) handleReposicion(); if (e.key === "Escape") closeRepo(); }}
-                                placeholder="Ej: Devolución mototaxi, reposición proveedor..."
-                                maxLength={120}
-                                className="w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
-                              />
-                              <input
-                                type="text"
-                                value={repoObservacion}
-                                onChange={e => setRepoObservacion(e.target.value)}
-                                placeholder="Observación operacional (opcional)"
-                                maxLength={200}
-                                className="w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
-                              />
-                              <button
-                                onClick={handleReposicion}
-                                disabled={!canRepo}
-                                className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
-                                  canRepo
-                                    ? "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]"
-                                    : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
-                                }`}
-                              >
-                                <RotateCcw size={10} strokeWidth={2} /> Registrar reposición
-                              </button>
+                            );
+                          })}
+
+                          {/* Formulario inline reposición */}
+                          {isRepoing && (
+                            <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-[#f8fafd] px-3 py-2.5">
+                              {lastRepoMove ? (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      <CheckCircle size={11} className="text-emerald-500 shrink-0" />
+                                      <span className="text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">Reposición registrada</span>
+                                    </div>
+                                    <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
+                                  </div>
+                                  <p className="text-[9.5px] text-emerald-600 tabular-nums">↑ S/ {lastRepoMove.amount.toFixed(2)} · {lastRepoMove.motivo}</p>
+                                  <button
+                                    onClick={() => void handlePrintVoucher(lastRepoMove)}
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-white py-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98]"
+                                  >
+                                    <Printer size={10} strokeWidth={2} /> Reimprimir voucher
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">Reposición</span>
+                                    <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[9.5px] font-bold text-[#9ca3af]">S/</span>
+                                    <input
+                                      ref={repoAmountRef}
+                                      type="number"
+                                      value={repoAmount}
+                                      onChange={e => setRepoAmount(e.target.value)}
+                                      placeholder={m.amount.toFixed(2)}
+                                      min="0.01" step="0.01"
+                                      className="w-[100px] rounded-lg border border-emerald-200 bg-white px-2 py-1 text-[14px] font-bold text-[#2F3E46] outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
+                                    />
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={repoMotivo}
+                                    onChange={e => setRepoMotivo(e.target.value)}
+                                    onKeyDown={e => { if (e.key === "Enter" && canRepo) handleReposicion(); if (e.key === "Escape") closeRepo(); }}
+                                    placeholder="Ej: Devolución mototaxi, reposición..."
+                                    maxLength={120}
+                                    className="w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={repoObservacion}
+                                    onChange={e => setRepoObservacion(e.target.value)}
+                                    placeholder="Observación (opcional)"
+                                    maxLength={200}
+                                    className="w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
+                                  />
+                                  <button
+                                    onClick={handleReposicion}
+                                    disabled={!canRepo}
+                                    className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                                      canRepo
+                                        ? "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]"
+                                        : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                                    }`}
+                                  >
+                                    <RotateCcw size={10} strokeWidth={2} /> Registrar reposición
+                                  </button>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
                       );
                     })}
                   </div>
-                )}
-              </div>
-            </>
-
-          {/* Bitácora — drawer overlay */}
-          {logOpen && (
-            <div className="absolute inset-0 z-10 flex flex-col rounded-[24px] bg-white">
-              <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText size={12} strokeWidth={2.5} className="text-[#9ca3af]" />
-                  <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Bitácora operacional</span>
-                  {opLogs.length > 0 && (
-                    <span className="rounded-md bg-[#e4e9f0] px-1.5 py-px text-[9px] font-bold text-[#6b7280]">{opLogs.length}</span>
-                  )}
-                </div>
-                <button
-                  onClick={() => setLogOpen(false)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
-                {opLogs.length === 0 ? (
-                  <p className="py-8 text-center text-[10.5px] text-[#c8d4e0]">Sin eventos registrados</p>
-                ) : (
-                  <div className="flex flex-col gap-0.5">
-                    {[...opLogs].reverse().map(log => <LogEntry key={log.id} log={log} />)}
-                  </div>
-                )}
-              </div>
+                );
+              })()}
             </div>
-          )}
+
+          </div>
+
         </div>
       )}
 

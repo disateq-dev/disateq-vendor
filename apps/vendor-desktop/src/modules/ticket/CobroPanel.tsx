@@ -339,10 +339,10 @@ export function CobroPanel() {
   const { text: rowLabel, warn: rowWarn } = getRowLabel();
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#E9E4DC] bg-[#FDFBF7] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* HEADER */}
-      <header className="shrink-0 flex items-center gap-2 border-b border-amber-100/70 bg-[#fffdf8] px-4 pt-2.5 pb-2">
+      <header className="shrink-0 flex items-center gap-2 border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
         <button
           title="Tecla [Esc]"
           onClick={cobroView === "client" ? resetForm : closeCobro}
@@ -353,14 +353,14 @@ export function CobroPanel() {
         </button>
 
         <div className="flex flex-1 justify-center">
-          <div className="flex gap-px rounded-lg bg-amber-100/60 p-0.5">
+          <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5">
             {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt, i) => (
               <button
                 key={dt}
                 title={`Tecla [Ctrl + ${i + 1}]`}
                 onClick={() => setDocType(dt)}
                 className={`rounded-[5px] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
-                  docType === dt ? "bg-white text-[#2154d8] shadow-sm" : "text-[#b89a6c] hover:text-[#7c6240]"
+                  docType === dt ? "bg-white text-[#2154d8] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
                 }`}
               >
                 {DOC_SHORT[dt]}

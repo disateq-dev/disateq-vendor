@@ -373,6 +373,10 @@ export function printReceiptWithDispatch(r: PrintData, d: DispatchData): void {
 
 // ─── CASH MOVE VOUCHER ────────────────────────────────────────────────────────
 
+export async function printCashMoveVoucherThermal(printer: string, d: VoucherMoveData): Promise<void> {
+  await invoke("print_cash_move", { printer, data: d });
+}
+
 export function printCashMoveVoucher(d: VoucherMoveData): void {
   let overlay = document.getElementById("pt-overlay");
   if (!overlay) {

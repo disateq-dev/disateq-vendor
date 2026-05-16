@@ -64,10 +64,10 @@ export function TicketGrid() {
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#E9E4DC] bg-[#FDFBF7] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#e4e9f0] bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* HEADER */}
-      <header className="shrink-0 flex flex-col border-b border-amber-100/70 bg-[#fffdf8] px-4 pt-2.5 pb-2">
+      <header className="shrink-0 flex flex-col border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
         <div className="flex items-center justify-between">
           <span className="text-[13px] font-bold tracking-wide text-[#2F3E46]">
             PRE-VENTA <span className="text-[#374151]">#{saleNumber}</span>
@@ -104,8 +104,8 @@ export function TicketGrid() {
                     isSelected
                       ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20"
                       : isLastLine
-                      ? "bg-[#f8fafd] ring-1 ring-[#e8eef5]"
-                      : "hover:bg-[#f8fafd]"
+                      ? "bg-white ring-1 ring-[#e4e9f0]"
+                      : "hover:bg-white"
                   }`}
                 >
                   {/* Name + price + note */}
@@ -223,7 +223,7 @@ export function TicketGrid() {
       </div>
 
       {/* FOOTER */}
-      <footer className="shrink-0 flex items-stretch gap-2 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-4">
+      <footer className="shrink-0 flex items-stretch gap-2 border-t border-[#f1f5f9] bg-[#f4f7fb] px-3 py-4">
 
         {/* LIMPIAR ~30% */}
         <button
@@ -231,7 +231,7 @@ export function TicketGrid() {
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider transition ${
             lines.length === 0
-              ? "cursor-not-allowed bg-amber-50/60 text-[#d4c4a4]"
+              ? "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
               : "bg-[#fee2e2] text-[#dc2626] hover:bg-[#fecaca] active:scale-[0.97]"
           }`}
         >
@@ -240,7 +240,7 @@ export function TicketGrid() {
 
         {/* TOTAL ~40% */}
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center py-1">
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#c4a87c]">Total</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Total</p>
           <strong className="text-[26px] font-extrabold leading-none tracking-tight text-[#111827] tabular-nums">
             S/ {total.toFixed(2)}
           </strong>

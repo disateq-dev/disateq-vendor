@@ -207,6 +207,20 @@ Keep sessions focused by domain.
 
 ---
 
+## Communication Rules
+
+Respond in Spanish by default.
+
+Keep technical terminology, architecture terms, runtime concepts,
+file names, APIs, TypeScript entities, and code identifiers in English
+when appropriate.
+
+Avoid unnecessary translations of technical concepts.
+
+Prefer concise operational communication with high information density.
+
+---
+
 ## Context Control Rules
 
 Always ignore:

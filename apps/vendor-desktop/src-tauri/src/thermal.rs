@@ -350,6 +350,115 @@ pub fn print_raw(_printer_name: &str, _data: &[u8]) -> Result<(), String> {
     Err("Raw thermal printing is only supported on Windows".into())
 }
 
+// ─── CASH MOVE VOUCHER ───────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoucherMovePrintData {
+    pub business_name: String,
+    pub move_type:     String,
+    pub source_label:  Option<String>,
+    pub amount:        f64,
+    pub motivo:        String,
+    pub observacion:   Option<String>,
+    pub operator:      String,
+    pub cash_box_code: String,
+    pub terminal:      String,
+    pub date_time:     String,
+}
+
+pub fn build_cash_move_escpos(d: &VoucherMovePrintData) -> Vec<u8> {
+    let mut b = Buf::new();
+    b.init();
+
+    let type_label = normalize(
+        d.source_label.as_deref()
+            .unwrap_or(if d.move_type == "ingreso" { "INGRESO" } else { "EGRESO" })
+    );
+
+    b.align_center();
+    b.bold_on();
+    b.dbl_h_on();
+    b.line(&normalize(&d.business_name));
+    b.dbl_h_off();
+    b.bold_off();
+    b.bold_on();
+    b.line("MOVIMIENTO DE CAJA");
+    b.line(&type_label);
+    b.bold_off();
+    b.align_left();
+    b.equals();
+
+    b.bold_on();
+    b.dbl_h_on();
+    b.two_col("MONTO", &money(d.amount));
+    b.dbl_h_off();
+    b.bold_off();
+
+    b.dashes();
+
+    // Motivo — wrap if needed (normalize gives pure ASCII so byte-slice is safe)
+    {
+        let text = normalize(&d.motivo);
+        let prefix = "Motivo: ";
+        if prefix.len() + text.len() <= COLS {
+            b.line(&format!("{prefix}{text}"));
+        } else {
+            b.line("Motivo:");
+            let width = COLS - 2;
+            let bytes = text.as_bytes();
+            let mut i = 0;
+            while i < bytes.len() {
+                let end = (i + width).min(bytes.len());
+                let chunk = std::str::from_utf8(&bytes[i..end]).unwrap_or("");
+                b.line(&format!("  {chunk}"));
+                i = end;
+            }
+        }
+    }
+
+    if let Some(ref obs) = d.observacion {
+        let text = normalize(obs);
+        if !text.is_empty() {
+            let prefix = "Obs.: ";
+            if prefix.len() + text.len() <= COLS {
+                b.line(&format!("{prefix}{text}"));
+            } else {
+                b.line("Obs.:");
+                let width = COLS - 2;
+                let bytes = text.as_bytes();
+                let mut i = 0;
+                while i < bytes.len() {
+                    let end = (i + width).min(bytes.len());
+                    let chunk = std::str::from_utf8(&bytes[i..end]).unwrap_or("");
+                    b.line(&format!("  {chunk}"));
+                    i = end;
+                }
+            }
+        }
+    }
+
+    b.dashes();
+
+    b.two_col("Operador:", &normalize(&d.operator));
+    b.two_col("Caja:", &normalize(&d.cash_box_code));
+    b.two_col("Terminal:", &normalize(&d.terminal));
+    b.two_col("Fecha/Hora:", &normalize(&d.date_time));
+
+    b.dashes();
+
+    b.align_center();
+    b.line("Conserve este comprobante");
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+
+    b.cut();
+    b.0
+}
+
 // ─── DISPATCH TICKET ─────────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
