@@ -372,7 +372,7 @@ export function SalesWorkspace() {
                 {!cashSession.isOpen && (
                   <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-amber-400">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                    Sin turno activo · cobro deshabilitado
+                    Sin turno operativo · cobro deshabilitado
                   </p>
                 )}
               </div>

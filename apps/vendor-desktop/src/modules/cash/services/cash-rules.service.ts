@@ -24,19 +24,13 @@ export function isContingencyBox(box: CashBox | null): boolean {
   return !!box && box.type !== "normal";
 }
 
-// ── contingency authorization ───────────────────────────────────
+// ── secondary box authorization ────────────────────────────────
 
 export const CTG_PIN = "1234";
+export const MIN_MOTIVO_LEN = 5;
 
-export const CTG_JUSTIFS = [
-  "Falla técnica caja normal",
-  "Saturación operacional",
-  "Mantenimiento programado",
-  "Otro",
-];
-
-export function validateCtgAuth(pin: string, justif: string): boolean {
-  return pin === CTG_PIN && justif.trim() !== "";
+export function validateCtgAuth(pin: string, motivo: string): boolean {
+  return pin === CTG_PIN && motivo.trim().length >= MIN_MOTIVO_LEN;
 }
 
 // ── apertura validation ─────────────────────────────────────────

@@ -40,7 +40,7 @@ export function StatusBar() {
     return (
       <div className="flex h-[26px] shrink-0 items-center bg-[#0a1628] px-5">
         <span className="select-none text-[9px] font-bold uppercase tracking-[0.15em] text-[#2d3f5c]">
-          ○&nbsp;&nbsp;sin apertura operacional
+          ○&nbsp;&nbsp;sin turno operativo
         </span>
       </div>
     );

@@ -67,7 +67,7 @@ export function Topbar() {
                 <span className="text-[#7c8db8]">{operator}</span>
               </div>
               <div className="flex items-center gap-2 text-[11px]">
-                <span className="font-semibold text-[#4ade80]">Turno ACTIVO</span>
+                <span className="font-semibold text-[#4ade80]">Turno abierto</span>
                 {openedAt && (
                   <>
                     <span className="text-[#3d5280]">•</span>
@@ -78,7 +78,7 @@ export function Topbar() {
             </>
           ) : (
             <>
-              <div className="text-[12px] font-semibold text-[#8090b0]">Sin turno activo</div>
+              <div className="text-[12px] font-semibold text-[#8090b0]">Sin turno operativo</div>
               <div className="text-[10.5px] text-[#4d5e7c]">Abrir caja para operar</div>
             </>
           )}

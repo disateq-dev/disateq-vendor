@@ -6,7 +6,7 @@ import { calcConciliation } from "./services/cash-conciliation.service";
 import {
   prereqCode, operatorFromCode, isContingencyBox,
   canOpenSession, validateMixto, validateCanAddMove,
-  CTG_PIN, CTG_JUSTIFS,
+  CTG_PIN, MIN_MOTIVO_LEN,
 } from "./services/cash-rules.service";
 
 // ── helpers ────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       if (!ctgJustif) return;
     }
     const amt = parseFloat(aperturaInput) || 0;
-    openCashSession(selectedBox.code, amt);
+    openCashSession(selectedBox.code, amt, isContingency ? ctgJustif.trim() : undefined);
     onOpened?.();
   }
 
@@ -279,7 +279,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <div className="flex items-center gap-1.5">
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${closingStage > 0 ? "bg-red-400" : "bg-emerald-500"}`} />
                   <span className={`text-[10.5px] font-bold uppercase tracking-widest ${closingStage > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                    {closingStage > 0 ? `CERRANDO · PASO ${closingStage}/4` : "TURNO ABIERTO"}
+                    {closingStage > 0 ? `CERRANDO TURNO · ${closingStage}/4` : "TURNO ABIERTO"}
                   </span>
                 </div>
                 <p className="mt-0.5 truncate text-[12px] font-semibold text-[#374151]">
@@ -340,7 +340,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <Clock size={20} strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
-                <span className="text-[10.5px] font-bold uppercase tracking-widest text-[#9ca3af]">TURNO CERRADO</span>
+                <span className="text-[10.5px] font-bold uppercase tracking-widest text-[#9ca3af]">SIN TURNO OPERATIVO</span>
                 <p className="mt-0.5 truncate text-[12px] font-semibold text-[#374151]">
                   {selectedBox ? `CAJA ${selectedBox.code} · ${operatorFromCode(selectedBox.code)}` : "Sin caja seleccionada"}
                 </p>
@@ -362,12 +362,12 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               />
             </div>
 
-            {/* Contingency auth */}
+            {/* Operational authorization */}
             {isContingency && selectedBox && (
               <div className="flex flex-col gap-2 rounded-xl border border-orange-200 bg-[#fffbf0] px-3.5 py-3">
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle size={12} strokeWidth={2.5} className="text-orange-500 shrink-0" />
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-orange-600">Autorización requerida</span>
+                  <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-orange-600">Autorización operacional</span>
                 </div>
                 <input
                   type="password"
@@ -380,16 +380,17 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   } focus:ring-2`}
                 />
                 {ctgPinError && <p className="text-[10px] text-red-500 font-semibold">PIN incorrecto</p>}
-                <div className="flex flex-col gap-1 mt-0.5">
-                  {CTG_JUSTIFS.map(j => (
-                    <button key={j} onClick={() => setCtgJustif(j === ctgJustif ? "" : j)}
-                      className={`rounded-lg px-2.5 py-1.5 text-left text-[10px] font-semibold transition ${
-                        ctgJustif === j ? "bg-orange-500 text-white" : "border border-[#e4e9f0] text-[#374151] hover:bg-[#fef9f0]"
-                      }`}>
-                      {j}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="text"
+                  value={ctgJustif}
+                  onChange={e => setCtgJustif(e.target.value)}
+                  placeholder="Ej: Cobertura compañero, horas extra..."
+                  maxLength={200}
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                />
+                {ctgJustif.trim().length > 0 && ctgJustif.trim().length < MIN_MOTIVO_LEN && (
+                  <p className="text-[10px] font-semibold text-red-500">Mínimo {MIN_MOTIVO_LEN} caracteres</p>
+                )}
               </div>
             )}
           </div>
