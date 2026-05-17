@@ -388,3 +388,113 @@ export function printCashMoveVoucher(d: VoucherMoveData): void {
   overlay.innerHTML = buildVoucherHTML(d);
   window.print();
 }
+
+// ─── ARQUEO DE CIERRE ────────────────────────────────────────────────────────
+
+export interface ArqueoData {
+  businessName:     string;
+  cashBoxCode:      string;
+  operator:         string;
+  terminal:         string;
+  dateTime:         string;
+  apertura:         number;
+  ingresosTotal:    number;
+  egresosTotal:     number;
+  cashVendido:      number;
+  salesCount:       number;
+  efectivoEsperado: number;
+  contadoEfe:       number;
+  contadoYape:      number;
+  contadoTar:       number;
+  contadoMix:       number;
+  contadoTotal:     number;
+  diferencia:       number;
+  observations?:    string;
+  zeroMotive?:      string;
+}
+
+function buildArqueoHTML(d: ArqueoData): string {
+  const diffAbs   = Math.abs(d.diferencia);
+  const cuadrado  = diffAbs < 0.01;
+  const sobrante  = !cuadrado && d.diferencia > 0;
+  const diffColor = cuadrado || sobrante ? "#065f46" : "#991b1b";
+  const diffLabel = cuadrado ? "ARQUEO CUADRADO" : sobrante ? "SOBRANTE" : "FALTANTE";
+  const diffSign  = d.diferencia >= 0 ? "+" : "−";
+
+  const row = (label: string, value: string, bold = false) =>
+    `<div style="display:flex;justify-content:space-between;font-size:10.5px;margin:1.5px 0;">
+       <span>${esc(label)}</span>
+       <span style="font-weight:${bold ? "bold" : "normal"};">${esc(value)}</span>
+     </div>`;
+
+  const sep   = `<div style="border-top:1px dashed #555;margin:4px 0;"></div>`;
+  const solid = `<div style="border-top:1px solid #000;margin:4px 0;"></div>`;
+  const sect  = (t: string) =>
+    `<div style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:#666;margin:4px 0 2px;">${t}</div>`;
+
+  return `
+<style>
+@page { size: 80mm auto; margin: 0; }
+@media print {
+  body > *:not(#pt-overlay) { display: none !important; }
+  #pt-overlay { display: block !important; }
+}
+#pt-overlay { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; line-height: 1.5; background: #fff; }
+</style>
+<div style="padding:4mm 2mm 12mm;">
+  <div style="text-align:center;margin-bottom:3px;">
+    <div style="font-size:13px;font-weight:bold;letter-spacing:.5px;">${esc(d.businessName)}</div>
+    <div style="font-size:12px;font-weight:bold;margin:3px 0;letter-spacing:.5px;">CIERRE DE TURNO</div>
+    <div style="font-size:10px;color:#444;">${esc(d.dateTime)}</div>
+  </div>
+  ${solid}
+  ${row("CAJA",     `CAJA ${d.cashBoxCode}`, true)}
+  ${row("OPERADOR", d.operator)}
+  ${row("TERMINAL", d.terminal)}
+  ${sep}
+  ${sect("CONTEXTO OPERACIONAL")}
+  ${row("Fondo apertura",    money(d.apertura))}
+  ${d.ingresosTotal > 0 ? row("Ingresos ↑",  `+${money(d.ingresosTotal)}`) : ""}
+  ${d.egresosTotal  > 0 ? row("Egresos ↓",   `−${money(d.egresosTotal)}`) : ""}
+  ${d.cashVendido   > 0 ? row("Ventas efect.", money(d.cashVendido)) : ""}
+  ${row("Total esperado",    money(d.efectivoEsperado), true)}
+  ${sep}
+  ${sect("CONTEO CONCILIADO")}
+  ${row("Efectivo",  money(d.contadoEfe))}
+  ${row("Yape",      money(d.contadoYape))}
+  ${row("Tarjetas",  money(d.contadoTar))}
+  ${row("Mixto",     money(d.contadoMix))}
+  ${solid}
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin:2px 0;">
+    <span style="font-size:12px;font-weight:bold;">TOTAL CONTADO</span>
+    <span style="font-size:18px;font-weight:bold;">${money(d.contadoTotal)}</span>
+  </div>
+  ${sep}
+  ${sect("DIFERENCIA")}
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin:2px 0;">
+    <span style="font-size:11px;font-weight:bold;color:${diffColor};">${diffLabel}</span>
+    <span style="font-size:16px;font-weight:bold;color:${diffColor};">${diffSign}${money(diffAbs)}</span>
+  </div>
+  ${d.zeroMotive ? `${sep}<div style="font-size:10px;color:#555;">Motivo: ${esc(d.zeroMotive)}</div>` : ""}
+  ${d.observations ? `${sep}<div style="font-size:10px;color:#555;">Obs: ${esc(d.observations)}</div>` : ""}
+  ${solid}
+  <div style="text-align:center;font-size:10px;color:#555;">CIERRE CONCILIADO</div>
+  <div style="text-align:center;font-size:9px;color:#777;margin-top:2px;">Operaci&#xF3;n irreversible · ${esc(d.dateTime)}</div>
+</div>`;
+}
+
+export function printArqueo(d: ArqueoData): void {
+  let overlay = document.getElementById("pt-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "pt-overlay";
+    overlay.style.display = "none";
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = buildArqueoHTML(d);
+  window.print();
+}
+
+export async function printArqueoThermal(printer: string, d: ArqueoData): Promise<void> {
+  await invoke("print_arqueo", { printer, data: d });
+}

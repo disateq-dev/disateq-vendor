@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, RotateCcw } from "lucide-react";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
-import { printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData } from "../../print/printTicket";
+import {
+  printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
+  printArqueo, printArqueoThermal, type ArqueoData,
+} from "../../print/printTicket";
 import { calcConciliation } from "./services/cash-conciliation.service";
 import {
   prereqCode, operatorFromCode, isContingencyBox,
@@ -28,6 +31,51 @@ function formatDuration(from: Date): string {
   const h = Math.floor(mins / 60);
   const m = String(mins % 60).padStart(2, "0");
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+// ── inline calc helpers ────────────────────────────────────────
+
+function safeCalc(expr: string): number | null {
+  const s = expr.trim().replace(/\s+/g, "");
+  if (!s) return null;
+  if (!/^[0-9+\-*/.]+$/.test(s)) return null;
+  const parts = s.match(/[+\-*/]|[0-9]*\.?[0-9]+/g);
+  if (!parts) return null;
+  const nums: number[] = [];
+  const ops:  string[] = [];
+  for (const p of parts) {
+    if (/^[+\-*/]$/.test(p)) { ops.push(p); }
+    else {
+      const n = parseFloat(p);
+      if (isNaN(n)) return null;
+      nums.push(n);
+    }
+  }
+  if (!nums.length || nums.length !== ops.length + 1) return null;
+  let i = 0;
+  while (i < ops.length) {
+    if (ops[i] === "*" || ops[i] === "/") {
+      if (ops[i] === "/" && nums[i + 1] === 0) return null;
+      const r = ops[i] === "*" ? nums[i] * nums[i + 1] : nums[i] / nums[i + 1];
+      if (!isFinite(r)) return null;
+      nums.splice(i, 2, Math.round(r * 10000) / 10000);
+      ops.splice(i, 1);
+    } else { i++; }
+  }
+  let result = nums[0];
+  for (let j = 0; j < ops.length; j++)
+    result = ops[j] === "+" ? result + nums[j + 1] : result - nums[j + 1];
+  const rounded = Math.round(result * 100) / 100;
+  return isFinite(rounded) ? rounded : null;
+}
+
+function hasExpr(v: string): boolean { return /[+\-*/]/.test(v); }
+
+function numericValue(v: string): number {
+  if (!v.trim()) return 0;
+  if (hasExpr(v)) { const r = safeCalc(v); return r !== null && r >= 0 ? r : 0; }
+  const n = parseFloat(v);
+  return isNaN(n) || n < 0 ? 0 : n;
 }
 
 // ── constants ──────────────────────────────────────────────────
@@ -142,6 +190,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const [contadoMix,  setContadoMix]  = useState(() => loadContadoField("mix"));
   const [validatedAt, setValidatedAt] = useState<string | null>(null);
   const [observations, setObservations] = useState("");
+  const [zeroMotive,  setZeroMotive]  = useState("");
   const contadoEfeRef  = useRef<HTMLInputElement>(null);
   const contadoYapeRef = useRef<HTMLInputElement>(null);
   const contadoTarRef  = useRef<HTMLInputElement>(null);
@@ -170,7 +219,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     if (!isOpen) {
       setClosingStage(0);
       setContadoEfe(""); setContadoYape(""); setContadoTar(""); setContadoMix("");
-      setValidatedAt(null); setObservations("");
+      setValidatedAt(null); setObservations(""); setZeroMotive("");
       localStorage.removeItem("disateq.pos.ui.closingStage");
       localStorage.removeItem("disateq.pos.ui.contado");
       setAperturaInput(""); setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
@@ -220,14 +269,15 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // fondo breakdown — delegated to service
   const {
-    ingresosTotal, egresosTotal,
+    ingresosTotal, egresosTotal, efectivoEsperado,
   } = calcConciliation(cashMoves, sessionStats.cash, apertura);
-  const contadoEfeNum  = parseFloat(contadoEfe)  || 0;
-  const contadoYapeNum = parseFloat(contadoYape) || 0;
-  const contadoTarNum  = parseFloat(contadoTar)  || 0;
-  const contadoMixNum  = parseFloat(contadoMix)  || 0;
+  const contadoEfeNum  = numericValue(contadoEfe);
+  const contadoYapeNum = numericValue(contadoYape);
+  const contadoTarNum  = numericValue(contadoTar);
+  const contadoMixNum  = numericValue(contadoMix);
   const contadoTotal   = contadoEfeNum + contadoYapeNum + contadoTarNum + contadoMixNum;
   const contadoValid   = contadoEfe !== "";
+  const canClose       = contadoTotal > 0 || zeroMotive !== "";
 
   // ── handlers ──────────────────────────────────────────────────
 
@@ -310,12 +360,38 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }
 
   function handleConfirmClose() {
+    const now = new Date();
+    const p   = (n: number) => String(n).padStart(2, "0");
+    const arqueo: ArqueoData = {
+      businessName:     "DISATEQ TIENDA",
+      cashBoxCode:      activeBox?.code ?? "?",
+      operator,
+      terminal,
+      dateTime:         `${p(now.getDate())}/${p(now.getMonth()+1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`,
+      apertura,
+      ingresosTotal,
+      egresosTotal,
+      cashVendido:      sessionStats.cash,
+      salesCount:       sessionStats.count,
+      efectivoEsperado,
+      contadoEfe:       contadoEfeNum,
+      contadoYape:      contadoYapeNum,
+      contadoTar:       contadoTarNum,
+      contadoMix:       contadoMixNum,
+      contadoTotal,
+      diferencia:       contadoTotal - efectivoEsperado,
+      observations:     observations.trim() || undefined,
+      zeroMotive:       (contadoTotal === 0 && zeroMotive) ? zeroMotive : undefined,
+    };
     closeCashSession();
     setClosingStage(0);
     setContadoEfe(""); setContadoYape(""); setContadoTar(""); setContadoMix("");
-    setValidatedAt(null); setObservations("");
+    setValidatedAt(null); setObservations(""); setZeroMotive("");
     localStorage.removeItem("disateq.pos.ui.closingStage");
     localStorage.removeItem("disateq.pos.ui.contado");
+    setTimeout(() => {
+      printArqueoThermal("TIQUE", arqueo).catch(() => printArqueo(arqueo));
+    }, 120);
   }
 
   // ── keyboard shortcuts del flujo de cierre ─────────────────
@@ -324,6 +400,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     function onKey(e: KeyboardEvent) {
       if (e.key === "F9" && closingStage === 2 && contadoValid) {
         e.preventDefault();
+        // Consolidar expresiones pendientes
+        const eR = safeCalc(contadoEfe);  if (eR !== null && eR >= 0) setContadoEfe(eR.toFixed(2));
+        const yR = safeCalc(contadoYape); if (yR !== null && yR >= 0) setContadoYape(yR.toFixed(2));
+        const tR = safeCalc(contadoTar);  if (tR !== null && tR >= 0) setContadoTar(tR.toFixed(2));
+        const mR = safeCalc(contadoMix);  if (mR !== null && mR >= 0) setContadoMix(mR.toFixed(2));
         setValidatedAt(new Date().toISOString());
         setClosingStage(3);
       } else if (e.key === "F4" && (closingStage === 3 || closingStage === 4)) {
@@ -535,6 +616,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               <button
                 onClick={() => {
                   if (!contadoValid) return;
+                  const eR = safeCalc(contadoEfe);  if (eR !== null && eR >= 0) setContadoEfe(eR.toFixed(2));
+                  const yR = safeCalc(contadoYape); if (yR !== null && yR >= 0) setContadoYape(yR.toFixed(2));
+                  const tR = safeCalc(contadoTar);  if (tR !== null && tR >= 0) setContadoTar(tR.toFixed(2));
+                  const mR = safeCalc(contadoMix);  if (mR !== null && mR >= 0) setContadoMix(mR.toFixed(2));
                   setValidatedAt(new Date().toISOString());
                   setClosingStage(3);
                 }}
@@ -596,11 +681,16 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <>
               <button
                 onClick={handleConfirmClose}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
+                disabled={!canClose}
+                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
+                  canClose
+                    ? "bg-[#b91c1c] text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] hover:bg-[#991b1b] active:scale-[0.98]"
+                    : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+                }`}
               >
                 <CheckCircle size={14} strokeWidth={2.5} />
                 CERRAR TURNO
-                <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+↵</span>
+                {canClose && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+↵</span>}
               </button>
               <button
                 onClick={() => setClosingStage(0)}
@@ -714,32 +804,57 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       { label: "YAPE",      value: contadoYape, set: setContadoYape, ref: contadoYapeRef, nextRef: contadoTarRef  },
                       { label: "TARJETAS",  value: contadoTar,  set: setContadoTar,  ref: contadoTarRef,  nextRef: contadoMixRef  },
                       { label: "MIXTO",     value: contadoMix,  set: setContadoMix,  ref: contadoMixRef,  nextRef: null           },
-                    ] as const).map(({ label, value, set, ref, nextRef }) => (
-                      <div key={label} className="flex items-center gap-2.5">
-                        <span className="w-[64px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">{label}</span>
-                        <span className="shrink-0 text-[10px] font-bold text-[#b0bac8]">S/</span>
-                        <input
-                          ref={ref}
-                          type="number"
-                          value={value}
-                          onChange={e => set(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              if (nextRef) nextRef.current?.focus();
-                            }
-                          }}
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          className={`flex-1 rounded-xl border px-3 py-2 text-[15px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] tabular-nums transition ${
-                            label === "EFECTIVO"
-                              ? "border-[#2154d8]/30 focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                              : "border-[#e4e9f0] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                          }`}
-                        />
-                      </div>
-                    ))}
+                    ] as const).map(({ label, value, set, ref, nextRef }) => {
+                      const exprResult = hasExpr(value) ? safeCalc(value) : null;
+                      return (
+                        <div key={label} className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-[64px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">{label}</span>
+                            <span className="shrink-0 text-[10px] font-bold text-[#b0bac8]">S/</span>
+                            <input
+                              ref={ref}
+                              type="text"
+                              inputMode="decimal"
+                              value={value}
+                              onChange={e => set(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  if (hasExpr(value)) {
+                                    const r = safeCalc(value);
+                                    if (r !== null && r >= 0) {
+                                      set(r.toFixed(2));
+                                      setTimeout(() => nextRef ? nextRef.current?.focus() : undefined, 10);
+                                    }
+                                  } else if (nextRef) {
+                                    nextRef.current?.focus();
+                                  }
+                                } else if (e.key === "Escape") {
+                                  set("");
+                                }
+                              }}
+                              onBlur={() => {
+                                if (hasExpr(value)) {
+                                  const r = safeCalc(value);
+                                  if (r !== null && r >= 0) set(r.toFixed(2));
+                                }
+                              }}
+                              placeholder="0.00"
+                              className={`flex-1 rounded-xl border px-3 py-2 text-[15px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] tabular-nums transition ${
+                                label === "EFECTIVO"
+                                  ? "border-[#2154d8]/30 focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                                  : "border-[#e4e9f0] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                              }`}
+                            />
+                          </div>
+                          {exprResult !== null && (
+                            <div className="pl-[74px]">
+                              <span className="text-[9px] font-mono tabular-nums text-[#2154d8]">= {exprResult.toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   {contadoTotal > 0 && (
                     <div className="flex justify-between items-center rounded-xl border border-[#e4e9f0] bg-white px-3.5 py-2">
@@ -748,7 +863,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     </div>
                   )}
                   <p className="text-[10px] text-[#c0cad4]">
-                    Tecla <span className="font-mono bg-[#f1f5f9] px-1 rounded">F9</span> para validar · <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> avanza campo
+                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">F9</span> validar ·{" "}
+                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> avanza ·{" "}
+                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">200+50</span> suma
                   </p>
                 </>
               )}
@@ -819,12 +936,41 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {/* ── STAGE 5: CIERRE ── */}
               {closingStage === 5 && (
                 <>
-                  <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-[#fef2f2] px-3.5 py-2.5">
-                    <AlertTriangle size={13} className="text-red-500 shrink-0 mt-px" />
-                    <p className="text-[10.5px] font-semibold text-[#b91c1c] leading-snug">
-                      Esta acción finaliza el turno y no podrá revertirse.
-                    </p>
-                  </div>
+                  {/* Cierre en cero — evento operacional excepcional */}
+                  {contadoTotal === 0 ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-[#fffbf0] px-3.5 py-2.5">
+                        <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-px" />
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-amber-700">CIERRE SIN MOVIMIENTO</p>
+                          <p className="text-[9.5px] text-amber-600 mt-0.5 leading-snug">Evento operacional excepcional. Motivo requerido.</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
+                          Motivo <span className="text-amber-500">*</span>
+                        </span>
+                        <select
+                          value={zeroMotive}
+                          onChange={e => setZeroMotive(e.target.value)}
+                          className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11px] font-semibold text-[#374151] outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200/40"
+                        >
+                          <option value="">Seleccionar motivo...</option>
+                          {["SIN OPERACIONES","SALIDA MÉDICA","EMERGENCIA","RETIRO AUTORIZADO","CAMBIO OPERADOR","CONTINGENCIA","OTRO"].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-[#fef2f2] px-3.5 py-2.5">
+                      <AlertTriangle size={13} className="text-red-500 shrink-0 mt-px" />
+                      <p className="text-[10.5px] font-semibold text-[#b91c1c] leading-snug">
+                        Esta acción finaliza el turno y no podrá revertirse.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
                     <div className="flex justify-between items-center px-3.5 py-1.5">
                       <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">CAJA</span>
@@ -840,11 +986,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                         <span className="text-[11px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op.</span>
                       </div>
                     )}
-                    <div className="flex justify-between items-center px-3.5 py-2 bg-[#f8fafd]">
+                    <div className={`flex justify-between items-center px-3.5 py-2 ${contadoTotal > 0 ? "bg-[#f8fafd]" : "bg-[#fffbf0]"}`}>
                       <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#374151]">CONTEO TOTAL</span>
-                      <span className="text-[13px] font-bold tabular-nums text-emerald-600">S/ {contadoTotal.toFixed(2)}</span>
+                      <span className={`text-[13px] font-bold tabular-nums ${contadoTotal > 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                        S/ {contadoTotal.toFixed(2)}
+                      </span>
                     </div>
                   </div>
+
                   <div className="flex flex-col gap-1">
                     <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Observaciones (opcional)</span>
                     <textarea
