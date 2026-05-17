@@ -44,7 +44,9 @@ export function canOpenSession(
   ctgJustif: string,
 ): boolean {
   if (isOpen || !box?.available) return false;
-  if (parseFloat(aperturaInput) < 0) return false;
+  if (aperturaInput.trim() === "") return false;      // monto explícito requerido
+  const amt = parseFloat(aperturaInput);
+  if (isNaN(amt) || amt < 0) return false;            // número válido no-negativo
   if (isContingency && !validateCtgAuth(ctgPin, ctgJustif)) return false;
   return true;
 }

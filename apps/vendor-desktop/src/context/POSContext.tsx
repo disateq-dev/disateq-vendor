@@ -338,7 +338,7 @@ interface POSContextValue {
   cashSession: CashSession;
   cashBoxes: CashBox[];
   suggestedCashBox: CashBox | null;
-  openCashSession: (boxCode: string, apertura: number, motivo?: string) => void;
+  openCashSession: (boxCode: string, apertura: number, motivo?: string, refOp?: string) => void;
   closeCashSession: () => void;
   correctAperturaData: (apertura: number, motivo?: string, observacion?: string, refOp?: string) => void;
   sessionStats: SessionStats;
@@ -516,7 +516,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const closeCobro = useCallback(() => { setCobroOpen(false); setZone("search"); }, []);
 
-  const openCashSession = useCallback((boxCode: string, apertura: number, motivo?: string) => {
+  const openCashSession = useCallback((boxCode: string, apertura: number, motivo?: string, refOp?: string) => {
     const box = cashBoxes.find(b => b.code === boxCode);
     if (!box || !box.available) return;
     const operator = BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
@@ -524,9 +524,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setCashMoves([]);
     setOpLogs([]);
     const trimmedMotivo = motivo?.trim() || undefined;
-    setCashSession({ isOpen: true, cashBox: box, operator, terminal: TERMINAL, openedAt: new Date(), apertura, motivo: trimmedMotivo });
+    const trimmedRefOp  = refOp?.trim()  || undefined;
+    setCashSession({ isOpen: true, cashBox: box, operator, terminal: TERMINAL, openedAt: new Date(), apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
     const base = `${operator} abrió CAJA ${boxCode} · fondo S/ ${apertura.toFixed(2)}`;
-    addOpLog(trimmedMotivo ? `${base} — Motivo: ${trimmedMotivo}` : base);
+    const extra = [trimmedMotivo && `Motivo: ${trimmedMotivo}`, trimmedRefOp && `Ref: ${trimmedRefOp}`].filter(Boolean).join(" · ");
+    addOpLog(extra ? `${base} — ${extra}` : base);
   }, [cashBoxes, addOpLog]);
 
   const correctAperturaData = useCallback((

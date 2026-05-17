@@ -152,12 +152,16 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   } = cashSession;
 
   // ── pre-open state ────────────────────────────────────────────
-  const [selectedCode, setSelectedCode] = useState<string>(() => suggestedCashBox?.code ?? "100");
-  const [aperturaInput, setAperturaInput] = useState("");
-  const [ctgPin,        setCtgPin]        = useState("");
-  const [ctgJustif,     setCtgJustif]     = useState("");
-  const [ctgPinError,   setCtgPinError]   = useState(false);
-  const aperturaRef = useRef<HTMLInputElement>(null);
+  const [selectedCode,    setSelectedCode]    = useState<string>(() => suggestedCashBox?.code ?? "100");
+  const [aperturaInput,   setAperturaInput]   = useState("");
+  const [aperturaMotivo,  setAperturaMotivo]  = useState("");
+  const [aperturaRefOp,   setAperturaRefOp]   = useState("");
+  const [ctgPin,          setCtgPin]          = useState("");
+  const [ctgJustif,       setCtgJustif]       = useState("");
+  const [ctgPinError,     setCtgPinError]     = useState(false);
+  const aperturaRef       = useRef<HTMLInputElement>(null);
+  const aperturaMotivoRef = useRef<HTMLInputElement>(null);
+  const aperturaRefOpRef  = useRef<HTMLInputElement>(null);
 
   // ── corrección datos apertura state ──────────────────────────
   const [editingApertura,    setEditingApertura]    = useState(false);
@@ -231,7 +235,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       setValidatedAt(null); setObservations(""); setZeroMotive("");
       localStorage.removeItem("disateq.pos.ui.closingStage");
       localStorage.removeItem("disateq.pos.ui.contado");
-      setAperturaInput(""); setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
+      setAperturaInput(""); setAperturaMotivo(""); setAperturaRefOp("");
+      setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
       setEditingApertura(false);
       setEditAperturaInput(""); setEditMotivo(""); setEditObservacion(""); setEditRefOp("");
     }
@@ -304,8 +309,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       if (ctgPin !== CTG_PIN) { setCtgPinError(true); return; }
       if (!ctgJustif) return;
     }
-    const amt = parseFloat(aperturaInput) || 0;
-    openCashSession(selectedBox.code, amt, isContingency ? ctgJustif.trim() : undefined);
+    const amt = parseFloat(aperturaInput);
+    if (isNaN(amt) || amt < 0) return;  // canOpen debe haberlo bloqueado, pero safety guard
+    const motivo = isContingency ? ctgJustif.trim() : (aperturaMotivo.trim() || undefined);
+    openCashSession(selectedBox.code, amt, motivo, aperturaRefOp.trim() || undefined);
     onOpened?.();
   }
 
@@ -501,7 +508,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal"     value={terminal} />
-              {apertura > 0 && <InfoRow label="Fondo" value={`S/ ${apertura.toFixed(2)}`} />}
+              <InfoRow label="Fondo apertura" value={`S/ ${apertura.toFixed(2)}`} />}
               {sessionMotivo    && <InfoRow label="Motivo apertura"  value={sessionMotivo}    />}
               {sessionObservacion && <InfoRow label="Observación"    value={sessionObservacion} />}
               {sessionRefOp       && <InfoRow label="Ref. operacional" value={sessionRefOp}   />}
@@ -560,17 +567,56 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Fondo inicial S/</span>
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Fondo apertura S/</span>
               <input
                 ref={aperturaRef}
                 type="number"
                 value={aperturaInput}
                 onChange={e => setAperturaInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && canOpen) handleOpen(); }}
+                onKeyDown={e => {
+                  if (e.key === "Enter") { e.preventDefault(); aperturaMotivoRef.current?.focus(); }
+                }}
                 placeholder="0.00"
                 min="0"
                 step="0.50"
-                className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2.5 text-[20px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                className={`w-full rounded-xl border px-3.5 py-2.5 text-[20px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] transition focus:ring-2 focus:ring-[#2154d8]/10 ${
+                  aperturaInput.trim() === "" ? "border-[#e4e9f0]" : "border-[#2154d8]/40 focus:border-[#2154d8]"
+                }`}
+              />
+              {aperturaInput.trim() === "" && (
+                <p className="text-[9px] font-semibold text-[#c0cad4]">Requerido · 0.00 es válido</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Motivo apertura <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
+              <input
+                ref={aperturaMotivoRef}
+                type="text"
+                value={aperturaMotivo}
+                onChange={e => setAperturaMotivo(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") { e.preventDefault(); aperturaRefOpRef.current?.focus(); }
+                }}
+                placeholder="Contexto de apertura..."
+                maxLength={120}
+                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Ref. operacional <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
+              <input
+                ref={aperturaRefOpRef}
+                type="text"
+                value={aperturaRefOp}
+                onChange={e => setAperturaRefOp(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && canOpen) { e.preventDefault(); handleOpen(); }
+                }}
+                placeholder="Ej: T-2025-001, remito..."
+                maxLength={80}
+                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
               />
             </div>
 
