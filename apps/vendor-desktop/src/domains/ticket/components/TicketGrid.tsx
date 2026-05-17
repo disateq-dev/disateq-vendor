@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Pin, Trash2 } from "lucide-react";
+import { moneySum } from "../../../lib/money";
 import { useTicketLines } from "../selectors/ticket.selectors";
 import { useTicketStore } from "../state/ticket.store";
 import { ticketService } from "../services/ticket.service";
@@ -60,7 +61,7 @@ export function TicketGrid() {
     setEditingNoteId(null);
   }, [editingNoteId, noteInput]);
 
-  const total      = lines.reduce((acc, l) => acc + l.subtotal, 0);
+  const total      = moneySum(lines.map(l => l.subtotal));
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (

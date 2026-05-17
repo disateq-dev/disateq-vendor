@@ -109,7 +109,7 @@ export function CobroPanel() {
   const mixtoValid  = moneyGt(mixtoTotal, 0) && moneyEq(mixtoTotal, netTotal);
   const change           = moneySub(receivedNum, netTotal);
   const paidEnough       = moneyGte(receivedNum, netTotal);
-  const needsCustomer    = docType === "factura" || (docType === "boleta" && netTotal > BOLETA_THRESHOLD);
+  const needsCustomer    = docType === "factura" || (docType === "boleta" && moneyGt(netTotal, BOLETA_THRESHOLD));
   const canConfirm       = cashSession.isOpen && moneyGt(netTotal, 0)
     && (payMethod !== "efectivo" || paidEnough)
     && (payMethod !== "mixto"    || mixtoValid)
@@ -136,7 +136,7 @@ export function CobroPanel() {
 
   function getRowLabel(): { text: string; warn: boolean } {
     if (docType === "factura") return { text: "RUC requerido", warn: true };
-    if (docType === "boleta" && netTotal > BOLETA_THRESHOLD) return { text: "Datos requeridos", warn: true };
+    if (docType === "boleta" && moneyGt(netTotal, BOLETA_THRESHOLD)) return { text: "Datos requeridos", warn: true };
     return { text: CLIENTES_VARIOS, warn: false };
   }
 
@@ -474,7 +474,7 @@ export function CobroPanel() {
                   placeholder="0.00"
                   className="w-20 rounded-lg border border-[#e4e9f0] px-2.5 py-1 text-[12px] font-bold text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
                 />
-                {discountNum > 0 && (
+                {moneyGt(discountNum, 0) && (
                   <span className="text-[10px] text-emerald-600 font-semibold">
                     −S/ {discountNum.toFixed(2)}
                   </span>
@@ -535,11 +535,11 @@ export function CobroPanel() {
                     className="flex-1 min-w-0 rounded-2xl border border-[#e4e9f0] px-4 py-3 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                   />
                   <div className={`flex-1 min-w-0 flex flex-col justify-center rounded-xl px-3.5 py-2.5 ${
-                    receivedNum > 0
+                    moneyGt(receivedNum, 0)
                       ? paidEnough ? "bg-emerald-50" : "bg-red-50"
                       : "border border-dashed border-[#E9E4DC]"
                   }`}>
-                    {receivedNum > 0 ? (
+                    {moneyGt(receivedNum, 0) ? (
                       <>
                         <p className={`text-[10px] font-semibold uppercase tracking-widest ${paidEnough ? "text-emerald-600" : "text-red-500"}`}>
                           {paidEnough ? "Vuelto" : "Faltan"}
@@ -595,7 +595,7 @@ export function CobroPanel() {
                 }`}>
                   {mixtoValid ? (
                     <span className="text-[10px] font-bold text-emerald-600">✓ Distribución completa</span>
-                  ) : mixtoTotal > 0 ? (
+                  ) : moneyGt(mixtoTotal, 0) ? (
                     <>
                       <span className="text-[9.5px] text-[#9ca3af]">Pendiente</span>
                       <span className={`text-[11px] font-bold tabular-nums ${moneyGt(mixtoTotal, netTotal) ? "text-red-500" : "text-[#374151]"}`}>

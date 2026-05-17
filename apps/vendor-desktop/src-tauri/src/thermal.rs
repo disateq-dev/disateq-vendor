@@ -1,5 +1,12 @@
 use serde::Deserialize;
 
+// ── monetary helpers ────────────────────────────────────────────
+// Mirror of src/lib/money.ts — cent-based comparisons for f64 values
+fn cents(n: f64) -> i64 { (n * 100.0).round() as i64 }
+fn money_pos(n: f64) -> bool { cents(n) > 0 }
+fn money_zero(n: f64) -> bool { cents(n) == 0 }
+// ───────────────────────────────────────────────────────────────
+
 const COLS: usize = 48;
 
 // ESC/POS constants
@@ -245,13 +252,13 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     b.dashes();
 
     // Discount
-    if d.discount_num > 0.0 {
+    if money_pos(d.discount_num) {
         b.two_col("Subtotal bruto", &money(d.total));
         b.two_col("Descuento", &format!("-{}", money(d.discount_num)));
     }
 
     // IGV
-    if d.igv > 0.0 {
+    if money_pos(d.igv) {
         b.two_col("Op. Gravada", &money(d.base_imponible));
         b.two_col("IGV 18%", &money(d.igv));
     }
@@ -268,15 +275,15 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     b.dashes();
 
     // Payment
-    if d.pay_method == "efectivo" && d.received_num > 0.0 {
+    if d.pay_method == "efectivo" && money_pos(d.received_num) {
         b.two_col("Efectivo", &money(d.received_num));
         b.two_col("Vuelto", &money(d.change.max(0.0)));
     } else if d.pay_method == "mixto" {
         let label = if let Some(ref mb) = d.mixto_breakdown {
             let mut parts: Vec<String> = Vec::new();
-            if mb.efe > 0.005 { parts.push(format!("E({:.2})", mb.efe)); }
-            if mb.yap > 0.005 { parts.push(format!("Y({:.2})", mb.yap)); }
-            if mb.tar > 0.005 { parts.push(format!("T({:.2})", mb.tar)); }
+            if money_pos(mb.efe) { parts.push(format!("E({:.2})", mb.efe)); }
+            if money_pos(mb.yap) { parts.push(format!("Y({:.2})", mb.yap)); }
+            if money_pos(mb.tar) { parts.push(format!("T({:.2})", mb.tar)); }
             if parts.is_empty() { "Pago Mixto".to_string() } else { format!("MIXTO {}", parts.join(" ")) }
         } else {
             "Pago Mixto".to_string()
@@ -536,7 +543,7 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     b.dashes();
 
     b.two_col("Fondo apertura (ref.)", &money(d.apertura));
-    if d.total_ventas > 0.0 {
+    if money_pos(d.total_ventas) {
         let ventas_label = if d.sales_count > 0 {
             format!("Ventas ({})", d.sales_count)
         } else {
@@ -544,10 +551,10 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
         };
         b.two_col(&ventas_label, &money(d.total_ventas));
     }
-    if d.ingresos_total > 0.0 {
+    if money_pos(d.ingresos_total) {
         b.two_col("Ingresos ^", &format!("+{}", money(d.ingresos_total)));
     }
-    if d.egresos_total > 0.0 {
+    if money_pos(d.egresos_total) {
         b.two_col("Egresos v", &format!("-{}", money(d.egresos_total)));
     }
     b.bold_on();
@@ -577,16 +584,16 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     b.dashes();
 
     // Diferencia
+    let cuadrado   = money_zero(d.diferencia);
     let diff_abs   = d.diferencia.abs();
-    let cuadrado   = diff_abs < 0.01;
     let diff_label = if cuadrado {
         "ARQUEO CUADRADO"
-    } else if d.diferencia > 0.0 {
+    } else if money_pos(d.diferencia) {
         "SOBRANTE"
     } else {
         "FALTANTE"
     };
-    let diff_sign = if d.diferencia >= 0.0 { "+" } else { "-" };
+    let diff_sign = if cents(d.diferencia) >= 0 { "+" } else { "-" };
 
     b.bold_on();
     b.two_col(diff_label, &format!("{}{}", diff_sign, money(diff_abs)));
