@@ -1,5 +1,6 @@
 // Print module — HTML/CSS for PDF, ESC/POS thermal via Tauri invoke
 import { invoke } from "@tauri-apps/api/core";
+import { moneyGt, moneyGte, moneyIsZero } from "../lib/money";
 
 export interface PrintData {
   // Business (MVP: static config)
@@ -73,9 +74,9 @@ function esc(s: string): string {
 
 function mixtoPayLabel(b: { efe: number; yap: number; tar: number }): string {
   const parts: string[] = [];
-  if (b.efe > 0.005) parts.push(`E(${b.efe.toFixed(2)})`);
-  if (b.yap > 0.005) parts.push(`Y(${b.yap.toFixed(2)})`);
-  if (b.tar > 0.005) parts.push(`T(${b.tar.toFixed(2)})`);
+  if (moneyGt(b.efe, 0)) parts.push(`E(${b.efe.toFixed(2)})`);
+  if (moneyGt(b.yap, 0)) parts.push(`Y(${b.yap.toFixed(2)})`);
+  if (moneyGt(b.tar, 0)) parts.push(`T(${b.tar.toFixed(2)})`);
   return parts.length ? `MIXTO ${parts.join(" ")}` : "Pago Mixto";
 }
 
@@ -101,17 +102,17 @@ function buildHTML(d: PrintData): string {
        ${d.customer.docNumber ? `<div class="pt-row"><span>Doc.</span><span>${esc(d.customer.docNumber)}</span></div>` : ""}`
     : "";
 
-  const discountHTML = d.discountNum > 0
+  const discountHTML = moneyGt(d.discountNum, 0)
     ? `<div class="pt-sm"><span>Subtotal bruto</span><span>${money(d.total)}</span></div>
        <div class="pt-sm"><span>Descuento</span><span>−${money(d.discountNum)}</span></div>`
     : "";
 
-  const taxHTML = d.igv > 0
+  const taxHTML = moneyGt(d.igv, 0)
     ? `<div class="pt-sm"><span>Op. Gravada</span><span>${money(d.baseImponible)}</span></div>
        <div class="pt-sm"><span>IGV 18%</span><span>${money(d.igv)}</span></div>`
     : "";
 
-  const payHTML = d.payMethod === "efectivo" && d.receivedNum > 0
+  const payHTML = d.payMethod === "efectivo" && moneyGt(d.receivedNum, 0)
     ? `<div class="pt-row"><span>Efectivo</span><span>${money(d.receivedNum)}</span></div>
        <div class="pt-row"><span>Vuelto</span><span><b>${money(Math.max(0, d.change))}</b></span></div>`
     : d.payMethod === "mixto" && d.mixtoBreakdown
@@ -424,11 +425,11 @@ export interface ArqueoData {
 }
 
 function buildArqueoHTML(d: ArqueoData): string {
+  const cuadrado  = moneyIsZero(d.diferencia);
+  const sobrante  = !cuadrado && moneyGt(d.diferencia, 0);
   const diffAbs   = Math.abs(d.diferencia);
-  const cuadrado  = diffAbs < 0.01;
-  const sobrante  = !cuadrado && d.diferencia > 0;
   const diffLabel = cuadrado ? "ARQUEO CUADRADO" : sobrante ? "SOBRANTE" : "FALTANTE";
-  const diffSign  = d.diferencia >= 0 ? "+" : "−";
+  const diffSign  = moneyGte(d.diferencia, 0) ? "+" : "−";
   const diffClass = cuadrado || sobrante ? "pt-arq-ok" : "pt-arq-falt";
 
   return `
@@ -484,9 +485,9 @@ function buildArqueoHTML(d: ArqueoData): string {
 
   <div class="pt-sect">CONTEXTO OPERACIONAL</div>
   <div class="pt-row"><span>Fondo apertura <span style="font-size:9px;color:#999">(ref.)</span></span><span>${money(d.apertura)}</span></div>
-  ${d.totalVentas > 0 ? `<div class="pt-row"><span>Ventas${d.salesCount > 0 ? ` (${d.salesCount})` : ""}</span><span>${money(d.totalVentas)}</span></div>` : ""}
-  ${d.ingresosTotal > 0 ? `<div class="pt-row"><span>Ingresos &#8593;</span><span>+${money(d.ingresosTotal)}</span></div>` : ""}
-  ${d.egresosTotal  > 0 ? `<div class="pt-row"><span>Egresos &#8595;</span><span>&#8722;${money(d.egresosTotal)}</span></div>` : ""}
+  ${moneyGt(d.totalVentas, 0) ? `<div class="pt-row"><span>Ventas${d.salesCount > 0 ? ` (${d.salesCount})` : ""}</span><span>${money(d.totalVentas)}</span></div>` : ""}
+  ${moneyGt(d.ingresosTotal, 0) ? `<div class="pt-row"><span>Ingresos &#8593;</span><span>+${money(d.ingresosTotal)}</span></div>` : ""}
+  ${moneyGt(d.egresosTotal,  0) ? `<div class="pt-row"><span>Egresos &#8595;</span><span>&#8722;${money(d.egresosTotal)}</span></div>` : ""}
   <div class="pt-row"><span>Esperado oper.</span><span class="pt-bold">${money(d.efectivoEsperado)}</span></div>
 
   <div class="pt-dash"></div>

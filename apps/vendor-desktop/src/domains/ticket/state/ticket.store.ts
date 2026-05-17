@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 
 import type { TicketLineDTO } from "../dto/TicketLineDTO";
+import { moneyMul } from "../../../lib/money";
 
 interface TicketState {
   linesById: Record<string, TicketLineDTO>;
@@ -52,7 +53,7 @@ export const useTicketStore =
           if (state.linesById[line.lineId]) {
             const ex = state.linesById[line.lineId];
             ex.quantity += line.quantity;
-            ex.subtotal = ex.quantity * ex.unitPrice;
+            ex.subtotal = moneyMul(ex.quantity, ex.unitPrice);
             state.activeLineIdx = -1;
             return;
           }
@@ -63,7 +64,7 @@ export const useTicketStore =
           if (existingId) {
             const ex = state.linesById[existingId];
             ex.quantity += line.quantity;
-            ex.subtotal = ex.quantity * ex.unitPrice;
+            ex.subtotal = moneyMul(ex.quantity, ex.unitPrice);
             state.activeLineIdx = -1;
             return;
           }
@@ -94,10 +95,7 @@ export const useTicketStore =
           if (!line) return;
 
           line.quantity = quantity;
-
-          line.subtotal =
-            line.quantity *
-            line.unitPrice;
+          line.subtotal = moneyMul(line.quantity, line.unitPrice);
         }),
 
       updateNote: (lineId, note) =>
@@ -123,8 +121,7 @@ export const useTicketStore =
             );
             if (siblingId) {
               state.linesById[siblingId].quantity += line.quantity;
-              state.linesById[siblingId].subtotal =
-                state.linesById[siblingId].quantity * state.linesById[siblingId].unitPrice;
+              state.linesById[siblingId].subtotal = moneyMul(state.linesById[siblingId].quantity, state.linesById[siblingId].unitPrice);
               delete state.linesById[lineId];
               state.lineOrder = state.lineOrder.filter(id => id !== lineId);
               state.activeLineIdx = -1;
@@ -139,7 +136,7 @@ export const useTicketStore =
 
           // Disaggregate: original keeps qty-1, new line gets qty=1 + note
           line.quantity -= 1;
-          line.subtotal  = line.quantity * line.unitPrice;
+          line.subtotal  = moneyMul(line.quantity, line.unitPrice);
 
           const noted: TicketLineDTO = {
             lineId:      crypto.randomUUID(),

@@ -1,4 +1,5 @@
 import type { CashMove } from "../../../context/POSContext";
+import { moneySum, moneyAdd, moneySub } from "../../../lib/money";
 
 export interface ConciliationBreakdown {
   ingApertura:      number;
@@ -20,16 +21,16 @@ export function calcConciliation(
   const ingresos = moves.filter(m => m.type === "ingreso");
   const egresos  = moves.filter(m => m.type === "egreso");
 
-  const ingApertura   = ingresos.reduce((s, m) => s + m.fromApertura, 0);
-  const egApertura    = egresos.reduce((s, m)  => s + m.fromApertura, 0);
-  const ingVendido    = ingresos.reduce((s, m) => s + m.fromVendido,  0);
-  const egVendido     = egresos.reduce((s, m)  => s + m.fromVendido,  0);
-  const ingresosTotal = ingresos.reduce((s, m) => s + m.amount, 0);
-  const egresosTotal  = egresos.reduce((s, m)  => s + m.amount, 0);
+  const ingApertura   = moneySum(ingresos.map(m => m.fromApertura));
+  const egApertura    = moneySum(egresos.map(m => m.fromApertura));
+  const ingVendido    = moneySum(ingresos.map(m => m.fromVendido));
+  const egVendido     = moneySum(egresos.map(m => m.fromVendido));
+  const ingresosTotal = moneySum(ingresos.map(m => m.amount));
+  const egresosTotal  = moneySum(egresos.map(m => m.amount));
 
-  const fondoApertEsp    = apertura + ingApertura - egApertura;
-  const fondoVendidoEsp  = cashVendido + ingVendido - egVendido;
-  const efectivoEsperado = fondoApertEsp + fondoVendidoEsp;
+  const fondoApertEsp    = moneySub(moneyAdd(apertura, ingApertura), egApertura);
+  const fondoVendidoEsp  = moneySub(moneyAdd(cashVendido, ingVendido), egVendido);
+  const efectivoEsperado = moneyAdd(fondoApertEsp, fondoVendidoEsp);
 
   return {
     ingApertura, egApertura, ingVendido, egVendido,

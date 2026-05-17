@@ -8,7 +8,7 @@ import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
 import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatch, printDispatchTicket, type DispatchData } from "../../print/printTicket";
 
-function toCents(n: number): number { return Math.round(n * 100); }
+import { toCents, moneySum, moneySub, moneyRound, moneyGt, moneyGte, moneyEq } from "../../lib/money";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
@@ -95,22 +95,22 @@ export function CobroPanel() {
   const activatedMethodsRef = useRef<Set<PayMethod>>(new Set<PayMethod>());
 
   // ── derived ─────────────────────────────────────────────────────────────────
-  const total        = lines.reduce((acc, l) => acc + l.subtotal, 0);
+  const total        = moneySum(lines.map(l => l.subtotal));
   const discountNum  = Math.min(parseFloat(discount) || 0, total);
-  const netTotal     = total - discountNum;
+  const netTotal     = moneySub(total, discountNum);
   const isGravado    = affectation === "gravado-onerosa" || affectation === "gravado-retiro";
-  const baseImponible = isGravado ? netTotal / 1.18 : netTotal;
-  const igv           = isGravado ? netTotal - baseImponible : 0;
+  const baseImponible = isGravado ? moneyRound(netTotal / 1.18) : netTotal;
+  const igv           = isGravado ? moneySub(netTotal, baseImponible) : 0;
   const receivedNum = parseFloat(received) || 0;
   const mixtoEfeNum = parseFloat(mixtoEfe) || 0;
   const mixtoYapNum = parseFloat(mixtoYap) || 0;
   const mixtoTarNum = parseFloat(mixtoTar) || 0;
-  const mixtoTotal  = mixtoEfeNum + mixtoYapNum + mixtoTarNum;
-  const mixtoValid  = toCents(mixtoTotal) > 0 && toCents(mixtoTotal) === toCents(netTotal);
-  const change           = receivedNum - netTotal;
-  const paidEnough       = toCents(receivedNum) >= toCents(netTotal);
+  const mixtoTotal  = moneySum([mixtoEfeNum, mixtoYapNum, mixtoTarNum]);
+  const mixtoValid  = moneyGt(mixtoTotal, 0) && moneyEq(mixtoTotal, netTotal);
+  const change           = moneySub(receivedNum, netTotal);
+  const paidEnough       = moneyGte(receivedNum, netTotal);
   const needsCustomer    = docType === "factura" || (docType === "boleta" && netTotal > BOLETA_THRESHOLD);
-  const canConfirm       = cashSession.isOpen && netTotal > 0
+  const canConfirm       = cashSession.isOpen && moneyGt(netTotal, 0)
     && (payMethod !== "efectivo" || paidEnough)
     && (payMethod !== "mixto"    || mixtoValid)
     && (!needsCustomer || customer !== null);
@@ -598,8 +598,8 @@ export function CobroPanel() {
                   ) : mixtoTotal > 0 ? (
                     <>
                       <span className="text-[9.5px] text-[#9ca3af]">Pendiente</span>
-                      <span className={`text-[11px] font-bold tabular-nums ${mixtoTotal > netTotal ? "text-red-500" : "text-[#374151]"}`}>
-                        S/ {Math.abs(netTotal - mixtoTotal).toFixed(2)}
+                      <span className={`text-[11px] font-bold tabular-nums ${moneyGt(mixtoTotal, netTotal) ? "text-red-500" : "text-[#374151]"}`}>
+                        S/ {(Math.abs(toCents(netTotal) - toCents(mixtoTotal)) / 100).toFixed(2)}
                       </span>
                     </>
                   ) : (

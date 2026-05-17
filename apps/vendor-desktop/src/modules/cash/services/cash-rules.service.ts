@@ -1,4 +1,5 @@
 import type { CashBox, MoveSource } from "../../../context/POSContext";
+import { moneyEq, moneyGt, moneySum } from "../../../lib/money";
 
 // ── block operator assignment ───────────────────────────────────
 
@@ -54,7 +55,7 @@ export function canOpenSession(
 // ── move form validation ────────────────────────────────────────
 
 export function validateMixto(totalAmt: number, mixAptNum: number, mixVndNum: number): boolean {
-  return Math.abs(mixAptNum + mixVndNum - totalAmt) < 0.005;
+  return moneyEq(moneySum([mixAptNum, mixVndNum]), totalAmt);
 }
 
 export function validateCanAddMove(
@@ -64,7 +65,7 @@ export function validateCanAddMove(
   mixAptNum: number,
   mixVndNum: number,
 ): boolean {
-  if (totalAmt <= 0 || !motivo.trim()) return false;
+  if (!moneyGt(totalAmt, 0) || !motivo.trim()) return false;
   if (sourceType !== "mixto") return true;
-  return validateMixto(totalAmt, mixAptNum, mixVndNum) && (mixAptNum > 0 || mixVndNum > 0);
+  return validateMixto(totalAmt, mixAptNum, mixVndNum) && (moneyGt(mixAptNum, 0) || moneyGt(mixVndNum, 0));
 }

@@ -1,4 +1,5 @@
 import type { TicketLineDTO } from "../dto/TicketLineDTO";
+import { moneyMul } from "../../../lib/money";
 
 export const createTicketLine = (
   payload: {
@@ -11,9 +12,7 @@ export const createTicketLine = (
     unitPrice: number;
   }
 ): TicketLineDTO => {
-  const subtotal =
-    payload.quantity *
-    payload.unitPrice;
+  const subtotal = moneyMul(payload.quantity, payload.unitPrice);
 
   return {
     lineId: crypto.randomUUID(),

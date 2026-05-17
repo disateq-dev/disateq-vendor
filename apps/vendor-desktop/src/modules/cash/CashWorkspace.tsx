@@ -11,6 +11,7 @@ import {
   canOpenSession, validateCanAddMove,
   CTG_PIN, MIN_MOTIVO_LEN,
 } from "./services/cash-rules.service";
+import { toCents, moneyRound, moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 
 // ── helpers ────────────────────────────────────────────────────
 
@@ -292,14 +293,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const {
     ingresosTotal, egresosTotal,
   } = calcConciliation(cashMoves, sessionStats.cash, apertura);
-  const totalEsperado  = sessionStats.total + ingresosTotal - egresosTotal;
+  const totalEsperado  = moneySub(moneyAdd(sessionStats.total, ingresosTotal), egresosTotal);
   const contadoEfeNum  = numericValue(contadoEfe);
   const contadoYapeNum = numericValue(contadoYape);
   const contadoTarNum  = numericValue(contadoTar);
-  const contadoTotal   = contadoEfeNum + contadoYapeNum + contadoTarNum;
-  const diferencia     = contadoTotal - totalEsperado;
+  const contadoTotal   = moneySum([contadoEfeNum, contadoYapeNum, contadoTarNum]);
+  const diferencia     = moneySub(contadoTotal, totalEsperado);
   const contadoValid   = contadoEfe !== "";
-  const canClose       = contadoTotal > 0 || zeroMotive !== "";
+  const canClose       = moneyGt(contadoTotal, 0) || zeroMotive !== "";
 
   // ── handlers ──────────────────────────────────────────────────
 
@@ -375,9 +376,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     if (original.sourceType === "apertura") { fa = amt; fv = 0; }
     else if (original.sourceType === "vendido") { fa = 0; fv = amt; }
     else {
-      const ratio = original.amount > 0 ? original.fromApertura / original.amount : 1;
-      fa = parseFloat((amt * ratio).toFixed(2));
-      fv = parseFloat((amt - fa).toFixed(2));
+      const origCents  = toCents(original.amount);
+      const ratioCents = origCents > 0 ? toCents(original.fromApertura) / origCents : 1;
+      fa = moneyRound(amt * ratioCents);
+      fv = moneySub(amt, fa);
     }
     const move = addCashMove("ingreso", amt, repoMotivo.trim(), original.sourceType, fa, fv,
       repoObservacion.trim() || undefined, original.id);
@@ -429,7 +431,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       contadoTotal,
       diferencia,
       observations:     observations.trim() || undefined,
-      zeroMotive:       (contadoTotal === 0 && zeroMotive) ? zeroMotive : undefined,
+      zeroMotive:       (moneyIsZero(contadoTotal) && zeroMotive) ? zeroMotive : undefined,
     };
     closeCashSession();
     setClosingStage(0);
@@ -541,11 +543,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 );
               })()}
 
-              {closingStage === 0 && (ingresosTotal > 0 || egresosTotal > 0) && (
+              {closingStage === 0 && (moneyGt(ingresosTotal, 0) || moneyGt(egresosTotal, 0)) && (
                 <>
                   <div className="-mx-5 h-px bg-[#f0f4f8]" />
-                  {ingresosTotal > 0 && <InfoRow label="Ingresos ↑" value={`S/ ${ingresosTotal.toFixed(2)}`} accent />}
-                  {egresosTotal > 0  && <InfoRow label="Egresos ↓"  value={`S/ ${egresosTotal.toFixed(2)}`}  red />}
+                  {moneyGt(ingresosTotal, 0) && <InfoRow label="Ingresos ↑" value={`S/ ${ingresosTotal.toFixed(2)}`} accent />}
+                  {moneyGt(egresosTotal, 0)  && <InfoRow label="Egresos ↓"  value={`S/ ${egresosTotal.toFixed(2)}`}  red />}
                 </>
               )}
             </div>
@@ -1055,7 +1057,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       );
                     })}
                   </div>
-                  {contadoTotal > 0 && (
+                  {moneyGt(contadoTotal, 0) && (
                     <div className="flex justify-between items-center rounded-xl border border-[#e4e9f0] bg-white px-3.5 py-2">
                       <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">TOTAL CONTADO</span>
                       <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoTotal.toFixed(2)}</span>
@@ -1130,9 +1132,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
                   {/* Conciliación operacional */}
                   {(() => {
+                    const cuadrado = moneyIsZero(diferencia);
+                    const sobrante = !cuadrado && moneyGt(diferencia, 0);
                     const diffAbs  = Math.abs(diferencia);
-                    const cuadrado = diffAbs < 0.01;
-                    const sobrante = !cuadrado && diferencia > 0;
                     return (
                       <div className={`flex flex-col gap-1.5 rounded-xl border px-3.5 py-2.5 ${
                         cuadrado ? "border-emerald-200 bg-[#f0fdf4]" : sobrante ? "border-[#dbeafe] bg-[#eff6ff]" : "border-red-200 bg-[#fef2f2]"
@@ -1150,7 +1152,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                           <span className={`text-[13px] font-bold tabular-nums ${
                             cuadrado ? "text-emerald-600" : sobrante ? "text-[#2154d8]" : "text-red-600"
                           }`}>
-                            {cuadrado ? "±S/ 0.00" : `${diferencia >= 0 ? "+" : "−"}S/ ${diffAbs.toFixed(2)}`}
+                            {cuadrado ? "±S/ 0.00" : `${moneyGte(diferencia, 0) ? "+" : "−"}S/ ${diffAbs.toFixed(2)}`}
                           </span>
                         </div>
                       </div>
