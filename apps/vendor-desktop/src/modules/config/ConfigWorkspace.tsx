@@ -175,18 +175,39 @@ export function ConfigWorkspace() {
         {import.meta.env.DEV && (
           <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 flex flex-col gap-2">
             <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Herramientas de testing</p>
-            <button
-              onClick={() => {
-                localStorage.removeItem("disateq.pos.usedCodes");
-                localStorage.removeItem("disateq.pos.usedDate");
-                window.location.reload();
-              }}
-              className="self-start rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100 transition"
-            >
-              RESET CAJAS DEL DÍA
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  localStorage.removeItem("disateq.pos.usedCodes");
+                  localStorage.removeItem("disateq.pos.usedDate");
+                  window.location.reload();
+                }}
+                className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100 transition"
+              >
+                RESET CAJAS DÍA
+              </button>
+              <button
+                onClick={() => {
+                  const keys = [
+                    "disateq.pos.cashSession",
+                    "disateq.pos.usedCodes",
+                    "disateq.pos.usedDate",
+                    "disateq.pos.sessionStats",
+                    "disateq.pos.cashMoves",
+                    "disateq.pos.opLogs",
+                    "disateq.pos.ui.closingStage",
+                    "disateq.pos.ui.contado",
+                  ];
+                  keys.forEach(k => localStorage.removeItem(k));
+                  window.location.reload();
+                }}
+                className="rounded-xl border border-red-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-red-600 hover:bg-red-50 transition"
+              >
+                RESET OPERACIONAL COMPLETO
+              </button>
+            </div>
             <p className="text-[9px] text-amber-500 leading-snug">
-              Solo visible en modo DEV. Limpia el ciclo diario sin tocar sesión activa ni auditoría.
+              Solo visible en modo DEV · RESET COMPLETO limpia sesión, caja, stats y stages.
             </p>
           </div>
         )}
