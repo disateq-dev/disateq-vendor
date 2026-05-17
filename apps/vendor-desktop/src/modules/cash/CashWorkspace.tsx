@@ -293,7 +293,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const {
     ingresosTotal, egresosTotal,
   } = calcConciliation(cashMoves, sessionStats.cash, apertura);
-  const totalEsperado  = moneySub(moneyAdd(sessionStats.total, ingresosTotal), egresosTotal);
+  // Usar suma descompuesta (cash+yape+tar) en vez de sessionStats.total para evitar
+  // divergencia por ventas MIXTO registradas antes del fix de descomposición.
+  const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
+  const totalEsperado  = moneySub(moneyAdd(ventasDescomp, ingresosTotal), egresosTotal);
   const contadoEfeNum  = numericValue(contadoEfe);
   const contadoYapeNum = numericValue(contadoYape);
   const contadoTarNum  = numericValue(contadoTar);
@@ -422,7 +425,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       apertura,
       ingresosTotal,
       egresosTotal,
-      totalVentas:      sessionStats.total,
+      totalVentas:      ventasDescomp,
       salesCount:       sessionStats.count,
       efectivoEsperado: totalEsperado,
       contadoEfe:       contadoEfeNum,
@@ -968,15 +971,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   {sessionStats.count > 0 && (
                     <div className="flex justify-between items-center rounded-xl border border-[#e4e9f0] bg-white px-3.5 py-2">
                       <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
-                      <span className="text-[11.5px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op. · S/ {sessionStats.total.toFixed(2)}</span>
+                      <span className="text-[11.5px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op. · S/ {ventasDescomp.toFixed(2)}</span>
                     </div>
                   )}
 
-                  {/* Total operacional a conciliar — excluye fondo apertura */}
-                  <div className="flex justify-between items-center rounded-xl border border-[#dbeafe] bg-[#eff6ff] px-3.5 py-2">
-                    <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#3b82f6]">A CONCILIAR</span>
-                    <span className="text-[12px] font-bold tabular-nums text-[#2154d8]">S/ {totalEsperado.toFixed(2)}</span>
-                  </div>
                 </>
               )}
 
