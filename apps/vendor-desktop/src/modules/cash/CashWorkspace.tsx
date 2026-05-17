@@ -291,12 +291,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // fondo breakdown — delegated to service
   const {
-    ingresosTotal, egresosTotal,
+    ingresosTotal, egresosTotal, efectivoEsperado: efeEsperado,
   } = calcConciliation(cashMoves, sessionStats.cash, apertura);
-  // Usar suma descompuesta (cash+yape+tar) en vez de sessionStats.total para evitar
-  // divergencia por ventas MIXTO registradas antes del fix de descomposición.
+  // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
-  const totalEsperado  = ventasDescomp;
+  // totalEsperado: lo que debe haber en la caja + verificaciones digitales
+  // efeEsperado = apertura + cashVendido + ingresos - egresos (físico en cajón)
+  // yape + tarjeta = verificaciones digitales independientes
+  const totalEsperado  = moneySum([efeEsperado, sessionStats.yape, sessionStats.tarjeta]);
   const contadoEfeNum  = numericValue(contadoEfe);
   const contadoYapeNum = numericValue(contadoYape);
   const contadoTarNum  = numericValue(contadoTar);
@@ -427,7 +429,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       egresosTotal,
       totalVentas:      ventasDescomp,
       salesCount:       sessionStats.count,
-      efectivoEsperado: totalEsperado,
+      efectivoEsperado: efeEsperado,
       contadoEfe:       contadoEfeNum,
       contadoYape:      contadoYapeNum,
       contadoTar:       contadoTarNum,
@@ -1138,8 +1140,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                         cuadrado ? "border-emerald-200 bg-[#f0fdf4]" : sobrante ? "border-[#dbeafe] bg-[#eff6ff]" : "border-red-200 bg-[#fef2f2]"
                       }`}>
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Esperado oper.</span>
+                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Total esperado</span>
                           <span className="text-[10.5px] font-semibold tabular-nums text-[#374151]">S/ {totalEsperado.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center opacity-60">
+                          <span className="text-[8.5px] text-[#9ca3af]">EFE: S/ {efeEsperado.toFixed(2)} · YAP: S/ {sessionStats.yape.toFixed(2)} · TAR: S/ {sessionStats.tarjeta.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className={`text-[10px] font-bold uppercase tracking-[0.1em] ${
