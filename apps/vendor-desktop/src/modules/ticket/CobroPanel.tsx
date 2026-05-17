@@ -63,8 +63,9 @@ export function CobroPanel() {
   const [discount,      setDiscount]      = useState("");
   const [cobroView,     setCobroView]     = useState<CobroView>("main");
   const [affectation,   setAffectation]   = useState<Affectation>("gravado-onerosa");
-  const [mixtoSecond,   setMixtoSecond]   = useState<"yape" | "tarjeta">("yape");
-  const [mixtoEfectivo, setMixtoEfectivo] = useState("");
+  const [mixtoEfe, setMixtoEfe] = useState("");
+  const [mixtoYap, setMixtoYap] = useState("");
+  const [mixtoTar, setMixtoTar] = useState("");
 
   // ── committed customer ───────────────────────────────────────────────────────
   const [customer, setCustomer] = useState<CustomerData | null>(null);
@@ -79,8 +80,10 @@ export function CobroPanel() {
   const [cPhone,    setCPhone]    = useState("");
   const [cEmail,    setCEmail]    = useState("");
 
-  const receivedRef         = useRef<HTMLInputElement>(null);
-  const mixtoEfectivoRef    = useRef<HTMLInputElement>(null);
+  const receivedRef    = useRef<HTMLInputElement>(null);
+  const mixtoEfeRef    = useRef<HTMLInputElement>(null);
+  const mixtoYapRef    = useRef<HTMLInputElement>(null);
+  const mixtoTarRef    = useRef<HTMLInputElement>(null);
   const discountRef         = useRef<HTMLInputElement>(null);
   const confirmRef          = useRef<() => void>(() => {});
   const openClientRef       = useRef<() => void>(() => {});
@@ -96,13 +99,17 @@ export function CobroPanel() {
   const isGravado    = affectation === "gravado-onerosa" || affectation === "gravado-retiro";
   const baseImponible = isGravado ? netTotal / 1.18 : netTotal;
   const igv           = isGravado ? netTotal - baseImponible : 0;
-  const receivedNum      = parseFloat(received) || 0;
-  const mixtoEfectivoNum = parseFloat(mixtoEfectivo) || 0;
+  const receivedNum = parseFloat(received) || 0;
+  const mixtoEfeNum = parseFloat(mixtoEfe) || 0;
+  const mixtoYapNum = parseFloat(mixtoYap) || 0;
+  const mixtoTarNum = parseFloat(mixtoTar) || 0;
+  const mixtoTotal  = mixtoEfeNum + mixtoYapNum + mixtoTarNum;
+  const mixtoValid  = mixtoTotal > 0 && Math.abs(mixtoTotal - netTotal) < 0.01;
   const change           = receivedNum - netTotal;
   const needsCustomer    = docType === "factura" || (docType === "boleta" && netTotal > BOLETA_THRESHOLD);
   const canConfirm       = cashSession.isOpen && netTotal > 0
     && (payMethod !== "efectivo" || receivedNum >= netTotal)
-    && (payMethod !== "mixto"    || (mixtoEfectivoNum > 0 && mixtoEfectivoNum <= netTotal))
+    && (payMethod !== "mixto"    || mixtoValid)
     && (!needsCustomer || customer !== null);
   netTotalRef.current = netTotal;
 
@@ -183,7 +190,9 @@ export function CobroPanel() {
       } satisfies DispatchData);
     }
     recordSale(netTotal, payMethod, docType, cfg.series, nextCorrelative,
-      payMethod === "mixto" ? mixtoEfectivoNum : undefined);
+      payMethod === "mixto" ? mixtoEfeNum : undefined,
+      payMethod === "mixto" ? mixtoYapNum : undefined,
+      payMethod === "mixto" ? mixtoTarNum : undefined);
     ticketService.clear();
     closeCobro();
   }
@@ -206,6 +215,7 @@ export function CobroPanel() {
       customer,
       lines: lines.map(l => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, subtotal: l.subtotal, note: l.note })),
       baseImponible, igv, discountNum, total, netTotal, payMethod, receivedNum, change,
+      mixtoBreakdown: payMethod === "mixto" ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum } : undefined,
     };
     const dispatchData: DispatchData = {
       correlative: _dispatchCorrelative++,
@@ -228,7 +238,9 @@ export function CobroPanel() {
       }
     }
     recordSale(netTotal, payMethod, docType, cfg.series, nextCorrelative,
-      payMethod === "mixto" ? mixtoEfectivoNum : undefined);
+      payMethod === "mixto" ? mixtoEfeNum : undefined,
+      payMethod === "mixto" ? mixtoYapNum : undefined,
+      payMethod === "mixto" ? mixtoTarNum : undefined);
     ticketService.clear();
     closeCobro();
   }
@@ -247,7 +259,8 @@ export function CobroPanel() {
     if (!cobroOpen) return;
     activatedMethodsRef.current = new Set(["efectivo"]);
     setDocType("nota"); setPayMethod("efectivo"); setReceived(netTotalRef.current.toFixed(2)); setDiscount("");
-    setMixtoEfectivo(""); setCustomer(null); setCDoc(""); setCName("");
+    setMixtoEfe(""); setMixtoYap(""); setMixtoTar("");
+    setCustomer(null); setCDoc(""); setCName("");
     setCobroView("main"); setAffectation("gravado-onerosa");
     const t = setTimeout(() => receivedRef.current?.focus(), 80);
     return () => clearTimeout(t);
@@ -322,8 +335,7 @@ export function CobroPanel() {
       return () => clearTimeout(t);
     }
     if (payMethod === "mixto") {
-      if (isFirst) setMixtoEfectivo(netTotalRef.current.toFixed(2));
-      const t = setTimeout(() => mixtoEfectivoRef.current?.focus(), 20);
+      const t = setTimeout(() => mixtoEfeRef.current?.focus(), 20);
       return () => clearTimeout(t);
     }
   }, [payMethod, cobroOpen, cobroView]);
@@ -544,48 +556,52 @@ export function CobroPanel() {
             {/* MIXTO */}
             {payMethod === "mixto" && (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-1.5">
-                  <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5">
-                    {(["yape", "tarjeta"] as const).map(m => (
-                      <button
-                        key={m}
-                        onClick={() => setMixtoSecond(m)}
-                        className={`rounded-[5px] px-2.5 py-1 text-[11px] font-bold uppercase transition ${
-                          mixtoSecond === m ? "bg-white text-[#2154d8] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
-                        }`}
-                      >
-                        {m === "yape" ? "Yape" : "Tarjeta"}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-[#9ca3af]">+ Efectivo</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex flex-col flex-1 gap-1">
-                    <span className="text-[10px] font-semibold text-[#9ca3af]">Efectivo S/</span>
-                    <input
-                      ref={mixtoEfectivoRef}
-                      type="number"
-                      value={mixtoEfectivo}
-                      onChange={e => setMixtoEfectivo(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter" && !e.ctrlKey && canConfirm) { e.preventDefault(); imprimirRef.current(); }
-                      }}
-                      placeholder="0.00"
-                      min="0"
-                      max={netTotal}
-                      step="0.10"
-                      className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2.5 text-[16px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
-                    />
-                  </div>
-                  <div className="flex flex-col flex-1 gap-1">
-                    <span className="text-[10px] font-semibold text-[#9ca3af]">{mixtoSecond === "yape" ? "Yape" : "Tarjeta"} S/</span>
-                    <div className="flex items-center rounded-xl border border-dashed border-[#e4e9f0] px-3 py-2.5">
-                      <p className="text-[16px] font-bold text-[#374151] tabular-nums">
-                        {Math.max(0, netTotal - (parseFloat(mixtoEfectivo) || 0)).toFixed(2)}
-                      </p>
+                <div className="flex gap-1.5">
+                  {([
+                    { label: "Efectivo", short: "E", value: mixtoEfe, set: setMixtoEfe, ref: mixtoEfeRef, nextRef: mixtoYapRef },
+                    { label: "Yape",     short: "Y", value: mixtoYap, set: setMixtoYap, ref: mixtoYapRef, nextRef: mixtoTarRef },
+                    { label: "Tarjeta",  short: "T", value: mixtoTar, set: setMixtoTar, ref: mixtoTarRef, nextRef: null       },
+                  ] as const).map(({ label, short, value, set, ref, nextRef }) => (
+                    <div key={short} className="flex flex-col flex-1 gap-0.5">
+                      <span className="text-[9.5px] font-bold uppercase tracking-wide text-[#9ca3af]">{label}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="shrink-0 text-[9.5px] font-bold text-[#c0cad4]">S/</span>
+                        <input
+                          ref={ref}
+                          type="number"
+                          value={value}
+                          onChange={e => set(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && !e.ctrlKey) {
+                              e.preventDefault();
+                              if (nextRef) nextRef.current?.focus();
+                              else if (canConfirm) imprimirRef.current();
+                            }
+                          }}
+                          placeholder="0.00"
+                          min="0"
+                          step="0.10"
+                          className="w-full min-w-0 rounded-xl border border-[#e4e9f0] px-2 py-2 text-[15px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                </div>
+                <div className={`flex items-center justify-between rounded-xl px-3 py-1.5 ${
+                  mixtoValid ? "bg-emerald-50" : "bg-[#f4f7fb]"
+                }`}>
+                  {mixtoValid ? (
+                    <span className="text-[10px] font-bold text-emerald-600">✓ Distribución completa</span>
+                  ) : mixtoTotal > 0 ? (
+                    <>
+                      <span className="text-[9.5px] text-[#9ca3af]">Pendiente</span>
+                      <span className={`text-[11px] font-bold tabular-nums ${mixtoTotal > netTotal ? "text-red-500" : "text-[#374151]"}`}>
+                        S/ {Math.abs(netTotal - mixtoTotal).toFixed(2)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[9.5px] text-[#c0cad4]">Distribuir S/ {netTotal.toFixed(2)}</span>
+                  )}
                 </div>
               </div>
             )}

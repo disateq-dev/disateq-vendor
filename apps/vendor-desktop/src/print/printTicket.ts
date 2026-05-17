@@ -34,9 +34,10 @@ export interface PrintData {
   netTotal:      number;
 
   // Payment
-  payMethod:   string;
-  receivedNum: number;
-  change:      number;
+  payMethod:       string;
+  receivedNum:     number;
+  change:          number;
+  mixtoBreakdown?: { efe: number; yap: number; tar: number };
 }
 
 export interface VoucherMoveData {
@@ -68,6 +69,14 @@ const PAY_LABEL: Record<string, string> = {
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function mixtoPayLabel(b: { efe: number; yap: number; tar: number }): string {
+  const parts: string[] = [];
+  if (b.efe > 0.005) parts.push(`E(${b.efe.toFixed(2)})`);
+  if (b.yap > 0.005) parts.push(`Y(${b.yap.toFixed(2)})`);
+  if (b.tar > 0.005) parts.push(`T(${b.tar.toFixed(2)})`);
+  return parts.length ? `MIXTO ${parts.join(" ")}` : "Pago Mixto";
 }
 
 function money(n: number): string {
@@ -105,7 +114,9 @@ function buildHTML(d: PrintData): string {
   const payHTML = d.payMethod === "efectivo" && d.receivedNum > 0
     ? `<div class="pt-row"><span>Efectivo</span><span>${money(d.receivedNum)}</span></div>
        <div class="pt-row"><span>Vuelto</span><span><b>${money(Math.max(0, d.change))}</b></span></div>`
-    : `<div class="pt-row"><span>Método de pago</span><span>${PAY_LABEL[d.payMethod] ?? d.payMethod}</span></div>`;
+    : d.payMethod === "mixto" && d.mixtoBreakdown
+      ? `<div class="pt-row"><span>Metodo de pago</span><span>${mixtoPayLabel(d.mixtoBreakdown)}</span></div>`
+      : `<div class="pt-row"><span>Método de pago</span><span>${PAY_LABEL[d.payMethod] ?? d.payMethod}</span></div>`;
 
   return `
 <style>
@@ -400,13 +411,12 @@ export interface ArqueoData {
   apertura:         number;
   ingresosTotal:    number;
   egresosTotal:     number;
-  cashVendido:      number;
+  totalVentas:      number;
   salesCount:       number;
   efectivoEsperado: number;
   contadoEfe:       number;
   contadoYape:      number;
   contadoTar:       number;
-  contadoMix:       number;
   contadoTotal:     number;
   diferencia:       number;
   observations?:    string;
@@ -417,20 +427,9 @@ function buildArqueoHTML(d: ArqueoData): string {
   const diffAbs   = Math.abs(d.diferencia);
   const cuadrado  = diffAbs < 0.01;
   const sobrante  = !cuadrado && d.diferencia > 0;
-  const diffColor = cuadrado || sobrante ? "#065f46" : "#991b1b";
   const diffLabel = cuadrado ? "ARQUEO CUADRADO" : sobrante ? "SOBRANTE" : "FALTANTE";
   const diffSign  = d.diferencia >= 0 ? "+" : "−";
-
-  const row = (label: string, value: string, bold = false) =>
-    `<div style="display:flex;justify-content:space-between;font-size:10.5px;margin:1.5px 0;">
-       <span>${esc(label)}</span>
-       <span style="font-weight:${bold ? "bold" : "normal"};">${esc(value)}</span>
-     </div>`;
-
-  const sep   = `<div style="border-top:1px dashed #555;margin:4px 0;"></div>`;
-  const solid = `<div style="border-top:1px solid #000;margin:4px 0;"></div>`;
-  const sect  = (t: string) =>
-    `<div style="font-size:9px;font-weight:bold;letter-spacing:1.5px;color:#666;margin:4px 0 2px;">${t}</div>`;
+  const diffClass = cuadrado || sobrante ? "pt-arq-ok" : "pt-arq-falt";
 
   return `
 <style>
@@ -439,47 +438,87 @@ function buildArqueoHTML(d: ArqueoData): string {
   body > *:not(#pt-overlay) { display: none !important; }
   #pt-overlay { display: block !important; }
 }
-#pt-overlay { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; line-height: 1.5; background: #fff; }
+#pt-overlay {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  color: #000;
+  line-height: 1.5;
+  background: #fff;
+}
+#pt-overlay .pt-ticket  { padding: 4mm 2mm 12mm; }
+#pt-overlay .pt-center  { text-align: center; }
+#pt-overlay .pt-biz     { font-size: 13px; font-weight: bold; letter-spacing: .5px; }
+#pt-overlay .pt-meta    { font-size: 10px; color: #444; }
+#pt-overlay .pt-doc     { font-size: 12px; font-weight: bold; text-align: center; margin: 3px 0 1px; }
+#pt-overlay .pt-solid   { border-top: 1px solid #000; margin: 5px 0; }
+#pt-overlay .pt-dash    { border-top: 1px dashed #555; margin: 4px 0; }
+#pt-overlay .pt-row     { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; }
+#pt-overlay .pt-sm      { display: flex; justify-content: space-between; font-size: 10px; color: #333; }
+#pt-overlay .pt-total   { display: flex; justify-content: space-between; align-items: baseline; }
+#pt-overlay .pt-tlbl    { font-size: 12px; font-weight: bold; }
+#pt-overlay .pt-tamt    { font-size: 18px; font-weight: bold; }
+#pt-overlay .pt-foot    { text-align: center; font-size: 10px; color: #555; margin-top: 4px; }
+#pt-overlay .pt-bold    { font-weight: bold; }
+#pt-overlay .pt-sect    { font-size: 9px; font-weight: bold; letter-spacing: 1.5px; color: #666; margin: 4px 0 2px; }
+#pt-overlay .pt-arq-diff { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 0; }
+#pt-overlay .pt-arq-dlbl { font-size: 11px; font-weight: bold; }
+#pt-overlay .pt-arq-damt { font-size: 16px; font-weight: bold; }
+#pt-overlay .pt-arq-ok   { color: #065f46; }
+#pt-overlay .pt-arq-falt { color: #991b1b; }
 </style>
-<div style="padding:4mm 2mm 12mm;">
-  <div style="text-align:center;margin-bottom:3px;">
-    <div style="font-size:13px;font-weight:bold;letter-spacing:.5px;">${esc(d.businessName)}</div>
-    <div style="font-size:12px;font-weight:bold;margin:3px 0;letter-spacing:.5px;">CIERRE DE TURNO</div>
-    <div style="font-size:10px;color:#444;">${esc(d.dateTime)}</div>
+<div class="pt-ticket">
+
+  <div class="pt-center">
+    <div class="pt-biz">${esc(d.businessName)}</div>
+    <div class="pt-doc">CIERRE DE TURNO</div>
+    <div class="pt-meta">${esc(d.dateTime)}</div>
   </div>
-  ${solid}
-  ${row("CAJA",     `CAJA ${d.cashBoxCode}`, true)}
-  ${row("OPERADOR", d.operator)}
-  ${row("TERMINAL", d.terminal)}
-  ${sep}
-  ${sect("CONTEXTO OPERACIONAL")}
-  ${row("Fondo apertura",    money(d.apertura))}
-  ${d.ingresosTotal > 0 ? row("Ingresos ↑",  `+${money(d.ingresosTotal)}`) : ""}
-  ${d.egresosTotal  > 0 ? row("Egresos ↓",   `−${money(d.egresosTotal)}`) : ""}
-  ${d.cashVendido   > 0 ? row("Ventas efect.", money(d.cashVendido)) : ""}
-  ${row("Total esperado",    money(d.efectivoEsperado), true)}
-  ${sep}
-  ${sect("CONTEO CONCILIADO")}
-  ${row("Efectivo",  money(d.contadoEfe))}
-  ${row("Yape",      money(d.contadoYape))}
-  ${row("Tarjetas",  money(d.contadoTar))}
-  ${row("Mixto",     money(d.contadoMix))}
-  ${solid}
-  <div style="display:flex;justify-content:space-between;align-items:baseline;margin:2px 0;">
-    <span style="font-size:12px;font-weight:bold;">TOTAL CONTADO</span>
-    <span style="font-size:18px;font-weight:bold;">${money(d.contadoTotal)}</span>
+
+  <div class="pt-solid"></div>
+
+  <div class="pt-row"><span>CAJA</span><span class="pt-bold">CAJA ${esc(d.cashBoxCode)}</span></div>
+  <div class="pt-row"><span>OPERADOR</span><span>${esc(d.operator)}</span></div>
+  <div class="pt-row"><span>TERMINAL</span><span>${esc(d.terminal)}</span></div>
+
+  <div class="pt-dash"></div>
+
+  <div class="pt-sect">CONTEXTO OPERACIONAL</div>
+  <div class="pt-row"><span>Fondo apertura <span style="font-size:9px;color:#999">(ref.)</span></span><span>${money(d.apertura)}</span></div>
+  ${d.totalVentas > 0 ? `<div class="pt-row"><span>Ventas${d.salesCount > 0 ? ` (${d.salesCount})` : ""}</span><span>${money(d.totalVentas)}</span></div>` : ""}
+  ${d.ingresosTotal > 0 ? `<div class="pt-row"><span>Ingresos &#8593;</span><span>+${money(d.ingresosTotal)}</span></div>` : ""}
+  ${d.egresosTotal  > 0 ? `<div class="pt-row"><span>Egresos &#8595;</span><span>&#8722;${money(d.egresosTotal)}</span></div>` : ""}
+  <div class="pt-row"><span>Esperado oper.</span><span class="pt-bold">${money(d.efectivoEsperado)}</span></div>
+
+  <div class="pt-dash"></div>
+
+  <div class="pt-sect">CONTEO CONCILIADO</div>
+  <div class="pt-row"><span>Efectivo</span><span>${money(d.contadoEfe)}</span></div>
+  <div class="pt-row"><span>Yape</span><span>${money(d.contadoYape)}</span></div>
+  <div class="pt-row"><span>Tarjetas</span><span>${money(d.contadoTar)}</span></div>
+
+  <div class="pt-solid"></div>
+
+  <div class="pt-total">
+    <span class="pt-tlbl">TOTAL CONTADO</span>
+    <span class="pt-tamt">${money(d.contadoTotal)}</span>
   </div>
-  ${sep}
-  ${sect("DIFERENCIA")}
-  <div style="display:flex;justify-content:space-between;align-items:baseline;margin:2px 0;">
-    <span style="font-size:11px;font-weight:bold;color:${diffColor};">${diffLabel}</span>
-    <span style="font-size:16px;font-weight:bold;color:${diffColor};">${diffSign}${money(diffAbs)}</span>
+
+  <div class="pt-dash"></div>
+
+  <div class="pt-sect">DIFERENCIA</div>
+  <div class="pt-arq-diff ${diffClass}">
+    <span class="pt-arq-dlbl">${diffLabel}</span>
+    <span class="pt-arq-damt">${diffSign}${money(diffAbs)}</span>
   </div>
-  ${d.zeroMotive ? `${sep}<div style="font-size:10px;color:#555;">Motivo: ${esc(d.zeroMotive)}</div>` : ""}
-  ${d.observations ? `${sep}<div style="font-size:10px;color:#555;">Obs: ${esc(d.observations)}</div>` : ""}
-  ${solid}
-  <div style="text-align:center;font-size:10px;color:#555;">CIERRE CONCILIADO</div>
-  <div style="text-align:center;font-size:9px;color:#777;margin-top:2px;">Operaci&#xF3;n irreversible · ${esc(d.dateTime)}</div>
+
+  ${d.zeroMotive   ? `<div class="pt-dash"></div><div class="pt-row"><span>Motivo</span><span class="pt-bold">${esc(d.zeroMotive)}</span></div>` : ""}
+  ${d.observations ? `<div class="pt-dash"></div><div class="pt-meta">Obs: ${esc(d.observations)}</div>` : ""}
+
+  <div class="pt-solid"></div>
+
+  <div class="pt-foot">CIERRE CONCILIADO</div>
+  <div class="pt-foot" style="font-size:9px;">Operaci&#xF3;n irreversible · ${esc(d.dateTime)}</div>
+
 </div>`;
 }
 

@@ -25,6 +25,14 @@ pub struct PrintCustomer {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct MixtoBreakdown {
+    pub efe: f64,
+    pub yap: f64,
+    pub tar: f64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TicketPrintData {
     pub business_name:    String,
     pub business_ruc:     String,
@@ -44,6 +52,7 @@ pub struct TicketPrintData {
     pub pay_method:       String,
     pub received_num:     f64,
     pub change:           f64,
+    pub mixto_breakdown:  Option<MixtoBreakdown>,
 }
 
 fn normalize(s: &str) -> String {
@@ -262,6 +271,17 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     if d.pay_method == "efectivo" && d.received_num > 0.0 {
         b.two_col("Efectivo", &money(d.received_num));
         b.two_col("Vuelto", &money(d.change.max(0.0)));
+    } else if d.pay_method == "mixto" {
+        let label = if let Some(ref mb) = d.mixto_breakdown {
+            let mut parts: Vec<String> = Vec::new();
+            if mb.efe > 0.005 { parts.push(format!("E({:.2})", mb.efe)); }
+            if mb.yap > 0.005 { parts.push(format!("Y({:.2})", mb.yap)); }
+            if mb.tar > 0.005 { parts.push(format!("T({:.2})", mb.tar)); }
+            if parts.is_empty() { "Pago Mixto".to_string() } else { format!("MIXTO {}", parts.join(" ")) }
+        } else {
+            "Pago Mixto".to_string()
+        };
+        b.two_col("Metodo de pago", &label);
     } else {
         b.two_col("Metodo de pago", pay_label(&d.pay_method));
     }
@@ -449,6 +469,165 @@ pub fn build_cash_move_escpos(d: &VoucherMovePrintData) -> Vec<u8> {
 
     b.align_center();
     b.line("Conserve este comprobante");
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+
+    b.cut();
+    b.0
+}
+
+// ─── ARQUEO DE CIERRE ────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ArqueoPrintData {
+    pub business_name:     String,
+    pub cash_box_code:     String,
+    pub operator:          String,
+    pub terminal:          String,
+    pub date_time:         String,
+    pub apertura:          f64,
+    pub ingresos_total:    f64,
+    pub egresos_total:     f64,
+    pub total_ventas:      f64,
+    pub sales_count:       u32,
+    pub efectivo_esperado: f64,
+    pub contado_efe:       f64,
+    pub contado_yape:      f64,
+    pub contado_tar:       f64,
+    pub contado_total:     f64,
+    pub diferencia:        f64,
+    pub observations:      Option<String>,
+    pub zero_motive:       Option<String>,
+}
+
+pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
+    let mut b = Buf::new();
+    b.init();
+
+    // Header
+    b.align_center();
+    b.bold_on();
+    b.dbl_h_on();
+    b.line(&normalize(&d.business_name));
+    b.dbl_h_off();
+    b.bold_off();
+    b.bold_on();
+    b.line("CIERRE DE TURNO");
+    b.bold_off();
+    b.line(&normalize(&d.date_time));
+    b.align_left();
+
+    b.equals();
+
+    b.two_col("CAJA:", &normalize(&format!("CAJA {}", d.cash_box_code)));
+    b.two_col("OPERADOR:", &normalize(&d.operator));
+    b.two_col("TERMINAL:", &normalize(&d.terminal));
+
+    b.dashes();
+
+    // Contexto operacional
+    b.bold_on();
+    b.line("CONTEXTO OPERACIONAL");
+    b.bold_off();
+    b.dashes();
+
+    b.two_col("Fondo apertura (ref.)", &money(d.apertura));
+    if d.total_ventas > 0.0 {
+        let ventas_label = if d.sales_count > 0 {
+            format!("Ventas ({})", d.sales_count)
+        } else {
+            "Ventas".to_string()
+        };
+        b.two_col(&ventas_label, &money(d.total_ventas));
+    }
+    if d.ingresos_total > 0.0 {
+        b.two_col("Ingresos ^", &format!("+{}", money(d.ingresos_total)));
+    }
+    if d.egresos_total > 0.0 {
+        b.two_col("Egresos v", &format!("-{}", money(d.egresos_total)));
+    }
+    b.bold_on();
+    b.two_col("Esperado oper.", &money(d.efectivo_esperado));
+    b.bold_off();
+
+    b.dashes();
+
+    // Conteo conciliado
+    b.bold_on();
+    b.line("CONTEO CONCILIADO");
+    b.bold_off();
+    b.dashes();
+
+    b.two_col("Efectivo", &money(d.contado_efe));
+    b.two_col("Yape", &money(d.contado_yape));
+    b.two_col("Tarjetas", &money(d.contado_tar));
+
+    b.equals();
+
+    b.bold_on();
+    b.dbl_h_on();
+    b.two_col("TOTAL CONTADO", &money(d.contado_total));
+    b.dbl_h_off();
+    b.bold_off();
+
+    b.dashes();
+
+    // Diferencia
+    let diff_abs   = d.diferencia.abs();
+    let cuadrado   = diff_abs < 0.01;
+    let diff_label = if cuadrado {
+        "ARQUEO CUADRADO"
+    } else if d.diferencia > 0.0 {
+        "SOBRANTE"
+    } else {
+        "FALTANTE"
+    };
+    let diff_sign = if d.diferencia >= 0.0 { "+" } else { "-" };
+
+    b.bold_on();
+    b.two_col(diff_label, &format!("{}{}", diff_sign, money(diff_abs)));
+    b.bold_off();
+
+    if let Some(ref motive) = d.zero_motive {
+        let m = normalize(motive);
+        if !m.is_empty() {
+            b.dashes();
+            b.two_col("Motivo:", &m);
+        }
+    }
+
+    if let Some(ref obs) = d.observations {
+        let text = normalize(obs);
+        if !text.is_empty() {
+            b.dashes();
+            let prefix = "Obs.: ";
+            if prefix.len() + text.len() <= COLS {
+                b.line(&format!("{prefix}{text}"));
+            } else {
+                b.line("Obs.:");
+                let width = COLS - 2;
+                let bytes = text.as_bytes();
+                let mut i = 0;
+                while i < bytes.len() {
+                    let end = (i + width).min(bytes.len());
+                    b.line(&format!("  {}", std::str::from_utf8(&bytes[i..end]).unwrap_or("")));
+                    i = end;
+                }
+            }
+        }
+    }
+
+    b.equals();
+
+    b.align_center();
+    b.bold_on();
+    b.line("CIERRE CONCILIADO");
+    b.bold_off();
+    b.line("Operacion irreversible");
     b.lf();
     b.lf();
     b.lf();

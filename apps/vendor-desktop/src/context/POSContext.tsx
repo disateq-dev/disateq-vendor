@@ -40,6 +40,8 @@ export type CashSession = {
   openedAt: Date | null;
   apertura: number;
   motivo?: string;
+  observacion?: string;
+  refOp?: string;
 };
 
 export type OpLog = { id: string; ts: string; text: string };
@@ -71,6 +73,7 @@ const BLOCK_OPERATORS: Record<string, string> = {
 // ── localStorage keys ──────────────────────────────────────────
 const LS_SESSION      = "disateq.pos.cashSession";
 const LS_USED         = "disateq.pos.usedCodes";
+const LS_USED_DATE    = "disateq.pos.usedDate";
 const LS_MOVES        = "disateq.pos.cashMoves";
 const LS_SESSION_STATS = "disateq.pos.sessionStats";
 const LS_OPLOGS       = "disateq.pos.opLogs";
@@ -126,8 +129,10 @@ function loadSession(): CashSession {
       operator:  typeof p.operator === "string" ? p.operator : "",
       terminal:  typeof p.terminal === "string" ? p.terminal : TERMINAL,
       openedAt:  safeDate(p.openedAt),
-      apertura:  typeof p.apertura === "number" ? p.apertura : 0,
-      motivo:    typeof p.motivo === "string" ? p.motivo : undefined,
+      apertura:    typeof p.apertura    === "number" ? p.apertura    : 0,
+      motivo:      typeof p.motivo      === "string" ? p.motivo      : undefined,
+      observacion: typeof p.observacion === "string" ? p.observacion : undefined,
+      refOp:       typeof p.refOp       === "string" ? p.refOp       : undefined,
     };
   } catch {
     return NULL_SESSION;
@@ -136,6 +141,13 @@ function loadSession(): CashSession {
 
 function loadUsedCodes(): Set<string> {
   try {
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(LS_USED_DATE) !== today) {
+      // New operational day — reset daily cycle
+      localStorage.removeItem(LS_USED);
+      localStorage.setItem(LS_USED_DATE, today);
+      return new Set();
+    }
     const raw = localStorage.getItem(LS_USED);
     if (!raw) return new Set();
     const arr = JSON.parse(raw);
@@ -328,8 +340,9 @@ interface POSContextValue {
   suggestedCashBox: CashBox | null;
   openCashSession: (boxCode: string, apertura: number, motivo?: string) => void;
   closeCashSession: () => void;
+  correctAperturaData: (apertura: number, motivo?: string, observacion?: string, refOp?: string) => void;
   sessionStats: SessionStats;
-  recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number) => void;
+  recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number, mixtoYapComponent?: number, mixtoTarComponent?: number) => void;
   cashMoves: CashMove[];
   addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string) => CashMove;
   opLogs: OpLog[];
@@ -371,6 +384,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
   useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
   useEffect(() => { saveSessionStats(sessionStats); }, [sessionStats]);
 
+  // Refs para correctAperturaData — deben ir DESPUÉS de las declaraciones de estado
+  const sessionStatsRef = useRef(sessionStats);
+  sessionStatsRef.current = sessionStats;
+  const cashMovesRef = useRef(cashMoves);
+  cashMovesRef.current = cashMoves;
+
   const [opLogs, setOpLogs] = useState<OpLog[]>(loadOpLogs);
   useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
 
@@ -394,7 +413,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const recordSale = useCallback((
     netTotal: number, payMethod: string,
     docType?: string, docSeries?: string, docCorrelative?: number,
-    cashComponent?: number,
+    cashComponent?: number, mixtoYapComponent?: number, mixtoTarComponent?: number,
   ) => {
     setSessionStats(prev => {
       const ranges = { ...prev.docRanges };
@@ -407,12 +426,18 @@ export function POSProvider({ children }: { children: ReactNode }) {
       const addCash = payMethod === "efectivo" ? netTotal
                     : payMethod === "mixto"    ? (cashComponent ?? 0)
                     : 0;
+      const addYape = payMethod === "yape"    ? netTotal
+                    : payMethod === "mixto"   ? (mixtoYapComponent ?? 0)
+                    : 0;
+      const addTar  = payMethod === "tarjeta" ? netTotal
+                    : payMethod === "mixto"   ? (mixtoTarComponent ?? 0)
+                    : 0;
       return {
         count:     prev.count + 1,
         total:     prev.total + netTotal,
         cash:      prev.cash    + addCash,
-        yape:      prev.yape    + (payMethod === "yape"    ? netTotal : 0),
-        tarjeta:   prev.tarjeta + (payMethod === "tarjeta" ? netTotal : 0),
+        yape:      prev.yape    + addYape,
+        tarjeta:   prev.tarjeta + addTar,
         docRanges: ranges,
         byMethod: {
           efe: prev.byMethod.efe + (payMethod === "efectivo" ? 1 : 0),
@@ -504,6 +529,33 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addOpLog(trimmedMotivo ? `${base} — Motivo: ${trimmedMotivo}` : base);
   }, [cashBoxes, addOpLog]);
 
+  const correctAperturaData = useCallback((
+    newApertura: number,
+    newMotivo?: string,
+    newObservacion?: string,
+    newRefOp?: string,
+  ) => {
+    const s = cashSessionRef.current;
+    if (!s.isOpen) return;
+    // Block if any operational activity exists
+    if (sessionStatsRef.current.count > 0 || cashMovesRef.current.length > 0) return;
+    const trimMotivo      = newMotivo?.trim()      || undefined;
+    const trimObservacion = newObservacion?.trim() || undefined;
+    const trimRefOp       = newRefOp?.trim()       || undefined;
+    setCashSession(prev => ({
+      ...prev,
+      apertura:    newApertura,
+      motivo:      trimMotivo,
+      observacion: trimObservacion,
+      refOp:       trimRefOp,
+    }));
+    const parts = [`fondo S/ ${newApertura.toFixed(2)}`];
+    if (trimMotivo)      parts.push(`motivo: ${trimMotivo}`);
+    if (trimObservacion) parts.push(`obs: ${trimObservacion}`);
+    if (trimRefOp)       parts.push(`ref: ${trimRefOp}`);
+    addOpLog(`[CORRECCIÓN APERTURA] ${parts.join(' · ')}`);
+  }, [addOpLog]);
+
   const closeCashSession = useCallback(() => {
     const s = cashSessionRef.current;
     if (!s.isOpen || !s.cashBox) return;
@@ -534,7 +586,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       zone, enterTicket, enterSearch,
       cobroOpen, openCobro, closeCobro,
       cashSession, cashBoxes, suggestedCashBox,
-      openCashSession, closeCashSession,
+      openCashSession, closeCashSession, correctAperturaData,
       sessionStats, recordSale,
       cashMoves, addCashMove,
       opLogs, addOpLog,
