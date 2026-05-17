@@ -296,7 +296,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   // Usar suma descompuesta (cash+yape+tar) en vez de sessionStats.total para evitar
   // divergencia por ventas MIXTO registradas antes del fix de descomposición.
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
-  const totalEsperado  = moneySub(moneyAdd(ventasDescomp, ingresosTotal), egresosTotal);
+  const totalEsperado  = ventasDescomp;
   const contadoEfeNum  = numericValue(contadoEfe);
   const contadoYapeNum = numericValue(contadoYape);
   const contadoTarNum  = numericValue(contadoTar);
