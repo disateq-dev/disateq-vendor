@@ -508,7 +508,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal"     value={terminal} />
-              <InfoRow label="Fondo apertura" value={`S/ ${apertura.toFixed(2)}`} />}
+              <InfoRow label="Fondo apertura" value={`S/ ${apertura.toFixed(2)}`} />
               {sessionMotivo    && <InfoRow label="Motivo apertura"  value={sessionMotivo}    />}
               {sessionObservacion && <InfoRow label="Observación"    value={sessionObservacion} />}
               {sessionRefOp       && <InfoRow label="Ref. operacional" value={sessionRefOp}   />}
