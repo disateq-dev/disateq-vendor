@@ -34,7 +34,7 @@ function formatDuration(from: Date): string {
 
 const SERIES = ["1", "2", "3", "5"] as const;
 
-type ClosingStage = 0 | 1 | 2 | 3 | 4;
+type ClosingStage = 0 | 1 | 2 | 3 | 4 | 5;
 
 // ── sub-components ─────────────────────────────────────────────
 
@@ -119,21 +119,33 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // ── closing state ─────────────────────────────────────────────
   const [closingStage, setClosingStage] = useState<ClosingStage>(() => {
-    if (!isOpen) return 0; // no session → no closing in progress
+    if (!isOpen) return 0;
     try {
       const n = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
-      return ([0,1,2,3,4].includes(n) ? n : 0) as ClosingStage;
+      return ([0,1,2,3,4,5].includes(n) ? n : 0) as ClosingStage;
     } catch { return 0; }
   });
-  const [contado, setContado] = useState(() => {
+  function loadContadoField(field: string): string {
     if (!isOpen) return "";
     try {
       const stage = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
-      return stage >= 1 ? (localStorage.getItem("disateq.pos.ui.contado") ?? "") : "";
-    } catch { return ""; }
-  });
+      if (stage >= 2) {
+        const raw = localStorage.getItem("disateq.pos.ui.contado");
+        if (raw) return (JSON.parse(raw) as Record<string, string>)[field] ?? "";
+      }
+    } catch {}
+    return "";
+  }
+  const [contadoEfe,  setContadoEfe]  = useState(() => loadContadoField("efe"));
+  const [contadoYape, setContadoYape] = useState(() => loadContadoField("yape"));
+  const [contadoTar,  setContadoTar]  = useState(() => loadContadoField("tar"));
+  const [contadoMix,  setContadoMix]  = useState(() => loadContadoField("mix"));
+  const [validatedAt, setValidatedAt] = useState<string | null>(null);
   const [observations, setObservations] = useState("");
-  const contadoRef = useRef<HTMLInputElement>(null);
+  const contadoEfeRef  = useRef<HTMLInputElement>(null);
+  const contadoYapeRef = useRef<HTMLInputElement>(null);
+  const contadoTarRef  = useRef<HTMLInputElement>(null);
+  const contadoMixRef  = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (closingStage > 0) localStorage.setItem("disateq.pos.ui.closingStage", String(closingStage));
@@ -141,13 +153,24 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }, [closingStage]);
 
   useEffect(() => {
-    if (contado) localStorage.setItem("disateq.pos.ui.contado", contado);
-    else localStorage.removeItem("disateq.pos.ui.contado");
-  }, [contado]);
+    if (closingStage >= 2 && contadoEfe !== "") {
+      localStorage.setItem("disateq.pos.ui.contado", JSON.stringify({
+        efe: contadoEfe, yape: contadoYape, tar: contadoTar, mix: contadoMix,
+      }));
+    } else {
+      localStorage.removeItem("disateq.pos.ui.contado");
+    }
+  }, [closingStage, contadoEfe, contadoYape, contadoTar, contadoMix]);
+
+  useEffect(() => {
+    if (closingStage === 2) setTimeout(() => contadoEfeRef.current?.focus(), 80);
+  }, [closingStage]);
 
   useEffect(() => {
     if (!isOpen) {
-      setClosingStage(0); setContado(""); setObservations("");
+      setClosingStage(0);
+      setContadoEfe(""); setContadoYape(""); setContadoTar(""); setContadoMix("");
+      setValidatedAt(null); setObservations("");
       localStorage.removeItem("disateq.pos.ui.closingStage");
       localStorage.removeItem("disateq.pos.ui.contado");
       setAperturaInput(""); setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
@@ -197,12 +220,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // fondo breakdown — delegated to service
   const {
-    ingApertura, egApertura, ingVendido, egVendido,
     ingresosTotal, egresosTotal,
-    fondoApertEsp, fondoVendidoEsp, efectivoEsperado,
   } = calcConciliation(cashMoves, sessionStats.cash, apertura);
-  const contadoNum = parseFloat(contado) || 0;
-  const diferencia = contadoNum - efectivoEsperado;
+  const contadoEfeNum  = parseFloat(contadoEfe)  || 0;
+  const contadoYapeNum = parseFloat(contadoYape) || 0;
+  const contadoTarNum  = parseFloat(contadoTar)  || 0;
+  const contadoMixNum  = parseFloat(contadoMix)  || 0;
+  const contadoTotal   = contadoEfeNum + contadoYapeNum + contadoTarNum + contadoMixNum;
+  const contadoValid   = contadoEfe !== "";
 
   // ── handlers ──────────────────────────────────────────────────
 
@@ -287,11 +312,36 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   function handleConfirmClose() {
     closeCashSession();
     setClosingStage(0);
-    setContado("");
-    setObservations("");
+    setContadoEfe(""); setContadoYape(""); setContadoTar(""); setContadoMix("");
+    setValidatedAt(null); setObservations("");
     localStorage.removeItem("disateq.pos.ui.closingStage");
     localStorage.removeItem("disateq.pos.ui.contado");
   }
+
+  // ── keyboard shortcuts del flujo de cierre ─────────────────
+  useEffect(() => {
+    if (!isOpen || closingStage === 0) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "F9" && closingStage === 2 && contadoValid) {
+        e.preventDefault();
+        setValidatedAt(new Date().toISOString());
+        setClosingStage(3);
+      } else if (e.key === "F4" && (closingStage === 3 || closingStage === 4)) {
+        e.preventDefault();
+        setValidatedAt(null);
+        setClosingStage(2);
+      } else if (e.key === "F10" && closingStage === 3) {
+        e.preventDefault();
+        setClosingStage(4);
+      } else if (e.key === "Enter" && e.ctrlKey && closingStage === 5) {
+        e.preventDefault();
+        handleConfirmClose();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, closingStage, contadoValid]);
 
   // ── render ────────────────────────────────────────────────────
 
@@ -316,7 +366,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <div className="flex items-center gap-1.5">
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${closingStage > 0 ? "bg-red-400" : "bg-emerald-500"}`} />
                   <span className={`text-[10.5px] font-bold uppercase tracking-widest ${closingStage > 0 ? "text-red-500" : "text-emerald-600"}`}>
-                    {closingStage > 0 ? `CERRANDO TURNO · ${closingStage}/4` : "TURNO ABIERTO"}
+                    {closingStage > 0 ? `CERRANDO TURNO · ${closingStage}/5` : "TURNO ABIERTO"}
                   </span>
                 </div>
                 <p className="mt-0.5 truncate text-[12px] font-semibold text-[#374151]">
@@ -456,11 +506,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           ) : closingStage === 0 ? (
             <>
               <button
-                onClick={() => { setClosingStage(1); setContado(""); setTimeout(() => contadoRef.current?.focus(), 50); }}
+                onClick={() => setClosingStage(1)}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f8c3c3] bg-[#fef2f2] py-3 text-[12px] font-bold uppercase tracking-widest text-[#b91c1c] transition hover:bg-[#fee2e2] active:scale-[0.98]"
               >
                 <LogOut size={13} strokeWidth={2.5} />
-                Cierre de turno
+                CIERRE DE TURNO
               </button>
             </>
 
@@ -468,36 +518,41 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <>
               <button
                 onClick={() => setClosingStage(2)}
-                disabled={contado === ""}
-                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
-                  contado !== ""
-                    ? "bg-[#2154d8] text-white shadow-[0_4px_14px_rgba(33,84,216,0.24)] hover:bg-[#1a44be] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
-                }`}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_14px_rgba(5,150,105,0.24)] transition hover:bg-emerald-700 active:scale-[0.98]"
               >
-                Continuar →
+                INICIAR CONTEO
               </button>
               <button
-                onClick={() => { setClosingStage(0); setContado(""); }}
+                onClick={() => setClosingStage(0)}
                 className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
               >
-                Cancelar
+                CANCELAR
               </button>
             </>
 
           ) : closingStage === 2 ? (
             <>
               <button
-                onClick={() => setClosingStage(3)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2154d8] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_14px_rgba(33,84,216,0.24)] transition hover:bg-[#1a44be] active:scale-[0.98]"
+                onClick={() => {
+                  if (!contadoValid) return;
+                  setValidatedAt(new Date().toISOString());
+                  setClosingStage(3);
+                }}
+                disabled={!contadoValid}
+                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
+                  contadoValid
+                    ? "bg-[#2154d8] text-white shadow-[0_4px_14px_rgba(33,84,216,0.24)] hover:bg-[#1a44be] active:scale-[0.98]"
+                    : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+                }`}
               >
-                Conciliar →
+                VALIDAR CONTEO
+                <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F9</span>
               </button>
               <button
-                onClick={() => { setClosingStage(1); setTimeout(() => contadoRef.current?.focus(), 50); }}
+                onClick={() => setClosingStage(0)}
                 className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
               >
-                ← Corregir conteo
+                CANCELAR
               </button>
             </>
 
@@ -505,20 +560,39 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <>
               <button
                 onClick={() => setClosingStage(4)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#c2410c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(194,65,12,0.24)] transition hover:bg-[#9a3412] active:scale-[0.98]"
               >
-                <CheckCircle size={14} strokeWidth={2.5} />
-                Confirmar cierre
+                CONCILIAR
+                <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F10</span>
               </button>
               <button
-                onClick={() => { setClosingStage(1); setTimeout(() => contadoRef.current?.focus(), 50); }}
-                className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
+                onClick={() => { setValidatedAt(null); setClosingStage(2); }}
+                className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
               >
-                ← Rehacer conteo
+                RECONTAR
+                <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[#9ca3af]">F4</span>
               </button>
             </>
 
-          ) : /* stage 4 */ (
+          ) : closingStage === 4 ? (
+            <>
+              <button
+                onClick={() => setClosingStage(5)}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
+              >
+                <CheckCircle size={14} strokeWidth={2.5} />
+                CONFIRMAR CIERRE
+              </button>
+              <button
+                onClick={() => { setValidatedAt(null); setClosingStage(2); }}
+                className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
+              >
+                RECONTAR
+                <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[#9ca3af]">F4</span>
+              </button>
+            </>
+
+          ) : /* stage 5 */ (
             <>
               <button
                 onClick={handleConfirmClose}
@@ -526,12 +600,13 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               >
                 <CheckCircle size={14} strokeWidth={2.5} />
                 CERRAR TURNO
+                <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+↵</span>
               </button>
               <button
                 onClick={() => setClosingStage(0)}
                 className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
               >
-                Cancelar
+                CANCELAR
               </button>
             </>
           )}
@@ -573,168 +648,271 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
       ) : closingStage > 0 ? (
 
-        /* CLOSING FLOW */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-red-200 bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        /* CLOSING FLOW — layout: flujo (izq) + timeline (der) */
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-red-200 bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
-          <div className="shrink-0 border-b border-[#fecaca] px-5 py-3 flex items-center justify-between">
+          {/* ── Panel izquierdo: flujo operacional ── */}
+          <div className="flex min-h-0 flex-1 flex-col border-r border-[#fef2f2]">
 
-            {/* Semáforos operacionales */}
-            <div className="flex items-center gap-3 select-none">
-              {/* CONTEO */}
-              <span className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 shrink-0 rounded-full ${closingStage >= 2 ? "bg-emerald-500" : "bg-amber-400"}`} />
-                <span className={`text-[9.5px] font-bold uppercase tracking-[0.13em] ${closingStage >= 2 ? "text-emerald-700" : "text-amber-600"}`}>
-                  Conteo
-                </span>
-              </span>
-              <span className="text-[#fecaca]">·</span>
-              {/* CONCILIACIÓN */}
-              <span className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 shrink-0 rounded-full ${
-                  closingStage >= 3
-                    ? Math.abs(diferencia) < 0.01 ? "bg-emerald-500" : "bg-amber-400"
-                    : "bg-red-400"
-                }`} />
-                <span className={`text-[9.5px] font-bold uppercase tracking-[0.13em] ${
-                  closingStage >= 3
-                    ? Math.abs(diferencia) < 0.01 ? "text-emerald-700" : "text-amber-600"
-                    : "text-red-400"
-                }`}>
-                  Conciliación
-                </span>
-              </span>
-              <span className="text-[#fecaca]">·</span>
-              {/* CIERRE */}
-              <span className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 shrink-0 rounded-full ${
-                  closingStage >= 4
-                    ? diferencia >= 0 ? "bg-emerald-500" : "bg-amber-400"
-                    : "bg-red-400"
-                }`} />
-                <span className={`text-[9.5px] font-bold uppercase tracking-[0.13em] ${
-                  closingStage >= 4
-                    ? diferencia >= 0 ? "text-emerald-700" : "text-amber-600"
-                    : "text-red-400"
-                }`}>
-                  Cierre
-                </span>
+            {/* Header */}
+            <div className="shrink-0 border-b border-[#fecaca] px-5 py-2.5 flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-400">CERRANDO TURNO</span>
+              <span className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[#b0bac8]">
+                {closingStage === 1 ? "CONTEXTO"
+                 : closingStage === 2 ? "CONTEO"
+                 : closingStage === 3 ? "VALIDACIÓN"
+                 : closingStage === 4 ? "CONCILIACIÓN"
+                 : "CIERRE"}
               </span>
             </div>
 
-            {/* Paso activo */}
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
-              {closingStage === 1 ? "Conteo ciego" : closingStage === 2 ? "Validar conteo" : closingStage === 3 ? "Conciliación" : "Confirmar cierre"}
-            </span>
+            {/* Content por stage */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3.5">
 
+              {/* ── STAGE 1: CONTEXTO ── */}
+              {closingStage === 1 && (
+                <>
+                  <p className="text-[11px] text-[#6b7280] leading-relaxed">
+                    Revisa los movimientos del turno antes de iniciar el conteo físico.
+                  </p>
+                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                    <div className="flex justify-between items-center px-3.5 py-2">
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">APERTURA</span>
+                      <span className="text-[11.5px] font-bold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
+                    </div>
+                    {ingresosTotal > 0 && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">INGRESOS ↑</span>
+                        <span className="text-[11.5px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {egresosTotal > 0 && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">EGRESOS ↓</span>
+                        <span className="text-[11.5px] font-semibold tabular-nums text-red-500">−S/ {egresosTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {sessionStats.count > 0 && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
+                        <span className="text-[11.5px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op.</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ── STAGE 2: CONTEO ── */}
+              {closingStage === 2 && (
+                <>
+                  <p className="text-[11px] text-[#6b7280] leading-relaxed">
+                    Cuenta físicamente el efectivo. <strong className="text-[#374151]">No se muestra el monto esperado.</strong>
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {([
+                      { label: "EFECTIVO",  value: contadoEfe,  set: setContadoEfe,  ref: contadoEfeRef,  nextRef: contadoYapeRef },
+                      { label: "YAPE",      value: contadoYape, set: setContadoYape, ref: contadoYapeRef, nextRef: contadoTarRef  },
+                      { label: "TARJETAS",  value: contadoTar,  set: setContadoTar,  ref: contadoTarRef,  nextRef: contadoMixRef  },
+                      { label: "MIXTO",     value: contadoMix,  set: setContadoMix,  ref: contadoMixRef,  nextRef: null           },
+                    ] as const).map(({ label, value, set, ref, nextRef }) => (
+                      <div key={label} className="flex items-center gap-2.5">
+                        <span className="w-[64px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">{label}</span>
+                        <span className="shrink-0 text-[10px] font-bold text-[#b0bac8]">S/</span>
+                        <input
+                          ref={ref}
+                          type="number"
+                          value={value}
+                          onChange={e => set(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (nextRef) nextRef.current?.focus();
+                            }
+                          }}
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                          className={`flex-1 rounded-xl border px-3 py-2 text-[15px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] tabular-nums transition ${
+                            label === "EFECTIVO"
+                              ? "border-[#2154d8]/30 focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                              : "border-[#e4e9f0] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                          }`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {contadoTotal > 0 && (
+                    <div className="flex justify-between items-center rounded-xl border border-[#e4e9f0] bg-white px-3.5 py-2">
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">TOTAL CONTADO</span>
+                      <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-[#c0cad4]">
+                    Tecla <span className="font-mono bg-[#f1f5f9] px-1 rounded">F9</span> para validar · <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> avanza campo
+                  </p>
+                </>
+              )}
+
+              {/* ── STAGE 3: VALIDACIÓN ── */}
+              {closingStage === 3 && (
+                <>
+                  <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-[#f0fdf4] px-3.5 py-2.5">
+                    <CheckCircle size={15} className="text-emerald-500 shrink-0" />
+                    <div>
+                      <p className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">CONTEO VALIDADO</p>
+                      {validatedAt && (
+                        <p className="text-[9px] font-mono text-emerald-600 tabular-nums">
+                          {new Date(validatedAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                    {[
+                      { label: "EFECTIVO",  val: contadoEfeNum  },
+                      { label: "YAPE",      val: contadoYapeNum },
+                      { label: "TARJETAS",  val: contadoTarNum  },
+                      { label: "MIXTO",     val: contadoMixNum  },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="flex justify-between items-center px-3.5 py-1.5">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
+                        <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center px-3.5 py-2 bg-[#f8fafd]">
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#374151]">TOTAL</span>
+                      <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[#c0cad4]">
+                    Tecla <span className="font-mono bg-[#f1f5f9] px-1 rounded">F10</span> para conciliar · <span className="font-mono bg-[#f1f5f9] px-1 rounded">F4</span> para recontar
+                  </p>
+                </>
+              )}
+
+              {/* ── STAGE 4: CONCILIACIÓN ── */}
+              {closingStage === 4 && (
+                <>
+                  <p className="text-[11px] text-[#6b7280] leading-relaxed">
+                    Confirma el arqueo para oficializar el cierre.
+                  </p>
+                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-amber-200 bg-white overflow-hidden">
+                    {[
+                      { label: "EFECTIVO",  val: contadoEfeNum  },
+                      { label: "YAPE",      val: contadoYapeNum },
+                      { label: "TARJETAS",  val: contadoTarNum  },
+                      { label: "MIXTO",     val: contadoMixNum  },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="flex justify-between items-center px-3.5 py-1.5">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
+                        <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#fffbf0]">
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#92400e]">TOTAL ARQUEO</span>
+                      <span className="text-[14px] font-bold tabular-nums text-[#92400e]">S/ {contadoTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── STAGE 5: CIERRE ── */}
+              {closingStage === 5 && (
+                <>
+                  <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-[#fef2f2] px-3.5 py-2.5">
+                    <AlertTriangle size={13} className="text-red-500 shrink-0 mt-px" />
+                    <p className="text-[10.5px] font-semibold text-[#b91c1c] leading-snug">
+                      Esta acción finaliza el turno y no podrá revertirse.
+                    </p>
+                  </div>
+                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                    <div className="flex justify-between items-center px-3.5 py-1.5">
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">CAJA</span>
+                      <span className="text-[11px] font-bold text-[#374151]">CAJA {activeBox?.code}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-3.5 py-1.5">
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">OPERADOR</span>
+                      <span className="text-[11px] font-semibold text-[#374151]">{operator}</span>
+                    </div>
+                    {sessionStats.count > 0 && (
+                      <div className="flex justify-between items-center px-3.5 py-1.5">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
+                        <span className="text-[11px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op.</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center px-3.5 py-2 bg-[#f8fafd]">
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#374151]">CONTEO TOTAL</span>
+                      <span className="text-[13px] font-bold tabular-nums text-emerald-600">S/ {contadoTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Observaciones (opcional)</span>
+                    <textarea
+                      value={observations}
+                      onChange={e => setObservations(e.target.value)}
+                      placeholder="Novedades del turno, incidencias..."
+                      rows={2}
+                      className="w-full resize-none rounded-xl border border-[#e4e9f0] px-3.5 py-2 text-[11.5px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-red-300 focus:ring-2 focus:ring-red-200/30"
+                    />
+                  </div>
+                </>
+              )}
+
+            </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
+          {/* ── Panel derecho: timeline + snapshot ── */}
+          <div className="flex w-[152px] shrink-0 flex-col px-4 py-4 gap-4">
 
-            {closingStage === 1 && (
-              <>
-                <p className="text-[12px] text-[#6b7280] leading-relaxed">
-                  Ingresa el efectivo que cuentas físicamente en caja. <strong className="text-[#374151]">No se muestra el esperado.</strong>
-                </p>
-                <div className="flex flex-col gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Efectivo en caja S/</span>
-                  <input
-                    ref={contadoRef}
-                    autoFocus
-                    type="number"
-                    value={contado}
-                    onChange={e => setContado(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && contado !== "") setClosingStage(2); }}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.10"
-                    className="w-full rounded-2xl border border-[#e4e9f0] px-5 py-4 text-[28px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-red-300 focus:ring-2 focus:ring-red-300/20 text-center"
-                  />
-                </div>
-              </>
-            )}
+            <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#c0cad4]">PROCESO</span>
 
-            {closingStage === 2 && (
-              <>
-                <p className="text-[12px] text-[#6b7280] leading-relaxed">
-                  Confirma que el monto contado es correcto antes de ver la conciliación.
-                </p>
-                <div className="rounded-2xl border border-[#e4e9f0] px-5 py-4 flex flex-col gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Tu conteo</span>
-                  <span className="text-[32px] font-bold text-[#111827] tabular-nums">S/ {contadoNum.toFixed(2)}</span>
-                </div>
-                <p className="text-[11px] text-[#9ca3af]">Si el número es correcto, avanza para ver la diferencia con el esperado.</p>
-              </>
-            )}
-
-            {closingStage === 3 && (
-              <>
-                <p className="text-[12px] text-[#6b7280] leading-relaxed">Conciliación por fondo operacional:</p>
-                <div className="flex flex-col gap-2">
-                  {/* Fondo apertura */}
-                  <div className="rounded-xl bg-white border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
-                    <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-0.5">Fondo apertura</p>
-                    <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Fondo inicial</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span></div>
-                    {ingApertura > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ingresos →</span><span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingApertura.toFixed(2)}</span></div>}
-                    {egApertura  > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Egresos ←</span><span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egApertura.toFixed(2)}</span></div>}
-                    <div className="pt-1 border-t border-[#e4e9f0] flex justify-between"><span className="text-[10.5px] font-bold text-[#374151]">Subtotal</span><span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {fondoApertEsp.toFixed(2)}</span></div>
-                  </div>
-                  {/* Fondo vendido */}
-                  <div className="rounded-xl bg-white border border-[#e4e9f0] px-4 py-3 flex flex-col gap-1.5">
-                    <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-0.5">Fondo vendido</p>
-                    <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ventas efectivo</span><span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {sessionStats.cash.toFixed(2)}</span></div>
-                    {ingVendido > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Ingresos →</span><span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingVendido.toFixed(2)}</span></div>}
-                    {egVendido  > 0 && <div className="flex justify-between"><span className="text-[10.5px] text-[#9ca3af]">Egresos ←</span><span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egVendido.toFixed(2)}</span></div>}
-                    <div className="pt-1 border-t border-[#e4e9f0] flex justify-between"><span className="text-[10.5px] font-bold text-[#374151]">Subtotal</span><span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {fondoVendidoEsp.toFixed(2)}</span></div>
-                  </div>
-                  {/* Total + contado + diff */}
-                  <div className="rounded-xl border border-[#e4e9f0] px-4 py-2.5 flex justify-between items-center">
-                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#374151]">Total esperado</span>
-                    <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {efectivoEsperado.toFixed(2)}</span>
-                  </div>
-                  <div className={`rounded-xl border px-4 py-2.5 flex justify-between items-center ${
-                    Math.abs(diferencia) < 0.01 ? "border-emerald-200 bg-emerald-50" : diferencia > 0 ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"
-                  }`}>
-                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#374151]">Contado</span>
-                    <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoNum.toFixed(2)}</span>
-                  </div>
-                  <div className={`rounded-xl border px-4 py-3 flex flex-col gap-0.5 ${
-                    Math.abs(diferencia) < 0.01 ? "border-emerald-300 bg-[#f0fdf4]" : diferencia > 0 ? "border-emerald-300 bg-[#f0fdf4]" : "border-red-300 bg-[#fef2f2]"
-                  }`}>
-                    <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Diferencia</span>
-                    <span className={`text-[20px] font-bold tabular-nums ${Math.abs(diferencia) < 0.01 || diferencia > 0 ? "text-emerald-600" : "text-red-600"}`}>
-                      {diferencia >= 0 ? "+" : ""}S/ {diferencia.toFixed(2)}
-                      <span className="text-[11px] ml-2 font-semibold">{Math.abs(diferencia) < 0.01 ? "Cuadre exacto" : diferencia > 0 ? "Sobrante" : "Faltante"}</span>
+            {/* Timeline */}
+            <div className="flex flex-col">
+              {([
+                { s: 1, label: "CONTEXTO" },
+                { s: 2, label: "CONTEO" },
+                { s: 3, label: "VALIDACIÓN" },
+                { s: 4, label: "CONCILIACIÓN" },
+                { s: 5, label: "CIERRE" },
+              ] as const).map((step, idx) => {
+                const done   = closingStage > step.s;
+                const active = closingStage === step.s;
+                return (
+                  <div key={step.s} className="flex items-start gap-2">
+                    <div className="flex flex-col items-center" style={{ minWidth: 8 }}>
+                      <div className={`mt-[3px] h-2 w-2 shrink-0 rounded-full transition-colors ${
+                        done ? "bg-emerald-500" : active ? "bg-[#2154d8]" : "bg-[#e4e9f0]"
+                      }`} />
+                      {idx < 4 && <div className={`w-px mt-0.5 h-4 ${done ? "bg-emerald-300" : "bg-[#e4e9f0]"}`} />}
+                    </div>
+                    <span className={`pb-2 text-[9px] font-bold uppercase tracking-[0.10em] leading-tight ${
+                      done ? "text-emerald-600" : active ? "text-[#2154d8]" : "text-[#c0cad4]"
+                    }`}>
+                      {done ? "✓ " : ""}{step.label}
                     </span>
                   </div>
-                </div>
-              </>
-            )}
+                );
+              })}
+            </div>
 
-            {closingStage === 4 && (
-              <>
-                <p className="text-[12px] text-[#6b7280] leading-relaxed">
-                  El turno se cerrará definitivamente. Esta acción no se puede deshacer.
-                </p>
-                <div className="rounded-2xl bg-white border border-[#e4e9f0] px-5 py-3 flex flex-col gap-1.5">
-                  <InfoRow label="Caja"      value={`CAJA ${activeBox?.code}`} />
-                  <InfoRow label="Operador"  value={operator} />
-                  <InfoRow label="Ventas"    value={`${sessionStats.count} op. · S/ ${sessionStats.total.toFixed(2)}`} />
-                  <InfoRow label="Diferencia" value={`${diferencia >= 0 ? "+" : ""}S/ ${diferencia.toFixed(2)}`} accent={diferencia >= 0} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Observaciones (opcional)</span>
-                  <textarea
-                    value={observations}
-                    onChange={e => setObservations(e.target.value)}
-                    placeholder="Novedades del turno, incidencias, etc."
-                    rows={3}
-                    className="w-full resize-none rounded-xl border border-[#e4e9f0] px-3.5 py-2.5 text-[11.5px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                  />
-                </div>
-              </>
-            )}
+            {/* Separator */}
+            <div className="-mx-4 h-px bg-[#fef2f2]" />
+
+            {/* Session snapshot */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#c0cad4]">TURNO</span>
+              <span className="text-[10.5px] font-bold text-[#374151]">CAJA {activeBox?.code}</span>
+              <span className="text-[9.5px] text-[#9ca3af] leading-tight">{operator}</span>
+              {sessionStats.count > 0 && (
+                <span className="text-[9px] tabular-nums text-[#b0bac8]">{sessionStats.count} op.</span>
+              )}
+              {openedAt && (
+                <span className="text-[9px] font-mono tabular-nums text-[#b0bac8]">{formatTime(openedAt)}</span>
+              )}
+            </div>
 
           </div>
+
         </div>
 
       ) : (
