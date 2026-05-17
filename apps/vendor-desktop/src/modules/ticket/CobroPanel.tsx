@@ -8,6 +8,8 @@ import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
 import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatch, printDispatchTicket, type DispatchData } from "../../print/printTicket";
 
+function toCents(n: number): number { return Math.round(n * 100); }
+
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
 type CobroView   = "main" | "client";
@@ -104,11 +106,12 @@ export function CobroPanel() {
   const mixtoYapNum = parseFloat(mixtoYap) || 0;
   const mixtoTarNum = parseFloat(mixtoTar) || 0;
   const mixtoTotal  = mixtoEfeNum + mixtoYapNum + mixtoTarNum;
-  const mixtoValid  = mixtoTotal > 0 && Math.abs(mixtoTotal - netTotal) < 0.01;
+  const mixtoValid  = toCents(mixtoTotal) > 0 && toCents(mixtoTotal) === toCents(netTotal);
   const change           = receivedNum - netTotal;
+  const paidEnough       = toCents(receivedNum) >= toCents(netTotal);
   const needsCustomer    = docType === "factura" || (docType === "boleta" && netTotal > BOLETA_THRESHOLD);
   const canConfirm       = cashSession.isOpen && netTotal > 0
-    && (payMethod !== "efectivo" || receivedNum >= netTotal)
+    && (payMethod !== "efectivo" || paidEnough)
     && (payMethod !== "mixto"    || mixtoValid)
     && (!needsCustomer || customer !== null);
   netTotalRef.current = netTotal;
@@ -533,15 +536,15 @@ export function CobroPanel() {
                   />
                   <div className={`flex-1 min-w-0 flex flex-col justify-center rounded-xl px-3.5 py-2.5 ${
                     receivedNum > 0
-                      ? change >= 0 ? "bg-emerald-50" : "bg-red-50"
+                      ? paidEnough ? "bg-emerald-50" : "bg-red-50"
                       : "border border-dashed border-[#E9E4DC]"
                   }`}>
                     {receivedNum > 0 ? (
                       <>
-                        <p className={`text-[10px] font-semibold uppercase tracking-widest ${change >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                          {change >= 0 ? "Vuelto" : "Faltan"}
+                        <p className={`text-[10px] font-semibold uppercase tracking-widest ${paidEnough ? "text-emerald-600" : "text-red-500"}`}>
+                          {paidEnough ? "Vuelto" : "Faltan"}
                         </p>
-                        <p className={`text-[20px] font-bold leading-none tabular-nums ${change >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                        <p className={`text-[20px] font-bold leading-none tabular-nums ${paidEnough ? "text-emerald-700" : "text-red-600"}`}>
                           S/ {Math.abs(change).toFixed(2)}
                         </p>
                       </>
