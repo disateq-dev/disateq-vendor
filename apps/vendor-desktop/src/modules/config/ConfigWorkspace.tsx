@@ -171,6 +171,26 @@ export function ConfigWorkspace() {
           </p>
         </div>
 
+        {/* ── DEV ONLY — nunca en producción ── */}
+        {import.meta.env.DEV && (
+          <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 flex flex-col gap-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Herramientas de testing</p>
+            <button
+              onClick={() => {
+                localStorage.removeItem("disateq.pos.usedCodes");
+                localStorage.removeItem("disateq.pos.usedDate");
+                window.location.reload();
+              }}
+              className="self-start rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100 transition"
+            >
+              RESET CAJAS DEL DÍA
+            </button>
+            <p className="text-[9px] text-amber-500 leading-snug">
+              Solo visible en modo DEV. Limpia el ciclo diario sin tocar sesión activa ni auditoría.
+            </p>
+          </div>
+        )}
+
       </div>
     </section>
   );

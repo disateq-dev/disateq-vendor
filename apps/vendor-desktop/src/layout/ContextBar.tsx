@@ -2,8 +2,9 @@ import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
 
 export function ContextBar() {
-  const { cashSession } = usePOS();
+  const { cashSession, sessionStats } = usePOS();
   const sessionActive = cashSession.isOpen;
+  const { efe, yap, tar, mix } = sessionStats.byMethod;
 
   return (
     <section className="flex h-[44px] items-center gap-2 border-t border-[rgba(33,84,216,0.07)] bg-[linear-gradient(180deg,rgba(33,84,216,0.04)_0%,rgba(33,84,216,0.015)_100%)] px-3">
@@ -34,6 +35,19 @@ export function ContextBar() {
         <BarChart2 size={13} strokeWidth={2} />
         <span>Reportes</span>
       </button>
+
+      {/* TELEMETRÍA OPERACIONAL */}
+      {sessionActive && (
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-[9.5px] font-bold uppercase tracking-[0.06em] text-[#374151]">
+            CAJA {cashSession.cashBox?.code}
+          </span>
+          <span className="text-[#c0cad4]">·</span>
+          <span className="select-none text-[9.5px] font-semibold tabular-nums text-[#9ca3af]">
+            EFE {efe} · YAP {yap} · TAR {tar} · MIX {mix}
+          </span>
+        </div>
+      )}
     </section>
   );
 }
