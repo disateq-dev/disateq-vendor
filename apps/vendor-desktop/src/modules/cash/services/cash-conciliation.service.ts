@@ -2,15 +2,17 @@ import type { CashMove } from "../../../context/POSContext";
 import { moneySum, moneyAdd, moneySub } from "../../../lib/money";
 
 export interface ConciliationBreakdown {
-  ingApertura:      number;
-  egApertura:       number;
-  ingVendido:       number;
-  egVendido:        number;
-  ingresosTotal:    number;
-  egresosTotal:     number;
-  fondoApertEsp:    number;
-  fondoVendidoEsp:  number;
-  efectivoEsperado: number;
+  ingApertura:       number;
+  egApertura:        number;
+  ingVendido:        number;
+  egVendido:         number;
+  ingresosTotal:     number;
+  egresosTotal:      number;
+  fondoApertEsp:     number;
+  fondoVendidoEsp:   number;
+  efectivoEsperado:  number;
+  // Arqueo operacional puro: ventas cash + ingresos − egresos (excluye fondo fijo/apertura)
+  arqueoOperacional: number;
 }
 
 export function calcConciliation(
@@ -31,11 +33,15 @@ export function calcConciliation(
   const fondoApertEsp    = moneySub(moneyAdd(apertura, ingApertura), egApertura);
   const fondoVendidoEsp  = moneySub(moneyAdd(cashVendido, ingVendido), egVendido);
   const efectivoEsperado = moneyAdd(fondoApertEsp, fondoVendidoEsp);
+  // Arqueo operacional: solo movimientos variables del turno, sin fondo fijo estructural.
+  // El fondo fijo (apertura) siempre cuadra exacto y se valida por separado.
+  const arqueoOperacional = moneySub(moneyAdd(cashVendido, ingresosTotal), egresosTotal);
 
   return {
     ingApertura, egApertura, ingVendido, egVendido,
     ingresosTotal, egresosTotal,
     fondoApertEsp, fondoVendidoEsp,
     efectivoEsperado,
+    arqueoOperacional,
   };
 }

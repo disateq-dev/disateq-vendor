@@ -80,6 +80,7 @@ const LS_MOVES        = "disateq.pos.cashMoves";
 const LS_SESSION_STATS = "disateq.pos.sessionStats";
 const LS_OPLOGS        = "disateq.pos.opLogs";
 const LS_COMPROBANTES  = "disateq.pos.comprobantes";
+const LS_CORRELATIVES  = "disateq.pos.correlatives";
 const LS_RUBRO         = "disateq.pos.rubro";
 const LS_VISUAL_MODE  = "disateq.pos.visualMode";
 const LS_PRINT_FLOW   = "disateq.pos.printFlow";
@@ -95,6 +96,22 @@ function loadComprobantes(): Comprobante[] {
 
 function saveComprobantes(list: Comprobante[]): void {
   try { localStorage.setItem(LS_COMPROBANTES, JSON.stringify(list)); } catch { /* quota */ }
+}
+
+// Correlativos: persisten entre sesiones — única fuente de verdad para numeración
+export type DocCorrelatives = Partial<Record<string, number>>;
+
+function loadCorrelatives(): DocCorrelatives {
+  try {
+    const raw = localStorage.getItem(LS_CORRELATIVES);
+    if (!raw) return {};
+    const p = JSON.parse(raw);
+    return (p && typeof p === "object" && !Array.isArray(p)) ? p as DocCorrelatives : {};
+  } catch { return {}; }
+}
+
+function saveCorrelatives(c: DocCorrelatives): void {
+  try { localStorage.setItem(LS_CORRELATIVES, JSON.stringify(c)); } catch { /* quota */ }
 }
 
 function loadRubro(): Rubro {
@@ -358,6 +375,7 @@ interface POSContextValue {
   closeCashSession: () => void;
   correctAperturaData: (apertura: number, motivo?: string, observacion?: string, refOp?: string) => void;
   sessionStats: SessionStats;
+  docCorrelatives: DocCorrelatives;
   recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number, mixtoYapComponent?: number, mixtoTarComponent?: number) => void;
   cashMoves: CashMove[];
   addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string) => CashMove;
@@ -418,6 +436,9 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const comprobantesRef = useRef(comprobantes);
   comprobantesRef.current = comprobantes;
   useEffect(() => { saveComprobantes(comprobantes); }, [comprobantes]);
+
+  const [docCorrelatives, setDocCorrelatives] = useState<DocCorrelatives>(loadCorrelatives);
+  useEffect(() => { saveCorrelatives(docCorrelatives); }, [docCorrelatives]);
 
   const [opLogs, setOpLogs] = useState<OpLog[]>(loadOpLogs);
   useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
@@ -525,6 +546,10 @@ export function POSProvider({ children }: { children: ReactNode }) {
         },
       };
     });
+    // Persistir correlativo globalmente — sobrevive cambios de sesión
+    if (docType && docCorrelative !== undefined) {
+      setDocCorrelatives(prev => ({ ...prev, [docType]: docCorrelative }));
+    }
   }, []);
 
   const addCashMove = useCallback((
@@ -667,7 +692,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cobroOpen, openCobro, closeCobro,
       cashSession, cashBoxes, suggestedCashBox,
       openCashSession, closeCashSession, correctAperturaData,
-      sessionStats, recordSale,
+      sessionStats, docCorrelatives, recordSale,
       cashMoves, addCashMove,
       opLogs, addOpLog,
       comprobantes, addComprobante, voidComprobante,

@@ -291,14 +291,13 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
   // fondo breakdown — delegated to service
   const {
-    ingresosTotal, egresosTotal, efectivoEsperado: efeEsperado,
+    ingresosTotal, egresosTotal, arqueoOperacional,
   } = calcConciliation(cashMoves, sessionStats.cash, apertura);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
-  // totalEsperado: lo que debe haber en la caja + verificaciones digitales
-  // efeEsperado = apertura + cashVendido + ingresos - egresos (físico en cajón)
-  // yape + tarjeta = verificaciones digitales independientes
-  const totalEsperado  = moneySum([efeEsperado, sessionStats.yape, sessionStats.tarjeta]);
+  // totalEsperado: arqueo operacional EFE (sin apertura) + verificaciones digitales
+  // El fondo fijo (apertura) se valida separado — siempre cuadra exacto.
+  const totalEsperado  = moneySum([arqueoOperacional, sessionStats.yape, sessionStats.tarjeta]);
   const contadoEfeNum  = numericValue(contadoEfe);
   const contadoYapeNum = numericValue(contadoYape);
   const contadoTarNum  = numericValue(contadoTar);
@@ -429,7 +428,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       egresosTotal,
       totalVentas:      ventasDescomp,
       salesCount:       sessionStats.count,
-      efectivoEsperado: efeEsperado,
+      efectivoEsperado: arqueoOperacional,
       contadoEfe:       contadoEfeNum,
       contadoYape:      contadoYapeNum,
       contadoTar:       contadoTarNum,
@@ -983,11 +982,12 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {/* ── STAGE 2: CONTEO ── */}
               {closingStage === 2 && (
                 <>
-                  {/* Referencia auto-integrada — no editable, solo contexto */}
+                  {/* Fondo fijo — retorno estructural exacto, no se cuenta en arqueo */}
                   <div className="flex items-center gap-2 rounded-xl border border-[#e4e9f0] bg-[#f8fafd] px-3 py-2">
-                    <span className="shrink-0 text-[8.5px] font-bold uppercase tracking-[0.12em] text-[#c0cad4]">Auto</span>
+                    <span className="shrink-0 text-[8.5px] font-bold uppercase tracking-[0.12em] text-[#c0cad4]">Fondo fijo</span>
                     <div className="h-3 w-px shrink-0 bg-[#e4e9f0]" />
-                    <span className="text-[10px] font-medium tabular-nums text-[#b0bac8]">fondo {apertura.toFixed(2)} <span className="text-[8.5px]">(ref.)</span></span>
+                    <span className="text-[10px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
+                    <span className="text-[8.5px] text-[#c0cad4]">— retorno exacto, no contar</span>
                     {(ingresosTotal > 0 || egresosTotal > 0) && <div className="h-3 w-px shrink-0 bg-[#e4e9f0]" />}
                     {ingresosTotal > 0 && (
                       <span className="text-[10px] font-semibold tabular-nums text-emerald-600">↑ {ingresosTotal.toFixed(2)}</span>
@@ -998,7 +998,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   </div>
 
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
-                    Cuenta físicamente el efectivo. <strong className="text-[#374151]">No se muestra el monto esperado.</strong>
+                    Cuenta el efectivo <strong className="text-[#374151]">operacional</strong> (ventas + ingresos − egresos). El fondo fijo no se incluye.
                   </p>
                   <div className="flex flex-col gap-2">
                     {([
@@ -1113,15 +1113,30 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
                     Confirma el arqueo para oficializar el cierre.
                   </p>
+
+                  {/* Fondo fijo — validación estructural exacta */}
+                  <div className="flex items-center justify-between rounded-xl border border-[#e4e9f0] bg-[#f8fafd] px-3.5 py-2">
+                    <div>
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo fijo</span>
+                      <span className="ml-2 text-[8.5px] text-[#c0cad4]">retorno exacto</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
+                      <span className="text-[9px] font-bold text-emerald-600">✓</span>
+                    </div>
+                  </div>
+
+                  {/* Arqueo operacional contado */}
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-amber-200 bg-white overflow-hidden">
                     {[
-                      { label: "EFECTIVO",  val: contadoEfeNum  },
-                      { label: "YAPE",      val: contadoYapeNum },
-                      { label: "TARJETAS",  val: contadoTarNum  },
-                    ].map(({ label, val }) => (
-                      <div key={label} className="flex justify-between items-center px-3.5 py-1.5">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
-                        <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
+                      { label: "EFE OPER.",  val: contadoEfeNum,  esp: arqueoOperacional    },
+                      { label: "YAPE",       val: contadoYapeNum, esp: sessionStats.yape    },
+                      { label: "TARJETAS",   val: contadoTarNum,  esp: sessionStats.tarjeta },
+                    ].map(({ label, val, esp }) => (
+                      <div key={label} className="flex items-center px-3.5 py-1.5 gap-2">
+                        <span className="w-[72px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
+                        <span className="flex-1 text-right text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
+                        <span className="text-[8.5px] text-[#c0cad4]">esp. {esp.toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#fffbf0]">
@@ -1140,11 +1155,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                         cuadrado ? "border-emerald-200 bg-[#f0fdf4]" : sobrante ? "border-[#dbeafe] bg-[#eff6ff]" : "border-red-200 bg-[#fef2f2]"
                       }`}>
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Total esperado</span>
+                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Esperado oper.</span>
                           <span className="text-[10.5px] font-semibold tabular-nums text-[#374151]">S/ {totalEsperado.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between items-center opacity-60">
-                          <span className="text-[8.5px] text-[#9ca3af]">EFE: S/ {efeEsperado.toFixed(2)} · YAP: S/ {sessionStats.yape.toFixed(2)} · TAR: S/ {sessionStats.tarjeta.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className={`text-[10px] font-bold uppercase tracking-[0.1em] ${

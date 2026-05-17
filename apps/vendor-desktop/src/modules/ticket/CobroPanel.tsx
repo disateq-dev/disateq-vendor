@@ -54,7 +54,7 @@ const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
   const lines = useTicketLines();
-  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, printFlow, sessionStats } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, docCorrelatives, printFlow, sessionStats } = usePOS();
   const { cashBox } = cashSession;
   const isCtg = !!cashBox && cashBox.type !== "normal";
 
@@ -360,9 +360,8 @@ export function CobroPanel() {
 
   // ── render ───────────────────────────────────────────────────────────────────
   const cfg             = DOC_SERIES[docType];
-  const lastCorrelative = cashSession.isOpen
-    ? (sessionStats.docRanges[docType]?.last ?? cfg.correlative)
-    : cfg.correlative;
+  // docCorrelatives: fuente única persistente entre sesiones (no se resetea con NULL_STATS)
+  const lastCorrelative = docCorrelatives[docType] ?? cfg.correlative;
   const nextCorrelative = lastCorrelative + 1;
   const docNumber       = `${cfg.series}-${String(nextCorrelative).padStart(8, "0")}`;
   const customerDisplay = getCustomerDisplay();

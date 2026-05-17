@@ -195,6 +195,8 @@ export function ConfigWorkspace() {
                     "disateq.pos.sessionStats",
                     "disateq.pos.cashMoves",
                     "disateq.pos.opLogs",
+                    "disateq.pos.correlatives",
+                    "disateq.pos.comprobantes",
                     "disateq.pos.ui.closingStage",
                     "disateq.pos.ui.contado",
                   ];
