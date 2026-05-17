@@ -1,4 +1,4 @@
-import { Package, Settings, ShoppingCart, Users } from "lucide-react";
+import { FileText, Package, Settings, ShoppingCart, Users } from "lucide-react";
 import { type ActiveModule } from "../App";
 
 interface ModulesBarProps {
@@ -21,6 +21,11 @@ export function ModulesBar({ active, onChange }: ModulesBarProps) {
       <button onClick={() => onChange("sales")} className={active === "sales" ? ON_BLUE : OFF}>
         <Package size={17} />
         <span>VENTAS</span>
+      </button>
+
+      <button onClick={() => onChange("comprobantes")} className={active === "comprobantes" ? ON_BLUE : OFF}>
+        <FileText size={17} />
+        <span>COMPROBANTES</span>
       </button>
 
       <button className={OFF}>

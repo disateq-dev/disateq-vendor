@@ -54,7 +54,7 @@ const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
   const lines = useTicketLines();
-  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, printFlow, sessionStats } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, printFlow, sessionStats } = usePOS();
   const { cashBox } = cashSession;
   const isCtg = !!cashBox && cashBox.type !== "normal";
 
@@ -178,6 +178,19 @@ export function CobroPanel() {
     setCobroView("main");
   }, [canEstablecer, cDoc, cName, cDept, cProvince, cDistrict, cAddress, cPhone, cEmail, showNotice]);
 
+  function buildComprobanteData(dt: string) {
+    return {
+      docType, docSeries: cfg.series, docCorrelative: nextCorrelative, dateTime: dt,
+      lines: lines.map(l => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, subtotal: l.subtotal, note: l.note })),
+      discountAmount: discountNum, grossTotal: total, netTotal,
+      payMethod,
+      cashComponent:    payMethod === "efectivo" ? netTotal : payMethod === "mixto" ? mixtoEfeNum : 0,
+      yapeComponent:    payMethod === "yape"     ? netTotal : payMethod === "mixto" ? mixtoYapNum : 0,
+      tarjetaComponent: payMethod === "tarjeta"  ? netTotal : payMethod === "mixto" ? mixtoTarNum : 0,
+      customer: customer ? { docNumber: customer.docNumber, name: customer.name } : null,
+    };
+  }
+
   function confirmEmit() {
     if (!cashSession.isOpen) { showNotice("Apertura de caja requerida para emitir"); return; }
     if (!canConfirm) return;
@@ -196,6 +209,7 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoEfeNum : undefined,
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
+    addComprobante(buildComprobanteData(dt));
     ticketService.clear();
     closeCobro();
   }
@@ -244,6 +258,7 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoEfeNum : undefined,
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
+    addComprobante(buildComprobanteData(dateTime));
     ticketService.clear();
     closeCobro();
   }

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useTicketStore } from "../domains/ticket/state/ticket.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
+import { moneySub } from "../lib/money";
+import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -76,10 +78,24 @@ const LS_USED         = "disateq.pos.usedCodes";
 const LS_USED_DATE    = "disateq.pos.usedDate";
 const LS_MOVES        = "disateq.pos.cashMoves";
 const LS_SESSION_STATS = "disateq.pos.sessionStats";
-const LS_OPLOGS       = "disateq.pos.opLogs";
-const LS_RUBRO        = "disateq.pos.rubro";
+const LS_OPLOGS        = "disateq.pos.opLogs";
+const LS_COMPROBANTES  = "disateq.pos.comprobantes";
+const LS_RUBRO         = "disateq.pos.rubro";
 const LS_VISUAL_MODE  = "disateq.pos.visualMode";
 const LS_PRINT_FLOW   = "disateq.pos.printFlow";
+
+function loadComprobantes(): Comprobante[] {
+  try {
+    const raw = localStorage.getItem(LS_COMPROBANTES);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+
+function saveComprobantes(list: Comprobante[]): void {
+  try { localStorage.setItem(LS_COMPROBANTES, JSON.stringify(list)); } catch { /* quota */ }
+}
 
 function loadRubro(): Rubro {
   const raw = localStorage.getItem(LS_RUBRO);
@@ -347,6 +363,14 @@ interface POSContextValue {
   addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string) => CashMove;
   opLogs: OpLog[];
   addOpLog: (text: string) => void;
+  comprobantes: Comprobante[];
+  addComprobante: (data: {
+    docType: string; docSeries: string; docCorrelative: number; dateTime: string;
+    lines: ComprobanteLineItem[]; discountAmount: number; grossTotal: number; netTotal: number;
+    payMethod: string; cashComponent: number; yapeComponent: number; tarjetaComponent: number;
+    customer?: { docNumber: string; name: string } | null;
+  }) => void;
+  voidComprobante: (id: string, motivo: string) => void;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
   rubro: Rubro;
@@ -390,6 +414,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const cashMovesRef = useRef(cashMoves);
   cashMovesRef.current = cashMoves;
 
+  const [comprobantes, setComprobantes] = useState<Comprobante[]>(loadComprobantes);
+  const comprobantesRef = useRef(comprobantes);
+  comprobantesRef.current = comprobantes;
+  useEffect(() => { saveComprobantes(comprobantes); }, [comprobantes]);
+
   const [opLogs, setOpLogs] = useState<OpLog[]>(loadOpLogs);
   useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
 
@@ -408,6 +437,55 @@ export function POSProvider({ children }: { children: ReactNode }) {
       addOpLog(`[RECOVERY] ${recoveryLogRef.current}`);
       recoveryLogRef.current = null;
     }
+  }, [addOpLog]);
+
+  const addComprobante = useCallback((data: {
+    docType: string; docSeries: string; docCorrelative: number; dateTime: string;
+    lines: ComprobanteLineItem[]; discountAmount: number; grossTotal: number; netTotal: number;
+    payMethod: string; cashComponent: number; yapeComponent: number; tarjetaComponent: number;
+    customer?: { docNumber: string; name: string } | null;
+  }) => {
+    const s = cashSessionRef.current;
+    const sessionKey = s.cashBox ? `${s.cashBox.code}-${s.openedAt?.toISOString() ?? ""}` : "";
+    const c: Comprobante = {
+      ...data,
+      customer: data.customer ?? undefined,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      sessionKey,
+      operator:    s.operator,
+      cashBoxCode: s.cashBox?.code ?? "",
+      terminal:    s.terminal,
+      status: "active",
+    };
+    setComprobantes(prev => [...prev, c]);
+  }, []);
+
+  const voidComprobante = useCallback((id: string, motivo: string) => {
+    const s = cashSessionRef.current;
+    const c = comprobantesRef.current.find(x => x.id === id);
+    if (!c || c.status === "cancelled") return;
+    setSessionStats(prev => ({
+      count:     prev.count - 1,
+      total:     moneySub(prev.total,   c.netTotal),
+      cash:      moneySub(prev.cash,    c.cashComponent),
+      yape:      moneySub(prev.yape,    c.yapeComponent),
+      tarjeta:   moneySub(prev.tarjeta, c.tarjetaComponent),
+      docRanges: prev.docRanges,
+      byMethod: {
+        efe: prev.byMethod.efe - (c.payMethod === "efectivo" ? 1 : 0),
+        yap: prev.byMethod.yap - (c.payMethod === "yape"     ? 1 : 0),
+        tar: prev.byMethod.tar - (c.payMethod === "tarjeta"  ? 1 : 0),
+        mix: prev.byMethod.mix - (c.payMethod === "mixto"    ? 1 : 0),
+      },
+    }));
+    setComprobantes(prev => prev.map(x => x.id === id ? {
+      ...x,
+      status: "cancelled" as const,
+      cancelledAt:     new Date().toISOString(),
+      cancelledBy:     s.operator,
+      cancelledMotivo: motivo,
+    } : x));
+    addOpLog(`${s.operator} anuló ${c.docSeries}-${String(c.docCorrelative).padStart(8,"0")} — ${motivo}`);
   }, [addOpLog]);
 
   const recordSale = useCallback((
@@ -592,6 +670,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       sessionStats, recordSale,
       cashMoves, addCashMove,
       opLogs, addOpLog,
+      comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
       rubro, setRubro,
       visualMode, setVisualMode,
