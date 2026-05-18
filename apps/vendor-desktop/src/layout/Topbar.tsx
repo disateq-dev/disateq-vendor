@@ -1,19 +1,22 @@
+import { useMemo } from "react";
 import { Power, Store } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../context/POSContext";
+import { loadBusinessConfig } from "../config/business";
+
 
 function formatApertura(d: Date): string {
-  const h = String(d.getHours()).padStart(2, "0");
-  const m = String(d.getMinutes()).padStart(2, "0");
-  return `${h}:${m}`;
+  return d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
 }
 
 export function Topbar() {
   const { cashSession } = usePOS();
   const { isOpen, cashBox, operator, openedAt } = cashSession;
+  const biz = useMemo(() => loadBusinessConfig(), []);
 
   return (
     <section className="flex h-[64px] items-center justify-between bg-[#0f1f3d] px-5">
+
       {/* LEFT */}
       <section className="flex min-w-0 items-center">
 
@@ -38,17 +41,17 @@ export function Topbar() {
         <div className="min-w-0 px-5">
           <div className="flex items-baseline gap-2">
             <span className="truncate text-[13px] font-semibold text-white leading-tight">
-              ALMACEN DE ABARROTES PEÑA
+              {biz.nombreComercial}
             </span>
             <span className="text-[#5a6a88]">·</span>
             <span className="shrink-0 text-[10.5px] font-medium text-[#8090b0]">
-              Tienda Mercado Central
+              {biz.alias}
             </span>
           </div>
           <div className="mt-[-3px] flex items-center gap-2">
-            <span className="text-[10.5px] text-[#8090b0]">R.U.C. 20608399349</span>
+            <span className="text-[10.5px] text-[#8090b0]">R.U.C. {biz.ruc}</span>
             <span className="text-[#5a6a88]">·</span>
-            <span className="truncate text-[10.5px] text-[#8090b0]">CONSORCIO PEÑA S.A.C.</span>
+            <span className="truncate text-[10.5px] text-[#8090b0]">{biz.razonSocial}</span>
           </div>
         </div>
 
@@ -57,23 +60,21 @@ export function Topbar() {
       {/* RIGHT */}
       <section className="flex items-center gap-3 pl-5">
 
-        {/* TURNO PILL */}
+        {/* CONTEXTO OPERACIONAL */}
         <div className="rounded-xl border border-white/8 bg-white/5 px-4 py-1.5">
           {isOpen && cashBox ? (
             <>
-              <div className="flex items-center gap-2 text-[12.5px]">
-                <span className="font-bold text-[#e8edf5]">CAJA {cashBox.code}</span>
-                <span className="text-[#3d5280]">•</span>
-                <span className="text-[#7c8db8]">{operator}</span>
-              </div>
-              <div className="flex items-center gap-2 text-[11px]">
-                <span className="font-semibold text-[#4ade80]">Turno abierto</span>
+              <div className="flex items-center gap-2 text-[12px]">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4ade80]" />
+                <span className="font-bold tracking-[0.02em] text-[#e8edf5]">TURNO ABIERTO</span>
                 {openedAt && (
-                  <>
-                    <span className="text-[#3d5280]">•</span>
-                    <span className="text-[#8090b0]">Apertura {formatApertura(openedAt)}</span>
-                  </>
+                  <span className="tabular-nums text-[#6b7fa0]">{formatApertura(openedAt)}</span>
                 )}
+                <span className="text-[#3d5280]">│</span>
+                <span className="font-semibold text-[#7c8db8]">CAJA {cashBox.code}</span>
+              </div>
+              <div className="pl-[14px] text-[11px] text-[#a0b0cc]">
+                {operator}
               </div>
             </>
           ) : (
@@ -84,7 +85,7 @@ export function Topbar() {
           )}
         </div>
 
-        {/* POWER — app.exit(0) vía Rust garantiza cierre completo */}
+        {/* POWER — app.exit(0) vía Rust: cierre limpio, localStorage ya sincronizado */}
         <button
           title="Cerrar sistema"
           onClick={() => void invoke("app_exit")}

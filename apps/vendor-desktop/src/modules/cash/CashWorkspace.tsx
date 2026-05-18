@@ -566,7 +566,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
         ) : (
           /* Pre-open: operator + apertura card */
-          <div className="flex flex-col gap-4 rounded-[24px] border border-[#e4e9f0] bg-[#f8fafd] px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-col gap-4 rounded-[24px] border border-[#78C487]/50 bg-[#FBF9F4] px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f1f5f9] text-[#9ca3af]">
                 <Clock size={20} strokeWidth={1.5} />
@@ -903,7 +903,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       {!isOpen ? (
 
         /* BOX SELECTOR */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
           <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-3">
             <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Selección operacional de caja</span>
           </div>
@@ -1417,7 +1417,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       ) : (
 
         /* MOVEMENTS — 45/55 operational split */
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-[#e4e9f0] bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
           {/* ─── LEFT: form operacional (45%) ─── */}
           <div className="flex w-[45%] shrink-0 flex-col border-r border-[#f1f5f9]">

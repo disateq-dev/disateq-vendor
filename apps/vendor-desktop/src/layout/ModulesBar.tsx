@@ -4,43 +4,54 @@ import { type ActiveModule } from "../App";
 interface ModulesBarProps {
   active: ActiveModule;
   onChange: (m: ActiveModule) => void;
+  onHover: (m: ActiveModule | null) => void;
 }
 
-const ON_BLUE  = "flex h-11 items-center gap-2 rounded-2xl border-b-2 border-[rgba(33,84,216,0.3)] bg-[rgba(33,84,216,0.05)] px-4 text-[14px] font-semibold text-[#2154d8] shadow-[0_2px_8px_rgba(33,84,216,0.06)]";
-const ON_GREEN = "flex h-11 items-center gap-2 rounded-2xl border-b-2 border-emerald-400/40 bg-emerald-50/70 px-4 text-[14px] font-semibold text-emerald-700 shadow-[0_2px_8px_rgba(5,150,105,0.08)]";
-const OFF      = "flex h-11 items-center gap-2 rounded-2xl border-b-2 border-transparent px-4 text-[14px] font-semibold text-[#475467] transition hover:border-[rgba(33,84,216,0.15)] hover:text-[#111827]";
+const BASE = "flex h-11 items-center gap-2 rounded-xl border-b-2 px-4 text-[13px] font-semibold text-[#121416] transition-colors";
+const OFF  = `${BASE} border-transparent hover:bg-white/60`;
 
-export function ModulesBar({ active, onChange }: ModulesBarProps) {
+// Paleta contextual oficial DISATEQ — sobre fondo claro #F0F2F5
+const ON: Record<ActiveModule, string> = {
+  cash:         `${BASE} border-[#78C487]  bg-[rgba(120,196,135,0.18)]`,
+  sales:        `${BASE} border-[#F2A900]  bg-[rgba(242,169,0,0.14)]`,
+  comprobantes: `${BASE} border-[#73C7D4]  bg-[rgba(115,199,212,0.18)]`,
+  config:       `${BASE} border-[#9B8BFF]  bg-[rgba(155,139,255,0.15)]`,
+};
+
+export function ModulesBar({ active, onChange, onHover }: ModulesBarProps) {
   return (
-    <section className="flex h-[52px] items-end gap-1 border-t border-[#f1f4f7] px-3 pb-1">
-      <button onClick={() => onChange("cash")} className={active === "cash" ? ON_GREEN : OFF}>
-        <ShoppingCart size={17} />
+    <section
+      className="flex h-[52px] items-end gap-1 bg-[#F0F2F5] px-3 pb-1"
+      onMouseLeave={() => onHover(null)}
+    >
+      <button onClick={() => onChange("cash")} onMouseEnter={() => onHover("cash")} className={active === "cash" ? ON.cash : OFF}>
+        <ShoppingCart size={16} />
         <span>TURNO</span>
       </button>
 
-      <button onClick={() => onChange("sales")} className={active === "sales" ? ON_BLUE : OFF}>
-        <Package size={17} />
+      <button onClick={() => onChange("sales")} onMouseEnter={() => onHover("sales")} className={active === "sales" ? ON.sales : OFF}>
+        <Package size={16} />
         <span>VENTAS</span>
       </button>
 
-      <button onClick={() => onChange("comprobantes")} className={active === "comprobantes" ? ON_BLUE : OFF}>
-        <FileText size={17} />
+      <button onClick={() => onChange("comprobantes")} onMouseEnter={() => onHover("comprobantes")} className={active === "comprobantes" ? ON.comprobantes : OFF}>
+        <FileText size={16} />
         <span>COMPROBANTES</span>
       </button>
 
       <button className={OFF}>
-        <Users size={17} />
+        <Users size={16} />
         <span>CLIENTES</span>
       </button>
 
       <button className={OFF}>
-        <Package size={17} />
+        <Package size={16} />
         <span>INVENTARIO</span>
       </button>
 
-      <button onClick={() => onChange("config")} className={active === "config" ? ON_BLUE : OFF}>
-        <Settings size={17} />
-        <span>CONFIGURACIÓN</span>
+      <button onClick={() => onChange("config")} onMouseEnter={() => onHover("config")} className={active === "config" ? ON.config : OFF}>
+        <Settings size={16} />
+        <span>AJUSTES</span>
       </button>
     </section>
   );

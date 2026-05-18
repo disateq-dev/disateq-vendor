@@ -1,5 +1,5 @@
-import { type ReactNode } from "react";
-import { ContextBar } from "./ContextBar";
+import { useState, type ReactNode } from "react";
+import { SubContextBar } from "./SubContextBar";
 import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
@@ -27,13 +27,23 @@ function OperationalNotice() {
 
 export function AppShell({ children, activeModule, onModuleChange }: AppShellProps) {
   const { closeCobro } = usePOS();
+  const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
+
+  // hover → preview; leave → back to active; click → permanent (hoveredModule = null, activeModule updated)
+  const displayModule = hoveredModule ?? activeModule;
+  const visible = hoveredModule !== null || true; // permanent once active module exists
+
   return (
-    <main className="h-screen overflow-hidden bg-[#f4f7fb] text-[#111827]">
+    <main className="h-screen overflow-hidden bg-[#f7f9fc] text-[#111827]">
       <section className="flex h-full flex-col">
         <header className="border-b border-[#dde4ec]">
           <Topbar />
-          <ModulesBar active={activeModule} onChange={m => { closeCobro(); onModuleChange(m); }} />
-          <ContextBar />
+          <ModulesBar
+            active={activeModule}
+            onChange={m => { closeCobro(); onModuleChange(m); setHoveredModule(null); }}
+            onHover={setHoveredModule}
+          />
+          <SubContextBar displayModule={displayModule} activeModule={activeModule} visible={visible} />
         </header>
 
         <section className="flex min-h-0 flex-1 gap-3 p-3">
