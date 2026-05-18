@@ -29,7 +29,7 @@ export function Topbar() {
             <span className="text-[17px] font-semibold text-white leading-none tracking-[0.01em]">
               DisateQ VENDOR™
             </span>
-            <span className="mt-0.5 text-[10.5px] font-medium text-[#8090b0]">
+            <span className="mt-0.5 text-[11px] font-medium text-[#8090b0]">
               Ventas y Gestión Administrativa
             </span>
           </div>
@@ -40,18 +40,18 @@ export function Topbar() {
         {/* BUSINESS */}
         <div className="min-w-0 px-5">
           <div className="flex items-baseline gap-2">
-            <span className="truncate text-[13px] font-semibold text-white leading-tight">
+            <span className="truncate text-[15px] font-semibold text-white leading-tight">
               {biz.nombreComercial}
             </span>
             <span className="text-[#5a6a88]">·</span>
-            <span className="shrink-0 text-[10.5px] font-medium text-[#8090b0]">
+            <span className="shrink-0 text-[11px] font-medium text-[#8090b0]">
               {biz.alias}
             </span>
           </div>
           <div className="mt-[-3px] flex items-center gap-2">
-            <span className="text-[10.5px] text-[#8090b0]">R.U.C. {biz.ruc}</span>
+            <span className="text-[11px] text-[#8090b0]">R.U.C. {biz.ruc}</span>
             <span className="text-[#5a6a88]">·</span>
-            <span className="truncate text-[10.5px] text-[#8090b0]">{biz.razonSocial}</span>
+            <span className="truncate text-[11px] text-[#8090b0]">{biz.razonSocial}</span>
           </div>
         </div>
 
@@ -64,23 +64,23 @@ export function Topbar() {
         <div className="rounded-xl border border-white/8 bg-white/5 px-4 py-1.5">
           {isOpen && cashBox ? (
             <>
-              <div className="flex items-center gap-2 text-[12px]">
+              <div className="flex items-center gap-2 text-[15px]">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4ade80]" />
-                <span className="font-bold tracking-[0.02em] text-[#e8edf5]">TURNO ABIERTO</span>
+                <span className="font-semibold tracking-[0.02em] text-[#e8edf5]">TURNO ABIERTO</span>
                 {openedAt && (
-                  <span className="tabular-nums text-[#6b7fa0]">{formatApertura(openedAt)}</span>
+                  <span className="text-[12px] tabular-nums text-[#6b7fa0]">{formatApertura(openedAt)}</span>
                 )}
-                <span className="text-[#3d5280]">│</span>
-                <span className="font-semibold text-[#7c8db8]">CAJA {cashBox.code}</span>
+                <span className="text-[12px] text-[#3d5280]">│</span>
+                <span className="text-[12px] font-semibold text-[#7c8db8]">CAJA {cashBox.code}</span>
               </div>
-              <div className="pl-[14px] text-[11px] text-[#a0b0cc]">
-                {operator}
+              <div className="pl-[14px] text-[12px] text-[#a0b0cc]">
+                <span className="font-semibold tracking-[0.06em]">OPERADOR: </span>{operator}
               </div>
             </>
           ) : (
             <>
-              <div className="text-[12px] font-semibold text-[#8090b0]">Sin turno operativo</div>
-              <div className="text-[10.5px] text-[#4d5e7c]">Abrir caja para operar</div>
+              <div className="text-[15px] font-semibold text-[#8090b0]">Sin turno operativo</div>
+              <div className="text-[11px] text-[#4d5e7c]">Abrir caja para operar</div>
             </>
           )}
         </div>

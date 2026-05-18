@@ -90,8 +90,8 @@ type ClosingStage = 0 | 1 | 2 | 3 | 4 | 5;
 function InfoRow({ label, value, accent, red }: { label: string; value: string; accent?: boolean; red?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-[10.5px] font-semibold uppercase tracking-widest text-[#c0cad4]">{label}</span>
-      <span className={`text-[11.5px] font-semibold ${red ? "text-[#ef4444]" : accent ? "text-emerald-600" : "text-[#374151]"}`}>{value}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">{label}</span>
+      <span className={`text-[12px] font-semibold ${red ? "text-[#ef4444]" : accent ? "text-emerald-600" : "text-[#374151]"}`}>{value}</span>
     </div>
   );
 }
@@ -127,7 +127,7 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
   return (
     <div className={cls} onClick={clickable ? onSelect : undefined}>
       <div className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
-      <span className={`flex-1 text-[13px] font-bold tabular-nums ${nameColor}`}>CAJA {box.code}</span>
+      <span className={`flex-1 text-[12px] font-bold tabular-nums ${nameColor}`}>CAJA {box.code}</span>
       <BoxStatusBadge box={box} isActive={isActive} />
     </div>
   );
@@ -596,7 +596,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Fondo apertura S/</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Fondo apertura S/</span>
               <input
                 ref={aperturaRef}
                 type="number"
@@ -618,7 +618,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Motivo apertura <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Motivo apertura <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
               <input
                 ref={aperturaMotivoRef}
                 type="text"
@@ -634,7 +634,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Ref. operacional <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Ref. operacional <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
               <input
                 ref={aperturaRefOpRef}
                 type="text"
@@ -654,7 +654,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               <div className="flex flex-col gap-2 rounded-xl border border-orange-200 bg-[#fffbf0] px-3.5 py-3">
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle size={12} strokeWidth={2.5} className="text-orange-500 shrink-0" />
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-orange-600">Autorización operacional</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange-600">Autorización operacional</span>
                 </div>
                 <input
                   type="password"
@@ -690,14 +690,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             editingApertura ? (
               <div className="flex flex-col gap-2 rounded-[20px] border border-[#dde4f0] bg-white px-4 py-3.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Datos apertura</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Datos apertura</span>
                   <button onClick={cancelEditApertura} className="text-[#c0cad4] transition hover:text-[#374151]">
                     <X size={12} />
                   </button>
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Fondo inicial S/</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Fondo inicial S/</span>
                   <input
                     autoFocus
                     type="number"
@@ -711,7 +711,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Motivo apertura</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Motivo apertura</span>
                   <input
                     type="text"
                     value={editMotivo}
@@ -723,7 +723,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Observaciones</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Observaciones</span>
                   <input
                     type="text"
                     value={editObservacion}
@@ -735,7 +735,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Ref. operacional</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Ref. operacional</span>
                   <input
                     type="text"
                     value={editRefOp}
@@ -764,7 +764,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               </button>
             )
           ) : (
-            <p className="text-center text-[9.5px] text-[#c0cad4]">
+            <p className="text-center text-[10px] text-[#9ca3af]">
               Corrección de apertura · disponible antes del primer movimiento
             </p>
           )
@@ -930,8 +930,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               const opName = { "1": "Ricardo Aguinaga", "2": "Lucía Rebaza", "3": "Administrador", "5": "Supervisor" }[prefix] ?? "";
               return (
                 <div key={prefix} className="mb-4 last:mb-0">
-                  <p className="mb-0.5 px-1 text-[9.5px] font-bold uppercase tracking-[0.18em] text-[#c8d4e0]">BLOQUE {prefix}xx</p>
-                  <p className="mb-1.5 px-1 text-[10px] font-semibold text-[#9ca3af]">{opName}</p>
+                  <p className="mb-0.5 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b0bac8]">BLOQUE {prefix}xx</p>
+                  <p className="mb-1.5 px-1 text-[11px] font-semibold text-[#6b7280]">{opName}</p>
                   <div className="flex flex-col gap-0.5">
                     {seriesBoxes.map(box => (
                       <BoxRow
@@ -960,7 +960,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             {/* Header */}
             <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#FEF5F5] border-b border-red-100">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CIERRE DE TURNO</span>
-              <span className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-red-400">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO FIJO"
                  : closingStage === 2 ? "CONTEO OPER."
                  : closingStage === 3 ? "VALIDACIÓN"
@@ -981,13 +981,13 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
                   {/* Fondo esperado */}
                   <div className="flex items-center justify-between rounded-xl border border-[#e4e9f0] bg-[#f8fafd] px-3.5 py-2.5">
-                    <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO ESPERADO</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO ESPERADO</span>
                     <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
                   </div>
 
                   {/* Input contado fondo */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
                     <input
                       ref={contadoFondoRef}
                       type="text"
@@ -1035,25 +1035,25 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
                     {sessionStats.count > 0 && (
                       <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
                         <span className="text-[11px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op. · S/ {ventasDescomp.toFixed(2)}</span>
                       </div>
                     )}
                     {ingresosTotal > 0 && (
                       <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">INGRESOS ↑</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">INGRESOS ↑</span>
                         <span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
                       </div>
                     )}
                     {egresosTotal > 0 && (
                       <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">EGRESOS ↓</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">EGRESOS ↓</span>
                         <span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egresosTotal.toFixed(2)}</span>
                       </div>
                     )}
                   </div>
 
-                  <p className="text-[10px] text-[#c0cad4]">
+                  <p className="text-[10.5px] text-[#9ca3af]">
                     <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo y pasar a conteo operacional
                   </p>
                 </>
@@ -1066,7 +1066,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-[#f0fdf4] px-3.5 py-2">
                     <div className="flex items-center gap-1.5">
                       <CheckCircle size={12} className="text-emerald-500 shrink-0" />
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-emerald-600">Fondo fijo validado</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-600">Fondo fijo validado</span>
                     </div>
                     <span className="text-[11px] font-bold tabular-nums text-emerald-700">S/ {contadoFondoNum.toFixed(2)}</span>
                   </div>
@@ -1084,7 +1084,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       return (
                         <div key={label} className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-2.5">
-                            <span className="w-[64px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">{label}</span>
+                            <span className="w-[64px] shrink-0 text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">{label}</span>
                             <span className="shrink-0 text-[10px] font-bold text-[#b0bac8]">S/</span>
                             <input
                               ref={ref}
@@ -1133,11 +1133,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   </div>
                   {moneyGt(contadoTotal, 0) && (
                     <div className="flex justify-between items-center rounded-xl border border-[#e4e9f0] bg-white px-3.5 py-2">
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">TOTAL CONTADO</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">TOTAL CONTADO</span>
                       <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoTotal.toFixed(2)}</span>
                     </div>
                   )}
-                  <p className="text-[10px] text-[#c0cad4]">
+                  <p className="text-[10.5px] text-[#9ca3af]">
                     <span className="font-mono bg-[#f1f5f9] px-1 rounded">F9</span> validar ·{" "}
                     <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> avanza ·{" "}
                     <span className="font-mono bg-[#f1f5f9] px-1 rounded">200+50</span> suma
@@ -1163,7 +1163,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     {/* Fondo fijo validado en stage 1 */}
                     <div className="flex justify-between items-center px-3.5 py-1.5 bg-[#f8fafd]">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO FIJO</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO FIJO</span>
                         <span className="text-[8px] text-[#c0cad4]">stage 1</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -1180,16 +1180,16 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       { label: "TARJETAS", val: contadoTarNum  },
                     ].map(({ label, val }) => (
                       <div key={label} className="flex justify-between items-center px-3.5 py-1.5">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
                         <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between items-center px-3.5 py-2 bg-[#f8fafd]">
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#374151]">TOTAL OPER.</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">TOTAL OPER.</span>
                       <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoTotal.toFixed(2)}</span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-[#c0cad4]">
+                  <p className="text-[10.5px] text-[#9ca3af]">
                     Tecla <span className="font-mono bg-[#f1f5f9] px-1 rounded">F10</span> para conciliar · <span className="font-mono bg-[#f1f5f9] px-1 rounded">F4</span> para recontar
                   </p>
                 </>
@@ -1211,7 +1211,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                         fondoCuadrado ? "border-[#e4e9f0] bg-[#f8fafd]" : "border-red-200 bg-[#fef2f2]"
                       }`}>
                         <div>
-                          <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo fijo</span>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo fijo</span>
                           <span className="ml-2 text-[8.5px] text-[#c0cad4]">esp. {apertura.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1233,13 +1233,13 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       { label: "TARJETAS", val: contadoTarNum,  esp: sessionStats.tarjeta },
                     ].map(({ label, val, esp }) => (
                       <div key={label} className="flex items-center px-3.5 py-1.5 gap-2">
-                        <span className="w-[68px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
+                        <span className="w-[68px] shrink-0 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
                         <span className="flex-1 text-right text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
                         <span className="text-[8.5px] text-[#c0cad4]">esp. {esp.toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#fffbf0]">
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#92400e]">TOTAL ARQUEO</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#92400e]">TOTAL ARQUEO</span>
                       <span className="text-[14px] font-bold tabular-nums text-[#92400e]">S/ {contadoTotal.toFixed(2)}</span>
                     </div>
                   </div>
@@ -1251,18 +1251,18 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       {moneyGt(ingresosTotal, 0) && (
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] text-[#9ca3af]">Ingresos</span>
-                          <span className="text-[9.5px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
+                          <span className="text-[10px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
                         </div>
                       )}
                       {moneyGt(egresosTotal, 0) && (
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] text-[#9ca3af]">Egresos</span>
-                          <span className="text-[9.5px] font-semibold tabular-nums text-red-400">−S/ {egresosTotal.toFixed(2)}</span>
+                          <span className="text-[10px] font-semibold tabular-nums text-red-400">−S/ {egresosTotal.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center border-t border-[#f1f5f9] pt-0.5 mt-0.5">
                         <span className="text-[9px] text-[#9ca3af]">Op. reconstruida</span>
-                        <span className="text-[9.5px] font-bold tabular-nums text-[#374151]">
+                        <span className="text-[10px] font-bold tabular-nums text-[#374151]">
                           S/ {moneySub(moneyAdd(contadoEfeNum, ingresosTotal), egresosTotal).toFixed(2)}
                         </span>
                       </div>
@@ -1310,11 +1310,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                         <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-px" />
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wide text-amber-700">CIERRE SIN MOVIMIENTO</p>
-                          <p className="text-[9.5px] text-amber-600 mt-0.5 leading-snug">Evento operacional excepcional. Motivo requerido.</p>
+                          <p className="text-[10px] text-amber-600 mt-0.5 leading-snug">Evento operacional excepcional. Motivo requerido.</p>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
                           Motivo <span className="text-amber-500">*</span>
                         </span>
                         <select
@@ -1340,21 +1340,21 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
                     <div className="flex justify-between items-center px-3.5 py-1.5">
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">CAJA</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">CAJA</span>
                       <span className="text-[11px] font-bold text-[#374151]">CAJA {activeBox?.code}</span>
                     </div>
                     <div className="flex justify-between items-center px-3.5 py-1.5">
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">OPERADOR</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">OPERADOR</span>
                       <span className="text-[11px] font-semibold text-[#374151]">{operator}</span>
                     </div>
                     {sessionStats.count > 0 && (
                       <div className="flex justify-between items-center px-3.5 py-1.5">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
                         <span className="text-[11px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op.</span>
                       </div>
                     )}
                     <div className={`flex justify-between items-center px-3.5 py-2 ${contadoTotal > 0 ? "bg-[#f8fafd]" : "bg-[#fffbf0]"}`}>
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#374151]">CONTEO TOTAL</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">CONTEO TOTAL</span>
                       <span className={`text-[13px] font-bold tabular-nums ${contadoTotal > 0 ? "text-emerald-600" : "text-amber-600"}`}>
                         S/ {contadoTotal.toFixed(2)}
                       </span>
@@ -1362,7 +1362,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Observaciones (opcional)</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Observaciones (opcional)</span>
                     <textarea
                       value={observations}
                       onChange={e => setObservations(e.target.value)}
@@ -1380,7 +1380,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           {/* ── Panel derecho: timeline + snapshot ── */}
           <div className="flex w-[152px] shrink-0 flex-col px-4 py-4 gap-4">
 
-            <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#c0cad4]">PROCESO</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">PROCESO</span>
 
             {/* Timeline */}
             <div className="flex flex-col">
@@ -1401,7 +1401,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       }`} />
                       {idx < 4 && <div className={`w-px mt-0.5 h-4 ${done ? "bg-emerald-300" : "bg-[#e4e9f0]"}`} />}
                     </div>
-                    <span className={`pb-2 text-[9px] font-bold uppercase tracking-[0.10em] leading-tight ${
+                    <span className={`pb-2 text-[10px] font-bold uppercase tracking-[0.10em] leading-tight ${
                       done ? "text-emerald-600" : active ? "text-[#2154d8]" : "text-[#c0cad4]"
                     }`}>
                       {done ? "✓ " : ""}{step.label}
@@ -1416,14 +1416,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
             {/* Session snapshot */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#c0cad4]">TURNO</span>
-              <span className="text-[10.5px] font-bold text-[#374151]">CAJA {activeBox?.code}</span>
-              <span className="text-[9.5px] text-[#9ca3af] leading-tight">{operator}</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">TURNO</span>
+              <span className="text-[11px] font-bold text-[#374151]">CAJA {activeBox?.code}</span>
+              <span className="text-[10px] text-[#9ca3af] leading-tight">{operator}</span>
               {sessionStats.count > 0 && (
-                <span className="text-[9px] tabular-nums text-[#b0bac8]">{sessionStats.count} op.</span>
+                <span className="text-[10px] tabular-nums text-[#b0bac8]">{sessionStats.count} op.</span>
               )}
               {openedAt && (
-                <span className="text-[9px] font-mono tabular-nums text-[#b0bac8]">{formatTime(openedAt)}</span>
+                <span className="text-[10px] font-mono tabular-nums text-[#b0bac8]">{formatTime(openedAt)}</span>
               )}
             </div>
 
@@ -1470,7 +1470,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {/* Monto + Origen */}
               <div className="flex items-stretch gap-2">
                 <div className="flex flex-col gap-0.5 w-[120px] shrink-0">
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
                   <div className="flex items-center gap-1 flex-1">
                     <span className="shrink-0 text-[10px] font-bold text-[#9ca3af]">S/</span>
                     <input
@@ -1487,7 +1487,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   </div>
                 </div>
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">ORIGEN</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">ORIGEN</span>
                   <div className="flex gap-1 flex-1">
                     {([
                       { src: "apertura" as MoveSource, label: "FONDO APT.", Icon: Wallet },
@@ -1511,7 +1511,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
               {/* Motivo */}
               <div className="flex flex-col gap-0.5">
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
                   MOTIVO <span className="text-red-400">*</span>
                 </span>
                 <input
@@ -1559,12 +1559,12 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   <CheckCircle size={11} className="text-emerald-500 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Movimiento registrado</p>
-                    <p className="text-[9.5px] text-[#9ca3af] truncate">
+                    <p className="text-[10px] text-[#9ca3af] truncate">
                       {lastMove.type === "ingreso" ? "↑" : "↓"} S/ {lastMove.amount.toFixed(2)} · {lastMove.motivo}
                     </p>
                   </div>
                   <button onClick={() => void handlePrintVoucher(lastMove)}
-                    className="flex items-center gap-1 rounded-lg border border-emerald-200 px-2 py-1 text-[9.5px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-[#f0fdf4]"
+                    className="flex items-center gap-1 rounded-lg border border-emerald-200 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-[#f0fdf4]"
                   >
                     <Printer size={9} strokeWidth={2} /> Imprimir
                   </button>
@@ -1580,7 +1580,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
               {cashMoves.length > 0 && (
-                <span className="text-[9px] font-semibold text-[#c0cad4] tabular-nums">{cashMoves.length} mov.</span>
+                <span className="text-[10px] font-semibold text-[#9ca3af] tabular-nums">{cashMoves.length} mov.</span>
               )}
             </div>
 
@@ -1614,7 +1614,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</p>
-                              <p className="text-[9.5px] text-[#c0cad4] truncate">{srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}</p>
+                              <p className="text-[10px] text-[#b0bac8] truncate">{srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}</p>
                             </div>
                             <span className={`shrink-0 text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
                               {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
@@ -1667,11 +1667,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-1.5">
                                       <CheckCircle size={11} className="text-emerald-500 shrink-0" />
-                                      <span className="text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">Reposición registrada</span>
+                                      <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Reposición registrada</span>
                                     </div>
                                     <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
                                   </div>
-                                  <p className="text-[9.5px] text-emerald-600 tabular-nums">↑ S/ {lastRepoMove.amount.toFixed(2)} · {lastRepoMove.motivo}</p>
+                                  <p className="text-[10px] text-emerald-600 tabular-nums">↑ S/ {lastRepoMove.amount.toFixed(2)} · {lastRepoMove.motivo}</p>
                                   <button
                                     onClick={() => void handlePrintVoucher(lastRepoMove)}
                                     className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-white py-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98]"
@@ -1682,11 +1682,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                               ) : (
                                 <>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">Reposición</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Reposición</span>
                                     <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-[9.5px] font-bold text-[#9ca3af]">S/</span>
+                                    <span className="text-[10px] font-bold text-[#9ca3af]">S/</span>
                                     <input
                                       ref={repoAmountRef}
                                       type="number"
