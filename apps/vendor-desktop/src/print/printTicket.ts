@@ -86,7 +86,7 @@ function money(n: number): string {
 
 function buildHTML(d: PrintData): string {
   const docLabel = DOC_LABEL[d.docType] ?? d.docType.toUpperCase();
-  const docNum   = `${d.docSeries}-${String(d.docCorrelative + 1).padStart(8, "0")}`;
+  const docNum   = `${d.docSeries}-${String(d.docCorrelative).padStart(8, "0")}`;
 
   const linesHTML = d.lines.map(l =>
     `<div class="pt-item">

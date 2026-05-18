@@ -33,9 +33,10 @@ export function calcConciliation(
   const fondoApertEsp    = moneySub(moneyAdd(apertura, ingApertura), egApertura);
   const fondoVendidoEsp  = moneySub(moneyAdd(cashVendido, ingVendido), egVendido);
   const efectivoEsperado = moneyAdd(fondoApertEsp, fondoVendidoEsp);
-  // Arqueo operacional: solo movimientos variables del turno, sin fondo fijo estructural.
-  // El fondo fijo (apertura) siempre cuadra exacto y se valida por separado.
-  const arqueoOperacional = moneySub(moneyAdd(cashVendido, ingresosTotal), egresosTotal);
+  // Arqueo operacional = solo ventas en efectivo registradas.
+  // Ingresos/egresos se muestran como referencia/auditoría pero NO se reaaplican
+  // sobre el monto final contado por el operador — ese monto ya los incluye implícitamente.
+  const arqueoOperacional = cashVendido;
 
   return {
     ingApertura, egApertura, ingVendido, egVendido,

@@ -193,19 +193,21 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     if (!isOpen) return "";
     try {
       const stage = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
-      if (stage >= 2) {
+      if (stage >= 1) {
         const raw = localStorage.getItem("disateq.pos.ui.contado");
         if (raw) return (JSON.parse(raw) as Record<string, string>)[field] ?? "";
       }
     } catch {}
     return "";
   }
+  const [contadoFondo, setContadoFondo] = useState(() => loadContadoField("fondo"));
   const [contadoEfe,  setContadoEfe]  = useState(() => loadContadoField("efe"));
   const [contadoYape, setContadoYape] = useState(() => loadContadoField("yape"));
   const [contadoTar,  setContadoTar]  = useState(() => loadContadoField("tar"));
   const [validatedAt, setValidatedAt] = useState<string | null>(null);
   const [observations, setObservations] = useState("");
   const [zeroMotive,  setZeroMotive]  = useState("");
+  const contadoFondoRef = useRef<HTMLInputElement>(null);
   const contadoEfeRef  = useRef<HTMLInputElement>(null);
   const contadoYapeRef = useRef<HTMLInputElement>(null);
   const contadoTarRef  = useRef<HTMLInputElement>(null);
@@ -216,23 +218,24 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   }, [closingStage]);
 
   useEffect(() => {
-    if (closingStage >= 2 && contadoEfe !== "") {
+    if (closingStage >= 1 && (contadoFondo !== "" || contadoEfe !== "")) {
       localStorage.setItem("disateq.pos.ui.contado", JSON.stringify({
-        efe: contadoEfe, yape: contadoYape, tar: contadoTar,
+        fondo: contadoFondo, efe: contadoEfe, yape: contadoYape, tar: contadoTar,
       }));
     } else {
       localStorage.removeItem("disateq.pos.ui.contado");
     }
-  }, [closingStage, contadoEfe, contadoYape, contadoTar]);
+  }, [closingStage, contadoFondo, contadoEfe, contadoYape, contadoTar]);
 
   useEffect(() => {
+    if (closingStage === 1) setTimeout(() => contadoFondoRef.current?.focus(), 80);
     if (closingStage === 2) setTimeout(() => contadoEfeRef.current?.focus(), 80);
   }, [closingStage]);
 
   useEffect(() => {
     if (!isOpen) {
       setClosingStage(0);
-      setContadoEfe(""); setContadoYape(""); setContadoTar("");
+      setContadoFondo(""); setContadoEfe(""); setContadoYape(""); setContadoTar("");
       setValidatedAt(null); setObservations(""); setZeroMotive("");
       localStorage.removeItem("disateq.pos.ui.closingStage");
       localStorage.removeItem("disateq.pos.ui.contado");
@@ -297,10 +300,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
   // totalEsperado: arqueo operacional EFE (sin apertura) + verificaciones digitales
   // El fondo fijo (apertura) se valida separado — siempre cuadra exacto.
-  const totalEsperado  = moneySum([arqueoOperacional, sessionStats.yape, sessionStats.tarjeta]);
-  const contadoEfeNum  = numericValue(contadoEfe);
-  const contadoYapeNum = numericValue(contadoYape);
-  const contadoTarNum  = numericValue(contadoTar);
+  const totalEsperado   = moneySum([arqueoOperacional, sessionStats.yape, sessionStats.tarjeta]);
+  const contadoFondoNum = numericValue(contadoFondo);
+  const contadoEfeNum   = numericValue(contadoEfe);
+  const contadoYapeNum  = numericValue(contadoYape);
+  const contadoTarNum   = numericValue(contadoTar);
   const contadoTotal   = moneySum([contadoEfeNum, contadoYapeNum, contadoTarNum]);
   const diferencia     = moneySub(contadoTotal, totalEsperado);
   const contadoValid   = contadoEfe !== "";
@@ -452,9 +456,12 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   useEffect(() => {
     if (!isOpen || closingStage === 0) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "F9" && closingStage === 2 && contadoValid) {
+      if (e.key === "Enter" && closingStage === 1 && contadoFondo !== "") {
         e.preventDefault();
-        // Consolidar expresiones pendientes
+        const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
+        setClosingStage(2);
+      } else if (e.key === "F9" && closingStage === 2 && contadoValid) {
+        e.preventDefault();
         const eR = safeCalc(contadoEfe);  if (eR !== null && eR >= 0) setContadoEfe(eR.toFixed(2));
         const yR = safeCalc(contadoYape); if (yR !== null && yR >= 0) setContadoYape(yR.toFixed(2));
         const tR = safeCalc(contadoTar);  if (tR !== null && tR >= 0) setContadoTar(tR.toFixed(2));
@@ -778,10 +785,20 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           ) : closingStage === 1 ? (
             <>
               <button
-                onClick={() => setClosingStage(2)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_14px_rgba(5,150,105,0.24)] transition hover:bg-emerald-700 active:scale-[0.98]"
+                onClick={() => {
+                  if (contadoFondo === "") return;
+                  const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
+                  setClosingStage(2);
+                }}
+                disabled={contadoFondo === ""}
+                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
+                  contadoFondo !== ""
+                    ? "bg-emerald-600 text-white shadow-[0_4px_14px_rgba(5,150,105,0.24)] hover:bg-emerald-700 active:scale-[0.98]"
+                    : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+                }`}
               >
-                INICIAR CONTEO
+                CONFIRMAR FONDO
+                {contadoFondo !== "" && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>}
               </button>
               <button
                 onClick={() => setClosingStage(0)}
@@ -927,8 +944,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <div className="shrink-0 border-b border-[#fecaca] px-5 py-2.5 flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-400">CERRANDO TURNO</span>
               <span className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[#b0bac8]">
-                {closingStage === 1 ? "CONTEXTO"
-                 : closingStage === 2 ? "CONTEO"
+                {closingStage === 1 ? "FONDO FIJO"
+                 : closingStage === 2 ? "CONTEO OPER."
                  : closingStage === 3 ? "VALIDACIÓN"
                  : closingStage === 4 ? "CONCILIACIÓN"
                  : "CIERRE"}
@@ -938,67 +955,107 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             {/* Content por stage */}
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3.5">
 
-              {/* ── STAGE 1: CONTEXTO ── */}
+              {/* ── STAGE 1: FONDO FIJO ── */}
               {closingStage === 1 && (
                 <>
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
-                    Revisa los movimientos del turno antes de iniciar el conteo físico.
+                    Separa y cuenta el fondo fijo. Debe retornar íntegro, independiente del arqueo operacional.
                   </p>
 
-                  {/* Componentes auto-integrados — solo validación visual */}
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Registrado operacionalmente</span>
-                    <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
-                      <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO APERTURA</span>
-                        <span className="text-[11.5px] font-bold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
-                      </div>
-                      {ingresosTotal > 0 && (
-                        <div className="flex justify-between items-center px-3.5 py-2">
-                          <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">INGRESOS ↑</span>
-                          <span className="text-[11.5px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {egresosTotal > 0 && (
-                        <div className="flex justify-between items-center px-3.5 py-2">
-                          <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">EGRESOS ↓</span>
-                          <span className="text-[11.5px] font-semibold tabular-nums text-red-500">−S/ {egresosTotal.toFixed(2)}</span>
-                        </div>
-                      )}
-                    </div>
+                  {/* Fondo esperado */}
+                  <div className="flex items-center justify-between rounded-xl border border-[#e4e9f0] bg-[#f8fafd] px-3.5 py-2.5">
+                    <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO ESPERADO</span>
+                    <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
                   </div>
 
-                  {/* Actividad comercial */}
-                  {sessionStats.count > 0 && (
-                    <div className="flex justify-between items-center rounded-xl border border-[#e4e9f0] bg-white px-3.5 py-2">
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
-                      <span className="text-[11.5px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op. · S/ {ventasDescomp.toFixed(2)}</span>
-                    </div>
-                  )}
+                  {/* Input contado fondo */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
+                    <input
+                      ref={contadoFondoRef}
+                      type="text"
+                      inputMode="decimal"
+                      value={contadoFondo}
+                      onChange={e => setContadoFondo(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && contadoFondo !== "") {
+                          e.preventDefault();
+                          const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
+                          setClosingStage(2);
+                        }
+                      }}
+                      onBlur={() => {
+                        if (hasExpr(contadoFondo)) {
+                          const r = safeCalc(contadoFondo);
+                          if (r !== null && r >= 0) setContadoFondo(r.toFixed(2));
+                        }
+                      }}
+                      placeholder="0.00"
+                      className="w-full rounded-xl border border-[#2154d8]/30 px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] tabular-nums focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                    />
+                  </div>
 
+                  {/* Diferencia fondo */}
+                  {contadoFondo !== "" && (() => {
+                    const diffFondo = moneySub(contadoFondoNum, apertura);
+                    const fondoCuadrado = moneyIsZero(diffFondo);
+                    const fondoSobrante = !fondoCuadrado && moneyGt(diffFondo, 0);
+                    return (
+                      <div className={`flex items-center justify-between rounded-xl border px-3.5 py-2 ${
+                        fondoCuadrado ? "border-emerald-200 bg-[#f0fdf4]" : "border-red-200 bg-[#fef2f2]"
+                      }`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.10em] ${fondoCuadrado ? "text-emerald-600" : "text-red-600"}`}>
+                          {fondoCuadrado ? "✓ FONDO ÍNTEGRO" : fondoSobrante ? "EXCEDENTE FONDO" : "FALTANTE FONDO"}
+                        </span>
+                        <span className={`text-[12px] font-bold tabular-nums ${fondoCuadrado ? "text-emerald-600" : "text-red-600"}`}>
+                          {fondoCuadrado ? "±S/ 0.00" : `${moneyGte(diffFondo, 0) ? "+" : "−"}S/ ${Math.abs(diffFondo).toFixed(2)}`}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Contexto operacional del turno */}
+                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                    {sessionStats.count > 0 && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
+                        <span className="text-[11px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op. · S/ {ventasDescomp.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {ingresosTotal > 0 && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">INGRESOS ↑</span>
+                        <span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {egresosTotal > 0 && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">EGRESOS ↓</span>
+                        <span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egresosTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-[10px] text-[#c0cad4]">
+                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo y pasar a conteo operacional
+                  </p>
                 </>
               )}
 
-              {/* ── STAGE 2: CONTEO ── */}
+              {/* ── STAGE 2: CONTEO OPERACIONAL ── */}
               {closingStage === 2 && (
                 <>
-                  {/* Fondo fijo — retorno estructural exacto, no se cuenta en arqueo */}
-                  <div className="flex items-center gap-2 rounded-xl border border-[#e4e9f0] bg-[#f8fafd] px-3 py-2">
-                    <span className="shrink-0 text-[8.5px] font-bold uppercase tracking-[0.12em] text-[#c0cad4]">Fondo fijo</span>
-                    <div className="h-3 w-px shrink-0 bg-[#e4e9f0]" />
-                    <span className="text-[10px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
-                    <span className="text-[8.5px] text-[#c0cad4]">— retorno exacto, no contar</span>
-                    {(ingresosTotal > 0 || egresosTotal > 0) && <div className="h-3 w-px shrink-0 bg-[#e4e9f0]" />}
-                    {ingresosTotal > 0 && (
-                      <span className="text-[10px] font-semibold tabular-nums text-emerald-600">↑ {ingresosTotal.toFixed(2)}</span>
-                    )}
-                    {egresosTotal > 0 && (
-                      <span className="text-[10px] font-semibold tabular-nums text-red-400">↓ {egresosTotal.toFixed(2)}</span>
-                    )}
+                  {/* Fondo validado en stage 1 */}
+                  <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-[#f0fdf4] px-3.5 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle size={12} className="text-emerald-500 shrink-0" />
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-emerald-600">Fondo fijo validado</span>
+                    </div>
+                    <span className="text-[11px] font-bold tabular-nums text-emerald-700">S/ {contadoFondoNum.toFixed(2)}</span>
                   </div>
 
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
-                    Cuenta el efectivo <strong className="text-[#374151]">operacional</strong> (ventas + ingresos − egresos). El fondo fijo no se incluye.
+                    Ingresa el <strong className="text-[#374151]">efectivo final real</strong> del turno, el Yape y Tarjeta. El sistema los verificará contra las ventas registradas.
                   </p>
                   <div className="flex flex-col gap-2">
                     {([
@@ -1086,10 +1143,24 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     </div>
                   </div>
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                    {/* Fondo fijo validado en stage 1 */}
+                    <div className="flex justify-between items-center px-3.5 py-1.5 bg-[#f8fafd]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO FIJO</span>
+                        <span className="text-[8px] text-[#c0cad4]">stage 1</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {contadoFondoNum.toFixed(2)}</span>
+                        {moneyIsZero(moneySub(contadoFondoNum, apertura))
+                          ? <span className="text-[9px] font-bold text-emerald-600">✓</span>
+                          : <span className="text-[9px] font-bold text-red-500">≠{apertura.toFixed(2)}</span>
+                        }
+                      </div>
+                    </div>
                     {[
-                      { label: "EFECTIVO",  val: contadoEfeNum  },
-                      { label: "YAPE",      val: contadoYapeNum },
-                      { label: "TARJETAS",  val: contadoTarNum  },
+                      { label: "EFECTIVO", val: contadoEfeNum  },
+                      { label: "YAPE",     val: contadoYapeNum },
+                      { label: "TARJETAS", val: contadoTarNum  },
                     ].map(({ label, val }) => (
                       <div key={label} className="flex justify-between items-center px-3.5 py-1.5">
                         <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
@@ -1097,7 +1168,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                       </div>
                     ))}
                     <div className="flex justify-between items-center px-3.5 py-2 bg-[#f8fafd]">
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#374151]">TOTAL</span>
+                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#374151]">TOTAL OPER.</span>
                       <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoTotal.toFixed(2)}</span>
                     </div>
                   </div>
@@ -1114,27 +1185,38 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     Confirma el arqueo para oficializar el cierre.
                   </p>
 
-                  {/* Fondo fijo — validación estructural exacta */}
-                  <div className="flex items-center justify-between rounded-xl border border-[#e4e9f0] bg-[#f8fafd] px-3.5 py-2">
-                    <div>
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo fijo</span>
-                      <span className="ml-2 text-[8.5px] text-[#c0cad4]">retorno exacto</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
-                      <span className="text-[9px] font-bold text-emerald-600">✓</span>
-                    </div>
-                  </div>
+                  {/* Fondo fijo — resultado validación stage 1 */}
+                  {(() => {
+                    const diffFondo = moneySub(contadoFondoNum, apertura);
+                    const fondoCuadrado = moneyIsZero(diffFondo);
+                    return (
+                      <div className={`flex items-center justify-between rounded-xl border px-3.5 py-2 ${
+                        fondoCuadrado ? "border-[#e4e9f0] bg-[#f8fafd]" : "border-red-200 bg-[#fef2f2]"
+                      }`}>
+                        <div>
+                          <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo fijo</span>
+                          <span className="ml-2 text-[8.5px] text-[#c0cad4]">esp. {apertura.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {contadoFondoNum.toFixed(2)}</span>
+                          {fondoCuadrado
+                            ? <span className="text-[9px] font-bold text-emerald-600">✓</span>
+                            : <span className="text-[9px] font-bold text-red-500">≠</span>
+                          }
+                        </div>
+                      </div>
+                    );
+                  })()}
 
-                  {/* Arqueo operacional contado */}
+                  {/* Arqueo contado */}
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-amber-200 bg-white overflow-hidden">
                     {[
-                      { label: "EFE OPER.",  val: contadoEfeNum,  esp: arqueoOperacional    },
-                      { label: "YAPE",       val: contadoYapeNum, esp: sessionStats.yape    },
-                      { label: "TARJETAS",   val: contadoTarNum,  esp: sessionStats.tarjeta },
+                      { label: "EFECTIVO", val: contadoEfeNum,  esp: arqueoOperacional    },
+                      { label: "YAPE",     val: contadoYapeNum, esp: sessionStats.yape    },
+                      { label: "TARJETAS", val: contadoTarNum,  esp: sessionStats.tarjeta },
                     ].map(({ label, val, esp }) => (
                       <div key={label} className="flex items-center px-3.5 py-1.5 gap-2">
-                        <span className="w-[72px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
+                        <span className="w-[68px] shrink-0 text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
                         <span className="flex-1 text-right text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
                         <span className="text-[8.5px] text-[#c0cad4]">esp. {esp.toFixed(2)}</span>
                       </div>
@@ -1145,7 +1227,32 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     </div>
                   </div>
 
-                  {/* Conciliación operacional */}
+                  {/* Movimientos del turno — referencia/auditoría, no afectan comparación */}
+                  {(moneyGt(ingresosTotal, 0) || moneyGt(egresosTotal, 0)) && (
+                    <div className="flex flex-col gap-0.5 rounded-xl border border-[#f1f5f9] bg-[#f8fafc] px-3.5 py-2">
+                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Movimientos registrados — referencia</span>
+                      {moneyGt(ingresosTotal, 0) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] text-[#9ca3af]">Ingresos</span>
+                          <span className="text-[9.5px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {moneyGt(egresosTotal, 0) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] text-[#9ca3af]">Egresos</span>
+                          <span className="text-[9.5px] font-semibold tabular-nums text-red-400">−S/ {egresosTotal.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center border-t border-[#f1f5f9] pt-0.5 mt-0.5">
+                        <span className="text-[9px] text-[#9ca3af]">Op. reconstruida</span>
+                        <span className="text-[9.5px] font-bold tabular-nums text-[#374151]">
+                          S/ {moneySub(moneyAdd(contadoEfeNum, ingresosTotal), egresosTotal).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Conciliación ventas */}
                   {(() => {
                     const cuadrado = moneyIsZero(diferencia);
                     const sobrante = !cuadrado && moneyGt(diferencia, 0);
@@ -1155,7 +1262,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                         cuadrado ? "border-emerald-200 bg-[#f0fdf4]" : sobrante ? "border-[#dbeafe] bg-[#eff6ff]" : "border-red-200 bg-[#fef2f2]"
                       }`}>
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Esperado oper.</span>
+                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Esperado ventas</span>
                           <span className="text-[10.5px] font-semibold tabular-nums text-[#374151]">S/ {totalEsperado.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center">
@@ -1261,8 +1368,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             {/* Timeline */}
             <div className="flex flex-col">
               {([
-                { s: 1, label: "CONTEXTO" },
-                { s: 2, label: "CONTEO" },
+                { s: 1, label: "FONDO FIJO" },
+                { s: 2, label: "CONTEO OPER." },
                 { s: 3, label: "VALIDACIÓN" },
                 { s: 4, label: "CONCILIACIÓN" },
                 { s: 5, label: "CIERRE" },

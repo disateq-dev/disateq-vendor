@@ -224,7 +224,7 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     let doc_num = format!(
         "{}-{:0>8}",
         d.doc_series,
-        d.doc_correlative + 1
+        d.doc_correlative
     );
     b.line(&doc_num);
     b.line(&normalize(&d.date_time));
