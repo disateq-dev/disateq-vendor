@@ -368,14 +368,14 @@ export function CobroPanel() {
   const { text: rowLabel, warn: rowWarn } = getRowLabel();
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9]">
 
-      {/* HEADER */}
-      <header className="shrink-0 flex items-center gap-2 border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
+      {/* SheetHeader */}
+      <header className="shrink-0 flex items-center gap-2 border-b border-[#F2A900]/15 bg-[#F9F6EC] px-4 py-2">
         <button
           title="Tecla [Esc]"
           onClick={cobroView === "client" ? resetForm : closeCobro}
-          className="flex shrink-0 items-center gap-1 text-[13px] font-bold text-[#2F3E46] transition hover:text-[#111827]"
+          className="flex shrink-0 items-center gap-1 text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none transition hover:text-[#374151]"
         >
           <ArrowLeft size={12} />
           {cobroView === "client" ? "COBRO" : "PRE-VENTA"}

@@ -118,13 +118,11 @@ export function ComprobantesWorkspace() {
     <section className="flex h-full w-full gap-3">
 
       {/* LEFT — LISTA */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9]">
 
-        {/* HEADER */}
-        <header className="shrink-0 flex items-center gap-3 border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
-          <span className="text-[13px] font-bold tracking-wide text-[#2F3E46]">
-            COMPROBANTES
-          </span>
+        {/* SheetHeader */}
+        <header className="shrink-0 flex items-center gap-2 border-b border-[#73C7D4]/15 bg-[#F1F8F9] px-4 py-2">
+          <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">COMPROBANTES</span>
           {cashSession.isOpen && (
             <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest text-emerald-700">
               SESIÓN ACTIVA
@@ -220,10 +218,10 @@ export function ComprobantesWorkspace() {
       </div>
 
       {/* RIGHT — DETALLE / ACCIONES */}
-      <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+      <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9]">
 
-        <header className="shrink-0 border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
-          <span className="text-[13px] font-bold tracking-wide text-[#2F3E46]">DETALLE</span>
+        <header className="shrink-0 flex items-center border-b border-[#73C7D4]/15 bg-[#F1F8F9] px-4 py-2">
+          <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">DETALLE</span>
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -333,7 +331,7 @@ export function ComprobantesWorkspace() {
 
               {/* Void form */}
               {selected.status === "active" && voidMode && (
-                <div className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3 py-3">
+                <div className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <AlertTriangle size={12} className="shrink-0 text-red-500" />
                     <span className="text-[11px] font-bold text-red-600 uppercase tracking-wider">Confirmar anulación</span>

@@ -494,9 +494,20 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
         {/* Status / pre-open card */}
         {isOpen ? (
-          <div className={`flex flex-col gap-4 rounded-[24px] border px-5 py-5 bg-[#FDFCF9] ${
+          <div className={`flex flex-col overflow-hidden rounded-[24px] border bg-[#FDFCF9] ${
             closingStage > 0 ? "border-red-200" : "border-[#78C487]/50"
           }`}>
+            <div className={`shrink-0 flex items-center justify-between px-4 py-2 border-b ${
+              closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F3F8F4] border-[#78C487]/15"
+            }`}>
+              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+                {closingStage > 0 ? "CIERRE DE TURNO" : "INFORMACIÓN TURNO"}
+              </span>
+              {closingStage > 0 && (
+                <span className="text-[9px] font-bold uppercase tracking-widest text-red-400">{closingStage}/5</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-4 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f4f7fb] ${
                 closingStage > 0 ? "text-[#b91c1c]" : "text-emerald-600"
@@ -562,11 +573,16 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </>
               )}
             </div>
+            </div>
           </div>
 
         ) : (
           /* Pre-open: operator + apertura card */
-          <div className="flex flex-col gap-4 rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9] px-5 py-5">
+          <div className="flex flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex items-center px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">APERTURA DE TURNO</span>
+            </div>
+            <div className="flex flex-col gap-4 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f1f5f9] text-[#9ca3af]">
                 <Clock size={20} strokeWidth={1.5} />
@@ -664,6 +680,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 )}
               </div>
             )}
+            </div>
           </div>
         )}
 
@@ -904,8 +921,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
         /* BOX SELECTOR */
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-3">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Selección operacional de caja</span>
+          <div className="shrink-0 flex items-center px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+            <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SELECCIÓN DE CAJA</span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
             {SERIES.map(prefix => {
@@ -941,9 +958,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           <div className="flex min-h-0 flex-1 flex-col border-r border-[#fef2f2]">
 
             {/* Header */}
-            <div className="shrink-0 border-b border-[#fecaca] px-5 py-2.5 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-400">CERRANDO TURNO</span>
-              <span className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[#b0bac8]">
+            <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#FEF5F5] border-b border-red-100">
+              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CIERRE DE TURNO</span>
+              <span className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO FIJO"
                  : closingStage === 2 ? "CONTEO OPER."
                  : closingStage === 3 ? "VALIDACIÓN"
@@ -1422,8 +1439,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           {/* ─── MOVEMENTS PANEL ─── */}
           <div className="flex min-h-0 w-[44%] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 border-b border-[#78C487]/15 px-4 py-2 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Movimientos</span>
+            <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
               {cashMoves.length > 0 && (
                 <div className="flex items-center gap-2.5">
                   {ingresosTotal > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingresosTotal.toFixed(2)}</span>}
@@ -1560,8 +1577,8 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           {/* ─── HISTORY PANEL ─── */}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 border-b border-[#78C487]/15 px-4 py-2 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Histórico</span>
+            <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
               {cashMoves.length > 0 && (
                 <span className="text-[9px] font-semibold text-[#c0cad4] tabular-nums">{cashMoves.length} mov.</span>
               )}

@@ -65,20 +65,17 @@ export function TicketGrid() {
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9]">
 
-      {/* HEADER */}
-      <header className="shrink-0 flex flex-col border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[13px] font-bold tracking-wide text-[#2F3E46]">
-            PRE-VENTA <span className="text-[#374151]">#{saleNumber}</span>
-          </span>
-          {lines.length > 0 ? (
-            <span className="text-[13px] font-bold tracking-widest text-[#2F3E46]">
+      {/* SheetHeader */}
+      <header className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#F9F6EC] border-b border-[#F2A900]/15">
+        <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">PRE-VENTA</span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] text-[#b0bac8]">#{saleNumber}</span>
+          {lines.length > 0 && (
+            <span className="text-[11px] font-semibold tabular-nums text-[#6b7280]">
               {lines.length} {lines.length === 1 ? "ÍT." : "ÍTEMS"} · {totalUnits} UND
             </span>
-          ) : (
-            <span className="text-[13px] text-[#c0cad4]">—</span>
           )}
         </div>
       </header>
