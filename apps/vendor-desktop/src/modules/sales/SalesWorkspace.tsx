@@ -299,7 +299,7 @@ export function SalesWorkspace() {
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#F9F6EC] border-b border-[#F2A900]/15">
+      <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F9F6EC] border-b border-[#F2A900]/15">
         <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">VENTAS</span>
       </div>
 

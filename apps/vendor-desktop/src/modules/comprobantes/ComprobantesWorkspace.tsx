@@ -121,7 +121,7 @@ export function ComprobantesWorkspace() {
       <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9]">
 
         {/* SheetHeader */}
-        <header className="shrink-0 flex items-center gap-2 border-b border-[#73C7D4]/15 bg-[#F1F8F9] px-4 py-2">
+        <header className="shrink-0 flex items-center gap-2 border-b border-[#73C7D4]/15 bg-[#F1F8F9] px-4 py-2.5">
           <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">COMPROBANTES</span>
           {cashSession.isOpen && (
             <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest text-emerald-700">
@@ -220,7 +220,7 @@ export function ComprobantesWorkspace() {
       {/* RIGHT — DETALLE / ACCIONES */}
       <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9]">
 
-        <header className="shrink-0 flex items-center border-b border-[#73C7D4]/15 bg-[#F1F8F9] px-4 py-2">
+        <header className="shrink-0 flex items-center border-b border-[#73C7D4]/15 bg-[#F1F8F9] px-4 py-2.5">
           <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">DETALLE</span>
         </header>
 

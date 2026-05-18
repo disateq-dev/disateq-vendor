@@ -497,7 +497,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           <div className={`flex flex-col overflow-hidden rounded-[24px] border bg-[#FDFCF9] ${
             closingStage > 0 ? "border-red-200" : "border-[#78C487]/50"
           }`}>
-            <div className={`shrink-0 flex items-center justify-between px-4 py-2 border-b ${
+            <div className={`shrink-0 flex items-center justify-between px-4 py-2.5 border-b ${
               closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F3F8F4] border-[#78C487]/15"
             }`}>
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
@@ -579,7 +579,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
         ) : (
           /* Pre-open: operator + apertura card */
           <div className="flex flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex items-center px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+            <div className="shrink-0 flex items-center px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">APERTURA DE TURNO</span>
             </div>
             <div className="flex flex-col gap-4 px-5 py-4">
@@ -921,7 +921,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
         /* BOX SELECTOR */
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 flex items-center px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+          <div className="shrink-0 flex items-center px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
             <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SELECCIÓN DE CAJA</span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
@@ -958,7 +958,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           <div className="flex min-h-0 flex-1 flex-col border-r border-[#fef2f2]">
 
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#FEF5F5] border-b border-red-100">
+            <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#FEF5F5] border-b border-red-100">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CIERRE DE TURNO</span>
               <span className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO FIJO"
@@ -1439,7 +1439,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           {/* ─── MOVEMENTS PANEL ─── */}
           <div className="flex min-h-0 w-[44%] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+            <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
               {cashMoves.length > 0 && (
                 <div className="flex items-center gap-2.5">
@@ -1577,7 +1577,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
           {/* ─── HISTORY PANEL ─── */}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-[#F3F8F4] border-b border-[#78C487]/15">
+            <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
               {cashMoves.length > 0 && (
                 <span className="text-[9px] font-semibold text-[#c0cad4] tabular-nums">{cashMoves.length} mov.</span>
