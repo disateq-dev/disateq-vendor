@@ -487,15 +487,15 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   // ── render ────────────────────────────────────────────────────
 
   return (
-    <section className="flex min-h-0 flex-1 gap-3">
+    <section className="flex min-h-0 flex-1 gap-2">
 
       {/* ── LEFT ── */}
-      <div className="flex w-[300px] shrink-0 flex-col gap-3">
+      <div className="flex w-[300px] shrink-0 flex-col gap-2">
 
         {/* Status / pre-open card */}
         {isOpen ? (
-          <div className={`flex flex-col gap-4 rounded-[24px] border bg-[#f8fafd] px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)] ${
-            closingStage > 0 ? "border-red-200" : "border-emerald-200"
+          <div className={`flex flex-col gap-4 rounded-[24px] border px-5 py-5 bg-[#FDFCF9] ${
+            closingStage > 0 ? "border-red-200" : "border-[#78C487]/50"
           }`}>
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f4f7fb] ${
@@ -566,7 +566,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
         ) : (
           /* Pre-open: operator + apertura card */
-          <div className="flex flex-col gap-4 rounded-[24px] border border-[#78C487]/50 bg-[#FBF9F4] px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-col gap-4 rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9] px-5 py-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f1f5f9] text-[#9ca3af]">
                 <Clock size={20} strokeWidth={1.5} />
@@ -903,7 +903,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       {!isOpen ? (
 
         /* BOX SELECTOR */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
           <div className="shrink-0 border-b border-[#f1f5f9] px-5 py-3">
             <span className="text-[10.5px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Selección operacional de caja</span>
           </div>
@@ -935,7 +935,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
       ) : closingStage > 0 ? (
 
         /* CLOSING FLOW — layout: flujo (izq) + timeline (der) */
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-red-200 bg-[#f8fafd] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-red-200 bg-[#FDFCF9]">
 
           {/* ── Panel izquierdo: flujo operacional ── */}
           <div className="flex min-h-0 flex-1 flex-col border-r border-[#fef2f2]">
@@ -1416,13 +1416,13 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
       ) : (
 
-        /* MOVEMENTS — 45/55 operational split */
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+        /* MOVEMENTS + HISTORY — panels operacionales independientes */
+        <div className="flex min-h-0 flex-1 gap-2">
 
-          {/* ─── LEFT: form operacional (45%) ─── */}
-          <div className="flex w-[45%] shrink-0 flex-col border-r border-[#f1f5f9]">
+          {/* ─── MOVEMENTS PANEL ─── */}
+          <div className="flex min-h-0 w-[44%] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-2 flex items-center justify-between">
+            <div className="shrink-0 border-b border-[#78C487]/15 px-4 py-2 flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Movimientos</span>
               {cashMoves.length > 0 && (
                 <div className="flex items-center gap-2.5">
@@ -1557,10 +1557,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
           </div>
 
-          {/* ─── RIGHT: timeline operacional (55%) ─── */}
-          <div className="flex min-h-0 flex-1 flex-col">
+          {/* ─── HISTORY PANEL ─── */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 border-b border-[#f1f5f9] px-4 py-2 flex items-center justify-between">
+            <div className="shrink-0 border-b border-[#78C487]/15 px-4 py-2 flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">Histórico</span>
               {cashMoves.length > 0 && (
                 <span className="text-[9px] font-semibold text-[#c0cad4] tabular-nums">{cashMoves.length} mov.</span>

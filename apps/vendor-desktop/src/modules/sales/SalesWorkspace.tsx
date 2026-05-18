@@ -296,7 +296,7 @@ export function SalesWorkspace() {
   }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (

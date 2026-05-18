@@ -118,7 +118,7 @@ export function ComprobantesWorkspace() {
     <section className="flex h-full w-full gap-3">
 
       {/* LEFT — LISTA */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
         {/* HEADER */}
         <header className="shrink-0 flex items-center gap-3 border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
@@ -220,7 +220,7 @@ export function ComprobantesWorkspace() {
       </div>
 
       {/* RIGHT — DETALLE / ACCIONES */}
-      <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+      <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#73C7D4]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
         <header className="shrink-0 border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">
           <span className="text-[13px] font-bold tracking-wide text-[#2F3E46]">DETALLE</span>

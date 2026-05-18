@@ -65,7 +65,7 @@ export function TicketGrid() {
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       {/* HEADER */}
       <header className="shrink-0 flex flex-col border-b border-[#f1f5f9] bg-[#f4f7fb] px-4 pt-2.5 pb-2">

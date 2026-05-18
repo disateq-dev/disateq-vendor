@@ -30,7 +30,7 @@ export function ConfigWorkspace() {
   const rubroConfig = RUBROS[rubro];
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#9B8BFF]/50 bg-[#FBF9F4] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#9B8BFF]/50 bg-[#FDFCF9] shadow-[0_4px_18px_rgba(15,23,42,0.04)]">
 
       <header className="shrink-0 border-b border-[#9B8BFF]/20 px-6 py-4">
         <h2 className="text-[13px] font-bold uppercase tracking-[0.12em] text-[#374151]">
