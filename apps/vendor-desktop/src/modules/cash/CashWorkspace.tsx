@@ -712,7 +712,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </span>
               </>
             )
-          ) : null}
+          ) : null
         )}
 
         <div className="flex-1" />
