@@ -450,6 +450,17 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     }, 120);
   }
 
+  // ── CTRL+INSERT: corregir apertura ────────────────────────
+  useEffect(() => {
+    if (!isOpen || closingStage !== 0 || !canCorrectApertura || editingApertura) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Insert" && e.ctrlKey) { e.preventDefault(); openEditApertura(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, closingStage, canCorrectApertura, editingApertura]);
+
   // ── keyboard shortcuts del flujo de cierre ─────────────────
   useEffect(() => {
     if (!isOpen || closingStage === 0) return;
@@ -515,11 +526,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${closingStage > 0 ? "bg-red-400" : "bg-emerald-500"}`} />
-                  <span className={`text-[10.5px] font-bold uppercase tracking-widest ${closingStage > 0 ? "text-red-500" : "text-emerald-600"}`}>
+                  <span className={`text-[12px] font-semibold uppercase tracking-wider ${closingStage > 0 ? "text-red-500" : "text-emerald-600"}`}>
                     {closingStage > 0 ? `CERRANDO TURNO · ${closingStage}/5` : "TURNO ABIERTO"}
                   </span>
                 </div>
-                <p className="mt-0.5 truncate text-[12px] font-semibold text-[#374151]">
+                <p className="mt-0.5 truncate text-[11px] font-semibold text-[#374151]">
                   CAJA {activeBox?.code}
                 </p>
               </div>
@@ -531,9 +542,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal"     value={terminal} />
               <InfoRow label="Fondo apertura" value={`S/ ${apertura.toFixed(2)}`} />
-              {sessionMotivo    && <InfoRow label="Motivo apertura"  value={sessionMotivo}    />}
-              {sessionObservacion && <InfoRow label="Observación"    value={sessionObservacion} />}
-              {sessionRefOp       && <InfoRow label="Ref. operacional" value={sessionRefOp}   />}
+              {sessionMotivo && <InfoRow label="Motivo apertura" value={sessionMotivo} />}
 
               {sessionStats.count > 0 && closingStage === 0 && (() => {
                 const { efe, yap, tar, mix } = sessionStats.byMethod;
@@ -685,33 +694,9 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     type="text"
                     value={editMotivo}
                     onChange={e => setEditMotivo(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
                     placeholder="Contexto de apertura..."
                     maxLength={120}
-                    className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Observaciones</span>
-                  <input
-                    type="text"
-                    value={editObservacion}
-                    onChange={e => setEditObservacion(e.target.value)}
-                    placeholder="Notas adicionales..."
-                    maxLength={200}
-                    className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Ref. operacional</span>
-                  <input
-                    type="text"
-                    value={editRefOp}
-                    onChange={e => setEditRefOp(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
-                    placeholder="Ej: T-2025-001, remito..."
-                    maxLength={80}
                     className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
                   />
                 </div>
@@ -726,10 +711,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             ) : (
               <button
                 onClick={openEditApertura}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[11px] font-semibold text-[#374151] transition hover:border-[#2154d8]/30 hover:bg-[#f8fafd] active:scale-[0.98]"
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#2154d8] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#2154d8]/60"
               >
-                <Pencil size={11} strokeWidth={2} className="text-[#9ca3af]" />
-                Corregir datos apertura
+                <Pencil size={14} strokeWidth={2} />
+                Corregir apertura
+                <span className="ml-auto rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+INS</span>
               </button>
             )
           ) : (
