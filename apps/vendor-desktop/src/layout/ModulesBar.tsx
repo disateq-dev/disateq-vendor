@@ -3,6 +3,7 @@ import { type ActiveModule } from "../App";
 
 interface ModulesBarProps {
   active: ActiveModule;
+  display: ActiveModule;
   onChange: (m: ActiveModule) => void;
   onHover: (m: ActiveModule | null) => void;
 }
@@ -18,23 +19,27 @@ const ON: Record<ActiveModule, string> = {
   config:       `${BASE} border-[#9B8BFF]  bg-[rgba(155,139,255,0.15)]`,
 };
 
-export function ModulesBar({ active, onChange, onHover }: ModulesBarProps) {
+function cls(m: ActiveModule, display: ActiveModule): string {
+  return display === m ? ON[m] : OFF;
+}
+
+export function ModulesBar({ active, display, onChange, onHover }: ModulesBarProps) {
   return (
     <section
       className="flex h-[52px] items-end gap-1 bg-[#F0F2F5] px-3 pb-1"
       onMouseLeave={() => onHover(null)}
     >
-      <button onClick={() => onChange("cash")} onMouseEnter={() => onHover("cash")} className={active === "cash" ? ON.cash : OFF}>
+      <button onClick={() => onChange("cash")} onMouseEnter={() => onHover("cash")} className={cls("cash", display)}>
         <ShoppingCart size={16} />
         <span>TURNO</span>
       </button>
 
-      <button onClick={() => onChange("sales")} onMouseEnter={() => onHover("sales")} className={active === "sales" ? ON.sales : OFF}>
+      <button onClick={() => onChange("sales")} onMouseEnter={() => onHover("sales")} className={cls("sales", display)}>
         <Package size={16} />
         <span>VENTAS</span>
       </button>
 
-      <button onClick={() => onChange("comprobantes")} onMouseEnter={() => onHover("comprobantes")} className={active === "comprobantes" ? ON.comprobantes : OFF}>
+      <button onClick={() => onChange("comprobantes")} onMouseEnter={() => onHover("comprobantes")} className={cls("comprobantes", display)}>
         <FileText size={16} />
         <span>COMPROBANTES</span>
       </button>
@@ -49,7 +54,7 @@ export function ModulesBar({ active, onChange, onHover }: ModulesBarProps) {
         <span>INVENTARIO</span>
       </button>
 
-      <button onClick={() => onChange("config")} onMouseEnter={() => onHover("config")} className={active === "config" ? ON.config : OFF}>
+      <button onClick={() => onChange("config")} onMouseEnter={() => onHover("config")} className={cls("config", display)}>
         <Settings size={16} />
         <span>AJUSTES</span>
       </button>

@@ -42,6 +42,7 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
           <Topbar />
           <ModulesBar
             active={activeModule}
+            display={displayModule}
             onChange={m => { closeCobro(); onModuleChange(m); setHoveredModule(null); }}
             onHover={setHoveredModule}
           />

@@ -61,12 +61,12 @@ export function Topbar() {
       <section className="flex items-center gap-3 pl-5">
 
         {/* CONTEXTO OPERACIONAL */}
-        <div className="rounded-xl border border-white/8 bg-white/5 px-4 py-1.5">
+        <div className="rounded-xl border border-white/[0.13] bg-white/[0.10] px-4 py-1.5 shadow-[0_0_16px_rgba(255,255,255,0.04)]">
           {isOpen && cashBox ? (
             <>
               <div className="flex items-center gap-2 text-[15px]">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4ade80]" />
-                <span className="font-semibold tracking-[0.02em] text-[#e8edf5]">TURNO ABIERTO</span>
+                <span className="font-semibold tracking-[0.02em] text-[#4ade80]">TURNO ABIERTO</span>
                 {openedAt && (
                   <span className="text-[12px] tabular-nums text-[#6b7fa0]">{formatApertura(openedAt)}</span>
                 )}
