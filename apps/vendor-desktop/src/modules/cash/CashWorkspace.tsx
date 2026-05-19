@@ -13,6 +13,7 @@ import {
   prereqCode, operatorFromCode, isContingencyBox,
   canOpenSession, validateCanAddMove,
   CTG_PIN, MIN_MOTIVO_LEN,
+  detectOpeningMode, type OpeningMode,
 } from "./services/cash-rules.service";
 import { toCents, moneyRound, moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 
@@ -116,22 +117,32 @@ function BoxStatusBadge({ box, isActive }: { box: CashBox; isActive: boolean }) 
   );
 }
 
-function BoxRow({ box, isActive, isSelected, onSelect }: {
-  box: CashBox; isActive: boolean; isSelected: boolean; onSelect?: () => void;
+function BoxRow({ box, isActive, isSelected, onSelect, onExceptional }: {
+  box: CashBox; isActive: boolean; isSelected: boolean; onSelect?: () => void; onExceptional?: () => void;
 }) {
-  const clickable = !isActive && box.available && !!onSelect;
+  const clickable    = !isActive && box.available && !!onSelect;
+  const canExceptional = !isActive && !box.available && !box.used && !!onExceptional;
   let cls = "flex items-center gap-3 rounded-2xl px-4 py-2.5 transition select-none";
-  if (isActive)        cls += " bg-[#f8fafd] ring-2 ring-emerald-200";
-  else if (isSelected) cls += " bg-[#f8fafd] ring-1 ring-[#2154d8]/30";
-  else if (clickable)  cls += " cursor-pointer hover:bg-[#f4f7fb]";
-  else                 cls += " opacity-50 cursor-default";
+  if (isActive)          cls += " bg-[#f8fafd] ring-2 ring-emerald-200";
+  else if (isSelected)   cls += " bg-[#f8fafd] ring-1 ring-[#2154d8]/30";
+  else if (clickable)    cls += " cursor-pointer hover:bg-[#f4f7fb]";
+  else                   cls += " opacity-50 cursor-default";
   const dotColor  = isActive ? "bg-emerald-500" : isSelected ? "bg-[#2154d8]" : box.available ? "bg-[#34d399]" : "bg-[#d1d5db]";
   const nameColor = isActive ? "text-emerald-700" : isSelected ? "text-[#2154d8]" : box.used || !box.available ? "text-[#c0cad4]" : "text-[#111827]";
   return (
     <div className={cls} onClick={clickable ? onSelect : undefined}>
       <div className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
       <span className={`flex-1 text-[12px] font-bold tabular-nums ${nameColor}`}>CAJA {box.code}</span>
-      <BoxStatusBadge box={box} isActive={isActive} />
+      {canExceptional ? (
+        <button
+          onClick={e => { e.stopPropagation(); onExceptional?.(); }}
+          className="text-[9.5px] font-semibold uppercase tracking-wider text-amber-600 transition hover:text-amber-700 hover:underline underline-offset-2"
+        >
+          Excepcional →
+        </button>
+      ) : (
+        <BoxStatusBadge box={box} isActive={isActive} />
+      )}
     </div>
   );
 }
@@ -172,6 +183,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [editMotivo,         setEditMotivo]         = useState("");
   const [editObservacion,    setEditObservacion]    = useState("");
   const [editRefOp,          setEditRefOp]          = useState("");
+
+  // ── turno recuperado al montar (sesión persistida del día) ────
+  // Cuando isOpen ya es true en el primer render, el turno estaba activo antes de cerrar la UI
+  const [turnoRecovered, setTurnoRecovered] = useState(() => isOpen);
 
   // ── timer ─────────────────────────────────────────────────────
   const [duration, setDuration] = useState("");
@@ -282,9 +297,16 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // ── derived ───────────────────────────────────────────────────
   const selectedBox        = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
-  const isContingency      = isContingencyBox(selectedBox);
-  const canOpen            = canOpenSession(isOpen, selectedBox, aperturaInput, isContingency, ctgPin, ctgJustif);
+  const isContingency      = isContingencyBox(selectedBox); // para UI legacy (badges, etc.)
+  const openingMode: OpeningMode = isOpen ? "normal" : detectOpeningMode(selectedBox);
+  const canOpen            = canOpenSession(isOpen, selectedBox, aperturaInput, openingMode, ctgPin, ctgJustif);
   const canCorrectApertura = isOpen && cashMoves.length === 0 && sessionStats.count === 0 && closingStage === 0;
+
+  // Bloque del operador actual — sin auth: se deriva de la caja activa o sugerida
+  // Con auth real: vendrá del operador logueado
+  const operatorBlockPrefix = activeBox?.code[0] ?? suggestedCashBox?.code[0] ?? "1";
+  const operatorBoxes       = cashBoxes.filter(b => b.code[0] === operatorBlockPrefix);
+  const operatorName        = { "1": "Ricardo Aguinaga", "2": "Lucía Rebaza", "3": "Administrador", "5": "Supervisor" }[operatorBlockPrefix] ?? "Operador";
 
   useEffect(() => {
     if (!canCorrectApertura) setEditingApertura(false);
@@ -315,15 +337,24 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // ── handlers ──────────────────────────────────────────────────
 
   function handleOpen() {
-    if (!selectedBox?.available) return;
-    if (isContingency) {
-      if (ctgPin !== CTG_PIN) { setCtgPinError(true); return; }
-      if (!ctgJustif) return;
-    }
+    if (!selectedBox) return;
     const amt = parseFloat(aperturaInput);
-    if (isNaN(amt) || amt < 0) return;  // canOpen debe haberlo bloqueado, pero safety guard
-    const motivo = isContingency ? ctgJustif.trim() : (aperturaMotivo.trim() || undefined);
-    openCashSession(selectedBox.code, amt, motivo, aperturaRefOp.trim() || undefined);
+    if (isNaN(amt) || amt < 0) return;
+
+    if (openingMode === "exceptional") {
+      if (ctgPin !== CTG_PIN) { setCtgPinError(true); return; }
+      if (!ctgJustif.trim()) return;
+      // Marcar caja principal como omitida + abrir contingente excepcionalmente
+      const primaryCode = selectedBox.code.slice(0, 2) + "0";
+      openCashSession(selectedBox.code, amt, ctgJustif.trim(), aperturaRefOp.trim() || undefined, [primaryCode]);
+    } else if (openingMode === "contingency") {
+      if (!ctgJustif.trim() || ctgJustif.trim().length < MIN_MOTIVO_LEN) return;
+      openCashSession(selectedBox.code, amt, ctgJustif.trim(), aperturaRefOp.trim() || undefined);
+    } else {
+      // normal — sin autorización adicional
+      if (!selectedBox.available) return;
+      openCashSession(selectedBox.code, amt, aperturaMotivo.trim() || undefined, aperturaRefOp.trim() || undefined);
+    }
     onOpened?.();
   }
 
@@ -554,6 +585,21 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               </div>
             </div>
 
+            {/* Banner: turno activo asociado (recuperado al reabrir la UI) */}
+            {turnoRecovered && closingStage === 0 && (
+              <div className="flex items-start justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2.5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">TURNO ACTIVO ASOCIADO</p>
+                  <p className="mt-0.5 text-[10px] font-semibold text-amber-600/80">
+                    Continúe la operación — sin necesidad de reapertura.
+                  </p>
+                </div>
+                <button onClick={() => setTurnoRecovered(false)} className="mt-0.5 shrink-0 text-amber-400 transition hover:text-amber-600">
+                  <X size={11} />
+                </button>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
               <InfoRow label="Operador"     value={operator} />
               {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
@@ -644,13 +690,42 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               )}
             </div>
 
-            {/* Operational authorization */}
-            {isContingency && selectedBox && (
+            {/* ── Autorización: CONTINGENCIA NORMAL (motivo solo, sin PIN) ── */}
+            {openingMode === "contingency" && selectedBox && (
               <div className="flex flex-col gap-2 rounded-xl border border-orange-200 bg-[#fffbf0] px-3.5 py-3">
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle size={12} strokeWidth={2.5} className="text-orange-500 shrink-0" />
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-orange-600">Autorización operacional</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-orange-600">CONTINGENCIA OPERACIONAL</span>
                 </div>
+                <p className="text-[10px] text-orange-600/80 -mt-1">
+                  Caja {prereqCode(selectedBox)} cerrada — motivo obligatorio para continuar.
+                </p>
+                <input
+                  type="text"
+                  value={ctgJustif}
+                  onChange={e => setCtgJustif(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && canOpen) handleOpen(); }}
+                  placeholder="Motivo operacional..."
+                  maxLength={200}
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#d97706] focus:ring-2 focus:ring-amber-300/20"
+                />
+                {ctgJustif.trim().length > 0 && ctgJustif.trim().length < MIN_MOTIVO_LEN && (
+                  <p className="text-[10px] font-semibold text-red-500">Mínimo {MIN_MOTIVO_LEN} caracteres</p>
+                )}
+              </div>
+            )}
+
+            {/* ── Autorización: APERTURA EXCEPCIONAL (PIN + motivo) ── */}
+            {openingMode === "exceptional" && selectedBox && (
+              <div className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3.5 py-3">
+                <div className="flex items-center gap-1.5">
+                  <AlertTriangle size={12} strokeWidth={2.5} className="text-red-500 shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-red-600">APERTURA EXCEPCIONAL</span>
+                </div>
+                <p className="text-[10px] text-red-600/80 -mt-1">
+                  La caja principal ({selectedBox.code.slice(0, 2) + "0"}) no fue usada hoy.
+                  Se omitirá del ciclo diario. Requiere PIN + motivo.
+                </p>
                 <input
                   type="password"
                   value={ctgPin}
@@ -658,7 +733,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   placeholder="PIN de autorización"
                   maxLength={8}
                   className={`w-full rounded-xl border px-3 py-2 text-[13px] font-bold tracking-[0.3em] text-[#2F3E46] outline-none placeholder:font-normal placeholder:tracking-normal ${
-                    ctgPinError ? "border-red-400 focus:ring-red-300/20" : "border-[#e4e9f0] focus:border-[#2154d8]"
+                    ctgPinError ? "border-red-400 focus:ring-red-300/20" : "border-[#e4e9f0] focus:border-red-400"
                   } focus:ring-2`}
                 />
                 {ctgPinError && <p className="text-[10px] text-red-500 font-semibold">PIN incorrecto</p>}
@@ -666,9 +741,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   type="text"
                   value={ctgJustif}
                   onChange={e => setCtgJustif(e.target.value)}
-                  placeholder="Ej: Cobertura compañero, horas extra..."
+                  onKeyDown={e => { if (e.key === "Enter" && canOpen) handleOpen(); }}
+                  placeholder="Motivo operacional obligatorio..."
                   maxLength={200}
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-red-300 focus:ring-2 focus:ring-red-200/30"
                 />
                 {ctgJustif.trim().length > 0 && ctgJustif.trim().length < MIN_MOTIVO_LEN && (
                   <p className="text-[10px] font-semibold text-red-500">Mínimo {MIN_MOTIVO_LEN} caracteres</p>
@@ -883,33 +959,41 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       {/* ── RIGHT ── */}
       {!isOpen ? (
 
-        /* BOX SELECTOR */
+        /* BOX SELECTOR — solo bloque del operador */
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 flex items-center px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
+          <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
             <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SELECCIÓN DE CAJA</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-[#78C487]">
+              BLOQUE {operatorBlockPrefix}00
+            </span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-            {SERIES.map(prefix => {
-              const seriesBoxes = cashBoxes.filter(b => b.code.startsWith(prefix));
-              const opName = { "1": "Ricardo Aguinaga", "2": "Lucía Rebaza", "3": "Administrador", "5": "Supervisor" }[prefix] ?? "";
-              return (
-                <div key={prefix} className="mb-4 last:mb-0">
-                  <p className="mb-0.5 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b0bac8]">BLOQUE {prefix}xx</p>
-                  <p className="mb-1.5 px-1 text-[11px] font-semibold text-[#6b7280]">{opName}</p>
-                  <div className="flex flex-col gap-0.5">
-                    {seriesBoxes.map(box => (
-                      <BoxRow
-                        key={box.code}
-                        box={box}
-                        isActive={false}
-                        isSelected={selectedCode === box.code}
-                        onSelect={() => box.available && setSelectedCode(box.code)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+            <div className="mb-1.5 px-1">
+              <p className="text-[11px] font-semibold text-[#6b7280]">{operatorName}</p>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {operatorBoxes.map(box => {
+                // Elegible para excepcional: contingencia, no disponible, no usada, y caja principal también intacta
+                const primaryCode    = box.type !== "normal" ? box.code.slice(0, 2) + "0" : null;
+                const primaryBox     = primaryCode ? cashBoxes.find(b => b.code === primaryCode) : null;
+                const exceptEligible = box.type === "contingency-1" && !box.available && !box.used && !!primaryBox && !primaryBox.used;
+                return (
+                  <BoxRow
+                    key={box.code}
+                    box={box}
+                    isActive={false}
+                    isSelected={selectedCode === box.code}
+                    onSelect={() => {
+                      if (box.available) { setSelectedCode(box.code); setCtgPin(""); setCtgJustif(""); setCtgPinError(false); }
+                    }}
+                    onExceptional={exceptEligible ? () => {
+                      setSelectedCode(box.code);
+                      setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
+                    } : undefined}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
 

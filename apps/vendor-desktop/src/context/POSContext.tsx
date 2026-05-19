@@ -371,7 +371,7 @@ interface POSContextValue {
   cashSession: CashSession;
   cashBoxes: CashBox[];
   suggestedCashBox: CashBox | null;
-  openCashSession: (boxCode: string, apertura: number, motivo?: string, refOp?: string) => void;
+  openCashSession: (boxCode: string, apertura: number, motivo?: string, refOp?: string, exceptionalSkipCodes?: string[]) => void;
   closeCashSession: () => void;
   correctAperturaData: (apertura: number, motivo?: string, observacion?: string, refOp?: string) => void;
   sessionStats: SessionStats;
@@ -619,17 +619,32 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const closeCobro = useCallback(() => { setCobroOpen(false); setZone("search"); }, []);
 
-  const openCashSession = useCallback((boxCode: string, apertura: number, motivo?: string, refOp?: string) => {
+  const openCashSession = useCallback((
+    boxCode: string, apertura: number, motivo?: string, refOp?: string,
+    exceptionalSkipCodes?: string[], // para apertura excepcional: marcar cajas previas como usadas
+  ) => {
     const box = cashBoxes.find(b => b.code === boxCode);
-    if (!box || !box.available) return;
+    if (!box) return;
+    // Excepcional: permite abrir caja no-disponible si no fue usada hoy y se proveen skip codes
+    const isExceptional = !!(exceptionalSkipCodes && exceptionalSkipCodes.length > 0);
+    if (isExceptional ? box.used : !box.available) return;
     const operator = BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
     setSessionStats(NULL_STATS);
     setCashMoves([]);
     setOpLogs([]);
+    // Marcar cajas previas como omitidas excepcionalmente — previene reapertura posterior
+    if (isExceptional) {
+      setUsedCodes(prev => {
+        const next = new Set(prev);
+        exceptionalSkipCodes!.forEach(c => next.add(c));
+        return next;
+      });
+    }
     const trimmedMotivo = motivo?.trim() || undefined;
     const trimmedRefOp  = refOp?.trim()  || undefined;
+    const tag = isExceptional ? " [EXCEPCIONAL]" : "";
     setCashSession({ isOpen: true, cashBox: box, operator, terminal: TERMINAL, openedAt: new Date(), apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
-    const base = `${operator} abrió CAJA ${boxCode} · fondo S/ ${apertura.toFixed(2)}`;
+    const base = `${operator} abrió CAJA ${boxCode}${tag} · fondo S/ ${apertura.toFixed(2)}`;
     const extra = [trimmedMotivo && `Motivo: ${trimmedMotivo}`, trimmedRefOp && `Ref: ${trimmedRefOp}`].filter(Boolean).join(" · ");
     addOpLog(extra ? `${base} — ${extra}` : base);
   }, [cashBoxes, addOpLog]);
