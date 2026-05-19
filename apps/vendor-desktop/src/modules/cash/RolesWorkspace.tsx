@@ -9,14 +9,24 @@ type Role = {
   permsCount: number;
   active: boolean;
   hasOperationalHistory: boolean;
+  createdAt: Date;
+  createdBy: string;
 };
 
+function formatCreatedAt(d: Date): string {
+  const dd  = String(d.getDate()).padStart(2, "0");
+  const mm  = String(d.getMonth() + 1).padStart(2, "0");
+  const hh  = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()} · ${hh}:${min}`;
+}
+
 const MOCK_ROLES: Role[] = [
-  { id: "1", code: "VEN", name: "Vendedor",       description: "Ventas y cobros en caja",     permsCount: 4,  active: true,  hasOperationalHistory: true  },
-  { id: "2", code: "ADM", name: "Administrador",  description: "Acceso completo al sistema",  permsCount: 32, active: true,  hasOperationalHistory: true  },
-  { id: "3", code: "GST", name: "Gestor",         description: "Inventario y reportes",       permsCount: 12, active: true,  hasOperationalHistory: false },
-  { id: "4", code: "CNT", name: "Contador",       description: "Arqueos y comprobantes",      permsCount: 8,  active: true,  hasOperationalHistory: false },
-  { id: "5", code: "SPT", name: "Soporte",        description: "Configuración y sistema",     permsCount: 6,  active: false, hasOperationalHistory: false },
+  { id: "1", code: "VEN", name: "Vendedor",       description: "Ventas y cobros en caja",     permsCount: 4,  active: true,  hasOperationalHistory: true,  createdAt: new Date("2024-01-15T09:00:00"), createdBy: "FERNANDO" },
+  { id: "2", code: "ADM", name: "Administrador",  description: "Acceso completo al sistema",  permsCount: 32, active: true,  hasOperationalHistory: true,  createdAt: new Date("2024-01-10T08:30:00"), createdBy: "FERNANDO" },
+  { id: "3", code: "GST", name: "Gestor",         description: "Inventario y reportes",       permsCount: 12, active: true,  hasOperationalHistory: false, createdAt: new Date("2025-03-08T14:20:00"), createdBy: "CARLOS"   },
+  { id: "4", code: "CNT", name: "Contador",       description: "Arqueos y comprobantes",      permsCount: 8,  active: true,  hasOperationalHistory: false, createdAt: new Date("2025-11-22T10:05:00"), createdBy: "FERNANDO" },
+  { id: "5", code: "SPT", name: "Soporte",        description: "Configuración y sistema",     permsCount: 6,  active: false, hasOperationalHistory: false, createdAt: new Date("2026-04-03T16:45:00"), createdBy: "ADMIN"    },
 ];
 
 type ThirdAction = "delete" | "deactivate" | "activate";
@@ -74,6 +84,8 @@ export function RolesWorkspace() {
         permsCount: 0,
         active: true,
         hasOperationalHistory: false,
+        createdAt: new Date(),
+        createdBy: "OPERADOR",
       };
       setRoles(prev => [...prev, next]);
       setSelectedId(next.id);
@@ -314,6 +326,25 @@ export function RolesWorkspace() {
                   <p className="text-[11px] font-semibold text-[#c0cad4]">Gestión de permisos próximamente</p>
                 </div>
               </div>
+
+              {/* Metadata operacional — silenciosa, secundaria */}
+              <div className="mt-auto border-t border-[#f1f5f9] pt-3">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Creado</span>
+                    <span className="text-[11px] font-semibold tabular-nums text-[#a8b4c4]">
+                      {formatCreatedAt(selected.createdAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Por</span>
+                    <span className="text-[11px] font-semibold tracking-wider text-[#a8b4c4]">
+                      {selected.createdBy}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           )}
 
