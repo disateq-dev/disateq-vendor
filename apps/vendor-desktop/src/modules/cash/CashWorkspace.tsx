@@ -750,7 +750,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 focus:outline-emerald-600/60 ${
                 canOpen
                   ? "bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98]"
-                  : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+                  : "cursor-not-allowed bg-emerald-700/40 text-white/60"
               }`}
             >
               <LogIn size={14} strokeWidth={2} />
