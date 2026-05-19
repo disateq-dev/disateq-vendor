@@ -698,19 +698,24 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={openEditApertura}
-                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#2154d8] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#2154d8]/60"
-              >
-                <Pencil size={14} strokeWidth={2} />
-                Corregir apertura
-                <span className="ml-auto rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+INS</span>
-              </button>
+              <>
+                <button
+                  onClick={openEditApertura}
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#2154d8] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#2154d8]/60"
+                >
+                  <Pencil size={14} strokeWidth={2} />
+                  Corregir apertura
+                  <span className="ml-auto rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+INS</span>
+                </button>
+                <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
+                  VERIFIQUE MONTO · NO EDITABLE TRAS OPERACIONES
+                </span>
+              </>
             )
           ) : (
-            <p className="text-center text-[10px] text-[#9ca3af]">
-              Corrección de apertura · disponible antes del primer movimiento
-            </p>
+            <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200/60 bg-amber-50/60 px-2.5 py-1 text-[10px] font-semibold text-amber-600/70">
+              CORRECCIÓN BLOQUEADA · TURNO CON OPERACIONES
+            </span>
           )
         )}
 
