@@ -597,6 +597,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo apertura S/</span>
               <input
                 ref={aperturaRef}
+                autoFocus
                 type="number"
                 value={aperturaInput}
                 onChange={e => setAperturaInput(e.target.value)}
@@ -746,13 +747,13 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <button
               onClick={handleOpen}
               disabled={!canOpen}
-              className={`flex h-8 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[12px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 focus:outline-emerald-600/60 ${
+              className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 focus:outline-emerald-600/60 ${
                 canOpen
                   ? "bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98]"
                   : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
               }`}
             >
-              <LogIn size={13} strokeWidth={2} />
+              <LogIn size={14} strokeWidth={2} />
               Aperturar
             </button>
 
