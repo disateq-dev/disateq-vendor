@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, RotateCcw, Pencil } from "lucide-react";
+import { type CashSubView } from "../../App";
+import { RolesWorkspace } from "./RolesWorkspace";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
 import {
   printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
@@ -137,9 +139,10 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
 
 interface CashWorkspaceProps {
   onOpened?: () => void;
+  cashSubView: CashSubView;
 }
 
-export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
+export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const {
     cashSession, cashBoxes, suggestedCashBox,
     openCashSession, closeCashSession, correctAperturaData,
@@ -492,6 +495,20 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
     return () => window.removeEventListener("keydown", onKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, closingStage, contadoValid]);
+
+  // ── sub-view routing ─────────────────────────────────────────
+
+  if (cashSubView === "roles") return <RolesWorkspace />;
+
+  if (cashSubView === "operadores" || cashSubView === "cajas") {
+    const label = cashSubView === "operadores" ? "OPERADORES" : "CAJAS";
+    return (
+      <section className="flex h-full w-full flex-col items-center justify-center gap-2">
+        <p className="text-[13px] font-semibold uppercase tracking-widest text-[#b0bac8]">{label}</p>
+        <p className="text-[11px] font-semibold text-[#d1d9e1]">Próximamente</p>
+      </section>
+    );
+  }
 
   // ── render ────────────────────────────────────────────────────
 

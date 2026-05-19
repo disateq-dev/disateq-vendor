@@ -1,14 +1,23 @@
 import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
-import { type ActiveModule } from "../App";
+import { type ActiveModule, type CashSubView } from "../App";
 
 interface SubContextBarProps {
   activeModule: ActiveModule;
   displayModule: ActiveModule;
   visible: boolean;
+  cashSubView: CashSubView;
+  onCashSubViewChange: (sv: CashSubView) => void;
 }
 
-const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes"]);
+const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash"]);
+
+const CASH_TABS: { key: CashSubView; label: string }[] = [
+  { key: "turno",      label: "TURNO ACTIVO" },
+  { key: "roles",      label: "ROLES"        },
+  { key: "operadores", label: "OPERADORES"   },
+  { key: "cajas",      label: "CAJAS"        },
+];
 
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
 const SHELL: Record<ActiveModule, string> = {
@@ -18,7 +27,7 @@ const SHELL: Record<ActiveModule, string> = {
   config:       "border-t border-[#9B8BFF]/20 bg-[rgba(221,217,255,0.22)]",
 };
 
-export function SubContextBar({ activeModule, displayModule, visible }: SubContextBarProps) {
+export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange }: SubContextBarProps) {
   const { cashSession, sessionStats } = usePOS();
   const sessionActive = cashSession.isOpen;
   const { efe, yap, tar, mix } = sessionStats.byMethod;
@@ -93,6 +102,28 @@ export function SubContextBar({ activeModule, displayModule, visible }: SubConte
               </>
             )}
           </>
+        )}
+
+        {/* TURNO (CASH) — sub-view tabs */}
+        {displayModule === "cash" && (
+          <div className="flex items-center gap-1">
+            {CASH_TABS.map(({ key, label }) => {
+              const isActive = activeModule === "cash" && cashSubView === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { if (activeModule === "cash") onCashSubViewChange(key); }}
+                  className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                    isActive
+                      ? "bg-[#78C487] text-white shadow-sm"
+                      : "text-[#4a7a55]/70 hover:bg-[#78C487]/10 hover:text-[#2d6640]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         )}
 
       </div>

@@ -4,12 +4,14 @@ import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { usePOS } from "../context/POSContext";
-import { type ActiveModule } from "../App";
+import { type ActiveModule, type CashSubView } from "../App";
 
 interface AppShellProps {
   children: ReactNode;
   activeModule: ActiveModule;
   onModuleChange: (m: ActiveModule) => void;
+  cashSubView: CashSubView;
+  onCashSubViewChange: (sv: CashSubView) => void;
 }
 
 function OperationalNotice() {
@@ -25,7 +27,7 @@ function OperationalNotice() {
   );
 }
 
-export function AppShell({ children, activeModule, onModuleChange }: AppShellProps) {
+export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange }: AppShellProps) {
   const { closeCobro } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
 
@@ -43,7 +45,13 @@ export function AppShell({ children, activeModule, onModuleChange }: AppShellPro
             onChange={m => { closeCobro(); onModuleChange(m); setHoveredModule(null); }}
             onHover={setHoveredModule}
           />
-          <SubContextBar displayModule={displayModule} activeModule={activeModule} visible={visible} />
+          <SubContextBar
+            displayModule={displayModule}
+            activeModule={activeModule}
+            visible={visible}
+            cashSubView={cashSubView}
+            onCashSubViewChange={onCashSubViewChange}
+          />
         </header>
 
         <section className="flex min-h-0 flex-1 gap-3 p-3">
