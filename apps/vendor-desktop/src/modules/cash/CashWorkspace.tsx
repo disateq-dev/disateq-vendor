@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, RotateCcw, Pencil } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
+import { CajasWorkspace } from "./CajasWorkspace";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
 import {
   printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
@@ -498,13 +499,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // ── sub-view routing ─────────────────────────────────────────
 
-  if (cashSubView === "roles") return <RolesWorkspace />;
+  if (cashSubView === "roles")      return <RolesWorkspace />;
+  if (cashSubView === "cajas")      return <CajasWorkspace />;
 
-  if (cashSubView === "operadores" || cashSubView === "cajas") {
-    const label = cashSubView === "operadores" ? "OPERADORES" : "CAJAS";
+  if (cashSubView === "operadores") {
     return (
       <section className="flex h-full w-full flex-col items-center justify-center gap-2">
-        <p className="text-[13px] font-semibold uppercase tracking-widest text-[#b0bac8]">{label}</p>
+        <p className="text-[13px] font-semibold uppercase tracking-widest text-[#b0bac8]">OPERADORES</p>
         <p className="text-[11px] font-semibold text-[#d1d9e1]">Próximamente</p>
       </section>
     );

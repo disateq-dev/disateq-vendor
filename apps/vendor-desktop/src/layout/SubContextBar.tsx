@@ -15,8 +15,8 @@ const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash"])
 const CASH_TABS: { key: CashSubView; label: string }[] = [
   { key: "turno",      label: "TURNO ACTIVO" },
   { key: "roles",      label: "ROLES"        },
-  { key: "operadores", label: "OPERADORES"   },
   { key: "cajas",      label: "CAJAS"        },
+  { key: "operadores", label: "OPERADORES"   },
 ];
 
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
