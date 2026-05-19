@@ -690,9 +690,11 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
                 <button
                   onClick={handleSaveCorrection}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#2154d8] py-2 text-[12px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-emerald-800 active:scale-[0.98] focus:outline focus:outline-1 focus:outline-emerald-600/60"
                 >
-                  GUARDAR CORRECCIÓN
+                  <CheckCircle size={14} strokeWidth={2} />
+                  Guardar corrección
+                  <span className="ml-auto rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>
                 </button>
               </div>
             ) : (
