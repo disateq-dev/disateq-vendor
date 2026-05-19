@@ -3,19 +3,19 @@ import { Plus, Pencil, Ban, ToggleRight, Layers, ChevronRight, X } from "lucide-
 
 // ── tipos ──────────────────────────────────────────────────────────────────
 
-type SlotStatus = "disponible" | "activa" | "cerrada" | "bloqueada";
+type SlotStatus = "sin_operacion" | "disponible" | "activa" | "cerrada" | "bloqueada";
 
 type CajaSlot = {
   code: string;
   status: SlotStatus;
   isContingency: boolean;
   hasHistory: boolean;
-  overrideReason?: string; // abierta por excepción operacional
+  overrideReason?: string;
 };
 
 type OperationalBlock = {
   id: string;
-  blockBase: number;   // 100, 200, 300…
+  blockBase: number;
   operatorName: string;
   active: boolean;
   slots: CajaSlot[];
@@ -23,16 +23,25 @@ type OperationalBlock = {
   createdBy: string;
 };
 
-type PanelMode = "view" | "create" | "edit";
+type PanelMode   = "view" | "create" | "edit";
 type ThirdAction = "deactivate" | "activate" | "blocked" | null;
+type BlockState  = "sin_operacion" | "operacion_activa" | "contingencia_activa" | "operacion_cerrada";
 
 // ── config visual ──────────────────────────────────────────────────────────
 
 const SLOT_CFG: Record<SlotStatus, { rowBg: string; text: string; dot: string; label: string }> = {
-  disponible: { rowBg: "bg-[#f0fbf0] border-[#c8edd0]", text: "text-[#44a852]", dot: "bg-[#56C264]", label: "DISPONIBLE" },
-  activa:     { rowBg: "bg-[#eff6ff] border-[#bfdbfe]", text: "text-[#005BE3]", dot: "bg-[#005BE3]", label: "ACTIVA"     },
-  cerrada:    { rowBg: "bg-[#f8fafc] border-[#e2e8f0]", text: "text-[#64748b]", dot: "bg-[#cbd5e1]", label: "CERRADA"    },
-  bloqueada:  { rowBg: "bg-red-50   border-red-100",    text: "text-[#dc2626]", dot: "bg-[#dc2626]", label: "BLOQUEADA"  },
+  sin_operacion: { rowBg: "bg-[#f8fafc] border-[#e8ecf0]",   text: "text-[#b0bac8]",      dot: "bg-[#d1d9e1]",  label: "SIN OPERACIÓN"           },
+  disponible:    { rowBg: "bg-[#f0fbf0] border-[#a7f3b0]",   text: "text-[#16a34a]",      dot: "bg-[#56C264]",  label: "DISPONIBLE PARA APERTURA" },
+  activa:        { rowBg: "bg-[#eff6ff] border-[#93c5fd]",   text: "text-[#005BE3]",      dot: "bg-[#005BE3]",  label: "ACTIVA"                   },
+  cerrada:       { rowBg: "bg-[#f1f5f9] border-[#e2e8f0]",   text: "text-[#64748b]",      dot: "bg-[#94a3b8]",  label: "CERRADA"                  },
+  bloqueada:     { rowBg: "bg-red-50/70 border-red-100",      text: "text-[#dc2626]/70",   dot: "bg-red-200",    label: "BLOQUEADA POR SECUENCIA"  },
+};
+
+const BLOCK_STATE_CFG: Record<BlockState, { text: string; label: string }> = {
+  sin_operacion:      { text: "text-[#b0bac8]",  label: "SIN OPERACIÓN"       },
+  operacion_activa:   { text: "text-[#005BE3]",  label: "OPERACIÓN ACTIVA"    },
+  contingencia_activa:{ text: "text-[#d97706]",  label: "CONTINGENCIA ACTIVA" },
+  operacion_cerrada:  { text: "text-[#16a34a]",  label: "OPERACIÓN CERRADA"   },
 };
 
 // ── mock data ──────────────────────────────────────────────────────────────
@@ -43,7 +52,8 @@ const MOCK_BLOCKS: OperationalBlock[] = [
     createdAt: new Date("2024-01-10T08:00:00"), createdBy: "ADMIN",
     slots: [
       { code: "100", status: "cerrada",    isContingency: false, hasHistory: true  },
-      { code: "101", status: "activa",     isContingency: true,  hasHistory: true  },
+      { code: "101", status: "disponible", isContingency: true,  hasHistory: false },
+      { code: "102", status: "bloqueada",  isContingency: true,  hasHistory: false },
     ],
   },
   {
@@ -51,6 +61,7 @@ const MOCK_BLOCKS: OperationalBlock[] = [
     createdAt: new Date("2024-03-15T09:30:00"), createdBy: "FERNANDO",
     slots: [
       { code: "200", status: "disponible", isContingency: false, hasHistory: false },
+      { code: "201", status: "bloqueada",  isContingency: true,  hasHistory: false },
     ],
   },
 ];
@@ -65,6 +76,20 @@ function formatCreatedAt(d: Date): string {
   return `${dd}/${mm}/${d.getFullYear()} · ${hh}:${min}`;
 }
 
+function computeBlockState(slots: CajaSlot[]): BlockState {
+  const active = slots.find(s => s.status === "activa");
+  if (active) return active.isContingency ? "contingencia_activa" : "operacion_activa";
+  if (slots.some(s => s.status === "cerrada")) return "operacion_cerrada";
+  return "sin_operacion";
+}
+
+function canOpenViaException(slot: CajaSlot, block: OperationalBlock): boolean {
+  if (!slot.isContingency || slot.status !== "bloqueada") return false;
+  if (block.slots.some(s => s.status === "activa")) return false;
+  const idx = block.slots.findIndex(s => s.code === slot.code);
+  return block.slots.slice(0, idx).every(s => s.status !== "cerrada");
+}
+
 function nextBlockBase(blocks: OperationalBlock[]): number {
   const existing = new Set(blocks.map(b => b.blockBase));
   let n = 100;
@@ -75,25 +100,22 @@ function nextBlockBase(blocks: OperationalBlock[]): number {
 // ── componente ─────────────────────────────────────────────────────────────
 
 export function CajasWorkspace() {
-  const [blocks,        setBlocks]        = useState<OperationalBlock[]>(MOCK_BLOCKS);
-  const [selectedId,    setSelectedId]    = useState<string | null>("b100");
-  const [mode,          setMode]          = useState<PanelMode>("view");
-  const [editOperator,  setEditOperator]  = useState("");
+  const [blocks,           setBlocks]           = useState<OperationalBlock[]>(MOCK_BLOCKS);
+  const [selectedId,       setSelectedId]       = useState<string | null>("b100");
+  const [mode,             setMode]             = useState<PanelMode>("view");
+  const [editOperator,     setEditOperator]     = useState("");
+  const [exceptionCode,    setExceptionCode]    = useState<string | null>(null);
+  const [exceptionMotivo,  setExceptionMotivo]  = useState("");
 
   const selected        = blocks.find(b => b.id === selectedId) ?? null;
   const canActOnSel     = selected !== null;
-  const activeSlot      = selected?.slots.find(s => s.status === "activa") ?? null;
-  const blockHasActive  = activeSlot !== null;
-  const nextSlotCode    = selected
-    ? selected.blockBase + selected.slots.length < selected.blockBase + 5
-      ? selected.blockBase + selected.slots.length
-      : null
-    : null;
-  const canAddSlot = nextSlotCode !== null;
+  const blockHasActive  = selected?.slots.some(s => s.status === "activa") ?? false;
+  const nextSlotCode    = selected && selected.slots.length < 5
+    ? selected.blockBase + selected.slots.length : null;
+  const canAddSlot      = nextSlotCode !== null;
 
-  // Último slot eliminable: contingencia sin historia
   const lastSlot       = selected?.slots[selected.slots.length - 1] ?? null;
-  const canDeleteLast  = lastSlot?.isContingency && !lastSlot.hasHistory && lastSlot.status !== "activa";
+  const canDeleteLast  = (lastSlot?.isContingency && !lastSlot.hasHistory && lastSlot.status !== "activa") ?? false;
 
   const thirdAction: ThirdAction =
     !canActOnSel        ? null
@@ -101,23 +123,56 @@ export function CajasWorkspace() {
     : blockHasActive    ? "blocked"
     :                     "deactivate";
 
-  // ── handlers ──────────────────────────────────────────────────────────────
+  // ── mutaciones ────────────────────────────────────────────────────────────
 
-  function handleSelect(b: OperationalBlock) {
-    setSelectedId(b.id);
-    setMode("view");
+  function mutateBlock(fn: (slots: CajaSlot[]) => CajaSlot[]) {
+    if (!selectedId) return;
+    setBlocks(prev => prev.map(b => b.id === selectedId ? { ...b, slots: fn(b.slots) } : b));
   }
 
-  function handleStartCreate() {
-    setSelectedId(null);
-    setEditOperator("");
-    setMode("create");
+  function handleOpenCaja(code: string) {
+    mutateBlock(slots => slots.map(s =>
+      s.code === code ? { ...s, status: "activa", hasHistory: true } : s
+    ));
   }
 
-  function handleStartEdit() {
-    if (!selected) return;
-    setEditOperator(selected.operatorName);
-    setMode("edit");
+  function handleCloseCaja(code: string) {
+    mutateBlock(slots => {
+      const idx = slots.findIndex(s => s.code === code);
+      return slots.map((s, i) => {
+        if (s.code === code) return { ...s, status: "cerrada" as SlotStatus, hasHistory: true };
+        if (i === idx + 1 && s.status === "bloqueada") return { ...s, status: "disponible" as SlotStatus };
+        return s;
+      });
+    });
+  }
+
+  function handleOpenException() {
+    if (!exceptionCode || !exceptionMotivo.trim()) return;
+    mutateBlock(slots => {
+      const targetIdx = slots.findIndex(s => s.code === exceptionCode);
+      return slots.map((s, i) => {
+        if (s.code === exceptionCode)
+          return { ...s, status: "activa" as SlotStatus, hasHistory: true, overrideReason: exceptionMotivo.trim() };
+        if (i < targetIdx && s.status !== "cerrada")
+          return { ...s, status: "sin_operacion" as SlotStatus };
+        return s;
+      });
+    });
+    setExceptionCode(null);
+    setExceptionMotivo("");
+  }
+
+  function handleAddContingency() {
+    if (!selected || !nextSlotCode) return;
+    const last = selected.slots[selected.slots.length - 1];
+    const init: SlotStatus = last.status === "cerrada" ? "disponible" : "bloqueada";
+    mutateBlock(slots => [...slots, { code: String(nextSlotCode), status: init, isContingency: true, hasHistory: false }]);
+  }
+
+  function handleDeleteLastSlot() {
+    if (!canDeleteLast) return;
+    mutateBlock(slots => slots.slice(0, -1));
   }
 
   function handleSave() {
@@ -125,13 +180,10 @@ export function CajasWorkspace() {
     if (mode === "create") {
       const base = nextBlockBase(blocks);
       const next: OperationalBlock = {
-        id:           `b${base}`,
-        blockBase:    base,
-        operatorName: editOperator.trim().toUpperCase(),
-        active:       true,
-        slots:        [{ code: String(base), status: "disponible", isContingency: false, hasHistory: false }],
-        createdAt:    new Date(),
-        createdBy:    "OPERADOR",
+        id: `b${base}`, blockBase: base,
+        operatorName: editOperator.trim().toUpperCase(), active: true,
+        slots: [{ code: String(base), status: "disponible", isContingency: false, hasHistory: false }],
+        createdAt: new Date(), createdBy: "OPERADOR",
       };
       setBlocks(prev => [...prev, next]);
       setSelectedId(next.id);
@@ -141,26 +193,6 @@ export function CajasWorkspace() {
       ));
     }
     setMode("view");
-  }
-
-  function handleCancel() {
-    setMode("view");
-  }
-
-  function handleAddContingency() {
-    if (!selected || !nextSlotCode) return;
-    setBlocks(prev => prev.map(b =>
-      b.id === selected.id
-        ? { ...b, slots: [...b.slots, { code: String(nextSlotCode), status: "disponible", isContingency: true, hasHistory: false }] }
-        : b
-    ));
-  }
-
-  function handleDeleteLastSlot() {
-    if (!selected || !canDeleteLast) return;
-    setBlocks(prev => prev.map(b =>
-      b.id === selected.id ? { ...b, slots: b.slots.slice(0, -1) } : b
-    ));
   }
 
   function handleDeactivate() {
@@ -174,9 +206,9 @@ export function CajasWorkspace() {
     setBlocks(prev => prev.map(b => b.id === selected.id ? { ...b, active: true } : b));
   }
 
-  const canSave     = editOperator.trim().length >= 2;
-  const showView    = mode === "view"   && selected !== null;
-  const showForm    = mode === "create" || mode === "edit";
+  const canSave  = editOperator.trim().length >= 2;
+  const showView = mode === "view" && selected !== null;
+  const showForm = mode === "create" || mode === "edit";
 
   // ── render ────────────────────────────────────────────────────────────────
 
@@ -195,113 +227,66 @@ export function CajasWorkspace() {
           </span>
         </div>
 
-        {/* Toolbar */}
         <div className="flex items-center gap-1.5">
-
-          <button
-            onClick={handleStartCreate}
-            title="Crear nuevo bloque operacional"
-            className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]"
-          >
-            <Plus size={12} strokeWidth={2.5} />
-            CREAR BLOQUE
+          <button onClick={() => { setSelectedId(null); setEditOperator(""); setMode("create"); }}
+            className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]">
+            <Plus size={12} strokeWidth={2.5} />CREAR BLOQUE
           </button>
 
-          <button
-            onClick={handleStartEdit}
+          <button onClick={() => { if (selected) { setEditOperator(selected.operatorName); setMode("edit"); } }}
             disabled={!canActOnSel}
-            title="Tecla [CTRL + E]"
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-              canActOnSel
-                ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
-                : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/50"
-            }`}
-          >
-            <Pencil size={12} strokeWidth={2.5} />
-            EDITAR BLOQUE
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${canActOnSel ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]" : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/50"}`}>
+            <Pencil size={12} strokeWidth={2.5} />EDITAR BLOQUE
           </button>
 
-          {/* Tercer slot dinámico */}
           {(thirdAction === null || thirdAction === "blocked") && (
-            <button
-              disabled
-              title={thirdAction === "blocked" ? "Bloque con caja activa · cerrar primero" : ""}
-              className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-[#dc2626]/[0.15] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#dc2626]/50"
-            >
-              <Ban size={12} strokeWidth={2.5} />
-              DESACTIVAR BLOQUE
+            <button disabled title={thirdAction === "blocked" ? "Bloque con caja activa · cerrar primero" : ""}
+              className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-[#dc2626]/[0.15] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#dc2626]/50">
+              <Ban size={12} strokeWidth={2.5} />DESACTIVAR BLOQUE
             </button>
           )}
           {thirdAction === "deactivate" && (
-            <button
-              onClick={handleDeactivate}
-              title="Tecla [CTRL + D]"
-              className="flex items-center gap-1.5 rounded-lg bg-[#dc2626] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#b91c1c] active:scale-[0.97]"
-            >
-              <Ban size={12} strokeWidth={2.5} />
-              DESACTIVAR BLOQUE
+            <button onClick={handleDeactivate}
+              className="flex items-center gap-1.5 rounded-lg bg-[#dc2626] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#b91c1c] active:scale-[0.97]">
+              <Ban size={12} strokeWidth={2.5} />DESACTIVAR BLOQUE
             </button>
           )}
           {thirdAction === "activate" && (
-            <button
-              onClick={handleActivate}
-              title="Tecla [CTRL + D]"
-              className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]"
-            >
-              <ToggleRight size={12} strokeWidth={2.5} />
-              ACTIVAR BLOQUE
+            <button onClick={handleActivate}
+              className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]">
+              <ToggleRight size={12} strokeWidth={2.5} />ACTIVAR BLOQUE
             </button>
           )}
-
         </div>
       </header>
 
       {/* Body */}
       <div className="flex min-h-0 flex-1">
 
-        {/* Lista de bloques */}
-        <div className="w-[40%] shrink-0 overflow-y-auto border-r border-[#78C487]/10">
+        {/* Lista bloques */}
+        <div className="w-[38%] shrink-0 overflow-y-auto border-r border-[#78C487]/10">
           {blocks.map(block => {
-            const isSel   = block.id === selectedId;
-            const actSlot = block.slots.find(s => s.status === "activa");
-            const disp    = block.slots.find(s => s.status === "disponible");
+            const isSel  = block.id === selectedId;
+            const bstate = computeBlockState(block.slots);
+            const bsc    = BLOCK_STATE_CFG[bstate];
             return (
-              <div
-                key={block.id}
-                onClick={() => handleSelect(block)}
-                className={`flex cursor-pointer items-start gap-3 border-l-2 px-4 py-3 transition ${
-                  isSel ? "border-[#78C487] bg-[#EFF8F0]" : "border-transparent hover:bg-[#F5FBF5]"
-                }`}
-              >
-                {/* Bloque badge */}
-                <span className={`mt-px shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-                  isSel ? "bg-[#78C487] text-white" : "bg-[#e8f5ea] text-[#4a7a55]"
-                }`}>
+              <div key={block.id} onClick={() => { setSelectedId(block.id); setMode("view"); setExceptionCode(null); }}
+                className={`flex cursor-pointer items-start gap-3 border-l-2 px-4 py-3 transition ${isSel ? "border-[#78C487] bg-[#EFF8F0]" : "border-transparent hover:bg-[#F5FBF5]"}`}>
+                <span className={`mt-px shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums ${isSel ? "bg-[#78C487] text-white" : "bg-[#e8f5ea] text-[#4a7a55]"}`}>
                   {block.blockBase}
                 </span>
-
                 <div className="min-w-0 flex-1">
                   <p className={`text-[12px] font-semibold ${isSel ? "text-[#2d6640]" : "text-[#2F3E46]"}`}>
                     {block.operatorName}
                   </p>
-                  <p className="mt-0.5 text-[10px] font-semibold">
-                    {!block.active ? (
-                      <span className="text-[#dc2626]/70">INACTIVO</span>
-                    ) : actSlot ? (
-                      <span className="text-[#005BE3]">● ACTIVA {actSlot.code}</span>
-                    ) : disp ? (
-                      <span className="text-[#44a852]">○ DISPONIBLE {disp.code}</span>
-                    ) : (
-                      <span className="text-[#b0bac8]">Sin actividad</span>
-                    )}
+                  <p className={`mt-0.5 text-[10px] font-semibold ${!block.active ? "text-[#dc2626]/70" : bsc.text}`}>
+                    {!block.active ? "INACTIVO" : bsc.label}
                   </p>
                 </div>
-
                 <ChevronRight size={12} className={`mt-1 shrink-0 ${isSel ? "text-[#78C487]" : "text-[#d1d9e1]"}`} />
               </div>
             );
           })}
-
           {blocks.length === 0 && (
             <div className="flex items-center justify-center py-10">
               <p className="text-[12px] font-semibold text-[#c0cad4]">Sin bloques operacionales</p>
@@ -309,136 +294,162 @@ export function CajasWorkspace() {
           )}
         </div>
 
-        {/* Panel contextual */}
+        {/* Panel */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
 
-          {/* ── VIEW ── */}
-          {showView && selected && (
-            <div className="flex flex-col gap-4">
+          {/* VIEW */}
+          {showView && selected && (() => {
+            const bstate = computeBlockState(selected.slots);
+            const bsc    = BLOCK_STATE_CFG[bstate];
+            return (
+              <div className="flex flex-col gap-4">
 
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                BLOQUE OPERACIONAL
-              </span>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">BLOQUE OPERACIONAL</span>
 
-              {/* Header bloque */}
-              <div className="flex items-center gap-2.5">
-                <span className="rounded-md bg-[#78C487] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">
-                  {selected.blockBase}
-                </span>
-                <span className="text-[14px] font-semibold text-[#2F3E46]">{selected.operatorName}</span>
-                {!selected.active && (
-                  <span className="rounded-md bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase text-[#dc2626]">
-                    INACTIVO
-                  </span>
-                )}
-              </div>
-
-              {/* Estado caja activa */}
-              {activeSlot ? (
-                <div className="flex items-center gap-2 rounded-xl border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#005BE3]" />
-                  <span className="text-[11px] font-semibold text-[#005BE3]">
-                    CAJA ACTIVA · {activeSlot.code}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#cbd5e1]" />
-                  <span className="text-[11px] font-semibold text-[#94a3b8]">Sin caja activa</span>
-                </div>
-              )}
-
-              {/* Slots */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                    Cajas del bloque
-                  </span>
-                  <span className={`text-[10px] font-bold tabular-nums ${
-                    selected.slots.length > 1 ? "text-amber-600" : "text-[#9ca3af]"
-                  }`}>
-                    {selected.slots.length - 1}/4 contingencias
-                  </span>
+                {/* Cabecera bloque */}
+                <div className="flex items-center gap-2.5">
+                  <span className="rounded-md bg-[#78C487] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">{selected.blockBase}</span>
+                  <span className="text-[14px] font-semibold text-[#2F3E46]">{selected.operatorName}</span>
+                  {!selected.active && (
+                    <span className="rounded-md bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase text-[#dc2626]">INACTIVO</span>
+                  )}
                 </div>
 
-                {selected.slots.map((slot, idx) => {
-                  const sc = SLOT_CFG[slot.status];
-                  const isLast = idx === selected.slots.length - 1;
-                  const isDeletable = isLast && canDeleteLast;
-                  return (
-                    <div
-                      key={slot.code}
-                      className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 ${sc.rowBg}`}
-                    >
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${sc.dot}`} />
-                      <span className="text-[11px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${sc.text}`}>
-                        {sc.label}
-                      </span>
-                      {!slot.isContingency && (
-                        <span className="ml-1 text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">
-                          PRINCIPAL
-                        </span>
-                      )}
-                      {slot.overrideReason && (
-                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600">
-                          EXCEPCIÓN
-                        </span>
-                      )}
-                      {isDeletable && (
-                        <button
-                          onClick={handleDeleteLastSlot}
-                          title="Eliminar última contingencia"
-                          className="ml-auto flex h-5 w-5 items-center justify-center rounded text-[#b0bac8] transition hover:bg-red-50 hover:text-[#dc2626]"
-                        >
-                          <X size={10} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                {/* Estado del bloque */}
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${bstate === "sin_operacion" ? "bg-[#d1d9e1]" : bstate === "operacion_cerrada" ? "bg-[#56C264]" : bstate === "operacion_activa" ? "bg-[#005BE3]" : "bg-[#d97706]"}`} />
+                  <span className={`text-[11px] font-semibold uppercase tracking-wider ${bsc.text}`}>{bsc.label}</span>
+                </div>
 
-                {/* Crear contingencia */}
-                {canAddSlot && selected.active ? (
-                  <button
-                    onClick={handleAddContingency}
-                    title="Agregar siguiente contingencia"
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-700 transition hover:bg-amber-100 active:scale-[0.98]"
-                  >
-                    <Plus size={11} strokeWidth={2.5} />
-                    CREAR CONTINGENCIA · {nextSlotCode}
-                  </button>
-                ) : !canAddSlot && (
-                  <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-[#b0bac8]">
-                    Máximo de contingencias · 4/4
-                  </p>
-                )}
-              </div>
-
-              {/* Trazabilidad */}
-              <div className="mt-auto border-t border-[#f1f5f9] pt-3">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Creado</span>
-                    <span className="text-[11px] font-semibold tabular-nums text-[#a8b4c4]">
-                      {formatCreatedAt(selected.createdAt)}
+                {/* Slots operacionales */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Cajas del bloque</span>
+                    <span className={`text-[10px] font-bold tabular-nums ${selected.slots.length > 1 ? "text-amber-600" : "text-[#9ca3af]"}`}>
+                      {selected.slots.length - 1}/4 contingencias
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Por</span>
-                    <span className="text-[11px] font-semibold tracking-wider text-[#a8b4c4]">{selected.createdBy}</span>
+
+                  {selected.slots.map((slot, idx) => {
+                    const sc          = SLOT_CFG[slot.status];
+                    const isLast      = idx === selected.slots.length - 1;
+                    const showDelBtn  = isLast && canDeleteLast;
+                    const showExcBtn  = canOpenViaException(slot, selected) && exceptionCode !== slot.code;
+                    const showExcForm = exceptionCode === slot.code;
+
+                    return (
+                      <div key={slot.code} className={`overflow-hidden rounded-xl border ${sc.rowBg}`}>
+                        {/* Fila principal */}
+                        <div className="flex items-center gap-2.5 px-3 py-2">
+                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${sc.dot}`} />
+                          <span className="text-[11px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${sc.text}`}>{sc.label}</span>
+                          {!slot.isContingency && (
+                            <span className="ml-1 text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">PRINCIPAL</span>
+                          )}
+                          {slot.overrideReason && (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600">EXCEPCIÓN</span>
+                          )}
+
+                          {/* Acciones vivas */}
+                          <div className="ml-auto flex items-center gap-1.5">
+                            {slot.status === "disponible" && (
+                              <button onClick={() => handleOpenCaja(slot.code)}
+                                className="rounded-lg bg-[#56C264] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]">
+                                ABRIR CAJA
+                              </button>
+                            )}
+                            {slot.status === "activa" && (
+                              <button onClick={() => handleCloseCaja(slot.code)}
+                                className="rounded-lg border border-[#005BE3]/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#005BE3] transition hover:bg-[#eff6ff] active:scale-[0.97]">
+                                CERRAR CAJA
+                              </button>
+                            )}
+                            {showExcBtn && (
+                              <button onClick={() => { setExceptionCode(slot.code); setExceptionMotivo(""); }}
+                                className="text-[10px] font-semibold text-amber-600 transition hover:text-amber-700 hover:underline underline-offset-2">
+                                Apertura excepcional →
+                              </button>
+                            )}
+                            {showDelBtn && (
+                              <button onClick={handleDeleteLastSlot} title="Eliminar última contingencia"
+                                className="flex h-5 w-5 items-center justify-center rounded text-[#b0bac8] transition hover:bg-red-50 hover:text-[#dc2626]">
+                                <X size={10} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Form excepción inline */}
+                        {showExcForm && (
+                          <div className="border-t border-amber-200 bg-amber-50/60 px-3 pb-3 pt-2.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">APERTURA EXCEPCIONAL</p>
+                            <p className="mt-0.5 text-[10px] font-semibold text-amber-600/70">
+                              La caja principal no registra operación previa hoy.
+                            </p>
+                            <input
+                              autoFocus
+                              type="text"
+                              value={exceptionMotivo}
+                              onChange={e => setExceptionMotivo(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === "Enter"  && exceptionMotivo.trim()) handleOpenException();
+                                if (e.key === "Escape") setExceptionCode(null);
+                              }}
+                              placeholder="Motivo operacional..."
+                              className="mt-2 w-full rounded-lg border border-amber-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-amber-400 focus:ring-1 focus:ring-amber-300/30"
+                            />
+                            <div className="mt-2 flex gap-1.5">
+                              <button onClick={() => setExceptionCode(null)}
+                                className="flex h-8 flex-1 items-center justify-center rounded-lg border border-amber-200 bg-white text-[11px] font-semibold uppercase text-amber-600 transition hover:bg-amber-100">
+                                Cancelar
+                              </button>
+                              <button onClick={handleOpenException}
+                                disabled={!exceptionMotivo.trim()}
+                                className={`flex h-8 flex-1 items-center justify-center rounded-lg text-[11px] font-bold uppercase tracking-wider text-white transition ${exceptionMotivo.trim() ? "bg-amber-600 hover:bg-amber-700 active:scale-[0.97]" : "cursor-not-allowed bg-amber-300"}`}>
+                                CONTINUAR APERTURA
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* CREAR CONTINGENCIA */}
+                  {canAddSlot && selected.active ? (
+                    <button onClick={handleAddContingency}
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-700 transition hover:bg-amber-100 active:scale-[0.98]">
+                      <Plus size={11} strokeWidth={2.5} />CREAR CONTINGENCIA · {nextSlotCode}
+                    </button>
+                  ) : !canAddSlot && (
+                    <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-[#b0bac8]">
+                      Máximo de contingencias · 4/4
+                    </p>
+                  )}
+                </div>
+
+                {/* Trazabilidad silenciosa */}
+                <div className="mt-auto border-t border-[#f1f5f9] pt-3">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Creado</span>
+                      <span className="text-[11px] font-semibold tabular-nums text-[#a8b4c4]">{formatCreatedAt(selected.createdAt)}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Por</span>
+                      <span className="text-[11px] font-semibold tracking-wider text-[#a8b4c4]">{selected.createdBy}</span>
+                    </div>
                   </div>
                 </div>
+
               </div>
+            );
+          })()}
 
-            </div>
-          )}
-
-          {/* ── FORM (crear / editar) ── */}
+          {/* FORM */}
           {showForm && (
             <div className="flex flex-col gap-4">
-
-              {/* Readonly: bloque asignado */}
               <div className="flex items-center gap-2.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-2">
                 <span className="rounded-md bg-[#78C487] px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">
                   {mode === "create" ? nextBlockBase(blocks) : selected?.blockBase}
@@ -448,51 +459,30 @@ export function CajasWorkspace() {
                 </span>
               </div>
 
-              {/* Operador */}
               <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                  Operador asignado
-                </span>
-                <input
-                  autoFocus
-                  type="text"
-                  value={editOperator}
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Operador asignado</span>
+                <input autoFocus type="text" value={editOperator}
                   onChange={e => setEditOperator(e.target.value.toUpperCase())}
-                  onKeyDown={e => {
-                    if (e.key === "Enter"  && canSave) handleSave();
-                    if (e.key === "Escape")             handleCancel();
-                  }}
+                  onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") setMode("view"); }}
                   placeholder="FERNANDO"
                   className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[13px] font-semibold uppercase text-[#2F3E46] outline-none transition focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
                 />
               </div>
 
               <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleCancel}
-                  title="Tecla [ESC]"
-                  className="flex h-10 flex-1 items-center justify-center rounded-md border border-[#e4e9f0] bg-white text-[13px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8] hover:text-[#374151]"
-                >
+                <button onClick={() => setMode("view")} title="Tecla [ESC]"
+                  className="flex h-10 flex-1 items-center justify-center rounded-md border border-[#e4e9f0] bg-white text-[13px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8] hover:text-[#374151]">
                   Cancelar
                 </button>
-                <button
-                  onClick={handleSave}
-                  disabled={!canSave}
-                  title="Tecla [ENTER]"
-                  className={`flex h-10 flex-1 items-center justify-center rounded-md text-[13px] font-semibold uppercase tracking-wider text-white transition ${
-                    canSave
-                      ? "bg-[#56C264] hover:bg-[#44a852] active:scale-[0.98]"
-                      : "cursor-not-allowed bg-[#56C264]/40"
-                  }`}
-                >
+                <button onClick={handleSave} disabled={!canSave} title="Tecla [ENTER]"
+                  className={`flex h-10 flex-1 items-center justify-center rounded-md text-[13px] font-semibold uppercase tracking-wider text-white transition ${canSave ? "bg-[#56C264] hover:bg-[#44a852] active:scale-[0.98]" : "cursor-not-allowed bg-[#56C264]/40"}`}>
                   {mode === "create" ? "Crear bloque" : "Guardar"}
                 </button>
               </div>
-
             </div>
           )}
 
-          {/* ── EMPTY ── */}
+          {/* EMPTY */}
           {!showView && !showForm && (
             <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
               <Layers size={24} strokeWidth={1.5} className="text-[#d1d9e1]" />
