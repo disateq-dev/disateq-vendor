@@ -712,11 +712,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </span>
               </>
             )
-          ) : (
-            <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200/60 bg-amber-50/60 px-2.5 py-1 text-[10px] font-semibold text-amber-600/70">
-              CORRECCIÓN BLOQUEADA · TURNO CON OPERACIONES
-            </span>
-          )
+          ) : null}
         )}
 
         <div className="flex-1" />
