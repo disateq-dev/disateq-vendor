@@ -690,22 +690,22 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
                 <button
                   onClick={handleSaveCorrection}
+                  title="Tecla [ENTER]"
                   className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-emerald-800 active:scale-[0.98] focus:outline focus:outline-1 focus:outline-emerald-600/60"
                 >
                   <CheckCircle size={14} strokeWidth={2} />
                   Guardar corrección
-                  <span className="ml-auto rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>
                 </button>
               </div>
             ) : (
               <>
                 <button
                   onClick={openEditApertura}
+                  title="Tecla [CTRL + INSERT]"
                   className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#2154d8] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#2154d8]/60"
                 >
                   <Pencil size={14} strokeWidth={2} />
                   Corregir fondo apertura
-                  <span className="ml-auto rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+INS</span>
                 </button>
                 <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
                   PODRÁ CORREGIR CON TURNO SIN OPERACIONES
@@ -727,6 +727,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <button
               onClick={handleOpen}
               disabled={!canOpen}
+              title="Tecla [ENTER]"
               className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 focus:outline-emerald-600/60 ${
                 canOpen
                   ? "bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98]"
