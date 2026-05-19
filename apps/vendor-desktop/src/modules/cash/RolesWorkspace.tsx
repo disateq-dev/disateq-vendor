@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Shield, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Ban, ToggleRight, Shield, ChevronRight } from "lucide-react";
 
 type Role = {
   id: string;
@@ -8,15 +8,18 @@ type Role = {
   description: string;
   permsCount: number;
   active: boolean;
+  hasOperationalHistory: boolean;
 };
 
 const MOCK_ROLES: Role[] = [
-  { id: "1", code: "VEN", name: "Vendedor",       description: "Ventas y cobros en caja",     permsCount: 4,  active: true  },
-  { id: "2", code: "ADM", name: "Administrador",  description: "Acceso completo al sistema",  permsCount: 32, active: true  },
-  { id: "3", code: "GST", name: "Gestor",         description: "Inventario y reportes",       permsCount: 12, active: true  },
-  { id: "4", code: "CNT", name: "Contador",       description: "Arqueos y comprobantes",      permsCount: 8,  active: true  },
-  { id: "5", code: "SPT", name: "Soporte",        description: "Configuración y sistema",     permsCount: 6,  active: false },
+  { id: "1", code: "VEN", name: "Vendedor",       description: "Ventas y cobros en caja",     permsCount: 4,  active: true,  hasOperationalHistory: true  },
+  { id: "2", code: "ADM", name: "Administrador",  description: "Acceso completo al sistema",  permsCount: 32, active: true,  hasOperationalHistory: true  },
+  { id: "3", code: "GST", name: "Gestor",         description: "Inventario y reportes",       permsCount: 12, active: true,  hasOperationalHistory: false },
+  { id: "4", code: "CNT", name: "Contador",       description: "Arqueos y comprobantes",      permsCount: 8,  active: true,  hasOperationalHistory: false },
+  { id: "5", code: "SPT", name: "Soporte",        description: "Configuración y sistema",     permsCount: 6,  active: false, hasOperationalHistory: false },
 ];
+
+type ThirdAction = "delete" | "deactivate" | "activate";
 
 export function RolesWorkspace() {
   const [roles,      setRoles]      = useState<Role[]>(MOCK_ROLES);
@@ -27,9 +30,15 @@ export function RolesWorkspace() {
   const [editName,   setEditName]   = useState("");
   const [editDesc,   setEditDesc]   = useState("");
 
-  const selected     = roles.find(r => r.id === selectedId) ?? null;
-  const canSave      = editCode.trim().length >= 2 && editName.trim().length >= 2;
-  const canActOnSel  = selected !== null && !isNew;
+  const selected    = roles.find(r => r.id === selectedId) ?? null;
+  const canSave     = editCode.trim().length >= 2 && editName.trim().length >= 2;
+  const canActOnSel = selected !== null && !isNew;
+
+  // Determina qué acción corresponde al tercer slot del toolbar
+  const thirdAction: ThirdAction | null = !canActOnSel ? null
+    : !selected!.hasOperationalHistory ? "delete"
+    : selected!.active                 ? "deactivate"
+    :                                    "activate";
 
   function handleSelect(role: Role) {
     setSelectedId(role.id);
@@ -64,6 +73,7 @@ export function RolesWorkspace() {
         description: editDesc.trim(),
         permsCount: 0,
         active: true,
+        hasOperationalHistory: false,
       };
       setRoles(prev => [...prev, next]);
       setSelectedId(next.id);
@@ -85,22 +95,27 @@ export function RolesWorkspace() {
   }
 
   function handleDelete() {
-    if (!selected) return;
-    const id = selected.id;
-    const remaining = roles.filter(r => r.id !== id);
+    if (!selected || selected.hasOperationalHistory) return;
+    const remaining = roles.filter(r => r.id !== selected.id);
     setRoles(remaining);
     setIsEditing(false);
     setIsNew(false);
-    if (remaining.length > 0) {
-      setSelectedId(remaining[0].id);
-    } else {
-      setSelectedId(null);
-    }
+    setSelectedId(remaining.length > 0 ? remaining[0].id : null);
   }
 
-  // Panel render mode
-  const showViewMode  = selected !== null && !isNew && !isEditing;
-  const showEditForm  = (selected !== null && isEditing) || isNew;
+  function handleDeactivate() {
+    if (!selected || !selected.hasOperationalHistory || !selected.active) return;
+    setRoles(prev => prev.map(r => r.id === selected.id ? { ...r, active: false } : r));
+    setIsEditing(false);
+  }
+
+  function handleActivate() {
+    if (!selected || !selected.hasOperationalHistory || selected.active) return;
+    setRoles(prev => prev.map(r => r.id === selected.id ? { ...r, active: true } : r));
+  }
+
+  const showViewMode = selected !== null && !isNew && !isEditing;
+  const showEditForm = (selected !== null && isEditing) || isNew;
 
   return (
     <section className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
@@ -108,18 +123,15 @@ export function RolesWorkspace() {
       {/* SheetHeader */}
       <header className="shrink-0 flex items-center justify-between border-b border-[#78C487]/15 bg-[#F5FBF5] px-4 py-2.5">
 
-        {/* LEFT — título + conteo */}
         <div className="flex items-center gap-2">
           <Shield size={13} strokeWidth={2} className="text-[#78C487]" />
-          <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-            ROLES
-          </span>
+          <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ROLES</span>
           <span className="ml-1 rounded-md bg-[#e8f5ea] px-2 py-0.5 text-[10px] font-bold tabular-nums text-[#4a7a55]">
             {roles.length}
           </span>
         </div>
 
-        {/* RIGHT — toolbar operacional */}
+        {/* Toolbar */}
         <div className="flex items-center gap-1.5">
 
           {/* NUEVO ROL */}
@@ -147,20 +159,50 @@ export function RolesWorkspace() {
             EDITAR ROL
           </button>
 
-          {/* ELIMINAR ROL */}
-          <button
-            onClick={handleDelete}
-            disabled={!canActOnSel}
-            title="Tecla [CTRL + DEL]"
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-              canActOnSel
-                ? "bg-[#dc2626] text-white hover:bg-[#b91c1c] active:scale-[0.97]"
-                : "cursor-not-allowed bg-[#dc2626]/[0.15] text-[#dc2626]/50"
-            }`}
-          >
-            <Trash2 size={12} strokeWidth={2.5} />
-            ELIMINAR ROL
-          </button>
+          {/* TERCER SLOT — semántica dinámica por histórico/estado */}
+          {thirdAction === "delete" && (
+            <button
+              onClick={handleDelete}
+              title="Tecla [CTRL + DEL]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#dc2626] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#b91c1c] active:scale-[0.97]"
+            >
+              <Trash2 size={12} strokeWidth={2.5} />
+              ELIMINAR ROL
+            </button>
+          )}
+
+          {thirdAction === "deactivate" && (
+            <button
+              onClick={handleDeactivate}
+              title="Tecla [CTRL + D]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#b45309] active:scale-[0.97]"
+            >
+              <Ban size={12} strokeWidth={2.5} />
+              DESACTIVAR ROL
+            </button>
+          )}
+
+          {thirdAction === "activate" && (
+            <button
+              onClick={handleActivate}
+              title="Tecla [CTRL + D]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]"
+            >
+              <ToggleRight size={12} strokeWidth={2.5} />
+              ACTIVAR ROL
+            </button>
+          )}
+
+          {/* Disabled placeholder cuando no hay selección activa */}
+          {thirdAction === null && (
+            <button
+              disabled
+              className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-[#dc2626]/[0.15] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#dc2626]/50"
+            >
+              <Trash2 size={12} strokeWidth={2.5} />
+              ELIMINAR ROL
+            </button>
+          )}
 
         </div>
       </header>
@@ -200,13 +242,18 @@ export function RolesWorkspace() {
                       {role.description}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <span className="text-[10px] font-semibold tabular-nums text-[#b0bac8]">
                       {role.permsCount} perms
                     </span>
                     {!role.active && (
-                      <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-red-400">
+                      <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600">
                         INACTIVO
+                      </span>
+                    )}
+                    {role.hasOperationalHistory && (
+                      <span className="rounded-md bg-[#eef2ff] px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#5b6fa8]">
+                        HIST
                       </span>
                     )}
                     <ChevronRight size={12} className={isSel ? "text-[#78C487]" : "text-[#d1d9e1]"} />
@@ -220,20 +267,20 @@ export function RolesWorkspace() {
         {/* Detail panel */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
 
-          {/* ── VIEW MODE — rol seleccionado, sin edición activa ── */}
+          {/* VIEW MODE */}
           {showViewMode && selected && (
             <div className="flex flex-col gap-4">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
                 ROL SELECCIONADO
               </span>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <span className="rounded-md bg-[#78C487] px-2.5 py-1 text-[11px] font-bold tracking-wider text-white">
                   {selected.code}
                 </span>
                 <span className="text-[14px] font-semibold text-[#2F3E46]">{selected.name}</span>
                 {!selected.active && (
-                  <span className="rounded-md bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase text-red-400">
+                  <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[9px] font-bold uppercase text-amber-600">
                     INACTIVO
                   </span>
                 )}
@@ -242,6 +289,24 @@ export function RolesWorkspace() {
               {selected.description && (
                 <p className="text-[12px] font-semibold text-[#6b7280]">{selected.description}</p>
               )}
+
+              {/* Histórico operacional */}
+              <div className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
+                selected.hasOperationalHistory
+                  ? "border-[#c7d2e8] bg-[#f0f3fa]"
+                  : "border-[#e4e9f0] bg-[#fafbfc]"
+              }`}>
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                  selected.hasOperationalHistory ? "bg-[#5b6fa8]" : "bg-[#d1d9e1]"
+                }`} />
+                <span className={`text-[10px] font-semibold uppercase tracking-widest ${
+                  selected.hasOperationalHistory ? "text-[#5b6fa8]" : "text-[#b0bac8]"
+                }`}>
+                  {selected.hasOperationalHistory
+                    ? "Con histórico operacional · solo desactivar"
+                    : "Sin histórico operacional · puede eliminarse"}
+                </span>
+              </div>
 
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Permisos</span>
@@ -252,7 +317,7 @@ export function RolesWorkspace() {
             </div>
           )}
 
-          {/* ── EDIT / NEW FORM ── */}
+          {/* EDIT / NEW FORM */}
           {showEditForm && (
             <div className="flex flex-col gap-4">
 
@@ -260,7 +325,6 @@ export function RolesWorkspace() {
                 {isNew ? "NUEVO ROL" : "EDITAR ROL"}
               </span>
 
-              {/* Code + Name */}
               <div className="flex gap-3">
                 <div className="flex w-24 flex-col gap-0.5">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Código</span>
@@ -294,7 +358,6 @@ export function RolesWorkspace() {
                 </div>
               </div>
 
-              {/* Description */}
               <div className="flex flex-col gap-0.5">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Descripción</span>
                 <input
@@ -310,7 +373,6 @@ export function RolesWorkspace() {
                 />
               </div>
 
-              {/* Perms placeholder */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Permisos</span>
                 <div className="rounded-xl border border-dashed border-[#e4e9f0] bg-[#fafbfc] px-4 py-4 text-center">
@@ -318,7 +380,6 @@ export function RolesWorkspace() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleCancel}
@@ -333,8 +394,8 @@ export function RolesWorkspace() {
                   title="Tecla [ENTER]"
                   className={`flex h-10 flex-1 items-center justify-center rounded-md text-[13px] font-semibold uppercase tracking-wider text-white transition ${
                     canSave
-                      ? "bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98]"
-                      : "cursor-not-allowed bg-emerald-700/40"
+                      ? "bg-[#56C264] hover:bg-[#44a852] active:scale-[0.98]"
+                      : "cursor-not-allowed bg-[#56C264]/40"
                   }`}
                 >
                   {isNew ? "Crear rol" : "Guardar"}
@@ -344,7 +405,7 @@ export function RolesWorkspace() {
             </div>
           )}
 
-          {/* ── EMPTY STATE ── */}
+          {/* EMPTY STATE */}
           {!showViewMode && !showEditForm && (
             <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
               <Shield size={24} strokeWidth={1.5} className="text-[#d1d9e1]" />
