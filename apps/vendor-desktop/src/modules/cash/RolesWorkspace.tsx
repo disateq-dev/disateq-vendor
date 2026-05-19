@@ -126,7 +126,7 @@ export function RolesWorkspace() {
           <button
             onClick={handleNew}
             title="Tecla [CTRL + N]"
-            className="flex items-center gap-1.5 rounded-lg bg-[#78C487] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#5aad74] active:scale-[0.97]"
+            className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]"
           >
             <Plus size={12} strokeWidth={2.5} />
             NUEVO ROL
@@ -154,8 +154,8 @@ export function RolesWorkspace() {
             title="Tecla [CTRL + DEL]"
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
               canActOnSel
-                ? "bg-[#b84242] text-white hover:bg-[#a03636] active:scale-[0.97]"
-                : "cursor-not-allowed bg-[#b84242]/[0.15] text-[#b84242]/50"
+                ? "bg-[#dc2626] text-white hover:bg-[#b91c1c] active:scale-[0.97]"
+                : "cursor-not-allowed bg-[#dc2626]/[0.15] text-[#dc2626]/50"
             }`}
           >
             <Trash2 size={12} strokeWidth={2.5} />
