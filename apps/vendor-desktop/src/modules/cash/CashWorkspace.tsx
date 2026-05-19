@@ -542,7 +542,6 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal"     value={terminal} />
               <InfoRow label="Fondo apertura" value={`S/ ${apertura.toFixed(2)}`} />
-              {sessionMotivo && <InfoRow label="Motivo apertura" value={sessionMotivo} />}
 
               {sessionStats.count > 0 && closingStage === 0 && (() => {
                 const { efe, yap, tar, mix } = sessionStats.byMethod;
@@ -681,25 +680,13 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     type="number"
                     value={editAperturaInput}
                     onChange={e => setEditAperturaInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Escape") cancelEditApertura(); }}
+                    onKeyDown={e => { if (e.key === "Enter") handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
                     placeholder="0.00"
                     min="0" step="0.50"
                     className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                   />
                 </div>
 
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Motivo apertura</span>
-                  <input
-                    type="text"
-                    value={editMotivo}
-                    onChange={e => setEditMotivo(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
-                    placeholder="Contexto de apertura..."
-                    maxLength={120}
-                    className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                  />
-                </div>
 
                 <button
                   onClick={handleSaveCorrection}
