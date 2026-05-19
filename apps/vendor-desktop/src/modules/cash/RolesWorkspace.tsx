@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Shield, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Shield, ChevronRight } from "lucide-react";
 
 type Role = {
   id: string;
@@ -22,27 +22,36 @@ export function RolesWorkspace() {
   const [roles,      setRoles]      = useState<Role[]>(MOCK_ROLES);
   const [selectedId, setSelectedId] = useState<string | null>("1");
   const [isNew,      setIsNew]      = useState(false);
-  const [editCode,   setEditCode]   = useState(() => MOCK_ROLES[0].code);
-  const [editName,   setEditName]   = useState(() => MOCK_ROLES[0].name);
-  const [editDesc,   setEditDesc]   = useState(() => MOCK_ROLES[0].description);
+  const [isEditing,  setIsEditing]  = useState(false);
+  const [editCode,   setEditCode]   = useState("");
+  const [editName,   setEditName]   = useState("");
+  const [editDesc,   setEditDesc]   = useState("");
 
-  const selected = roles.find(r => r.id === selectedId) ?? null;
-  const canSave  = editCode.trim().length >= 2 && editName.trim().length >= 2;
+  const selected     = roles.find(r => r.id === selectedId) ?? null;
+  const canSave      = editCode.trim().length >= 2 && editName.trim().length >= 2;
+  const canActOnSel  = selected !== null && !isNew;
 
   function handleSelect(role: Role) {
     setSelectedId(role.id);
     setIsNew(false);
-    setEditCode(role.code);
-    setEditName(role.name);
-    setEditDesc(role.description);
+    setIsEditing(false);
   }
 
   function handleNew() {
     setSelectedId(null);
     setIsNew(true);
+    setIsEditing(false);
     setEditCode("");
     setEditName("");
     setEditDesc("");
+  }
+
+  function handleStartEdit() {
+    if (!selected) return;
+    setEditCode(selected.code);
+    setEditName(selected.name);
+    setEditDesc(selected.description);
+    setIsEditing(true);
   }
 
   function handleSave() {
@@ -59,42 +68,47 @@ export function RolesWorkspace() {
       setRoles(prev => [...prev, next]);
       setSelectedId(next.id);
       setIsNew(false);
+      setIsEditing(false);
     } else if (selectedId) {
       setRoles(prev => prev.map(r =>
         r.id === selectedId
           ? { ...r, code: editCode.trim().toUpperCase(), name: editName.trim(), description: editDesc.trim() }
           : r
       ));
+      setIsEditing(false);
     }
   }
 
   function handleCancel() {
     setIsNew(false);
-    if (selected) {
-      setEditCode(selected.code);
-      setEditName(selected.name);
-      setEditDesc(selected.description);
-    } else if (roles.length > 0) {
-      handleSelect(roles[0]);
+    setIsEditing(false);
+  }
+
+  function handleDelete() {
+    if (!selected) return;
+    const id = selected.id;
+    const remaining = roles.filter(r => r.id !== id);
+    setRoles(remaining);
+    setIsEditing(false);
+    setIsNew(false);
+    if (remaining.length > 0) {
+      setSelectedId(remaining[0].id);
+    } else {
+      setSelectedId(null);
     }
   }
 
-  function handleDelete(id: string) {
-    setRoles(prev => prev.filter(r => r.id !== id));
-    if (selectedId === id) {
-      const remaining = roles.filter(r => r.id !== id);
-      if (remaining.length > 0) handleSelect(remaining[0]);
-      else { setSelectedId(null); setEditCode(""); setEditName(""); setEditDesc(""); }
-    }
-  }
-
-  const showForm = selected !== null || isNew;
+  // Panel render mode
+  const showViewMode  = selected !== null && !isNew && !isEditing;
+  const showEditForm  = (selected !== null && isEditing) || isNew;
 
   return (
     <section className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
       <header className="shrink-0 flex items-center justify-between border-b border-[#78C487]/15 bg-[#F5FBF5] px-4 py-2.5">
+
+        {/* LEFT — título + conteo */}
         <div className="flex items-center gap-2">
           <Shield size={13} strokeWidth={2} className="text-[#78C487]" />
           <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
@@ -104,14 +118,51 @@ export function RolesWorkspace() {
             {roles.length}
           </span>
         </div>
-        <button
-          onClick={handleNew}
-          title="Tecla [CTRL + N]"
-          className="flex items-center gap-1.5 rounded-lg bg-[#78C487] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#5aad74] active:scale-[0.97]"
-        >
-          <Plus size={12} strokeWidth={2.5} />
-          NUEVO ROL
-        </button>
+
+        {/* RIGHT — toolbar operacional */}
+        <div className="flex items-center gap-1.5">
+
+          {/* NUEVO ROL */}
+          <button
+            onClick={handleNew}
+            title="Tecla [CTRL + N]"
+            className="flex items-center gap-1.5 rounded-lg bg-[#78C487] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#5aad74] active:scale-[0.97]"
+          >
+            <Plus size={12} strokeWidth={2.5} />
+            NUEVO ROL
+          </button>
+
+          {/* EDITAR ROL */}
+          <button
+            onClick={handleStartEdit}
+            disabled={!canActOnSel}
+            title="Tecla [CTRL + E]"
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+              canActOnSel
+                ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
+                : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/50"
+            }`}
+          >
+            <Pencil size={12} strokeWidth={2.5} />
+            EDITAR ROL
+          </button>
+
+          {/* ELIMINAR ROL */}
+          <button
+            onClick={handleDelete}
+            disabled={!canActOnSel}
+            title="Tecla [CTRL + DEL]"
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+              canActOnSel
+                ? "bg-[#b84242] text-white hover:bg-[#a03636] active:scale-[0.97]"
+                : "cursor-not-allowed bg-[#b84242]/[0.15] text-[#b84242]/50"
+            }`}
+          >
+            <Trash2 size={12} strokeWidth={2.5} />
+            ELIMINAR ROL
+          </button>
+
+        </div>
       </header>
 
       {/* Body */}
@@ -166,34 +217,53 @@ export function RolesWorkspace() {
           )}
         </div>
 
-        {/* Detail / Form */}
+        {/* Detail panel */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
-          {showForm ? (
-            <div className="flex flex-col gap-4">
 
-              {/* Form header */}
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                  {isNew ? "NUEVO ROL" : "EDITAR ROL"}
+          {/* ── VIEW MODE — rol seleccionado, sin edición activa ── */}
+          {showViewMode && selected && (
+            <div className="flex flex-col gap-4">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
+                ROL SELECCIONADO
+              </span>
+
+              <div className="flex items-center gap-3">
+                <span className="rounded-md bg-[#78C487] px-2.5 py-1 text-[11px] font-bold tracking-wider text-white">
+                  {selected.code}
                 </span>
-                {!isNew && selected && (
-                  <button
-                    onClick={() => handleDelete(selected.id)}
-                    title="Tecla [DEL]"
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold text-red-400 transition hover:bg-red-50 hover:text-red-500"
-                  >
-                    <Trash2 size={10} />
-                    Eliminar
-                  </button>
+                <span className="text-[14px] font-semibold text-[#2F3E46]">{selected.name}</span>
+                {!selected.active && (
+                  <span className="rounded-md bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase text-red-400">
+                    INACTIVO
+                  </span>
                 )}
               </div>
+
+              {selected.description && (
+                <p className="text-[12px] font-semibold text-[#6b7280]">{selected.description}</p>
+              )}
+
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Permisos</span>
+                <div className="rounded-xl border border-dashed border-[#e4e9f0] bg-[#fafbfc] px-4 py-4 text-center">
+                  <p className="text-[11px] font-semibold text-[#c0cad4]">Gestión de permisos próximamente</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── EDIT / NEW FORM ── */}
+          {showEditForm && (
+            <div className="flex flex-col gap-4">
+
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
+                {isNew ? "NUEVO ROL" : "EDITAR ROL"}
+              </span>
 
               {/* Code + Name */}
               <div className="flex gap-3">
                 <div className="flex w-24 flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                    Código
-                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Código</span>
                   <input
                     type="text"
                     value={editCode}
@@ -208,11 +278,9 @@ export function RolesWorkspace() {
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                    Nombre
-                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Nombre</span>
                   <input
-                    autoFocus={isNew}
+                    autoFocus
                     type="text"
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
@@ -228,9 +296,7 @@ export function RolesWorkspace() {
 
               {/* Description */}
               <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                  Descripción
-                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Descripción</span>
                 <input
                   type="text"
                   value={editDesc}
@@ -246,9 +312,7 @@ export function RolesWorkspace() {
 
               {/* Perms placeholder */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                  Permisos
-                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Permisos</span>
                 <div className="rounded-xl border border-dashed border-[#e4e9f0] bg-[#fafbfc] px-4 py-4 text-center">
                   <p className="text-[11px] font-semibold text-[#c0cad4]">Gestión de permisos próximamente</p>
                 </div>
@@ -278,15 +342,18 @@ export function RolesWorkspace() {
               </div>
 
             </div>
-          ) : (
+          )}
+
+          {/* ── EMPTY STATE ── */}
+          {!showViewMode && !showEditForm && (
             <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
               <Shield size={24} strokeWidth={1.5} className="text-[#d1d9e1]" />
               <p className="text-[12px] font-semibold text-[#c0cad4]">Seleccione un rol</p>
               <p className="text-[11px] font-semibold text-[#d1d9e1]">o cree uno nuevo</p>
             </div>
           )}
-        </div>
 
+        </div>
       </div>
     </section>
   );
