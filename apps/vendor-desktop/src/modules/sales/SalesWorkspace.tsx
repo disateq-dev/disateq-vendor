@@ -371,11 +371,11 @@ export function SalesWorkspace() {
             {!isSearching && (
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
                 <Search size={26} className="text-[#dce3ea]" />
-                <p className="mt-1 text-[13px] font-medium text-[#b0bac8]">
+                <p className="mt-1 text-[13px] font-semibold text-[#b0bac8]">
                   Escriba nombre, código o referencia para localizar productos rápidamente.
                 </p>
                 {!cashSession.isOpen && (
-                  <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-amber-400">
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-amber-400">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
                     Sin turno operativo · cobro deshabilitado
                   </p>
@@ -385,7 +385,7 @@ export function SalesWorkspace() {
 
             {isSearching && filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-                <p className="text-[13px] font-medium text-[#b0bac8]">
+                <p className="text-[13px] font-semibold text-[#b0bac8]">
                   Sin resultados para «{searchQuery}»
                 </p>
               </div>
@@ -423,7 +423,7 @@ export function SalesWorkspace() {
                           >
                             {product.name}
                           </div>
-                          <div className={`mt-0.5 text-[11px] font-medium ${sub.cls}`}>
+                          <div className={`mt-0.5 text-[11px] font-semibold ${sub.cls}`}>
                             {sub.text}
                           </div>
                         </div>
@@ -459,7 +459,7 @@ export function SalesWorkspace() {
           <>
             {visualItems.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-                <p className="text-[13px] font-medium text-[#b0bac8]">
+                <p className="text-[13px] font-semibold text-[#b0bac8]">
                   {isSearching ? `Sin resultados para «${searchQuery}»` : "Sin productos en esta categoría"}
                 </p>
               </div>

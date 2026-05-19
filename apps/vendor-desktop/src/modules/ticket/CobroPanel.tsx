@@ -402,7 +402,7 @@ export function CobroPanel() {
           {isCtg && (
             <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-extrabold tracking-widest text-amber-500">CTG</span>
           )}
-          <span className="font-mono text-[11px] font-semibold text-[#374151]">{docNumber}</span>
+          <span className="tabular-nums text-[11px] font-semibold text-[#374151]">{docNumber}</span>
         </div>
       </header>
 

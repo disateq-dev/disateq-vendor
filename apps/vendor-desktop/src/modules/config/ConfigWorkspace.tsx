@@ -160,8 +160,8 @@ export function ConfigWorkspace() {
 
         {/* ── STATUS STRIP ── */}
         <div className="rounded-2xl border border-[#E9E4DC] bg-[#f8fafc] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Contexto activo</p>
-          <p className="mt-1 text-[11px] text-[#6b7280] font-mono">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Contexto activo</p>
+          <p className="mt-1 text-[11px] text-[#6b7280]">
             {rubroConfig.label} · {rubroConfig.catalog.length}p · {visualMode} · {printFlow}
           </p>
         </div>

@@ -157,7 +157,7 @@ export function ComprobantesWorkspace() {
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           {docs.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-1.5 py-16 text-center">
-              <p className="text-[13px] font-medium text-[#c0cad4]">
+              <p className="text-[13px] font-semibold text-[#c0cad4]">
                 {cashSession.isOpen ? "Sin ventas en esta sesión" : "Sin sesión activa"}
               </p>
               <p className="text-[11px] text-[#d1d9e1]">
@@ -189,7 +189,7 @@ export function ComprobantesWorkspace() {
                     </span>
 
                     {/* Correlative */}
-                    <span className="shrink-0 font-mono text-[11px] text-[#374151]">
+                    <span className="shrink-0 tabular-nums text-[11px] text-[#374151]">
                       {c.docSeries}-{pad8(c.docCorrelative)}
                     </span>
 

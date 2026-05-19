@@ -160,9 +160,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
   const [ctgPin,          setCtgPin]          = useState("");
   const [ctgJustif,       setCtgJustif]       = useState("");
   const [ctgPinError,     setCtgPinError]     = useState(false);
-  const aperturaRef       = useRef<HTMLInputElement>(null);
-  const aperturaMotivoRef = useRef<HTMLInputElement>(null);
-  const aperturaRefOpRef  = useRef<HTMLInputElement>(null);
+  const aperturaRef = useRef<HTMLInputElement>(null);
 
   // ── corrección datos apertura state ──────────────────────────
   const [editingApertura,    setEditingApertura]    = useState(false);
@@ -551,7 +549,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     <div className="-mx-5 h-px bg-[#f0f4f8]" />
                     <InfoRow label="Operaciones" value={String(sessionStats.count)} />
                     {breakdown.length > 0 && (
-                      <p className="text-right text-[9px] font-semibold tabular-nums text-[#9ca3af] -mt-1">
+                      <p className="text-right text-[10px] font-semibold tabular-nums text-[#9ca3af] -mt-1">
                         {breakdown.map((m, i) => (i > 0 ? ` · ${m.key} ${m.n}` : `${m.key} ${m.n}`)).join("")}
                       </p>
                     )}
@@ -596,14 +594,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Fondo apertura S/</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo apertura S/</span>
               <input
                 ref={aperturaRef}
                 type="number"
                 value={aperturaInput}
                 onChange={e => setAperturaInput(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === "Enter") { e.preventDefault(); aperturaMotivoRef.current?.focus(); }
+                  if (e.key === "Enter" && canOpen) { e.preventDefault(); handleOpen(); }
                 }}
                 placeholder="0.00"
                 min="0"
@@ -613,40 +611,10 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 }`}
               />
               {aperturaInput.trim() === "" && (
-                <p className="text-[9px] font-semibold text-[#c0cad4]">Requerido · 0.00 es válido</p>
+                <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
+                  Requerido · 0.00 es válido
+                </span>
               )}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Motivo apertura <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
-              <input
-                ref={aperturaMotivoRef}
-                type="text"
-                value={aperturaMotivo}
-                onChange={e => setAperturaMotivo(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") { e.preventDefault(); aperturaRefOpRef.current?.focus(); }
-                }}
-                placeholder="Contexto de apertura..."
-                maxLength={120}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">Ref. operacional <span className="font-normal normal-case tracking-normal text-[#c0cad4]">(opcional)</span></span>
-              <input
-                ref={aperturaRefOpRef}
-                type="text"
-                value={aperturaRefOp}
-                onChange={e => setAperturaRefOp(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && canOpen) { e.preventDefault(); handleOpen(); }
-                }}
-                placeholder="Ej: T-2025-001, remito..."
-                maxLength={80}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-              />
             </div>
 
             {/* Operational authorization */}
@@ -654,7 +622,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
               <div className="flex flex-col gap-2 rounded-xl border border-orange-200 bg-[#fffbf0] px-3.5 py-3">
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle size={12} strokeWidth={2.5} className="text-orange-500 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange-600">Autorización operacional</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-orange-600">Autorización operacional</span>
                 </div>
                 <input
                   type="password"
@@ -690,14 +658,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             editingApertura ? (
               <div className="flex flex-col gap-2 rounded-[20px] border border-[#dde4f0] bg-white px-4 py-3.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Datos apertura</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Datos apertura</span>
                   <button onClick={cancelEditApertura} className="text-[#c0cad4] transition hover:text-[#374151]">
                     <X size={12} />
                   </button>
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Fondo inicial S/</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo inicial S/</span>
                   <input
                     autoFocus
                     type="number"
@@ -711,7 +679,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Motivo apertura</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Motivo apertura</span>
                   <input
                     type="text"
                     value={editMotivo}
@@ -723,7 +691,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Observaciones</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Observaciones</span>
                   <input
                     type="text"
                     value={editObservacion}
@@ -735,7 +703,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0bac8]">Ref. operacional</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Ref. operacional</span>
                   <input
                     type="text"
                     value={editRefOp}
@@ -749,7 +717,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
 
                 <button
                   onClick={handleSaveCorrection}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#2154d8] py-2 text-[11.5px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#2154d8] py-2 text-[12px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
                 >
                   GUARDAR CORRECCIÓN
                 </button>
@@ -778,14 +746,14 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
             <button
               onClick={handleOpen}
               disabled={!canOpen}
-              className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
+              className={`flex h-8 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[12px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 focus:outline-emerald-600/60 ${
                 canOpen
-                  ? "bg-emerald-600 text-white shadow-[0_4px_14px_rgba(5,150,105,0.28)] hover:bg-emerald-700 active:scale-[0.98]"
+                  ? "bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98]"
                   : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
               }`}
             >
-              <LogIn size={14} strokeWidth={2.5} />
-              Apertura de turno
+              <LogIn size={13} strokeWidth={2} />
+              Aperturar
             </button>
 
           ) : closingStage === 0 ? (
@@ -1153,7 +1121,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                     <div>
                       <p className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">CONTEO VALIDADO</p>
                       {validatedAt && (
-                        <p className="text-[9px] font-mono text-emerald-600 tabular-nums">
+                        <p className="text-[9px] tabular-nums text-emerald-600">
                           {new Date(validatedAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                         </p>
                       )}
@@ -1423,7 +1391,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                 <span className="text-[10px] tabular-nums text-[#b0bac8]">{sessionStats.count} op.</span>
               )}
               {openedAt && (
-                <span className="text-[10px] font-mono tabular-nums text-[#b0bac8]">{formatTime(openedAt)}</span>
+                <span className="text-[10px] tabular-nums text-[#b0bac8]">{formatTime(openedAt)}</span>
               )}
             </div>
 
@@ -1608,7 +1576,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                         <div key={m.id} className="group/move">
                           {/* Fila principal */}
                           <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white">
-                            <span className="shrink-0 w-[28px] text-[9px] font-mono tabular-nums text-[#c0cad4]">{hm}</span>
+                            <span className="shrink-0 w-[28px] text-[9px] tabular-nums text-[#c0cad4]">{hm}</span>
                             <span className={`shrink-0 text-[11px] font-bold ${m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
                               {m.type === "ingreso" ? "↑" : "↓"}
                             </span>
@@ -1647,7 +1615,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-[10px] font-semibold text-emerald-700 truncate">{repo.motivo}</p>
                                 </div>
-                                <span className="shrink-0 text-[9px] font-mono tabular-nums text-[#c0cad4]">{rhm}</span>
+                                <span className="shrink-0 text-[9px] tabular-nums text-[#c0cad4]">{rhm}</span>
                                 <span className="shrink-0 text-[10px] font-bold text-emerald-600 tabular-nums">+S/ {repo.amount.toFixed(2)}</span>
                                 <button
                                   onClick={() => void handlePrintVoucher(repo)}

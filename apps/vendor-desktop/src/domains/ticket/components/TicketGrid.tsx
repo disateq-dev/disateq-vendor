@@ -71,7 +71,7 @@ export function TicketGrid() {
       <header className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F9F6EC] border-b border-[#F2A900]/15">
         <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">PRE-VENTA</span>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] text-[#b0bac8]">#{saleNumber}</span>
+          <span className="tabular-nums text-[11px] text-[#b0bac8]">#{saleNumber}</span>
           {lines.length > 0 && (
             <span className="text-[11px] font-semibold tabular-nums text-[#6b7280]">
               {lines.length} {lines.length === 1 ? "ÍT." : "ÍTEMS"} · {totalUnits} UND
@@ -84,7 +84,7 @@ export function TicketGrid() {
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-1.5">
         {lines.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
-            <p className="text-[13px] font-medium text-[#c0cad4]">Ticket vacío</p>
+            <p className="text-[13px] font-semibold text-[#c0cad4]">Ticket vacío</p>
             <p className="text-[11px] text-[#d1d9e1]">Busque un producto para comenzar</p>
           </div>
         ) : (

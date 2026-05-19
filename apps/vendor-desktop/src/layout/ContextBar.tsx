@@ -26,17 +26,17 @@ export function ContextBar({ activeModule }: ContextBarProps) {
 
         <div className="mx-1 h-5 w-px bg-[#FFD35C]/40" />
 
-        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-medium text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#FFD35C] hover:bg-[#FFF7CF]/60 hover:text-[#6b4500]">
+        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#FFD35C] hover:bg-[#FFF7CF]/60 hover:text-[#6b4500]">
           <Percent size={13} strokeWidth={2} />
           <span>Descuento</span>
         </button>
 
-        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-medium text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#FFD35C] hover:bg-[#FFF7CF]/60 hover:text-[#6b4500]">
+        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#FFD35C] hover:bg-[#FFF7CF]/60 hover:text-[#6b4500]">
           <FileText size={13} strokeWidth={2} />
           <span>Observación</span>
         </button>
 
-        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-medium text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#FFD35C] hover:bg-[#FFF7CF]/60 hover:text-[#6b4500]">
+        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#FFD35C] hover:bg-[#FFF7CF]/60 hover:text-[#6b4500]">
           <BarChart2 size={13} strokeWidth={2} />
           <span>Reportes</span>
         </button>
