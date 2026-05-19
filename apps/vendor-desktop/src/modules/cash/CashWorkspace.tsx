@@ -708,7 +708,7 @@ export function CashWorkspace({ onOpened }: CashWorkspaceProps) {
                   <span className="ml-auto rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+INS</span>
                 </button>
                 <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
-                  VERIFIQUE. SOLO PODRÁ CORREGIR CON TURNO SIN OPERACIONES
+                  PODRÁ CORREGIR CON TURNO SIN OPERACIONES
                 </span>
               </>
             )
