@@ -860,7 +860,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 disabled={contadoFondo === ""}
                 className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
                   contadoFondo !== ""
-                    ? "bg-emerald-600 text-white shadow-[0_4px_14px_rgba(5,150,105,0.24)] hover:bg-emerald-700 active:scale-[0.98]"
+                    ? "bg-[#45b356] text-white shadow-[0_4px_14px_rgba(69,179,86,0.24)] hover:bg-[#35994a] active:scale-[0.98]"
                     : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
                 }`}
               >
@@ -1603,7 +1603,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                   canAddMove
                     ? moveType === "ingreso"
-                      ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
+                      ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
                       : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
                     : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
                 }`}
@@ -1732,7 +1732,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                   <p className="text-[10px] text-emerald-600 tabular-nums">↑ S/ {lastRepoMove.amount.toFixed(2)} · {lastRepoMove.motivo}</p>
                                   <button
                                     onClick={() => void handlePrintVoucher(lastRepoMove)}
-                                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-white py-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98]"
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#45b356]/40 bg-white py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#35994a] transition hover:bg-[#45b356]/10 active:scale-[0.98]"
                                   >
                                     <Printer size={10} strokeWidth={2} /> Reimprimir voucher
                                   </button>
@@ -1777,7 +1777,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                     disabled={!canRepo}
                                     className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
                                       canRepo
-                                        ? "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.98]"
+                                        ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
                                         : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
                                     }`}
                                   >
