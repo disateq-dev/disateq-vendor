@@ -3,6 +3,7 @@ import { useTicketStore } from "../domains/ticket/state/ticket.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
+import { type OperatorRecord, loadOperators, checkPin } from "../domains/operator/operator.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -391,6 +392,10 @@ interface POSContextValue {
   voidComprobante: (id: string, motivo: string) => void;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
+  operators: OperatorRecord[];
+  activeOperator: OperatorRecord | null;
+  loginOperator: (id: string, pin: string) => boolean;
+  logoutOperator: () => void;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
   visualMode: VisualMode;
@@ -458,6 +463,27 @@ export function POSProvider({ children }: { children: ReactNode }) {
       addOpLog(`[RECOVERY] ${recoveryLogRef.current}`);
       recoveryLogRef.current = null;
     }
+  }, [addOpLog]);
+
+  const [operators] = useState<OperatorRecord[]>(loadOperators);
+  const [activeOperator, setActiveOperator] = useState<OperatorRecord | null>(null);
+  const activeOperatorRef = useRef<OperatorRecord | null>(null);
+  activeOperatorRef.current = activeOperator;
+
+  const loginOperator = useCallback((id: string, pin: string): boolean => {
+    const ok = checkPin(operators, id, pin);
+    if (ok) {
+      const op = operators.find(o => o.id === id)!;
+      setActiveOperator(op);
+      addOpLog(`[LOGIN] ${op.name} inició sesión`);
+    }
+    return ok;
+  }, [operators, addOpLog]);
+
+  const logoutOperator = useCallback(() => {
+    const op = activeOperatorRef.current;
+    setActiveOperator(null);
+    if (op) addOpLog(`[LOGOUT] ${op.name} cerró sesión`);
   }, [addOpLog]);
 
   const addComprobante = useCallback((data: {
@@ -628,7 +654,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     // Excepcional: permite abrir caja no-disponible si no fue usada hoy y se proveen skip codes
     const isExceptional = !!(exceptionalSkipCodes && exceptionalSkipCodes.length > 0);
     if (isExceptional ? box.used : !box.available) return;
-    const operator = BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
+    const operator = activeOperatorRef.current?.name ?? BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
     setSessionStats(NULL_STATS);
     setCashMoves([]);
     setOpLogs([]);
@@ -712,6 +738,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       opLogs, addOpLog,
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
+      operators, activeOperator, loginOperator, logoutOperator,
       rubro, setRubro,
       visualMode, setVisualMode,
       printFlow, setPrintFlow,

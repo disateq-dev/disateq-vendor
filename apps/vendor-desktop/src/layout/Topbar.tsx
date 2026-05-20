@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Power, Store } from "lucide-react";
+import { Power, Store, LogOut } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../context/POSContext";
 import { loadBusinessConfig } from "../config/business";
@@ -10,7 +10,7 @@ function formatApertura(d: Date): string {
 }
 
 export function Topbar() {
-  const { cashSession } = usePOS();
+  const { cashSession, activeOperator, logoutOperator } = usePOS();
   const { isOpen, cashBox, operator, openedAt } = cashSession;
   const biz = useMemo(() => loadBusinessConfig(), []);
 
@@ -84,6 +84,20 @@ export function Topbar() {
             </>
           )}
         </div>
+
+        {/* SESIÓN ACTIVA */}
+        {activeOperator && (
+          <div className="flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.06] px-3 py-1.5">
+            <span className="rounded-md bg-white/[0.1] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#8090b0]">
+              {activeOperator.code}
+            </span>
+            <span className="text-[11px] font-semibold text-[#8090b0]">{activeOperator.name}</span>
+            <button onClick={logoutOperator} title="Cerrar sesión (Ctrl+Shift+L)"
+              className="flex items-center justify-center text-[#4d5e7c] transition hover:text-[#dc2626]">
+              <LogOut size={13} strokeWidth={2} />
+            </button>
+          </div>
+        )}
 
         {/* POWER — app.exit(0) vía Rust: cierre limpio, localStorage ya sincronizado */}
         <button

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { SubContextBar } from "./SubContextBar";
 import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
@@ -28,8 +28,16 @@ function OperationalNotice() {
 }
 
 export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange }: AppShellProps) {
-  const { closeCobro } = usePOS();
+  const { closeCobro, logoutOperator } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
+
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.ctrlKey && e.shiftKey && e.key === "L") { e.preventDefault(); logoutOperator(); }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [logoutOperator]);
 
   // hover → preview; leave → back to active; click → permanent (hoveredModule = null, activeModule updated)
   const displayModule = hoveredModule ?? activeModule;
