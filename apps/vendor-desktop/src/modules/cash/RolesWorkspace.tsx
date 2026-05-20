@@ -150,7 +150,7 @@ export function RolesWorkspace() {
           <button
             onClick={handleNew}
             title="Tecla [CTRL + N]"
-            className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]"
+            className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]"
           >
             <Plus size={12} strokeWidth={2.5} />
             NUEVO ROL
@@ -198,7 +198,7 @@ export function RolesWorkspace() {
             <button
               onClick={handleActivate}
               title="Tecla [CTRL + D]"
-              className="flex items-center gap-1.5 rounded-lg bg-[#56C264] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#44a852] active:scale-[0.97]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]"
             >
               <ToggleRight size={12} strokeWidth={2.5} />
               ACTIVAR ROL
@@ -425,8 +425,8 @@ export function RolesWorkspace() {
                   title="Tecla [ENTER]"
                   className={`flex h-10 flex-1 items-center justify-center rounded-md text-[13px] font-semibold uppercase tracking-wider text-white transition ${
                     canSave
-                      ? "bg-[#56C264] hover:bg-[#44a852] active:scale-[0.98]"
-                      : "cursor-not-allowed bg-[#56C264]/40"
+                      ? "bg-[#45b356] hover:bg-[#35994a] active:scale-[0.98]"
+                      : "cursor-not-allowed bg-[#45b356]/40"
                   }`}
                 >
                   {isNew ? "Crear rol" : "Guardar"}
