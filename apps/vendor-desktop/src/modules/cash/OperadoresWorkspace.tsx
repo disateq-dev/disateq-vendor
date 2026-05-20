@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Ban, ToggleRight, Users, ChevronRight, KeyRound } from "lucide-react";
+import { Plus, Pencil, Trash2, Ban, ToggleRight, Users, ChevronRight, KeyRound, AlertTriangle, CheckCircle } from "lucide-react";
+import { usePOS } from "../../context/POSContext";
 
 // ── tipos ──────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,7 @@ type Operator = {
   hasOperationalHistory: boolean;
   createdAt: Date;
   createdBy: string;
+  deactivatedAt?: Date;
 };
 
 type ThirdAction = "delete" | "deactivate" | "activate";
@@ -36,7 +38,7 @@ const BLOCKS_REF = [100, 200, 300, 400, 500];
 const MOCK_OPERATORS: Operator[] = [
   { id: "1", code: "FER", name: "FERNANDO", roleCode: "VEN", blockBase: 100,  active: true,  pinConfigured: true,  hasOperationalHistory: true,  createdAt: new Date("2024-01-10T08:00:00"), createdBy: "ADMIN"    },
   { id: "2", code: "CAR", name: "CARLOS",   roleCode: "VEN", blockBase: 200,  active: true,  pinConfigured: true,  hasOperationalHistory: true,  createdAt: new Date("2024-03-15T09:30:00"), createdBy: "FERNANDO" },
-  { id: "3", code: "LUC", name: "LUCÍA",    roleCode: "VEN", blockBase: 300,  active: false, pinConfigured: false, hasOperationalHistory: true,  createdAt: new Date("2023-11-02T10:00:00"), createdBy: "ADMIN"    },
+  { id: "3", code: "LUC", name: "LUCÍA",    roleCode: "VEN", blockBase: 300,  active: false, pinConfigured: false, hasOperationalHistory: true,  createdAt: new Date("2023-11-02T10:00:00"), createdBy: "ADMIN",    deactivatedAt: new Date("2024-12-01T17:00:00") },
   { id: "4", code: "ADM", name: "ADMIN",    roleCode: "ADM", blockBase: null, active: true,  pinConfigured: true,  hasOperationalHistory: false, createdAt: new Date("2023-10-01T00:00:00"), createdBy: "SISTEMA"  },
 ];
 
@@ -48,6 +50,12 @@ function formatCreatedAt(d: Date): string {
   const hh  = String(d.getHours()).padStart(2, "0");
   const min = String(d.getMinutes()).padStart(2, "0");
   return `${dd}/${mm}/${d.getFullYear()} · ${hh}:${min}`;
+}
+
+// ── event log operacional (futuro: persistir en store/backend) ─────────────
+
+function logOpEvent(type: "operador_desactivado" | "bloque_liberado" | "operador_activado" | "bloque_reasignado", payload: object) {
+  console.info(`[OP_EVENT] ${type}`, { ...payload, ts: new Date().toISOString() });
 }
 
 // ── sub-componente: formulario PIN inline ──────────────────────────────────
@@ -109,10 +117,13 @@ function PinForm({ pin, confirm, error, onPin, onConfirm, onSave, onCancel }: {
 // ── componente principal ───────────────────────────────────────────────────
 
 export function OperadoresWorkspace() {
+  const { isOpen, cashBox } = usePOS();
+
   const [operators,  setOperators]  = useState<Operator[]>(MOCK_OPERATORS);
   const [selectedId, setSelectedId] = useState<string | null>("1");
   const [isNew,      setIsNew]      = useState(false);
   const [isEditing,  setIsEditing]  = useState(false);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
 
   // form state
   const [editCode,  setEditCode]  = useState("");
@@ -126,14 +137,23 @@ export function OperadoresWorkspace() {
   const [pinConfirm, setPinConfirm] = useState("");
   const [pinError,   setPinError]   = useState("");
 
-  const selected    = operators.find(o => o.id === selectedId) ?? null;
+  const selected = operators.find(o => o.id === selectedId) ?? null;
+
+  // Turno activo: el bloque del operador seleccionado tiene caja activa en este momento
+  // Heurístico: primer dígito de blockBase (ej. 100→"1") == primer dígito del código de caja activa ("100"[0]="1")
+  const hasActiveTurno = isOpen
+    && selected !== null
+    && selected.blockBase !== null
+    && cashBox !== null
+    && String(selected.blockBase)[0] === cashBox.code[0];
+
+  const canActOnSel = selected !== null && !isNew && !confirmDeactivate;
   const canSave     = editCode.trim().length >= 2 && editName.trim().length >= 2;
-  const canActOnSel = selected !== null && !isNew;
 
   const thirdAction: ThirdAction | null =
-    !canActOnSel                         ? null
-    : !selected!.hasOperationalHistory   ? "delete"
-    : selected!.active                   ? "deactivate"
+    selected === null || isNew          ? null
+    : !selected.hasOperationalHistory   ? "delete"
+    : selected.active                   ? "deactivate"
     :                                      "activate";
 
   // ── helpers PIN ──────────────────────────────────────────────────────────
@@ -150,20 +170,21 @@ export function OperadoresWorkspace() {
   // ── handlers ──────────────────────────────────────────────────────────────
 
   function handleSelect(op: Operator) {
-    setSelectedId(op.id); setIsNew(false); setIsEditing(false); resetPin();
+    setSelectedId(op.id); setIsNew(false); setIsEditing(false);
+    setConfirmDeactivate(false); resetPin();
   }
 
   function handleNew() {
     setSelectedId(null); setIsNew(true); setIsEditing(false);
     setEditCode(""); setEditName(""); setEditRole("VEN"); setEditBlock(100);
-    resetPin();
+    setConfirmDeactivate(false); resetPin();
   }
 
   function handleStartEdit() {
     if (!selected) return;
     setEditCode(selected.code); setEditName(selected.name);
     setEditRole(selected.roleCode); setEditBlock(selected.blockBase);
-    setIsEditing(true); resetPin();
+    setIsEditing(true); setConfirmDeactivate(false); resetPin();
   }
 
   function handleSave() {
@@ -187,6 +208,9 @@ export function OperadoresWorkspace() {
       setOperators(prev => [...prev, next]);
       setSelectedId(next.id);
       setIsNew(false);
+      if (editBlock !== null) {
+        logOpEvent("bloque_reasignado", { blockBase: editBlock, toOperator: next.code });
+      }
     } else if (selectedId) {
       setOperators(prev => prev.map(o =>
         o.id === selectedId
@@ -197,7 +221,9 @@ export function OperadoresWorkspace() {
     setIsEditing(false); resetPin();
   }
 
-  function handleCancel() { setIsNew(false); setIsEditing(false); resetPin(); }
+  function handleCancel() {
+    setIsNew(false); setIsEditing(false); setConfirmDeactivate(false); resetPin();
+  }
 
   function handleDelete() {
     if (!selected || selected.hasOperationalHistory) return;
@@ -206,15 +232,26 @@ export function OperadoresWorkspace() {
     setSelectedId(rest.length > 0 ? rest[0].id : null);
   }
 
-  function handleDeactivate() {
-    if (!selected || !selected.active) return;
-    setOperators(prev => prev.map(o => o.id === selected.id ? { ...o, active: false } : o));
+  function handleConfirmDeactivate() {
+    if (!selected || !selected.active || hasActiveTurno) return;
+    const now = new Date();
+    setOperators(prev => prev.map(o =>
+      o.id === selected.id ? { ...o, active: false, deactivatedAt: now } : o
+    ));
+    logOpEvent("operador_desactivado", { operatorId: selected.id, code: selected.code, blockBase: selected.blockBase });
+    if (selected.blockBase !== null) {
+      logOpEvent("bloque_liberado", { blockBase: selected.blockBase, fromOperator: selected.code });
+    }
+    setConfirmDeactivate(false);
     setIsEditing(false);
   }
 
   function handleActivate() {
     if (!selected || selected.active) return;
-    setOperators(prev => prev.map(o => o.id === selected.id ? { ...o, active: true } : o));
+    setOperators(prev => prev.map(o =>
+      o.id === selected.id ? { ...o, active: true, deactivatedAt: undefined } : o
+    ));
+    logOpEvent("operador_activado", { operatorId: selected.id, code: selected.code });
   }
 
   const showView = selected !== null && !isNew && !isEditing;
@@ -257,7 +294,7 @@ export function OperadoresWorkspace() {
             </button>
           )}
           {thirdAction === "deactivate" && (
-            <button onClick={handleDeactivate} title="Tecla [CTRL + D]"
+            <button onClick={() => setConfirmDeactivate(true)} title="Tecla [CTRL + D]"
               className="flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#b45309] active:scale-[0.97]">
               <Ban size={12} strokeWidth={2.5} />DESACTIVAR
             </button>
@@ -323,8 +360,82 @@ export function OperadoresWorkspace() {
         {/* Panel */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
 
-          {/* VIEW */}
-          {showView && selected && (
+          {/* CONFIRMACIÓN BAJA OPERACIONAL */}
+          {showView && selected && confirmDeactivate && (
+            <div className="flex flex-col gap-3">
+
+              {/* Cabecera confirmación */}
+              <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 ${
+                hasActiveTurno
+                  ? "border-red-200 bg-red-50"
+                  : "border-amber-200 bg-amber-50/60"
+              }`}>
+                {hasActiveTurno
+                  ? <AlertTriangle size={13} strokeWidth={2} className="shrink-0 text-red-500" />
+                  : <Ban           size={13} strokeWidth={2} className="shrink-0 text-amber-600" />
+                }
+                <span className={`text-[11px] font-bold uppercase tracking-widest ${
+                  hasActiveTurno ? "text-red-600" : "text-amber-700"
+                }`}>
+                  {hasActiveTurno ? "BAJA BLOQUEADA" : "BAJA OPERACIONAL"}
+                </span>
+                <span className="ml-1 rounded bg-white/70 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[#2F3E46]">
+                  {selected.code}
+                </span>
+              </div>
+
+              {/* Bloqueado: turno activo */}
+              {hasActiveTurno && (
+                <div className="flex flex-col gap-2.5 rounded-xl border border-red-100 bg-white px-4 py-3">
+                  <p className="text-[12px] font-semibold text-[#374151]">
+                    <span className="font-bold text-red-600">{selected.name}</span> tiene un turno activo en el bloque{" "}
+                    <span className="font-bold tabular-nums text-[#2F3E46]">{selected.blockBase}</span>.
+                  </p>
+                  <p className="text-[11px] font-semibold text-[#9ca3af]">
+                    Cierra el turno activo antes de registrar la baja operacional.
+                  </p>
+                  <button onClick={() => setConfirmDeactivate(false)}
+                    className="flex h-8 w-full items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8] hover:text-[#374151]">
+                    Entendido
+                  </button>
+                </div>
+              )}
+
+              {/* Libre: confirmar baja */}
+              {!hasActiveTurno && (
+                <div className="flex flex-col gap-3 rounded-xl border border-[#e4e9f0] bg-white px-4 py-3">
+                  <p className="text-[12px] font-semibold text-[#374151]">
+                    <span className="font-bold text-[#2F3E46]">{selected.name}</span> quedará inactivo operacionalmente.
+                    Su histórico se conserva íntegro.
+                  </p>
+
+                  {selected.blockBase !== null && (
+                    <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-[#f0fdf4] px-3 py-2">
+                      <CheckCircle size={11} strokeWidth={2} className="shrink-0 text-emerald-500" />
+                      <p className="text-[11px] font-semibold text-emerald-700">
+                        Bloque <span className="font-bold tabular-nums">{selected.blockBase}</span> quedará disponible para reasignación
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-0.5">
+                    <button onClick={() => setConfirmDeactivate(false)}
+                      className="flex h-8 flex-1 items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8] hover:text-[#374151]">
+                      Cancelar
+                    </button>
+                    <button onClick={handleConfirmDeactivate}
+                      className="flex h-8 flex-1 items-center justify-center rounded-lg bg-[#d97706] text-[11px] font-bold uppercase tracking-wider text-white transition hover:bg-[#b45309] active:scale-[0.97]">
+                      Confirmar baja
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* VIEW NORMAL */}
+          {showView && selected && !confirmDeactivate && (
             <div className="flex flex-col gap-4">
 
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">OPERADOR</span>
@@ -349,13 +460,30 @@ export function OperadoresWorkspace() {
                     {ROLES_REF.find(r => r.code === selected.roleCode)?.name ?? selected.roleCode}
                   </p>
                 </div>
-                <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-2">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-[#b0bac8]">BLOQUE ASIGNADO</span>
+
+                {/* Bloque: muestra diferente si operador está inactivo */}
+                <div className={`flex flex-1 flex-col gap-0.5 rounded-xl border px-3 py-2 ${
+                  !selected.active && selected.blockBase !== null
+                    ? "border-emerald-100 bg-[#f0fdf4]"
+                    : "border-[#e4e9f0] bg-[#fafbfc]"
+                }`}>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-[#b0bac8]">
+                    {!selected.active && selected.blockBase !== null ? "ÚLTIMO BLOQUE" : "BLOQUE ASIGNADO"}
+                  </span>
                   {selected.blockBase !== null ? (
-                    <p className="text-[12px] font-semibold text-[#374151]">
-                      <span className="mr-1 text-[13px] font-bold tabular-nums text-[#78C487]">{selected.blockBase}</span>
-                      CAJA {selected.blockBase}–{selected.blockBase + 4}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[12px] font-semibold text-[#374151]">
+                        <span className={`mr-1 text-[13px] font-bold tabular-nums ${!selected.active ? "text-emerald-600" : "text-[#78C487]"}`}>
+                          {selected.blockBase}
+                        </span>
+                        CAJA {selected.blockBase}–{selected.blockBase + 4}
+                      </p>
+                      {!selected.active && (
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700">
+                          DISPONIBLE
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-[11px] font-semibold text-[#c0cad4]">Sin bloque asignado</p>
                   )}
@@ -420,6 +548,12 @@ export function OperadoresWorkspace() {
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Por</span>
                     <span className="text-[11px] font-semibold tracking-wider text-[#a8b4c4]">{selected.createdBy}</span>
                   </div>
+                  {selected.deactivatedAt && (
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Baja</span>
+                      <span className="text-[11px] font-semibold tabular-nums text-amber-400">{formatCreatedAt(selected.deactivatedAt)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
