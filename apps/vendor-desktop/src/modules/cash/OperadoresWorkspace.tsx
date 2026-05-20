@@ -189,9 +189,6 @@ export function OperadoresWorkspace() {
 
   function handleSave() {
     if (!canSave) return;
-    const pinUpdate: Partial<Operator> =
-      pinOpen && pinInput.length >= 4 && pinInput === pinConfirm ? { pinConfigured: true } : {};
-
     if (isNew) {
       const next: Operator = {
         id: String(Date.now()),
@@ -200,7 +197,7 @@ export function OperadoresWorkspace() {
         roleCode: editRole,
         blockBase: editBlock,
         active: true,
-        pinConfigured: !!pinUpdate.pinConfigured,
+        pinConfigured: false,
         hasOperationalHistory: false,
         createdAt: new Date(),
         createdBy: "OPERADOR",
@@ -214,7 +211,7 @@ export function OperadoresWorkspace() {
     } else if (selectedId) {
       setOperators(prev => prev.map(o =>
         o.id === selectedId
-          ? { ...o, code: editCode.trim().toUpperCase(), name: editName.trim().toUpperCase(), roleCode: editRole, blockBase: editBlock, ...pinUpdate }
+          ? { ...o, code: editCode.trim().toUpperCase(), name: editName.trim().toUpperCase(), roleCode: editRole, blockBase: editBlock }
           : o
       ));
     }
@@ -612,22 +609,6 @@ export function OperadoresWorkspace() {
                   </select>
                 </div>
               </div>
-
-              {/* PIN inline opcional */}
-              {!pinOpen ? (
-                <button onClick={() => { setPinOpen(true); setPinInput(""); setPinConfirm(""); setPinError(""); }}
-                  className="flex items-center gap-1.5 self-start rounded-lg border border-[#e4e9f0] bg-[#fafbfc] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#005BE3]/30 hover:bg-[#f4f8ff] hover:text-[#005BE3] active:scale-[0.97]">
-                  <KeyRound size={11} strokeWidth={2} />
-                  {isNew ? "CONFIGURAR PIN" : "CAMBIAR PIN"}
-                </button>
-              ) : (
-                <PinForm
-                  pin={pinInput} confirm={pinConfirm} error={pinError}
-                  onPin={setPinInput} onConfirm={setPinConfirm}
-                  onSave={() => setPinOpen(false)}
-                  onCancel={() => { setPinOpen(false); setPinInput(""); setPinConfirm(""); setPinError(""); }}
-                />
-              )}
 
               {/* Actions */}
               <div className="flex gap-2 pt-1">
