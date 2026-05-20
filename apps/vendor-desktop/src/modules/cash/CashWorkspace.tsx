@@ -85,8 +85,6 @@ function numericValue(v: string): number {
 
 // ── constants ──────────────────────────────────────────────────
 
-const SERIES = ["1", "2", "3", "5"] as const;
-
 type ClosingStage = 0 | 1 | 2 | 3 | 4 | 5;
 
 // ── sub-components ─────────────────────────────────────────────
@@ -134,12 +132,16 @@ function BoxRow({ box, isActive, isSelected, onSelect, onExceptional }: {
       <div className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
       <span className={`flex-1 text-[12px] font-bold tabular-nums ${nameColor}`}>CAJA {box.code}</span>
       {canExceptional ? (
-        <button
-          onClick={e => { e.stopPropagation(); onExceptional?.(); }}
-          className="text-[9.5px] font-semibold uppercase tracking-wider text-amber-600 transition hover:text-amber-700 hover:underline underline-offset-2"
-        >
-          Excepcional →
-        </button>
+        isSelected ? (
+          <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-amber-700">ESPECIAL</span>
+        ) : (
+          <button
+            onClick={e => { e.stopPropagation(); onExceptional?.(); }}
+            className="text-[9.5px] font-semibold uppercase tracking-wider text-amber-600 transition hover:text-amber-700 hover:underline underline-offset-2"
+          >
+            Excepcional →
+          </button>
+        )
       ) : (
         <BoxStatusBadge box={box} isActive={isActive} />
       )}
@@ -297,7 +299,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // ── derived ───────────────────────────────────────────────────
   const selectedBox        = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
-  const isContingency      = isContingencyBox(selectedBox); // para UI legacy (badges, etc.)
   const openingMode: OpeningMode = isOpen ? "normal" : detectOpeningMode(selectedBox);
   const canOpen            = canOpenSession(isOpen, selectedBox, aperturaInput, openingMode, ctgPin, ctgJustif);
   const canCorrectApertura = isOpen && cashMoves.length === 0 && sessionStats.count === 0 && closingStage === 0;
@@ -648,9 +649,20 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
         ) : (
           /* Pre-open: operator + apertura card */
-          <div className="flex flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex items-center px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
-              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">APERTURA DE TURNO</span>
+          <div className={`flex flex-col overflow-hidden rounded-[24px] border bg-[#FDFCF9] ${
+            openingMode === "exceptional" ? "border-amber-300/60" : "border-[#78C487]/50"
+          }`}>
+            <div className={`shrink-0 flex items-center justify-between px-4 py-2.5 border-b ${
+              openingMode === "exceptional"
+                ? "bg-amber-50 border-amber-200/60"
+                : "bg-[#F3F8F4] border-[#78C487]/15"
+            }`}>
+              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+                {openingMode === "exceptional" ? "APERTURA ESPECIAL" : "APERTURA DE TURNO"}
+              </span>
+              {openingMode === "exceptional" && (
+                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-600">PIN + MOTIVO</span>
+              )}
             </div>
             <div className="flex flex-col gap-4 px-5 py-4">
             <div className="flex items-center gap-3">
@@ -818,14 +830,18 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               onClick={handleOpen}
               disabled={!canOpen}
               title="Tecla [ENTER]"
-              className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 focus:outline-emerald-600/60 ${
-                canOpen
-                  ? "bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98]"
-                  : "cursor-not-allowed bg-emerald-700/40 text-white/60"
+              className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 ${
+                openingMode === "exceptional"
+                  ? canOpen
+                    ? "bg-amber-600 text-white hover:bg-amber-700 active:scale-[0.98] focus:outline-amber-500/60"
+                    : "cursor-not-allowed bg-amber-600/40 text-white/60"
+                  : canOpen
+                    ? "bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98] focus:outline-emerald-600/60"
+                    : "cursor-not-allowed bg-emerald-700/40 text-white/60"
               }`}
             >
               <LogIn size={14} strokeWidth={2} />
-              Aperturar
+              {openingMode === "exceptional" ? "Aperturar excepcionalmente" : "Aperturar"}
             </button>
 
           ) : closingStage === 0 ? (

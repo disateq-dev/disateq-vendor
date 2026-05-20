@@ -36,8 +36,10 @@ export type OpeningMode = "normal" | "contingency" | "exceptional";
 export function detectOpeningMode(box: CashBox | null): OpeningMode {
   if (!box || box.type === "normal") return "normal";
   if (box.available) return "contingency";   // prerequisito cumplido: principal ya fue usada y cerrada
-  if (!box.available && !box.used) return "exceptional"; // prerequisito no cumplido: principal nunca usada hoy
-  return "normal"; // fallback (box.used = true → no debería poder seleccionarse)
+  // Excepcional SOLO para contingency-1: rompe únicamente el punto inicial del día
+  // contingency-2 sin contingency-1 usada = bloqueada por secuencia, no excepcional
+  if (!box.available && !box.used && box.type === "contingency-1") return "exceptional";
+  return "normal";
 }
 
 // ── authorization constants ─────────────────────────────────────
