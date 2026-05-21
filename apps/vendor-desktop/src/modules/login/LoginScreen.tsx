@@ -310,7 +310,7 @@ export function LoginScreen() {
           {view === "keypad" && (
             <>
               {/* PIN — sin label, placeholder operacional */}
-              <div className="mb-2">
+              <div className="mb-5 relative">
                 <div className="relative">
                   <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
                   <input
@@ -342,12 +342,11 @@ export function LoginScreen() {
                   </button>
                 </div>
                 {error && (
-                  <p className="mt-1.5 text-[10px] font-semibold text-red-500">{error}</p>
+                  <p className="absolute left-0 top-full mt-1 text-[10px] font-semibold text-red-500">{error}</p>
                 )}
               </div>
 
               {/* Keypad */}
-              <div className="h-2" />
               <div className="grid grid-cols-3 gap-2 mb-4 w-full">
                 {["7","8","9","4","5","6","1","2","3"].map(d => (
                   <button key={d} onClick={() => addDigit(d)}
