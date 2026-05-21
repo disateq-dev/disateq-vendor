@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { AppShell } from "./layout/AppShell";
@@ -15,8 +15,9 @@ export type CashSubView  = "turno" | "roles" | "operadores" | "cajas";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
-  const [activeModule, setActiveModule] = useState<ActiveModule>("sales");
+  const [activeModule, setActiveModule] = useState<ActiveModule>("cash");
   const [cashSubView,  setCashSubView]  = useState<CashSubView>("turno");
+  const prevOpId = useRef<string | null>(null);
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -25,6 +26,15 @@ function AppRoot() {
     } else {
       win.setSize(new LogicalSize(880, 548)).then(() => win.center());
     }
+  }, [activeOperator]);
+
+  // Al hacer login (transición null → operador), ir a TURNO
+  useEffect(() => {
+    if (activeOperator && activeOperator.id !== prevOpId.current) {
+      setActiveModule("cash");
+      setCashSubView("turno");
+    }
+    prevOpId.current = activeOperator?.id ?? null;
   }, [activeOperator]);
 
   if (!activeOperator) return <LoginScreen />;

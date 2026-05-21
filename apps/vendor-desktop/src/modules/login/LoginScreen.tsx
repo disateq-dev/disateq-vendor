@@ -291,7 +291,7 @@ export function LoginScreen() {
                 }}
                 className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
               >
-                <option value="" disabled hidden>SELECCIONE USUARIO (ALIAS)</option>
+                <option value="" disabled hidden>Seleccione USUARIO (Alias)</option>
                 {activeOps.map(op => (
                   <option key={op.id} value={op.id}>{op.code} · {op.name}</option>
                 ))}
