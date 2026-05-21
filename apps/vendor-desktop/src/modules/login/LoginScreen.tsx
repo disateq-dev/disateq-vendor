@@ -493,7 +493,7 @@ export function LoginScreen() {
           {view === "pin-change" ? (
             <button
               onClick={switchToKeypad}
-              className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2154d8] hover:text-[#1a44b8] transition">
+              className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-[#2154d8] hover:text-[#1a44b8] transition">
               <span className="text-[12px] leading-none">←</span> Volver al LOGIN
             </button>
           ) : (
