@@ -261,7 +261,7 @@ export function LoginScreen() {
       </div>
 
       {/* ══ SHEET DERECHA — 60% ══ */}
-      <div className="flex flex-1 flex-col bg-white px-10 pt-8 pb-3">
+      <div className="flex flex-1 flex-col bg-white px-6 pt-8 pb-3">
 
         {/* Fecha + hora */}
         <div className="flex justify-end mb-4">
@@ -271,7 +271,7 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <div className="flex flex-col w-full max-w-[360px] mx-auto">
+        <div className="flex flex-col w-full">
 
           {/* CAMPO 1: USUARIO / OPERADOR — sin label, placeholder interno */}
           <div className="mb-2">
