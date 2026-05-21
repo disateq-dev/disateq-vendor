@@ -469,7 +469,7 @@ export function LoginScreen() {
                   )}
 
                   {/* Botones */}
-                  <div className="mt-5 mb-4">
+                  <div className="mt-3 mb-4">
                     <button
                       onClick={handlePinChange}
                       disabled={!pcCanSave}
