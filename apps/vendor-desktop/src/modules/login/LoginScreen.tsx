@@ -427,37 +427,37 @@ export function LoginScreen() {
                     />
                   </div>
 
-                  {/* CAMPO 4: NUEVO PIN */}
-                  <div className="mb-2">
-                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Nuevo PIN</label>
-                    <div className="relative">
-                      <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
-                      <input
-                        ref={pcPinNuevoRef}
-                        type="password" inputMode="numeric" autoComplete="off" maxLength={6}
-                        value={pcPinNuevo}
-                        onChange={e => { setPcPinNuevo(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinConfRef.current?.focus(); } }}
-                        placeholder="4 a 6 números"
-                        className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-4 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
-                      />
+                  {/* CAMPOS 4+5: NUEVO PIN + CONFIRMAR PIN — misma línea */}
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                      <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Nuevo PIN</label>
+                      <div className="relative">
+                        <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
+                        <input
+                          ref={pcPinNuevoRef}
+                          type="password" inputMode="numeric" autoComplete="off" maxLength={6}
+                          value={pcPinNuevo}
+                          onChange={e => { setPcPinNuevo(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
+                          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinConfRef.current?.focus(); } }}
+                          placeholder="4–6 núm."
+                          className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  {/* CAMPO 5: CONFIRMAR PIN */}
-                  <div className="mb-2">
-                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Confirmar PIN</label>
-                    <div className="relative">
-                      <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
-                      <input
-                        ref={pcPinConfRef}
-                        type="password" inputMode="numeric" autoComplete="off" maxLength={6}
-                        value={pcPinConfirm}
-                        onChange={e => { setPcPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
-                        placeholder="4 a 6 números"
-                        className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-4 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
-                      />
+                    <div>
+                      <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Confirmar PIN</label>
+                      <div className="relative">
+                        <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
+                        <input
+                          ref={pcPinConfRef}
+                          type="password" inputMode="numeric" autoComplete="off" maxLength={6}
+                          value={pcPinConfirm}
+                          onChange={e => { setPcPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
+                          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
+                          placeholder="4–6 núm."
+                          className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
+                        />
+                      </div>
                     </div>
                   </div>
 
