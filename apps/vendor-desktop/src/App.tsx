@@ -22,9 +22,11 @@ function AppRoot() {
   useEffect(() => {
     const win = getCurrentWindow();
     if (activeOperator) {
+      win.setDecorations(true);
       win.setAlwaysOnTop(false);
       win.setSize(new LogicalSize(1366, 768)).then(() => win.center());
     } else {
+      win.setDecorations(false);
       win.setAlwaysOnTop(true);
       win.setSize(new LogicalSize(740, 520)).then(() => win.center());
     }
