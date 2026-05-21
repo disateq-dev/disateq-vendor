@@ -276,7 +276,7 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <div className={`flex flex-col w-full${view === "pin-change" ? " mt-8" : ""}`}>
+        <div className={`flex flex-col w-full${view === "pin-change" ? " mt-6" : ""}`}>
 
           {/* CAMPO 1: USUARIO / OPERADOR — sin label, placeholder interno */}
           <div className="mb-2">
