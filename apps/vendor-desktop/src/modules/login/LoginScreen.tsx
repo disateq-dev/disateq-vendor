@@ -388,7 +388,7 @@ export function LoginScreen() {
                   <p className="text-[10.5px] text-[#6b7a99]">Volviendo al acceso...</p>
                 </div>
               ) : (
-                <>
+                <div className="mt-5">
                   {/* CAMPO 2: MOTIVO */}
                   <div className="mb-2">
                     <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Motivo</label>
@@ -481,7 +481,7 @@ export function LoginScreen() {
                       Guardar
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </>
           )}
