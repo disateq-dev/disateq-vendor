@@ -22,8 +22,10 @@ function AppRoot() {
   useEffect(() => {
     const win = getCurrentWindow();
     if (activeOperator) {
+      win.setAlwaysOnTop(false);
       win.setSize(new LogicalSize(1366, 768)).then(() => win.center());
     } else {
+      win.setAlwaysOnTop(true);
       win.setSize(new LogicalSize(740, 520)).then(() => win.center());
     }
   }, [activeOperator]);

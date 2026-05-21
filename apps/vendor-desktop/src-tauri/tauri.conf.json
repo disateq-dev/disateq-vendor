@@ -19,7 +19,9 @@
         "fullscreen": false,
         "maximized": false,
         "center": true,
-        "closable": false
+        "closable": false,
+        "decorations": false,
+        "alwaysOnTop": true
       }
     ],
     "security": {
