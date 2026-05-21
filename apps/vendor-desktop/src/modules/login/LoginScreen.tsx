@@ -469,15 +469,11 @@ export function LoginScreen() {
                   )}
 
                   {/* Botones */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <button onClick={switchToKeypad}
-                      className="h-11 rounded-xl border border-[#e0e8f2] bg-[#f5f8fc] text-[11px] font-bold uppercase tracking-[0.07em] text-[#6b7a99] hover:bg-[#eaf0f9] transition active:scale-95">
-                      Volver
-                    </button>
+                  <div className="mb-4">
                     <button
                       onClick={handlePinChange}
                       disabled={!pcCanSave}
-                      className={`h-11 rounded-xl text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
+                      className={`w-full h-11 rounded-xl text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
                         pcCanSave
                           ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_2px_14px_rgba(69,179,86,0.35)]"
                           : "bg-[#45b356]/[0.15] border border-[#45b356]/20 text-[#45b356]/50 cursor-not-allowed"
@@ -495,7 +491,7 @@ export function LoginScreen() {
         {/* Acciones inferiores */}
         <div className="flex items-center justify-between border-t border-[#f0f4f9] pt-4">
           <button
-            onClick={() => void invoke("app_exit")}
+            onClick={() => view === "pin-change" ? switchToKeypad() : void invoke("app_exit")}
             className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b8c4d4] hover:text-[#dc2626] transition">
             Cancelar
           </button>
