@@ -269,14 +269,14 @@ export function LoginScreen() {
         <div className="w-full max-w-[360px] mx-auto flex flex-col">
 
         {/* Fecha + hora */}
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-end mb-8">
           <div className="text-right">
             <p className="text-[10.5px] text-[#a0aec0] leading-none tracking-wide">{fmtDate(now)}</p>
             <p className="text-[22px] font-semibold tabular-nums text-[#1a2d4e] leading-tight mt-0.5">{fmtTime(now)}</p>
           </div>
         </div>
 
-        <div className={`flex flex-col w-full${view === "pin-change" ? " mt-6" : ""}`}>
+        <div className="flex flex-col w-full">
 
           {/* CAMPO 1: USUARIO / OPERADOR — sin label, placeholder interno */}
           <div className="mb-2">
@@ -291,7 +291,7 @@ export function LoginScreen() {
                   if (view === "keypad")      focusPin();
                   else if (view === "pin-change") pcMotivoRef.current?.focus();
                 }}
-                className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
+                className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
               >
                 <option value="" disabled hidden>Seleccione USUARIO (Alias)</option>
                 {activeOps.map(op => (
@@ -331,7 +331,7 @@ export function LoginScreen() {
                     onFocus={() => setStep("pin")}
                     placeholder="Ingrese PIN de 4 a 6 números"
                     maxLength={6}
-                    className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-11 py-3 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
+                    className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-11 py-2.5 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                   />
                   <button
                     type="button" tabIndex={-1}
@@ -341,14 +341,13 @@ export function LoginScreen() {
                     {showPin ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
-                {error ? (
+                {error && (
                   <p className="mt-1.5 text-[10px] font-semibold text-red-500">{error}</p>
-                ) : (
-                  <div className="h-5" />
                 )}
               </div>
 
               {/* Keypad */}
+              <div className="h-2" />
               <div className="grid grid-cols-3 gap-2 mb-4 w-full">
                 {["7","8","9","4","5","6","1","2","3"].map(d => (
                   <button key={d} onClick={() => addDigit(d)}
@@ -398,7 +397,7 @@ export function LoginScreen() {
                         value={pcMotivo}
                         onChange={e => { setPcMotivo(e.target.value); setPcError(null); }}
                         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcAuthCodeRef.current?.focus(); } }}
-                        className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[12px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
+                        className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[12px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
                       >
                         <option value="" disabled hidden>Seleccionar motivo...</option>
                         {PC_MOTIVOS.map(m => <option key={m} value={m}>{m}</option>)}
