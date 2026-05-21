@@ -4,6 +4,8 @@ import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../../context/POSContext";
 
+type LoginStep = "alias" | "pin";
+
 const DAYS = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function fmtDate(d: Date) {
@@ -19,29 +21,55 @@ export function LoginScreen() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
 
+  const [step,       setStep]       = useState<LoginStep>("alias");
   const [selectedId, setSelectedId] = useState(() => activeOps[0]?.id ?? "");
   const [pin,        setPin]        = useState("");
   const [showPin,    setShowPin]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [now,        setNow]        = useState(new Date());
 
-  // Refs para keyboard handler estable
-  const pinRef         = useRef("");
-  const selectedIdRef  = useRef("");
-  const loginRef       = useRef(loginOperator);
-  pinRef.current        = pin;
+  // DOM refs
+  const aliasSelectRef = useRef<HTMLSelectElement>(null);
+  const pinInputRef    = useRef<HTMLInputElement>(null);
+
+  // Stable refs para keyboard handler (sin stale closures)
+  const pinStateRef     = useRef("");
+  const selectedIdRef   = useRef("");
+  const loginRef        = useRef(loginOperator);
+  const stepRef         = useRef<LoginStep>("alias");
+  pinStateRef.current   = pin;
   selectedIdRef.current = selectedId;
   loginRef.current      = loginOperator;
+  stepRef.current       = step;
 
+  // Clock
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
+  // Autofocus alias al montar
+  useEffect(() => { aliasSelectRef.current?.focus(); }, []);
+
   const selected = activeOps.find(o => o.id === selectedId) ?? null;
   const hasTurn  = cashSession.isOpen && cashSession.cashBox !== null;
 
+  // ── Transiciones de step ──────────────────────────────────────────
+
+  function focusPin() {
+    setStep("pin");
+    setTimeout(() => pinInputRef.current?.focus(), 0);
+  }
+
+  function resetToAlias() {
+    setStep("alias");
+    setPin("");
+    setError(null);
+    setTimeout(() => aliasSelectRef.current?.focus(), 0);
+  }
+
   // ── Lógica de acceso ──────────────────────────────────────────────
+
   function attemptLogin(p: string) {
     const id = selectedIdRef.current;
     if (!id || p.length < 4) return;
@@ -50,13 +78,15 @@ export function LoginScreen() {
   }
 
   function addDigit(d: string) {
-    const curr = pinRef.current;
+    // Auto-avance a PIN en primer dígito desde alias (keypad click)
+    if (stepRef.current === "alias") focusPin();
+    const curr = pinStateRef.current;
     if (curr.length >= 6) return;
     const next = curr + d;
-    const id = selectedIdRef.current;
     setPin(next);
     setError(null);
     if (next.length === 6) {
+      const id = selectedIdRef.current;
       setTimeout(() => {
         if (!id) return;
         const ok = loginRef.current(id, next);
@@ -67,40 +97,57 @@ export function LoginScreen() {
 
   function removeLast() { setPin(p => p.slice(0, -1)); setError(null); }
 
-  function selectOp(id: string) { setSelectedId(id); setPin(""); setError(null); }
+  function selectOp(id: string) {
+    setSelectedId(id);
+    setStep("alias");
+    setPin("");
+    setError(null);
+  }
 
-  // ── Keyboard handler estable (solo refs + setters estables) ───────
+  // ── Keyboard handler global — estable via refs ────────────────────
   useEffect(() => {
-    function addD(d: string) {
-      const curr = pinRef.current;
-      if (curr.length >= 6) return;
-      const next = curr + d;
-      const id = selectedIdRef.current;
-      setPin(next);
-      setError(null);
-      if (next.length === 6) {
-        setTimeout(() => {
-          if (!id) return;
-          const ok = loginRef.current(id, next);
-          if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
-        }, 0);
-      }
-    }
-
     function onKey(e: KeyboardEvent) {
-      const k = e.key;
-      if (k === "Escape") { e.preventDefault(); void invoke("app_exit"); return; }
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === "SELECT" || tag === "INPUT") return;
-      if (k >= "0" && k <= "9") { e.preventDefault(); addD(k); }
-      else if (k === "Backspace") { e.preventDefault(); setPin(p => p.slice(0, -1)); setError(null); }
-      else if (k === "Enter") {
+      const k    = e.key;
+      const tag  = (e.target as HTMLElement).tagName;
+      const curr = stepRef.current;
+
+      // Ctrl+Shift+P — PIN_CHANGE_SHORTCUT (arquitectura futura: Cambiar PIN OPERADOR)
+      if (e.ctrlKey && e.shiftKey && k === "P") { e.preventDefault(); return; }
+
+      // Escape
+      if (k === "Escape") {
         e.preventDefault();
-        const id = selectedIdRef.current;
-        const p  = pinRef.current;
-        if (!id || p.length < 4) return;
-        const ok = loginRef.current(id, p);
-        if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
+        if (curr === "pin") {
+          // PIN step → volver a alias
+          setStep("alias");
+          setPin("");
+          setError(null);
+          setTimeout(() => aliasSelectRef.current?.focus(), 0);
+        } else {
+          void invoke("app_exit");
+        }
+        return;
+      }
+
+      // Alias step + SELECT: Enter → avanzar a PIN
+      if (curr === "alias" && tag === "SELECT" && k === "Enter") {
+        e.preventDefault();
+        focusPin();
+        return;
+      }
+
+      // PIN step — solo cuando foco NO está en el input (evita doble manejo)
+      if (curr === "pin" && tag !== "INPUT" && tag !== "SELECT") {
+        if (k >= "0" && k <= "9") { e.preventDefault(); addDigit(k); }
+        else if (k === "Backspace") { e.preventDefault(); setPin(p => p.slice(0, -1)); setError(null); }
+        else if (k === "Enter") {
+          e.preventDefault();
+          const id = selectedIdRef.current;
+          const p  = pinStateRef.current;
+          if (!id || p.length < 4) return;
+          const ok = loginRef.current(id, p);
+          if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
+        }
       }
     }
 
@@ -221,8 +268,12 @@ export function LoginScreen() {
           </label>
           <div className="relative">
             <select
+              ref={aliasSelectRef}
               value={selectedId}
               onChange={e => selectOp(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") { e.preventDefault(); focusPin(); }
+              }}
               className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
             >
               {activeOps.length === 0 && (
@@ -250,6 +301,7 @@ export function LoginScreen() {
           <div className="relative">
             <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
             <input
+              ref={pinInputRef}
               type={showPin ? "text" : "password"}
               inputMode="numeric"
               autoComplete="off"
@@ -260,6 +312,11 @@ export function LoginScreen() {
                 setError(null);
                 if (v.length === 6) setTimeout(() => attemptLogin(v), 0);
               }}
+              onKeyDown={e => {
+                if (e.key === "Enter") { e.preventDefault(); attemptLogin(pin); }
+                if (e.key === "Escape") { e.preventDefault(); resetToAlias(); }
+              }}
+              onFocus={() => setStep("pin")}
               placeholder="· · · · · ·"
               maxLength={6}
               className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-11 py-3 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-[0.2em] placeholder:text-[14px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
