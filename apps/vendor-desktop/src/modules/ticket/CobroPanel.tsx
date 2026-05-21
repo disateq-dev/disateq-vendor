@@ -781,7 +781,7 @@ export function CobroPanel() {
               title="Tecla [F12]"
               onClick={handleImprimir}
               disabled={!canConfirm}
-              className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#166534] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(22,101,52,0.32)] transition hover:bg-[#14532d] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+              className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#45b356] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(69,179,86,0.32)] transition hover:bg-[#35994a] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Printer size={15} strokeWidth={2} />
               Imprimir
@@ -790,7 +790,7 @@ export function CobroPanel() {
               title="Tecla [F11]"
               onClick={confirmEmit}
               disabled={!canConfirm}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-[#16a34a] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(22,163,74,0.22)] transition hover:bg-[#15803d] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-[#005BE3] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(0,91,227,0.22)] transition hover:bg-[#0049c4] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Send size={13} strokeWidth={2} />
               Enviar
@@ -811,7 +811,7 @@ export function CobroPanel() {
               title="Tecla [Enter]"
               onClick={() => handleEstablecer(false)}
               disabled={!canEstablecer}
-              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#166534] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(22,101,52,0.28)] transition hover:bg-[#14532d] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#45b356] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(69,179,86,0.28)] transition hover:bg-[#35994a] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
             >
               Establecer
             </button>

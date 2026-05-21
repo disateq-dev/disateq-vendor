@@ -842,7 +842,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             <>
               <button
                 onClick={() => setClosingStage(1)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f8c3c3] bg-[#fef2f2] py-3 text-[12px] font-bold uppercase tracking-widest text-[#b91c1c] transition hover:bg-[#fee2e2] active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#dc2626] py-3 text-[12px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(220,38,38,0.28)] transition hover:bg-[#b91c1c] active:scale-[0.98]"
               >
                 <LogOut size={13} strokeWidth={2.5} />
                 CIERRE DE TURNO
