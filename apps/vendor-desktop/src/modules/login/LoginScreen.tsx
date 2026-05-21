@@ -214,7 +214,7 @@ export function LoginScreen() {
       {/* ══ SHEET IZQUIERDA — 40% ══ */}
       <div className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8" style={{ borderRight: "1px solid #edf2f8" }}>
         <div className="px-4 pb-2 flex justify-center">
-          <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "95%", height: "auto", display: "block" }} />
+          <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "90%", height: "auto", display: "block" }} />
         </div>
         <div style={{ flexGrow: 5 }} />
         {/* Acceso Operativo */}
