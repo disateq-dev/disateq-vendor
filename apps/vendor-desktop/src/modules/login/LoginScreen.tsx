@@ -217,9 +217,9 @@ export function LoginScreen() {
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "95%", height: "auto", display: "block" }} />
         </div>
         <div style={{ flexGrow: 5 }} />
-        <div className="px-8 mb-5">
+        <div className="px-4 mb-5">
           <div className="text-right mb-6">
-            <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5">Acceso Operativo</h2>
+            <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5 whitespace-nowrap">Acceso Operativo</h2>
             <p className="text-[11px] text-[#6b7a99] leading-snug">Ingrese su usuario y PIN<br />para acceder al sistema.</p>
           </div>
           <div className="flex items-center justify-end gap-3">
@@ -231,7 +231,7 @@ export function LoginScreen() {
           </div>
         </div>
         <div style={{ flexGrow: 4 }} />
-        <div className="px-8 mb-4">
+        <div className="px-4 mb-4">
           {hasTurn && cashSession.cashBox ? (
             <div className="rounded-xl border border-[#78C487]/25 bg-[#f0fbf1] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
@@ -250,7 +250,7 @@ export function LoginScreen() {
             </div>
           )}
         </div>
-        <div className="px-8 mt-9">
+        <div className="px-4 mt-9">
           <p className="text-[10px] text-[#b0bec8] leading-[1.5]">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
