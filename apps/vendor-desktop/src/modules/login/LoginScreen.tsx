@@ -490,11 +490,19 @@ export function LoginScreen() {
 
         {/* Acciones inferiores */}
         <div className="flex items-center justify-between border-t border-[#f0f4f9] pt-4">
-          <button
-            onClick={() => view === "pin-change" ? switchToKeypad() : void invoke("app_exit")}
-            className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b8c4d4] hover:text-[#dc2626] transition">
-            Cancelar
-          </button>
+          {view === "pin-change" ? (
+            <button
+              onClick={switchToKeypad}
+              className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#2154d8] hover:text-[#1a44b8] transition">
+              <span className="text-[12px] leading-none">←</span> Volver al LOGIN
+            </button>
+          ) : (
+            <button
+              onClick={() => void invoke("app_exit")}
+              className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b8c4d4] hover:text-[#dc2626] transition">
+              Cancelar
+            </button>
+          )}
           {view === "keypad" && (
             <div className="flex flex-col items-end gap-1">
               <button onClick={switchToPinChange}
