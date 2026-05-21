@@ -24,7 +24,7 @@ function AppRoot() {
     if (activeOperator) {
       win.setSize(new LogicalSize(1366, 768)).then(() => win.center());
     } else {
-      win.setSize(new LogicalSize(880, 548)).then(() => win.center());
+      win.setSize(new LogicalSize(760, 520)).then(() => win.center());
     }
   }, [activeOperator]);
 
