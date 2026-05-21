@@ -50,6 +50,7 @@ export function LoginScreen() {
   const [pcPinNuevo,   setPcPinNuevo]   = useState("");
   const [pcPinConfirm, setPcPinConfirm] = useState("");
   const [pcMotivo,     setPcMotivo]     = useState("");
+  const [pcAuthCode,   setPcAuthCode]   = useState("");
   const [pcError,      setPcError]      = useState<string | null>(null);
   const [pcSuccess,    setPcSuccess]    = useState(false);
 
@@ -59,6 +60,7 @@ export function LoginScreen() {
   const pcPinNuevoRef  = useRef<HTMLInputElement>(null);
   const pcPinConfRef   = useRef<HTMLInputElement>(null);
   const pcMotivoRef    = useRef<HTMLSelectElement>(null);
+  const pcAuthCodeRef  = useRef<HTMLInputElement>(null);
 
   // ── Stable refs para keyboard handler ────────────────────────────
   const pinStateRef     = useRef("");
@@ -98,7 +100,7 @@ export function LoginScreen() {
   // ── Transiciones ──────────────────────────────────────────────────
 
   function switchToPinChange() {
-    setPcPinNuevo(""); setPcPinConfirm(""); setPcMotivo("");
+    setPcPinNuevo(""); setPcPinConfirm(""); setPcMotivo(""); setPcAuthCode("");
     setPcError(null); setPcSuccess(false);
     setView("pin-change");
     // autofocus se hace en useEffect [view]
@@ -165,6 +167,10 @@ export function LoginScreen() {
     if (errNuevo) { setPcError(`Nuevo PIN: ${errNuevo}`); pcPinNuevoRef.current?.focus(); return; }
     if (pcPinNuevo !== pcPinConfirm) { setPcError("Los PINes no coinciden"); pcPinConfRef.current?.focus(); return; }
     if (!pcMotivo) { setPcError("Seleccione un motivo"); pcMotivoRef.current?.focus(); return; }
+    const authTrim = pcAuthCode.trim();
+    if (!authTrim) { setPcError("Código de autorización requerido"); pcAuthCodeRef.current?.focus(); return; }
+    if (!/[a-zA-Z]/.test(authTrim)) { setPcError("El código debe contener letras"); pcAuthCodeRef.current?.focus(); return; }
+    if (!/[0-9]/.test(authTrim))    { setPcError("El código debe contener números"); pcAuthCodeRef.current?.focus(); return; }
     const ok = resetOperatorPin(id, pcPinNuevo);
     if (!ok) { setPcError("Operador inválido"); aliasSelectRef.current?.focus(); return; }
     setPcSuccess(true);
@@ -451,7 +457,7 @@ export function LoginScreen() {
                         ref={pcMotivoRef}
                         value={pcMotivo}
                         onChange={e => { setPcMotivo(e.target.value); setPcError(null); }}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcAuthCodeRef.current?.focus(); } }}
                         className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[12px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
                       >
                         <option value="">Seleccionar motivo...</option>
@@ -463,6 +469,24 @@ export function LoginScreen() {
                         </svg>
                       </div>
                     </div>
+                  </div>
+
+                  {/* CAMPO 5: CÓDIGO AUTORIZACIÓN */}
+                  <div className="mb-2">
+                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">
+                      Código de Autorización
+                    </label>
+                    <input
+                      ref={pcAuthCodeRef}
+                      type="text"
+                      inputMode="text"
+                      autoComplete="off"
+                      value={pcAuthCode}
+                      onChange={e => { setPcAuthCode(e.target.value); setPcError(null); }}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
+                      placeholder="Letras y números"
+                      className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:font-normal outline-none focus:border-[#005BE3] focus:ring-2 focus:ring-[#005BE3]/10 transition"
+                    />
                   </div>
 
                   {/* Error */}
