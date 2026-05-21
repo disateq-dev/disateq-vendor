@@ -3,7 +3,7 @@ import { useTicketStore } from "../domains/ticket/state/ticket.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
-import { type OperatorRecord, loadOperators, checkPin, changePin, saveOperators } from "../domains/operator/operator.store";
+import { type OperatorRecord, loadOperators, checkPin, changePin, setOperatorPin, saveOperators } from "../domains/operator/operator.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -398,6 +398,7 @@ interface POSContextValue {
   logoutOperator: () => void;
   changeOperatorPin: (currentPin: string, newPin: string) => boolean;
   changeOperatorPinById: (id: string, currentPin: string, newPin: string) => boolean;
+  resetOperatorPin: (id: string, newPin: string) => boolean;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
   visualMode: VisualMode;
@@ -508,6 +509,16 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setOperators(updated);
     const op = operatorsRef.current.find(o => o.id === id);
     if (op) addOpLog(`[PIN] ${op.name} actualizó su PIN (login)`);
+    return true;
+  }, [addOpLog]);
+
+  const resetOperatorPin = useCallback((id: string, newPin: string): boolean => {
+    const updated = setOperatorPin(operatorsRef.current, id, newPin);
+    if (!updated) return false;
+    saveOperators(updated);
+    setOperators(updated);
+    const op = operatorsRef.current.find(o => o.id === id);
+    if (op) addOpLog(`[PIN] ${op.name} reseteó su PIN`);
     return true;
   }, [addOpLog]);
 
@@ -763,7 +774,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       opLogs, addOpLog,
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
-      operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin, changeOperatorPinById,
+      operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin, changeOperatorPinById, resetOperatorPin,
       rubro, setRubro,
       visualMode, setVisualMode,
       printFlow, setPrintFlow,

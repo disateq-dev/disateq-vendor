@@ -25,14 +25,14 @@ function fmtTime(d: Date) {
 }
 
 function validatePin(p: string): string | null {
-  if (!p)               return "Requerido";
+  if (!p)                return "Requerido";
   if (!/^\d+$/.test(p)) return "Solo números";
-  if (p.length < 4)    return "Mínimo 4 dígitos";
+  if (p.length < 4)     return "Mínimo 4 dígitos";
   return null;
 }
 
 export function LoginScreen() {
-  const { operators, loginOperator, cashSession, changeOperatorPinById } = usePOS();
+  const { operators, loginOperator, cashSession, resetOperatorPin } = usePOS();
   const activeOps = operators.filter(o => o.active);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
@@ -46,21 +46,19 @@ export function LoginScreen() {
   const [error,      setError]      = useState<string | null>(null);
   const [now,        setNow]        = useState(new Date());
 
-  // ── Pin-change form state ─────────────────────────────────────────
-  const [pcMotivo,     setPcMotivo]     = useState("");
-  const [pcPinActual,  setPcPinActual]  = useState("");
+  // ── Pin-change form state (sin PIN actual) ─────────────────────────
   const [pcPinNuevo,   setPcPinNuevo]   = useState("");
   const [pcPinConfirm, setPcPinConfirm] = useState("");
+  const [pcMotivo,     setPcMotivo]     = useState("");
   const [pcError,      setPcError]      = useState<string | null>(null);
   const [pcSuccess,    setPcSuccess]    = useState(false);
 
   // ── DOM refs ──────────────────────────────────────────────────────
   const aliasSelectRef = useRef<HTMLSelectElement>(null);
   const pinInputRef    = useRef<HTMLInputElement>(null);
-  const pcMotivoRef    = useRef<HTMLSelectElement>(null);
-  const pcPinActualRef = useRef<HTMLInputElement>(null);
   const pcPinNuevoRef  = useRef<HTMLInputElement>(null);
   const pcPinConfRef   = useRef<HTMLInputElement>(null);
+  const pcMotivoRef    = useRef<HTMLSelectElement>(null);
 
   // ── Stable refs para keyboard handler ────────────────────────────
   const pinStateRef     = useRef("");
@@ -80,14 +78,10 @@ export function LoginScreen() {
     return () => clearInterval(t);
   }, []);
 
-  // Autofocus alias al montar
+  // Autofocus: alias en keypad, alias (OPERADOR) en pin-change
   useEffect(() => { aliasSelectRef.current?.focus(); }, []);
-
-  // Autofocus primer campo al entrar a pin-change
   useEffect(() => {
-    if (view === "pin-change") {
-      setTimeout(() => pcMotivoRef.current?.focus(), 0);
-    }
+    if (view === "pin-change") setTimeout(() => aliasSelectRef.current?.focus(), 0);
   }, [view]);
 
   // Auto-volver tras éxito pin-change
@@ -101,12 +95,13 @@ export function LoginScreen() {
   const selected = activeOps.find(o => o.id === selectedId) ?? null;
   const hasTurn  = cashSession.isOpen && cashSession.cashBox !== null;
 
-  // ── Transiciones de view ──────────────────────────────────────────
+  // ── Transiciones ──────────────────────────────────────────────────
 
   function switchToPinChange() {
-    setPcMotivo(""); setPcPinActual(""); setPcPinNuevo(""); setPcPinConfirm("");
+    setPcPinNuevo(""); setPcPinConfirm(""); setPcMotivo("");
     setPcError(null); setPcSuccess(false);
     setView("pin-change");
+    // autofocus se hace en useEffect [view]
   }
 
   function switchToKeypad() {
@@ -141,8 +136,7 @@ export function LoginScreen() {
     const curr = pinStateRef.current;
     if (curr.length >= 6) return;
     const next = curr + d;
-    setPin(next);
-    setError(null);
+    setPin(next); setError(null);
     if (next.length === 6) {
       const id = selectedIdRef.current;
       setTimeout(() => {
@@ -161,37 +155,33 @@ export function LoginScreen() {
     setPin(""); setError(null);
   }
 
-  // ── Pin-change submit ─────────────────────────────────────────────
+  // ── Pin-change submit (sin verificar PIN actual) ──────────────────
 
   function handlePinChange() {
     setPcError(null);
-    if (!pcMotivo) { setPcError("Seleccione un motivo"); pcMotivoRef.current?.focus(); return; }
-    const errActual = validatePin(pcPinActual);
-    if (errActual) { setPcError(`PIN actual: ${errActual}`); pcPinActualRef.current?.focus(); return; }
+    const id = selectedIdRef.current;
+    if (!id) { setPcError("Seleccione un operador"); aliasSelectRef.current?.focus(); return; }
     const errNuevo = validatePin(pcPinNuevo);
     if (errNuevo) { setPcError(`Nuevo PIN: ${errNuevo}`); pcPinNuevoRef.current?.focus(); return; }
-    if (pcPinNuevo === pcPinActual) { setPcError("El nuevo PIN debe ser diferente al actual"); pcPinNuevoRef.current?.focus(); return; }
     if (pcPinNuevo !== pcPinConfirm) { setPcError("Los PINes no coinciden"); pcPinConfRef.current?.focus(); return; }
-    const id = selectedIdRef.current;
-    if (!id) { setPcError("Seleccione un operador"); return; }
-    const ok = changeOperatorPinById(id, pcPinActual, pcPinNuevo);
-    if (!ok) { setPcError("PIN actual incorrecto"); setPcPinActual(""); setTimeout(() => pcPinActualRef.current?.focus(), 0); return; }
+    if (!pcMotivo) { setPcError("Seleccione un motivo"); pcMotivoRef.current?.focus(); return; }
+    const ok = resetOperatorPin(id, pcPinNuevo);
+    if (!ok) { setPcError("Operador inválido"); aliasSelectRef.current?.focus(); return; }
     setPcSuccess(true);
   }
 
   // ── Keyboard handler global ───────────────────────────────────────
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const k    = e.key;
-      const tag  = (e.target as HTMLElement).tagName;
-      const curr = stepRef.current;
+      const k       = e.key;
+      const tag     = (e.target as HTMLElement).tagName;
+      const curr    = stepRef.current;
       const currView = viewRef.current;
 
-      // Ctrl+Shift+O — toggle pin-change (solo desde keypad)
+      // Ctrl+Shift+O — toggle pin-change
       if (e.ctrlKey && e.shiftKey && k === "O") {
         e.preventDefault();
-        if (currView === "keypad") switchToPinChange();
-        else switchToKeypad();
+        if (currView === "keypad") switchToPinChange(); else switchToKeypad();
         return;
       }
 
@@ -204,7 +194,7 @@ export function LoginScreen() {
         return;
       }
 
-      // Pin-change view: dejar que inputs manejen su propio teclado
+      // Pin-change view — dejar que inputs/selects manejen su teclado
       if (currView === "pin-change") return;
 
       // Keypad view
@@ -236,15 +226,11 @@ export function LoginScreen() {
     >
       {/* ══ SHEET IZQUIERDA — 40% ══ */}
       <div className="flex w-[40%] shrink-0 flex-col bg-[#f0f4f9]" style={{ borderRight: "1px solid #edf2f8" }}>
-
         <div style={{ flexGrow: 1 }} />
-
         <div className="px-8 pb-2 flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "95%", height: "auto", display: "block" }} />
         </div>
-
         <div style={{ flexGrow: 5 }} />
-
         <div className="px-8 mb-5">
           <div className="text-right mb-6">
             <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5">
@@ -262,17 +248,13 @@ export function LoginScreen() {
             </div>
           </div>
         </div>
-
         <div style={{ flexGrow: 4 }} />
-
         <div className="px-8 mb-4">
           {hasTurn && cashSession.cashBox ? (
             <div className="rounded-xl border border-[#78C487]/25 bg-[#f0fbf1] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#45b356]" />
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#2d6640]">
-                  Turno activo · Caja {cashSession.cashBox.code}
-                </p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#2d6640]">Turno activo · Caja {cashSession.cashBox.code}</p>
               </div>
               <p className="text-[11px] text-[#4a7a55] pl-4 leading-snug">Puede continuar sin reapertura</p>
             </div>
@@ -286,7 +268,6 @@ export function LoginScreen() {
             </div>
           )}
         </div>
-
         <div className="px-8 mt-9">
           <p className="text-[10px] text-[#b0bec8] leading-[1.5]">
             Todos los derechos reservados. Hechos los registros de ley.
@@ -294,7 +275,6 @@ export function LoginScreen() {
             Prohibida su reproducción parcial o total.
           </p>
         </div>
-
         <div style={{ flexGrow: 1 }} />
       </div>
 
@@ -313,17 +293,22 @@ export function LoginScreen() {
 
         <div className="flex flex-col w-full max-w-[360px] mx-auto">
 
-          {/* USUARIO — siempre visible */}
+          {/* ── CAMPO 1: OPERADOR / USUARIO — siempre visible ─────── */}
           <div className="mb-2">
             <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">
-              Usuario (Alias)
+              {view === "pin-change" ? "Operador" : "Usuario (Alias)"}
             </label>
             <div className="relative">
               <select
                 ref={aliasSelectRef}
                 value={selectedId}
                 onChange={e => selectOp(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && view === "keypad") { e.preventDefault(); focusPin(); } }}
+                onKeyDown={e => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  if (view === "keypad")     focusPin();
+                  else if (view === "pin-change") pcPinNuevoRef.current?.focus();
+                }}
                 className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
               >
                 {activeOps.length === 0 && <option value="">Sin operadores activos</option>}
@@ -339,7 +324,7 @@ export function LoginScreen() {
             </div>
           </div>
 
-          {/* ── VISTA: KEYPAD ─────────────────────────────────────── */}
+          {/* ══ VISTA: KEYPAD ════════════════════════════════════════ */}
           {view === "keypad" && (
             <>
               {/* PIN */}
@@ -359,7 +344,7 @@ export function LoginScreen() {
                       if (v.length === 6) setTimeout(() => attemptLogin(v), 0);
                     }}
                     onKeyDown={e => {
-                      if (e.key === "Enter") { e.preventDefault(); attemptLogin(pin); }
+                      if (e.key === "Enter")  { e.preventDefault(); attemptLogin(pin); }
                       if (e.key === "Escape") { e.preventDefault(); resetToAlias(); }
                     }}
                     onFocus={() => setStep("pin")}
@@ -412,16 +397,11 @@ export function LoginScreen() {
             </>
           )}
 
-          {/* ── VISTA: PIN CHANGE ─────────────────────────────────── */}
+          {/* ══ VISTA: PIN CHANGE ════════════════════════════════════ */}
           {view === "pin-change" && (
             <>
-              {/* Header contextual */}
-              <div className="mb-3 pb-3 border-b border-[#f0f4f9]">
-                <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0]">Cambio de PIN</p>
-              </div>
-
               {pcSuccess ? (
-                /* Success state */
+                /* Success */
                 <div className="flex flex-col items-center gap-3 py-6">
                   <CheckCircle2 size={32} className="text-[#45b356]" />
                   <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-[#1a2d4e]">PIN actualizado</p>
@@ -429,46 +409,7 @@ export function LoginScreen() {
                 </div>
               ) : (
                 <>
-                  {/* MOTIVO — primero */}
-                  <div className="mb-2">
-                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Motivo</label>
-                    <div className="relative">
-                      <select
-                        ref={pcMotivoRef}
-                        value={pcMotivo}
-                        onChange={e => { setPcMotivo(e.target.value); setPcError(null); }}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinActualRef.current?.focus(); } }}
-                        className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[12px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
-                      >
-                        <option value="">Seleccionar motivo...</option>
-                        {PC_MOTIVOS.map(m => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                      <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#a0aec0]">
-                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                          <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* PIN Actual */}
-                  <div className="mb-2">
-                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">PIN Actual</label>
-                    <div className="relative">
-                      <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
-                      <input
-                        ref={pcPinActualRef}
-                        type="password" inputMode="numeric" autoComplete="off" maxLength={6}
-                        value={pcPinActual}
-                        onChange={e => { setPcPinActual(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinNuevoRef.current?.focus(); } }}
-                        placeholder="· · · ·"
-                        className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-4 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Nuevo PIN */}
+                  {/* CAMPO 2: NUEVO PIN */}
                   <div className="mb-2">
                     <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Nuevo PIN</label>
                     <div className="relative">
@@ -485,9 +426,9 @@ export function LoginScreen() {
                     </div>
                   </div>
 
-                  {/* Confirmar PIN */}
+                  {/* CAMPO 3: CONFIRMAR PIN */}
                   <div className="mb-2">
-                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Confirmar Nuevo PIN</label>
+                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Confirmar PIN</label>
                     <div className="relative">
                       <Lock size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
                       <input
@@ -495,10 +436,32 @@ export function LoginScreen() {
                         type="password" inputMode="numeric" autoComplete="off" maxLength={6}
                         value={pcPinConfirm}
                         onChange={e => { setPcPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcMotivoRef.current?.focus(); } }}
                         placeholder="· · · ·"
                         className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-4 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                       />
+                    </div>
+                  </div>
+
+                  {/* CAMPO 4: MOTIVO */}
+                  <div className="mb-2">
+                    <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Motivo</label>
+                    <div className="relative">
+                      <select
+                        ref={pcMotivoRef}
+                        value={pcMotivo}
+                        onChange={e => { setPcMotivo(e.target.value); setPcError(null); }}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
+                        className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-3 text-[12px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
+                      >
+                        <option value="">Seleccionar motivo...</option>
+                        {PC_MOTIVOS.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                      <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#a0aec0]">
+                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                          <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
                     </div>
                   </div>
 
@@ -511,13 +474,11 @@ export function LoginScreen() {
 
                   {/* Botones */}
                   <div className="grid grid-cols-2 gap-2 mb-4">
-                    <button
-                      onClick={switchToKeypad}
+                    <button onClick={switchToKeypad}
                       className="h-11 rounded-xl border border-[#e0e8f2] bg-[#f5f8fc] text-[11px] font-bold uppercase tracking-[0.07em] text-[#6b7a99] hover:bg-[#eaf0f9] transition active:scale-95">
                       Volver
                     </button>
-                    <button
-                      onClick={handlePinChange}
+                    <button onClick={handlePinChange}
                       className="h-11 rounded-xl bg-[#45b356] border border-[#3ca34a] text-white text-[11px] font-bold uppercase tracking-[0.07em] hover:bg-[#3ca34a] transition active:scale-95 shadow-[0_2px_14px_rgba(69,179,86,0.35)]">
                       Guardar
                     </button>
@@ -538,8 +499,7 @@ export function LoginScreen() {
           </button>
           {view === "keypad" && (
             <div className="flex flex-col items-end gap-1">
-              <button
-                onClick={switchToPinChange}
+              <button onClick={switchToPinChange}
                 className="flex items-center gap-1.5 text-[10px] font-medium text-[#2154d8] hover:text-[#1a44b8] transition">
                 <HelpCircle size={11} />¿Olvidó su PIN?
               </button>

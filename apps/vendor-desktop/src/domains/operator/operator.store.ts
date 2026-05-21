@@ -44,3 +44,9 @@ export function changePin(ops: OperatorRecord[], id: string, currentPin: string,
   if (!op || !op.active || op.pin !== currentPin) return null;
   return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
 }
+
+export function setOperatorPin(ops: OperatorRecord[], id: string, newPin: string): OperatorRecord[] | null {
+  const op = ops.find(o => o.id === id);
+  if (!op || !op.active) return null;
+  return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
+}
