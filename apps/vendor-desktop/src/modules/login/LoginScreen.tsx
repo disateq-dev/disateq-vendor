@@ -88,9 +88,10 @@ export function LoginScreen() {
     }
 
     function onKey(e: KeyboardEvent) {
+      const k = e.key;
+      if (k === "Escape") { e.preventDefault(); void invoke("app_exit"); return; }
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "SELECT" || tag === "INPUT") return;
-      const k = e.key;
       if (k >= "0" && k <= "9") { e.preventDefault(); addD(k); }
       else if (k === "Backspace") { e.preventDefault(); setPin(p => p.slice(0, -1)); setError(null); }
       else if (k === "Enter") {
@@ -116,8 +117,10 @@ export function LoginScreen() {
       {/* ══ SHEET IZQUIERDA — 40% — Contexto operacional persistente ══ */}
       <div className="flex w-[40%] shrink-0 flex-col bg-[#f0f4f9]" style={{ borderRight: "1px solid #edf2f8" }}>
 
+        <div style={{ flexGrow: 1 }} />
+
         {/* Imagotipo */}
-        <div className="px-8 pt-9 pb-3 flex justify-center">
+        <div className="px-8 pb-2 flex justify-center">
           <img
             src={logoImg}
             alt="DISATEQ Vendor"
@@ -126,10 +129,10 @@ export function LoginScreen() {
           />
         </div>
 
-        <div className="flex-1" />
+        <div style={{ flexGrow: 5 }} />
 
         {/* Bloque central unificado */}
-        <div className="px-8">
+        <div className="px-8 mb-5">
           <div className="text-right mb-6">
             <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5">
               Acceso Operativo
@@ -151,10 +154,10 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <div className="flex-1" />
+        <div style={{ flexGrow: 4 }} />
 
         {/* Helper operacional contextual */}
-        <div className="px-8 mb-6">
+        <div className="px-8 mb-4">
           {hasTurn && cashSession.cashBox ? (
             <div className="rounded-xl border border-[#78C487]/25 bg-[#f0fbf1] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
@@ -183,21 +186,24 @@ export function LoginScreen() {
         </div>
 
         {/* Copyright */}
-        <div className="px-8 pb-4">
+        <div className="px-8 mt-9">
           <p className="text-[10px] text-[#b0bec8] leading-[1.5]">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
             Prohibida su reproducción parcial o total.
           </p>
         </div>
+
+        <div style={{ flexGrow: 1 }} />
       </div>
 
       {/* ══ SHEET DERECHA — 60% — Área operacional dinámica ══ */}
-      <div className="flex flex-1 flex-col bg-white px-10 py-5">
-      <div className="flex flex-col flex-1 w-full max-w-[360px] mx-auto">
+      <div className="flex flex-1 flex-col bg-white px-10 py-3">
 
-        {/* Fecha + hora */}
-        <div className="flex justify-end mb-5">
+        <div className="flex-1" />
+
+        {/* Fecha + hora — ancho completo del panel */}
+        <div className="flex justify-end mb-4">
           <div className="text-right">
             <p className="text-[10.5px] text-[#a0aec0] leading-none tracking-wide">{fmtDate(now)}</p>
             <p className="text-[22px] font-semibold tabular-nums text-[#1a2d4e] leading-tight mt-0.5">
@@ -206,8 +212,10 @@ export function LoginScreen() {
           </div>
         </div>
 
+      <div className="flex flex-col w-full max-w-[360px] mx-auto">
+
         {/* USUARIO */}
-        <div className="mb-3">
+        <div className="mb-2">
           <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">
             Usuario (Alias)
           </label>
@@ -235,7 +243,7 @@ export function LoginScreen() {
         </div>
 
         {/* PIN */}
-        <div className="mb-4">
+        <div className="mb-2">
           <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">
             PIN
           </label>
@@ -310,22 +318,29 @@ export function LoginScreen() {
           </button>
         </div>
 
-        <div className="flex-1" />
+      </div>
 
-        {/* Acciones inferiores */}
-        <div className="flex items-center justify-between border-t border-[#f0f4f9] pt-4">
-          <button
-            onClick={() => void invoke("app_exit")}
-            className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b8c4d4] hover:text-[#dc2626] transition"
-          >
-            Cancelar
-          </button>
-          <button className="flex items-center gap-1.5 text-[10px] font-medium text-[#b8c4d4] hover:text-[#6b7a99] transition">
+      {/* Acciones inferiores — ancho completo del panel */}
+      <div className="flex items-center justify-between border-t border-[#f0f4f9] pt-4">
+        <button
+          onClick={() => void invoke("app_exit")}
+          className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b8c4d4] hover:text-[#dc2626] transition"
+        >
+          Cancelar
+        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button className="flex items-center gap-1.5 text-[10px] font-medium text-[#2154d8] hover:text-[#1a44b8] transition">
             <HelpCircle size={11} />
             ¿Olvidó su PIN?
           </button>
+          <p className="text-[9px] text-[#4b5563] text-right leading-snug">
+            Podrá regenerarlo en la siguiente ventana{" "}
+            <span className="font-bold cursor-pointer hover:underline">CLIC AQUÍ</span>
+          </p>
         </div>
       </div>
+
+      <div className="flex-1" />
       </div>
     </div>
   );

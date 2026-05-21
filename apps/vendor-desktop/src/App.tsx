@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalSize } from "@tauri-apps/api/dpi";
 import { AppShell } from "./layout/AppShell";
 import { SalesWorkspace } from "./modules/sales/SalesWorkspace";
 import { TicketWorkspace } from "./modules/ticket/TicketWorkspace";
@@ -15,6 +17,15 @@ function AppRoot() {
   const { activeOperator } = usePOS();
   const [activeModule, setActiveModule] = useState<ActiveModule>("sales");
   const [cashSubView,  setCashSubView]  = useState<CashSubView>("turno");
+
+  useEffect(() => {
+    const win = getCurrentWindow();
+    if (activeOperator) {
+      win.setSize(new LogicalSize(1366, 768)).then(() => win.center());
+    } else {
+      win.setSize(new LogicalSize(880, 548)).then(() => win.center());
+    }
+  }, [activeOperator]);
 
   if (!activeOperator) return <LoginScreen />;
 
