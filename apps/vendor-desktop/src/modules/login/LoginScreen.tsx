@@ -269,7 +269,7 @@ export function LoginScreen() {
         <div className="w-full max-w-[360px] mx-auto flex flex-col">
 
         {/* Fecha + hora */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-2">
           <div className="text-right">
             <p className="text-[10.5px] text-[#a0aec0] leading-none tracking-wide">{fmtDate(now)}</p>
             <p className="text-[22px] font-semibold tabular-nums text-[#1a2d4e] leading-tight mt-0.5">{fmtTime(now)}</p>
