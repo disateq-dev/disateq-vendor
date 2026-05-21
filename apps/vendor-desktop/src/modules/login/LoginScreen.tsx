@@ -212,7 +212,7 @@ export function LoginScreen() {
     <div className="flex h-screen" style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.18s ease" }}>
 
       {/* ══ SHEET IZQUIERDA — 40% ══ */}
-      <div className="flex w-[50%] shrink-0 flex-col bg-[#f0f4f9] pt-8" style={{ borderRight: "1px solid #edf2f8" }}>
+      <div className="flex w-[38%] shrink-0 flex-col bg-[#f0f4f9] pt-8" style={{ borderRight: "1px solid #edf2f8" }}>
         <div className="px-8 pb-2 flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "95%", height: "auto", display: "block" }} />
         </div>
