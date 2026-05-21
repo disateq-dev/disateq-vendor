@@ -114,10 +114,10 @@ export function LoginScreen() {
       style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.18s ease" }}
     >
       {/* ══ SHEET IZQUIERDA — 40% — Contexto operacional persistente ══ */}
-      <div className="flex w-[40%] shrink-0 flex-col bg-[#f0f4f9]" style={{ borderRight: "1px solid #e0e8f2" }}>
+      <div className="flex w-[40%] shrink-0 flex-col bg-[#f0f4f9]" style={{ borderRight: "1px solid #edf2f8" }}>
 
         {/* Imagotipo */}
-        <div className="px-8 pt-11 pb-3 flex justify-center">
+        <div className="px-8 pt-9 pb-3 flex justify-center">
           <img
             src={logoImg}
             alt="DISATEQ Vendor"
@@ -130,8 +130,8 @@ export function LoginScreen() {
 
         {/* Bloque central unificado */}
         <div className="px-8">
-          <div className="text-right mb-8">
-            <h2 className="text-[18px] font-black uppercase tracking-[0.13em] text-[#1a2d4e] leading-none mb-1.5">
+          <div className="text-right mb-6">
+            <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5">
               Acceso Operativo
             </h2>
             <p className="text-[11px] text-[#6b7a99] leading-snug">
@@ -154,7 +154,7 @@ export function LoginScreen() {
         <div className="flex-1" />
 
         {/* Helper operacional contextual */}
-        <div className="px-8 mb-3">
+        <div className="px-8 mb-6">
           {hasTurn && cashSession.cashBox ? (
             <div className="rounded-xl border border-[#78C487]/25 bg-[#f0fbf1] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
@@ -184,10 +184,7 @@ export function LoginScreen() {
 
         {/* Copyright */}
         <div className="px-8 pb-4">
-          <p
-            className="text-[9.5px] text-[#b8c4d4] leading-[1.45]"
-            style={{ fontFamily: "'Arial Narrow', Arial, sans-serif" }}
-          >
+          <p className="text-[10px] text-[#b0bec8] leading-[1.5]">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
             Prohibida su reproducción parcial o total.
@@ -288,9 +285,10 @@ export function LoginScreen() {
           ))}
           <button
             onClick={removeLast}
-            className="h-12 rounded-xl border border-[#fde8e8] bg-[#fff8f8] text-[15px] font-bold text-[#f87171] transition hover:bg-[#fff1f1] hover:border-[#fcd4d4] active:scale-95"
+            className="h-12 rounded-xl border border-[#fde8e8] bg-[#fff8f8] text-[#f87171] transition hover:bg-[#fff1f1] hover:border-[#fcd4d4] active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em]"
           >
-            ⌫
+            <span className="text-[13px] leading-none">⌫</span>
+            Borrar
           </button>
           <button
             onClick={() => addDigit("0")}
@@ -303,11 +301,11 @@ export function LoginScreen() {
             disabled={!selected || pin.length < 4}
             className={`h-12 rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] ${
               selected && pin.length >= 4
-                ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_2px_14px_rgba(69,179,86,0.32)]"
+                ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_4px_20px_rgba(69,179,86,0.45)]"
                 : "bg-[#f5f8fc] border border-[#e4edf6] text-[#b8c4d4] cursor-not-allowed"
             }`}
           >
-            <LogIn size={13} strokeWidth={2.5} />
+            <LogIn size={14} strokeWidth={2.5} />
             Entrar
           </button>
         </div>
