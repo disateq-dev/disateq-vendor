@@ -397,6 +397,7 @@ interface POSContextValue {
   loginOperator: (id: string, pin: string) => boolean;
   logoutOperator: () => void;
   changeOperatorPin: (currentPin: string, newPin: string) => boolean;
+  changeOperatorPinById: (id: string, currentPin: string, newPin: string) => boolean;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
   visualMode: VisualMode;
@@ -497,6 +498,16 @@ export function POSProvider({ children }: { children: ReactNode }) {
     saveOperators(updated);
     setOperators(updated);
     addOpLog(`[PIN] ${op.name} actualizó su PIN`);
+    return true;
+  }, [addOpLog]);
+
+  const changeOperatorPinById = useCallback((id: string, currentPin: string, newPin: string): boolean => {
+    const updated = changePin(operatorsRef.current, id, currentPin, newPin);
+    if (!updated) return false;
+    saveOperators(updated);
+    setOperators(updated);
+    const op = operatorsRef.current.find(o => o.id === id);
+    if (op) addOpLog(`[PIN] ${op.name} actualizó su PIN (login)`);
     return true;
   }, [addOpLog]);
 
@@ -752,7 +763,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       opLogs, addOpLog,
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
-      operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin,
+      operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin, changeOperatorPinById,
       rubro, setRubro,
       visualMode, setVisualMode,
       printFlow, setPrintFlow,
