@@ -38,3 +38,9 @@ export function checkPin(ops: OperatorRecord[], id: string, pin: string): boolea
   const op = ops.find(o => o.id === id);
   return !!op && op.active && op.pin.length >= 4 && op.pin === pin;
 }
+
+export function changePin(ops: OperatorRecord[], id: string, currentPin: string, newPin: string): OperatorRecord[] | null {
+  const op = ops.find(o => o.id === id);
+  if (!op || !op.active || op.pin !== currentPin) return null;
+  return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
+}

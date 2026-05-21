@@ -1,10 +1,11 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { SubContextBar } from "./SubContextBar";
 import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { usePOS } from "../context/POSContext";
 import { type ActiveModule, type CashSubView } from "../App";
+import { PinChangeSheet } from "../modules/login/PinChangeSheet";
 
 interface AppShellProps {
   children: ReactNode;
@@ -30,14 +31,19 @@ function OperationalNotice() {
 export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange }: AppShellProps) {
   const { closeCobro, logoutOperator } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
+  const [showPinChange, setShowPinChange] = useState(false);
+
+  const openPinChange  = useCallback(() => setShowPinChange(true),  []);
+  const closePinChange = useCallback(() => setShowPinChange(false), []);
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.ctrlKey && e.shiftKey && e.key === "L") { e.preventDefault(); logoutOperator(); }
+      if (e.ctrlKey && e.shiftKey && e.key === "O") { e.preventDefault(); openPinChange(); }
     }
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [logoutOperator]);
+  }, [logoutOperator, openPinChange]);
 
   // hover → preview; leave → back to active; click → permanent (hoveredModule = null, activeModule updated)
   const displayModule = hoveredModule ?? activeModule;
@@ -45,6 +51,7 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
 
   return (
     <main className="h-screen overflow-hidden bg-[#f7f9fc] text-[#111827]">
+      {showPinChange && <PinChangeSheet onClose={closePinChange} />}
       <section className="flex h-full flex-col">
         <header className="border-b border-[#dde4ec]">
           <Topbar />

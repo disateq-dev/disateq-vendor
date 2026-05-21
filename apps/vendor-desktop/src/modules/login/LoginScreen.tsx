@@ -111,8 +111,8 @@ export function LoginScreen() {
       const tag  = (e.target as HTMLElement).tagName;
       const curr = stepRef.current;
 
-      // Ctrl+Shift+P — PIN_CHANGE_SHORTCUT (arquitectura futura: Cambiar PIN OPERADOR)
-      if (e.ctrlKey && e.shiftKey && k === "P") { e.preventDefault(); return; }
+      // Ctrl+Shift+O — reservado (no disponible en login, solo runtime autenticado)
+      if (e.ctrlKey && e.shiftKey && k === "O") { e.preventDefault(); return; }
 
       // Escape
       if (k === "Escape") {

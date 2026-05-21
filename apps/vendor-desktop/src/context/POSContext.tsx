@@ -3,7 +3,7 @@ import { useTicketStore } from "../domains/ticket/state/ticket.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
-import { type OperatorRecord, loadOperators, checkPin } from "../domains/operator/operator.store";
+import { type OperatorRecord, loadOperators, checkPin, changePin, saveOperators } from "../domains/operator/operator.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -396,6 +396,7 @@ interface POSContextValue {
   activeOperator: OperatorRecord | null;
   loginOperator: (id: string, pin: string) => boolean;
   logoutOperator: () => void;
+  changeOperatorPin: (currentPin: string, newPin: string) => boolean;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
   visualMode: VisualMode;
@@ -465,7 +466,9 @@ export function POSProvider({ children }: { children: ReactNode }) {
     }
   }, [addOpLog]);
 
-  const [operators] = useState<OperatorRecord[]>(loadOperators);
+  const [operators, setOperators] = useState<OperatorRecord[]>(loadOperators);
+  const operatorsRef = useRef(operators);
+  operatorsRef.current = operators;
   const [activeOperator, setActiveOperator] = useState<OperatorRecord | null>(null);
   const activeOperatorRef = useRef<OperatorRecord | null>(null);
   activeOperatorRef.current = activeOperator;
@@ -484,6 +487,17 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const op = activeOperatorRef.current;
     setActiveOperator(null);
     if (op) addOpLog(`[LOGOUT] ${op.name} cerró sesión`);
+  }, [addOpLog]);
+
+  const changeOperatorPin = useCallback((currentPin: string, newPin: string): boolean => {
+    const op = activeOperatorRef.current;
+    if (!op) return false;
+    const updated = changePin(operatorsRef.current, op.id, currentPin, newPin);
+    if (!updated) return false;
+    saveOperators(updated);
+    setOperators(updated);
+    addOpLog(`[PIN] ${op.name} actualizó su PIN`);
+    return true;
   }, [addOpLog]);
 
   const addComprobante = useCallback((data: {
@@ -738,7 +752,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       opLogs, addOpLog,
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
-      operators, activeOperator, loginOperator, logoutOperator,
+      operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin,
       rubro, setRubro,
       visualMode, setVisualMode,
       printFlow, setPrintFlow,
