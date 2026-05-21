@@ -187,10 +187,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [editObservacion,    setEditObservacion]    = useState("");
   const [editRefOp,          setEditRefOp]          = useState("");
 
-  // ── turno recuperado al montar (sesión persistida del día) ────
-  // Cuando isOpen ya es true en el primer render, el turno estaba activo antes de cerrar la UI
-  const [turnoRecovered, setTurnoRecovered] = useState(() => isOpen);
-
   // ── timer ─────────────────────────────────────────────────────
   const [duration, setDuration] = useState("");
   useEffect(() => {
@@ -574,26 +570,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     {closingStage > 0 ? `CERRANDO TURNO · ${closingStage}/5` : "TURNO ABIERTO"}
                   </span>
                 </div>
-                <p className="mt-0.5 truncate text-[11px] font-semibold text-[#374151]">
+                <p className="mt-0.5 truncate pl-3 text-[11px] font-semibold text-[#374151]">
                   CAJA {activeBox?.code}
                 </p>
               </div>
             </div>
 
-            {/* Banner: turno activo asociado (recuperado al reabrir la UI) */}
-            {turnoRecovered && closingStage === 0 && (
-              <div className="flex items-start justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2.5">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">TURNO ACTIVO ASOCIADO</p>
-                  <p className="mt-0.5 text-[10px] font-semibold text-amber-600/80">
-                    Continúe la operación — sin necesidad de reapertura.
-                  </p>
-                </div>
-                <button onClick={() => setTurnoRecovered(false)} className="mt-0.5 shrink-0 text-amber-400 transition hover:text-amber-600">
-                  <X size={11} />
-                </button>
-              </div>
-            )}
 
             <div className="flex flex-col gap-2">
               <InfoRow label="Operador"     value={operator} />
@@ -1507,11 +1489,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               )}
             </div>
 
-            <div className="flex flex-col gap-2 px-4 py-3">
+            <div className={`flex flex-col gap-2 px-4 py-3 transition-colors duration-200 ${
+              moveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
+            }`}>
 
               {/* Tipo */}
               <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
-                {(["ingreso", "egreso"] as MoveType[]).map(t => (
+                {(["egreso", "ingreso"] as MoveType[]).map(t => (
                   <button key={t}
                     onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setSourceType("apertura"); setLastMove(null); }}
                     className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
@@ -1545,11 +1529,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   </div>
                 </div>
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">ORIGEN</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
+                    {moveType === "ingreso" ? "DESTINO" : "ORIGEN"}
+                  </span>
                   <div className="flex gap-1 flex-1">
                     {([
-                      { src: "apertura" as MoveSource, label: "FONDO APT.", Icon: Wallet },
-                      { src: "vendido"  as MoveSource, label: "FONDO VENTA", Icon: ShoppingCart },
+                      { src: "apertura" as MoveSource, label: "FONDO APERTURA", Icon: Wallet },
+                      { src: "vendido"  as MoveSource, label: "FONDO VENTAS", Icon: ShoppingCart },
                     ]).map(({ src, label, Icon }) => (
                       <button key={src}
                         onClick={() => setSourceType(src)}
@@ -1656,6 +1642,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     {primaryMoves.map(m => {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
+                      const dd = `${String(ts.getDate()).padStart(2, "0")}/${String(ts.getMonth() + 1).padStart(2, "0")}`;
                       const srcLabel = m.sourceType === "mixto"
                         ? `fondo S/${m.fromApertura.toFixed(0)} · vnd S/${m.fromVendido.toFixed(0)}`
                         : m.sourceType === "apertura" ? "fondo" : "venta";
@@ -1666,7 +1653,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         <div key={m.id} className="group/move">
                           {/* Fila principal */}
                           <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white">
-                            <span className="shrink-0 w-[28px] text-[9px] tabular-nums text-[#c0cad4]">{hm}</span>
+                            <div className="shrink-0 w-[34px] flex flex-col items-end gap-px">
+                              <span className="text-[8px] tabular-nums text-[#d1d9e1] leading-none">{dd}</span>
+                              <span className="text-[9px] tabular-nums text-[#c0cad4] leading-none">{hm}</span>
+                            </div>
                             <span className={`shrink-0 text-[11px] font-bold ${m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
                               {m.type === "ingreso" ? "↑" : "↓"}
                             </span>
