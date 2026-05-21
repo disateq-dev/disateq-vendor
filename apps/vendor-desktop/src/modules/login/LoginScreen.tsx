@@ -218,16 +218,9 @@ export function LoginScreen() {
         </div>
         <div style={{ flexGrow: 5 }} />
         <div className="px-4 mb-5">
-          <div className="text-right mb-6">
+          <div className="text-right">
             <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5 whitespace-nowrap">Acceso Operativo</h2>
             <p className="text-[11px] text-[#6b7a99] leading-snug">Ingrese su usuario y PIN<br />para acceder al sistema.</p>
-          </div>
-          <div className="flex items-center justify-end gap-3">
-            <Shield size={24} className="shrink-0 text-[#45b356]" />
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#45b356] leading-none">Acceso seguro</p>
-              <p className="text-[10px] text-[#a0aec0] mt-1 leading-none">Conexión protegida y cifrada</p>
-            </div>
           </div>
         </div>
         <div style={{ flexGrow: 4 }} />
@@ -250,8 +243,15 @@ export function LoginScreen() {
             </div>
           )}
         </div>
-        <div className="px-4 mt-9">
-          <p className="text-[10px] text-[#b0bec8] leading-[1.5]">
+        <div className="px-4 mb-3 flex items-center justify-end gap-3">
+          <Shield size={20} className="shrink-0 text-[#45b356]" />
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#45b356] leading-none">Acceso seguro</p>
+            <p className="text-[10px] text-[#a0aec0] mt-1 leading-none">Conexión protegida y cifrada</p>
+          </div>
+        </div>
+        <div className="px-4 mt-2">
+          <p className="text-[10px] text-[#b0bec8] leading-[1.5] text-justify">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
             Prohibida su reproducción parcial o total.
