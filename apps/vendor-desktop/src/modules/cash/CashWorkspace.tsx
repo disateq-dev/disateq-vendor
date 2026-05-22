@@ -4,7 +4,7 @@ import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
 import { OperadoresWorkspace } from "./OperadoresWorkspace";
-import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type RegularizationStatus } from "../../context/POSContext";
+import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
 import {
   printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
   printArqueo, printArqueoThermal, type ArqueoData,
@@ -273,7 +273,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [moveObservacion,setMoveObservacion]= useState("");
   const [sourceType,     setSourceType]     = useState<MoveSource>("apertura");
   const [lastMove,       setLastMove]       = useState<CashMove | null>(null);
-  const [moveRegStatus,  setMoveRegStatus]  = useState<RegularizationStatus | undefined>(undefined);
   const moveAmountRef = useRef<HTMLInputElement>(null);
   const motivoRef     = useRef<HTMLInputElement>(null);
 
@@ -293,7 +292,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   useEffect(() => {
     setLastMove(null); setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
-    setSourceType("apertura"); setMoveRegStatus(undefined);
+    setSourceType("apertura");
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
     setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
   }, [isOpen]);
@@ -326,18 +325,29 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const totalAmt   = parseFloat(moveAmount) || 0;
   const canAddMove = validateCanAddMove(totalAmt, moveMotivo, sourceType, 0, 0);
 
-  // pendientes de regularización: egresos activos "por_regularizar" menos sus reposiciones acumuladas
-  const pendingByEgresoId = useMemo(() => {
+  // repos vinculadas por egreso (de activos, usando refId)
+  const repoSumByEgresoId = useMemo(() => {
     const result: Record<string, number> = {};
     for (const m of activeMoves) {
-      if (m.type === "egreso" && m.regularizationStatus === "por_regularizar") {
-        const repoTotal = moneySum(activeMoves.filter(r => r.refId === m.id).map(r => r.amount));
-        const pending = moneySub(m.amount, repoTotal);
-        if (moneyGt(pending, 0)) result[m.id] = pending;
-      }
+      if (m.refId) result[m.refId] = moneyAdd(result[m.refId] ?? 0, m.amount);
     }
     return result;
   }, [activeMoves]);
+
+  // pendientes: solo egresos con repos parciales (derivado de refId, sin flag stored)
+  const pendingByEgresoId = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const m of activeMoves) {
+      if (m.type === "egreso") {
+        const repoSum = repoSumByEgresoId[m.id] ?? 0;
+        if (moneyGt(repoSum, 0)) {
+          const pending = moneySub(m.amount, repoSum);
+          if (moneyGt(pending, 0)) result[m.id] = pending;
+        }
+      }
+    }
+    return result;
+  }, [activeMoves, repoSumByEgresoId]);
   const totalPending = moneySum(Object.values(pendingByEgresoId));
 
   // fondo breakdown — excluye anulados
@@ -413,10 +423,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     const fa  = sourceType === "apertura" ? amt : 0;
     const fv  = sourceType === "vendido"  ? amt : 0;
     const obs = moveObservacion.trim() || undefined;
-    const regStatus = moveType === "egreso" ? moveRegStatus : undefined;
-    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs, undefined, regStatus);
+    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs);
     setLastMove(move);
-    setMoveAmount(""); setMoveMotivo(""); setMoveObservacion(""); setMoveRegStatus(undefined);
+    setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
     showNotice(`${moveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => moveAmountRef.current?.focus(), 10);
   }
@@ -451,13 +460,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       repoObservacion.trim() || undefined, original.id);
     handlePrintVoucher(move);
     setLastRepoMove(move);
-    if (original.regularizationStatus === "por_regularizar") {
-      const prevRepos = moneySum(cashMoves.filter(m => m.refId === original.id).map(m => m.amount));
-      if (moneyGte(moneySum([prevRepos, amt]), original.amount)) {
-        updateCashMove(original.id, "regularizado", "reposicion");
-      }
-    }
-    showNotice(`Reposición registrada · S/ ${amt.toFixed(2)}`);
+    showNotice(`Devolución registrada · S/ ${amt.toFixed(2)}`);
   }
 
   async function handlePrintVoucher(move: CashMove) {
@@ -1516,7 +1519,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         <div className="flex min-h-0 flex-1 gap-2">
 
           {/* ─── MOVEMENTS PANEL ─── */}
-          <div className="flex min-h-0 w-[260px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
             <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
@@ -1557,7 +1560,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                 {(["egreso", "ingreso"] as MoveType[]).map(t => (
                   <button key={t}
-                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setLastMove(null); setMoveRegStatus(undefined); }}
+                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setLastMove(null); }}
                     className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
                       moveType === t
                         ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
@@ -1606,21 +1609,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15"
                 />
               </div>
-
-              {/* Marcar devolución — solo egresos */}
-              {moveType === "egreso" && (
-                <button
-                  type="button"
-                  onClick={() => setMoveRegStatus(prev => prev ? undefined : "por_regularizar")}
-                  className={`self-start flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
-                    moveRegStatus
-                      ? "bg-amber-100 text-amber-700 border border-amber-200"
-                      : "border border-[#e4e9f0] text-[#9ca3af] hover:border-amber-200 hover:text-amber-600"
-                  }`}
-                >
-                  ↩ {moveRegStatus ? "Devolución esperada" : "Marcar devolución"}
-                </button>
-              )}
 
               {/* Observación */}
               <input
@@ -1726,16 +1714,14 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                 {srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}
                                 {m.regularizationStatus === "anulado" ? (
                                   <span className="ml-1.5 font-bold text-[#9ca3af]">⊘ anulado</span>
-                                ) : m.regularizationStatus === "por_regularizar" ? (
-                                  <span className="ml-1.5 font-bold text-amber-500">
-                                    {pendingByEgresoId[m.id] !== undefined
-                                      ? `↩ pdte. S/${pendingByEgresoId[m.id]!.toFixed(2)}`
-                                      : "↩ pdte."}
-                                  </span>
-                                ) : m.regularizationStatus === "regularizado" ? (
-                                  <span className={`ml-1.5 font-bold ${m.regularizationMode === "integracion_fondo" ? "text-[#2154d8]" : "text-emerald-500"}`}>
-                                    {m.regularizationMode === "integracion_fondo" ? "✓ fondo" : "✓ devuelto"}
-                                  </span>
+                                ) : m.regularizationMode === "integracion_fondo" ? (
+                                  <span className="ml-1.5 font-bold text-[#2154d8]">✓ fondo</span>
+                                ) : m.type === "egreso" && (repoSumByEgresoId[m.id] ?? 0) > 0 ? (
+                                  moneyGte(repoSumByEgresoId[m.id]!, m.amount) ? (
+                                    <span className="ml-1.5 font-bold text-emerald-500">✓ devuelto</span>
+                                  ) : (
+                                    <span className="ml-1.5 font-bold text-amber-500">↩ pdte. S/{pendingByEgresoId[m.id]?.toFixed(2) ?? "?"}</span>
+                                  )
                                 ) : null}
                               </p>
                             </div>
@@ -1771,11 +1757,15 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                 >
                                   <Pencil size={11} strokeWidth={2} />
                                 </button>
-                                {m.type === "egreso" && m.regularizationStatus === "por_regularizar" && (
+                                {m.type === "egreso" && m.regularizationStatus !== "anulado" && m.regularizationMode !== "integracion_fondo" && (
                                   <button
                                     onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
                                     title="Integrar al fondo — no se espera devolución"
-                                    className="text-[#c0cad4] hover:text-amber-500 transition"
+                                    className={`transition ${
+                                      m.sourceType === "apertura"
+                                        ? "text-[#c0cad4] hover:text-amber-500"
+                                        : "text-[#dde4ee] hover:text-amber-400 opacity-60 hover:opacity-100"
+                                    }`}
                                   >
                                     <CheckCircle size={11} strokeWidth={2} />
                                   </button>
@@ -1788,7 +1778,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                       setEditingMoveId(null);
                                       setConfirmAnulId(null);
                                     }}
-                                    title="Registrar reposición"
+                                    title="Registrar devolución (DEVOLVER)"
                                     className={`transition ${isRepoing ? "text-emerald-500" : "text-[#c0cad4] hover:text-emerald-500"}`}
                                   >
                                     <RotateCcw size={11} strokeWidth={2} />
@@ -1885,7 +1875,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                           {isAnulando && (
                             <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-1.5 rounded-xl border border-red-200 bg-[#fef2f2] px-3 py-2.5">
                               <p className="text-[10.5px] font-semibold text-[#b91c1c] leading-snug">
-                                ⊘ Anular — queda como "no pasó" y se excluye del arqueo.
+                                ⊘ Usar ANULAR solo si el movimiento fue registrado por error o nunca ocurrió realmente.
+                              </p>
+                              <p className="text-[9.5px] text-red-400 leading-snug -mt-0.5">
+                                monto incorrecto · registro duplicado · selección equivocada
                               </p>
                               <div className="flex gap-2">
                                 <button
@@ -1912,7 +1905,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-1.5">
                                       <CheckCircle size={11} className="text-emerald-500 shrink-0" />
-                                      <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Reposición registrada</span>
+                                      <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Devolución registrada</span>
                                     </div>
                                     <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
                                   </div>
@@ -1927,9 +1920,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                               ) : (
                                 <>
                                   <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Reposición</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">DEVOLVER</span>
                                     <button onClick={closeRepo} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
                                   </div>
+                                  <p className="text-[9.5px] text-emerald-600/70 leading-snug -mt-0.5">
+                                    Usar cuando el dinero realmente salió y luego regresó al fondo.
+                                  </p>
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-[10px] font-bold text-[#9ca3af]">S/</span>
                                     <input
@@ -1968,7 +1964,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                         : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
                                     }`}
                                   >
-                                    <RotateCcw size={10} strokeWidth={2} /> Registrar reposición
+                                    <RotateCcw size={10} strokeWidth={2} /> Registrar devolución
                                   </button>
                                 </>
                               )}
