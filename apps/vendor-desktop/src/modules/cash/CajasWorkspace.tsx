@@ -177,19 +177,13 @@ export function CajasWorkspace() {
   return (
     <section className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
-      {/* SheetHeader */}
-      <header className="shrink-0 flex items-center justify-between border-b border-[#78C487]/15 bg-[#F5FBF5] px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <Layers size={13} strokeWidth={2} className="text-[#78C487]" />
-          <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-            CAJAS OPERACIONALES
-          </span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">
-            · infraestructura y bloques
-          </span>
-        </div>
+      {/* SheetHeader — línea única fija */}
+      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F5FBF5] px-4">
+        <Layers size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS OPERACIONALES</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c0cad4]">· infraestructura</span>
 
-        <div className="flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1.5">
           <button
             onClick={() => { setSelectedId(null); setEditOperator(""); setMode("create"); }}
             className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">

@@ -132,19 +132,16 @@ export function RolesWorkspace() {
   return (
     <section className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
-      {/* SheetHeader */}
-      <header className="shrink-0 flex items-center justify-between border-b border-[#78C487]/15 bg-[#F5FBF5] px-4 py-2.5">
-
-        <div className="flex items-center gap-2">
-          <Shield size={13} strokeWidth={2} className="text-[#78C487]" />
-          <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ROLES</span>
-          <span className="ml-1 rounded-md bg-[#e8f5ea] px-2 py-0.5 text-[10px] font-bold tabular-nums text-[#4a7a55]">
-            {roles.length}
-          </span>
-        </div>
+      {/* SheetHeader — línea única fija */}
+      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F5FBF5] px-4">
+        <Shield size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ROLES</span>
+        <span className="rounded-md bg-[#78C487]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4a7a55]">
+          {roles.length}
+        </span>
 
         {/* Toolbar */}
-        <div className="flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1.5">
 
           {/* NUEVO ROL */}
           <button
