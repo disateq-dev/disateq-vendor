@@ -11,7 +11,7 @@ import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule = "sales" | "cash" | "config" | "comprobantes";
-export type CashSubView  = "turno" | "roles" | "operadores" | "cajas";
+export type CashSubView  = "turno" | "roles" | "cajas" | "operadores-activos" | "operadores-gestion" | "operadores-historico";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
