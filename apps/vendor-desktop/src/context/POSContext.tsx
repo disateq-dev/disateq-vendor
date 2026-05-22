@@ -75,12 +75,12 @@ const BOX_DEFS: { code: string; type: CashBoxType }[] = [
 
 const TERMINAL = "PC-VENTAS01";
 
-const BLOCK_OPERATORS: Record<string, string> = {
-  "1": "Ricardo Aguinaga",
-  "2": "Lucía Rebaza",
-  "3": "Administrador",
-  "5": "Supervisor",
-};
+// Fallback para recovery: busca en store el operador activo del bloque indicado por el primer dígito del código de caja
+function blockOperatorFallback(ops: OperatorRecord[], boxCode: string): string {
+  const prefix = boxCode[0];
+  const op = ops.find(o => o.blockBase !== null && String(o.blockBase)[0] === prefix && o.status === "ACTIVO");
+  return op?.name ?? "Operador";
+}
 
 // ── localStorage keys ──────────────────────────────────────────
 const LS_SESSION      = "disateq.pos.cashSession";
@@ -823,7 +823,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const isExceptional = !!(exceptionalSkipCodes && exceptionalSkipCodes.length > 0);
     if (isExceptional ? box.used : !box.available) return;
     const activeOp   = activeOperatorRef.current;
-    const operator   = activeOp?.name ?? BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
+    const operator   = activeOp?.name ?? blockOperatorFallback(operatorsRef.current, boxCode);
     const operatorId = activeOp?.id;
     setSessionStats(NULL_STATS);
     setCashMoves([]);

@@ -33,7 +33,7 @@ function validatePin(p: string): string | null {
 
 export function LoginScreen() {
   const { operators, loginOperator, cashSession, resetOperatorPin } = usePOS();
-  const activeOps = operators.filter(o => o.active);
+  const activeOps = operators.filter(o => o.status === "ACTIVO");
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
 

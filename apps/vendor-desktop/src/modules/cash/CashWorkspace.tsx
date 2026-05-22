@@ -206,7 +206,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     cashSession, cashBoxes, suggestedCashBox,
     openCashSession, closeCashSession, correctAperturaData,
     sessionStats, cashMoves, addCashMove, updateCashMove, editCashMove,
-    showNotice,
+    showNotice, operators, activeOperator,
   } = usePOS();
   const {
     isOpen, cashBox: activeBox, operator, terminal, openedAt,
@@ -356,11 +356,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const canOpen            = canOpenSession(isOpen, selectedBox, aperturaInput, openingMode, ctgPin, ctgJustif);
   const canCorrectApertura = isOpen && cashMoves.length === 0 && sessionStats.count === 0 && closingStage === 0;
 
-  // Bloque del operador actual — sin auth: se deriva de la caja activa o sugerida
-  // Con auth real: vendrá del operador logueado
-  const operatorBlockPrefix = activeBox?.code[0] ?? suggestedCashBox?.code[0] ?? "1";
+  // Bloque del operador activo — usa operador autenticado real
+  const currentOpBlockBase  = activeOperator?.blockBase ?? null;
+  const operatorBlockPrefix = activeBox?.code[0] ?? (currentOpBlockBase !== null ? String(currentOpBlockBase)[0] : suggestedCashBox?.code[0] ?? "1");
   const operatorBoxes       = cashBoxes.filter(b => b.code[0] === operatorBlockPrefix);
-  const operatorName        = { "1": "Ricardo Aguinaga", "2": "Lucía Rebaza", "3": "Administrador", "5": "Supervisor" }[operatorBlockPrefix] ?? "Operador";
+  const operatorName        = activeOperator?.name ?? operators.find(o => o.blockBase !== null && String(o.blockBase)[0] === operatorBlockPrefix && o.status === "ACTIVO")?.name ?? "Operador";
 
   useEffect(() => {
     if (!canCorrectApertura) setEditingApertura(false);
