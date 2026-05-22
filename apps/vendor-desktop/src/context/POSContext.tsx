@@ -3,7 +3,7 @@ import { useTicketStore } from "../domains/ticket/state/ticket.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
-import { type OperatorRecord, loadOperators, checkPin, changePin, setOperatorPin, saveOperators } from "../domains/operator/operator.store";
+import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock } from "../domains/operator/operator.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -43,6 +43,7 @@ export type CashSession = {
   isOpen: boolean;
   cashBox: CashBox | null;
   operator: string;
+  operatorId?: string;
   terminal: string;
   openedAt: Date | null;
   apertura: number;
@@ -166,11 +167,12 @@ function loadSession(): CashSession {
     if (!raw) return NULL_SESSION;
     const p = JSON.parse(raw) as Partial<CashSession> & { openedAt?: unknown; cashBox?: unknown };
     return {
-      isOpen:    typeof p.isOpen === "boolean" ? p.isOpen : false,
-      cashBox:   (p.cashBox && typeof (p.cashBox as CashBox).code === "string") ? p.cashBox as CashBox : null,
-      operator:  typeof p.operator === "string" ? p.operator : "",
-      terminal:  typeof p.terminal === "string" ? p.terminal : TERMINAL,
-      openedAt:  safeDate(p.openedAt),
+      isOpen:      typeof p.isOpen === "boolean" ? p.isOpen : false,
+      cashBox:     (p.cashBox && typeof (p.cashBox as CashBox).code === "string") ? p.cashBox as CashBox : null,
+      operator:    typeof p.operator    === "string" ? p.operator    : "",
+      operatorId:  typeof p.operatorId  === "string" ? p.operatorId  : undefined,
+      terminal:    typeof p.terminal    === "string" ? p.terminal    : TERMINAL,
+      openedAt:    safeDate(p.openedAt),
       apertura:    typeof p.apertura    === "number" ? p.apertura    : 0,
       motivo:      typeof p.motivo      === "string" ? p.motivo      : undefined,
       observacion: typeof p.observacion === "string" ? p.observacion : undefined,
@@ -412,6 +414,11 @@ interface POSContextValue {
   changeOperatorPin: (currentPin: string, newPin: string) => boolean;
   changeOperatorPinById: (id: string, currentPin: string, newPin: string) => boolean;
   resetOperatorPin: (id: string, newPin: string) => boolean;
+  createOperator: (data: { code: string; name: string; roleCode: string; roleName: string; blockBase: number | null }) => OperatorRecord;
+  updateOperatorData: (id: string, data: { code: string; name: string; roleCode: string; roleName: string; blockBase: number | null }) => boolean;
+  setOperatorStatus: (id: string, status: OperatorStatus) => boolean;
+  assignOperatorBlock: (id: string, blockBase: number) => boolean;
+  releaseOperatorBlock: (id: string) => void;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
   visualMode: VisualMode;
@@ -533,6 +540,92 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const op = operatorsRef.current.find(o => o.id === id);
     if (op) addOpLog(`[PIN] ${op.name} reseteó su PIN`);
     return true;
+  }, [addOpLog]);
+
+  const createOperator = useCallback((data: {
+    code: string; name: string; roleCode: string; roleName: string; blockBase: number | null;
+  }): OperatorRecord => {
+    if (data.blockBase !== null && isBlockTaken(operatorsRef.current, data.blockBase)) {
+      throw new Error(`Bloque ${data.blockBase} ya está asignado a otro operador activo`);
+    }
+    const op: OperatorRecord = {
+      id: `op${Date.now()}`,
+      code: data.code,
+      name: data.name,
+      roleCode: data.roleCode,
+      roleName: data.roleName,
+      blockBase: data.blockBase,
+      blockAssignment: data.blockBase !== null ? { assignedAt: new Date().toISOString() } : undefined,
+      status: "ACTIVO",
+      pin: "",
+    };
+    const updated = [...operatorsRef.current, op];
+    saveOperators(updated);
+    setOperators(updated);
+    addOpLog(`[OPERADOR] Creado ${op.name} (${op.code})${data.blockBase ? ` · BLQ ${data.blockBase}` : ""}`);
+    return op;
+  }, [addOpLog]);
+
+  const updateOperatorData = useCallback((id: string, data: {
+    code: string; name: string; roleCode: string; roleName: string; blockBase: number | null;
+  }): boolean => {
+    const op = operatorsRef.current.find(o => o.id === id);
+    if (!op) return false;
+    if (data.blockBase !== null && isBlockTaken(operatorsRef.current, data.blockBase, id)) return false;
+    const blockChanged = data.blockBase !== op.blockBase;
+    const updated = operatorsRef.current.map(o => o.id === id ? {
+      ...o,
+      code: data.code,
+      name: data.name,
+      roleCode: data.roleCode,
+      roleName: data.roleName,
+      blockBase: data.blockBase,
+      blockAssignment: blockChanged && data.blockBase !== null
+        ? { assignedAt: new Date().toISOString() }
+        : (blockChanged && data.blockBase === null)
+        ? (o.blockAssignment ? { ...o.blockAssignment, releasedAt: new Date().toISOString() } : undefined)
+        : o.blockAssignment,
+    } : o);
+    saveOperators(updated);
+    setOperators(updated);
+    if (blockChanged) {
+      addOpLog(data.blockBase !== null
+        ? `[OPERADOR] ${data.name} asignado a BLQ ${data.blockBase}`
+        : `[OPERADOR] ${data.name} sin bloque asignado`);
+    }
+    return true;
+  }, [addOpLog]);
+
+  const setOperatorStatus = useCallback((id: string, status: OperatorStatus): boolean => {
+    const op = operatorsRef.current.find(o => o.id === id);
+    if (!op) return false;
+    if (status === "ACTIVO" && op.blockBase !== null && isBlockTaken(operatorsRef.current, op.blockBase, id)) return false;
+    const updated = operatorsRef.current.map(o => o.id === id ? { ...o, status } : o);
+    saveOperators(updated);
+    setOperators(updated);
+    const label = status === "ACTIVO" ? "reactivado" : status === "SUSPENDIDO" ? "suspendido" : "desactivado";
+    addOpLog(`[OPERADOR] ${op.name} ${label}`);
+    return true;
+  }, [addOpLog]);
+
+  const assignOperatorBlock = useCallback((id: string, blockBase: number): boolean => {
+    const updated = assignBlock(operatorsRef.current, id, blockBase);
+    if (!updated) return false;
+    saveOperators(updated);
+    setOperators(updated);
+    const op = operatorsRef.current.find(o => o.id === id);
+    if (op) addOpLog(`[OPERADOR] ${op.name} asignado a BLQ ${blockBase}`);
+    return true;
+  }, [addOpLog]);
+
+  const releaseOperatorBlock = useCallback((id: string): void => {
+    const op = operatorsRef.current.find(o => o.id === id);
+    if (!op || op.blockBase === null) return;
+    const blk = op.blockBase;
+    const updated = releaseBlock(operatorsRef.current, id);
+    saveOperators(updated);
+    setOperators(updated);
+    addOpLog(`[OPERADOR] ${op.name} liberó BLQ ${blk}`);
   }, [addOpLog]);
 
   const addComprobante = useCallback((data: {
@@ -729,7 +822,9 @@ export function POSProvider({ children }: { children: ReactNode }) {
     // Excepcional: permite abrir caja no-disponible si no fue usada hoy y se proveen skip codes
     const isExceptional = !!(exceptionalSkipCodes && exceptionalSkipCodes.length > 0);
     if (isExceptional ? box.used : !box.available) return;
-    const operator = activeOperatorRef.current?.name ?? BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
+    const activeOp   = activeOperatorRef.current;
+    const operator   = activeOp?.name ?? BLOCK_OPERATORS[boxCode[0]] ?? "Operador";
+    const operatorId = activeOp?.id;
     setSessionStats(NULL_STATS);
     setCashMoves([]);
     setOpLogs([]);
@@ -744,7 +839,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const trimmedMotivo = motivo?.trim() || undefined;
     const trimmedRefOp  = refOp?.trim()  || undefined;
     const tag = isExceptional ? " [EXCEPCIONAL]" : "";
-    setCashSession({ isOpen: true, cashBox: box, operator, terminal: TERMINAL, openedAt: new Date(), apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
+    setCashSession({ isOpen: true, cashBox: box, operator, operatorId, terminal: TERMINAL, openedAt: new Date(), apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
     const base = `${operator} abrió CAJA ${boxCode}${tag} · fondo S/ ${apertura.toFixed(2)}`;
     const extra = [trimmedMotivo && `Motivo: ${trimmedMotivo}`, trimmedRefOp && `Ref: ${trimmedRefOp}`].filter(Boolean).join(" · ");
     addOpLog(extra ? `${base} — ${extra}` : base);
@@ -789,7 +884,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setCashMoves([]);
     const op = s.operator;
     setUsedCodes(prev => { const next = new Set(prev); next.add(code); return next; });
-    setCashSession({ isOpen: false, cashBox: null, operator: "", terminal: TERMINAL, openedAt: null, apertura: 0 });
+    setCashSession({ isOpen: false, cashBox: null, operator: "", operatorId: undefined, terminal: TERMINAL, openedAt: null, apertura: 0 });
     addOpLog(`${op} cerró CAJA ${code}`);
   }, [addOpLog]);
 
@@ -814,6 +909,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
       operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin, changeOperatorPinById, resetOperatorPin,
+      createOperator, updateOperatorData, setOperatorStatus, assignOperatorBlock, releaseOperatorBlock,
       rubro, setRubro,
       visualMode, setVisualMode,
       printFlow, setPrintFlow,

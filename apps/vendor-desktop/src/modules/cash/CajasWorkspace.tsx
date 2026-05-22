@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, Pencil, Ban, ToggleRight, Layers, ChevronRight, CircleCheck, Monitor, Lock, ShieldAlert } from "lucide-react";
+import { Plus, Pencil, Ban, ToggleRight, Layers, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
+import { usePOS } from "../../context/POSContext";
 
 // ── tipos estructurales ────────────────────────────────────────────────────
 // CAJAS gestiona infraestructura estructural únicamente.
@@ -16,7 +17,6 @@ type CajaSlot = {
 type OperationalBlock = {
   id: string;
   blockBase: number;
-  operatorName: string;
   active: boolean;
   slots: CajaSlot[];
   createdAt: Date;
@@ -30,7 +30,7 @@ type ThirdAction = "deactivate" | "activate" | null;
 
 const MOCK_BLOCKS: OperationalBlock[] = [
   {
-    id: "b100", blockBase: 100, operatorName: "FERNANDO", active: true,
+    id: "b100", blockBase: 100, active: true,
     createdAt: new Date("2024-01-10T08:00:00"), createdBy: "ADMIN",
     slots: [
       { code: "100", slotType: "principal",    hasHistory: true  },
@@ -40,7 +40,7 @@ const MOCK_BLOCKS: OperationalBlock[] = [
     ],
   },
   {
-    id: "b200", blockBase: 200, operatorName: "CARLOS", active: true,
+    id: "b200", blockBase: 200, active: true,
     createdAt: new Date("2024-03-15T09:30:00"), createdBy: "FERNANDO",
     slots: [
       { code: "200", slotType: "principal",    hasHistory: true  },
@@ -50,7 +50,7 @@ const MOCK_BLOCKS: OperationalBlock[] = [
     ],
   },
   {
-    id: "b300", blockBase: 300, operatorName: "LUCÍA", active: false,
+    id: "b300", blockBase: 300, active: false,
     createdAt: new Date("2023-11-02T10:00:00"), createdBy: "ADMIN",
     slots: [
       { code: "300", slotType: "principal",    hasHistory: true  },
@@ -103,13 +103,29 @@ function slotObservacion(slot: CajaSlot, blockBase: number): string {
 // ── componente ─────────────────────────────────────────────────────────────
 
 export function CajasWorkspace() {
-  const [blocks,       setBlocks]       = useState<OperationalBlock[]>(MOCK_BLOCKS);
-  const [selectedId,   setSelectedId]   = useState<string | null>("b100");
-  const [mode,         setMode]         = useState<PanelMode>("view");
-  const [editOperator, setEditOperator] = useState("");
+  const { operators, isOpen, cashBox } = usePOS();
 
-  const selected     = blocks.find(b => b.id === selectedId) ?? null;
-  const canActOnSel  = selected !== null;
+  const [blocks,     setBlocks]     = useState<OperationalBlock[]>(MOCK_BLOCKS);
+  const [selectedId, setSelectedId] = useState<string | null>("b100");
+  const [mode,       setMode]       = useState<PanelMode>("view");
+
+  const selected    = blocks.find(b => b.id === selectedId) ?? null;
+  const canActOnSel = selected !== null;
+
+  // Deriva operador activo para un bloque desde el store real
+  function getBlockOperator(blockBase: number) {
+    return operators.find(o => o.blockBase === blockBase && o.status !== "INACTIVO");
+  }
+
+  // Estado del bloque: DISPONIBLE / ASIGNADO / EN USO / INACTIVO
+  type BlockStatus = "DISPONIBLE" | "ASIGNADO" | "EN_USO" | "INACTIVO";
+  function getBlockStatus(block: OperationalBlock): BlockStatus {
+    if (!block.active) return "INACTIVO";
+    const inUso = isOpen && cashBox !== null && cashBox.code[0] === String(block.blockBase)[0];
+    if (inUso) return "EN_USO";
+    const hasOp = getBlockOperator(block.blockBase);
+    return hasOp ? "ASIGNADO" : "DISPONIBLE";
+  }
 
   const thirdAction: ThirdAction =
     !canActOnSel        ? null
@@ -124,12 +140,10 @@ export function CajasWorkspace() {
   }
 
   function handleSave() {
-    if (!editOperator.trim()) return;
     if (mode === "create") {
       const base = nextBlockBase(blocks);
       const next: OperationalBlock = {
-        id: `b${base}`, blockBase: base,
-        operatorName: editOperator.trim().toUpperCase(), active: true,
+        id: `b${base}`, blockBase: base, active: true,
         slots: [
           { code: String(base),      slotType: "principal",    hasHistory: false },
           { code: String(base + 1),  slotType: "secundaria-1", hasHistory: false },
@@ -140,8 +154,6 @@ export function CajasWorkspace() {
       };
       setBlocks(prev => [...prev, next]);
       setSelectedId(next.id);
-    } else if (mode === "edit" && selectedId) {
-      mutateBlock(b => ({ ...b, operatorName: editOperator.trim().toUpperCase() }));
     }
     setMode("view");
   }
@@ -157,7 +169,6 @@ export function CajasWorkspace() {
     mutateBlock(b => ({ ...b, active: true }));
   }
 
-  const canSave  = editOperator.trim().length >= 2;
   const showView = mode === "view" && selected !== null;
   const showForm = mode === "create" || mode === "edit";
 
@@ -186,7 +197,7 @@ export function CajasWorkspace() {
           </button>
 
           <button
-            onClick={() => { if (selected) { setEditOperator(selected.operatorName); setMode("edit"); } }}
+            onClick={() => { if (selected) setMode("edit"); }}
             disabled={!canActOnSel}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
               canActOnSel
@@ -223,7 +234,15 @@ export function CajasWorkspace() {
         {/* Lista bloques */}
         <div className="w-[38%] shrink-0 overflow-y-auto border-r border-[#78C487]/10">
           {blocks.map(block => {
-            const isSel = block.id === selectedId;
+            const isSel    = block.id === selectedId;
+            const bStatus  = getBlockStatus(block);
+            const blockOp  = getBlockOperator(block.blockBase);
+            const statusColor = {
+              DISPONIBLE: "text-[#78C487]",
+              ASIGNADO:   "text-[#2154d8]/80",
+              EN_USO:     "text-emerald-600",
+              INACTIVO:   "text-[#dc2626]/70",
+            }[bStatus];
             return (
               <div
                 key={block.id}
@@ -237,13 +256,11 @@ export function CajasWorkspace() {
                   {block.blockBase}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[12px] font-semibold ${isSel ? "text-[#2d6640]" : "text-[#2F3E46]"}`}>
-                    {block.operatorName}
+                  <p className={`text-[12px] font-semibold ${isSel ? "text-[#2d6640]" : blockOp ? "text-[#2F3E46]" : "text-[#b0bac8]"}`}>
+                    {blockOp ? blockOp.name : "Sin operador"}
                   </p>
-                  <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                    !block.active ? "text-[#dc2626]/70" : "text-[#78C487]"
-                  }`}>
-                    {!block.active ? "INACTIVO" : "ACTIVO"}&ensp;·&ensp;
+                  <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusColor}`}>
+                    {bStatus.replace("_", " ")}&ensp;·&ensp;
                     <span className="text-[#9ca3af] normal-case tracking-normal">{slotSummary(block.slots)}</span>
                   </p>
                 </div>
@@ -268,15 +285,42 @@ export function CajasWorkspace() {
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">BLOQUE OPERACIONAL</span>
 
               {/* Cabecera */}
-              <div className="flex items-center gap-2.5">
-                <span className="rounded-md bg-[#78C487] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">
-                  {selected.blockBase}
-                </span>
-                <span className="text-[14px] font-semibold text-[#2F3E46]">{selected.operatorName}</span>
-                {!selected.active && (
-                  <span className="rounded-md bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase text-[#dc2626]">INACTIVO</span>
-                )}
-              </div>
+              {(() => {
+                const bStatus = getBlockStatus(selected);
+                const blockOp = getBlockOperator(selected.blockBase);
+                const statusLabel: Record<string, string> = {
+                  DISPONIBLE: "DISPONIBLE",
+                  ASIGNADO:   "ASIGNADO",
+                  EN_USO:     "EN USO",
+                  INACTIVO:   "INACTIVO",
+                };
+                const statusCls: Record<string, string> = {
+                  DISPONIBLE: "bg-[#e8f5ea] text-[#4a7a55]",
+                  ASIGNADO:   "bg-[#dbeafe] text-[#2154d8]",
+                  EN_USO:     "bg-emerald-100 text-emerald-700",
+                  INACTIVO:   "bg-red-50 text-[#dc2626]",
+                };
+                return (
+                  <div className="flex items-center gap-2.5">
+                    <span className="rounded-md bg-[#78C487] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">
+                      {selected.blockBase}
+                    </span>
+                    <span className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase ${statusCls[bStatus]}`}>
+                      {statusLabel[bStatus]}
+                    </span>
+                    {blockOp && (
+                      <div className="flex items-center gap-1.5 rounded-lg border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1">
+                        <User size={10} strokeWidth={2} className="shrink-0 text-[#78C487]" />
+                        <span className="text-[11px] font-semibold text-[#374151]">{blockOp.name}</span>
+                        <span className="text-[10px] text-[#9ca3af]">· {blockOp.code}</span>
+                      </div>
+                    )}
+                    {!blockOp && selected.active && (
+                      <span className="text-[11px] font-semibold text-[#b0bac8]">Sin operador asignado</span>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Composición de cajas */}
               <div className="flex flex-col gap-1.5">
@@ -341,34 +385,29 @@ export function CajasWorkspace() {
                   {mode === "create" ? nextBlockBase(blocks) : selected?.blockBase}
                 </span>
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                  {mode === "create" ? "BLOQUE NUEVO" : "EDITAR BLOQUE"}
+                  {mode === "create" ? "NUEVO BLOQUE OPERACIONAL" : "CONFIRMAR CREACIÓN"}
                 </span>
               </div>
 
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Operador asignado</span>
-                <input
-                  autoFocus type="text" value={editOperator}
-                  onChange={e => setEditOperator(e.target.value.toUpperCase())}
-                  onKeyDown={e => {
-                    if (e.key === "Enter"  && canSave) handleSave();
-                    if (e.key === "Escape") setMode("view");
-                  }}
-                  placeholder="FERNANDO"
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[13px] font-semibold uppercase text-[#2F3E46] outline-none transition focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
-                />
-              </div>
+              {mode === "create" && (
+                <div className="rounded-xl border border-[#dbeafe] bg-[#f0f6ff] px-3 py-2.5">
+                  <p className="text-[11px] font-semibold text-[#2154d8]/80">
+                    Se crearán 4 cajas: principal, secundaria-1, secundaria-2 y contingencia.
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#9ca3af]">
+                    La asignación de operador se realiza en la pestaña OPERADORES.
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-1">
                 <button onClick={() => setMode("view")} title="Tecla [ESC]"
                   className="flex h-10 flex-1 items-center justify-center rounded-md border border-[#e4e9f0] bg-white text-[13px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8] hover:text-[#374151]">
                   Cancelar
                 </button>
-                <button onClick={handleSave} disabled={!canSave} title="Tecla [ENTER]"
-                  className={`flex h-10 flex-1 items-center justify-center rounded-md text-[13px] font-semibold uppercase tracking-wider text-white transition ${
-                    canSave ? "bg-[#45b356] hover:bg-[#35994a] active:scale-[0.98]" : "cursor-not-allowed bg-[#45b356]/40"
-                  }`}>
-                  {mode === "create" ? "Crear bloque" : "Guardar"}
+                <button onClick={handleSave} title="Tecla [ENTER]"
+                  className="flex h-10 flex-1 items-center justify-center rounded-md bg-[#45b356] text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98]">
+                  {mode === "create" ? "Crear bloque" : "Confirmar"}
                 </button>
               </div>
             </div>
