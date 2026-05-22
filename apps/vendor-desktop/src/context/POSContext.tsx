@@ -7,7 +7,7 @@ import { type OperatorRecord, loadOperators, checkPin, changePin, setOperatorPin
 
 type FocusZone = "search" | "ticket" | "cobro";
 
-export type CashBoxType = "normal" | "contingency-1" | "contingency-2";
+export type CashBoxType = "normal" | "contingency-1" | "contingency-2" | "contingencia";
 
 export type MoveType             = "ingreso" | "egreso";
 export type MoveSource           = "apertura" | "vendido" | "mixto";
@@ -57,15 +57,19 @@ const BOX_DEFS: { code: string; type: CashBoxType }[] = [
   { code: "100", type: "normal" },
   { code: "101", type: "contingency-1" },
   { code: "102", type: "contingency-2" },
+  { code: "150", type: "contingencia" },
   { code: "200", type: "normal" },
   { code: "201", type: "contingency-1" },
   { code: "202", type: "contingency-2" },
+  { code: "250", type: "contingencia" },
   { code: "300", type: "normal" },
   { code: "301", type: "contingency-1" },
   { code: "302", type: "contingency-2" },
+  { code: "350", type: "contingencia" },
   { code: "500", type: "normal" },
   { code: "501", type: "contingency-1" },
   { code: "502", type: "contingency-2" },
+  { code: "550", type: "contingencia" },
 ];
 
 const TERMINAL = "PC-VENTAS01";
@@ -232,6 +236,9 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
         available = usedCodes.has(def.code.slice(0, 2) + "0");
       } else if (def.type === "contingency-2") {
         available = usedCodes.has(def.code.slice(0, 2) + "1");
+      } else if (def.type === "contingencia") {
+        // disponible cuando la principal del bloque NO ha sido abierta hoy
+        available = !usedCodes.has(def.code[0] + "00");
       }
     }
     return { ...def, used, available };

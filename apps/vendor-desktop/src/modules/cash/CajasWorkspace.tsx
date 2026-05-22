@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Plus, Pencil, Ban, ToggleRight, Layers, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Ban, ToggleRight, Layers, ChevronRight, CircleCheck, Monitor, Lock, ShieldAlert } from "lucide-react";
 
 // ── tipos estructurales ────────────────────────────────────────────────────
 // CAJAS gestiona infraestructura estructural únicamente.
-// Estados operacionales diarios (disponible/activa/cerrada/bloqueada) viven en GESTIÓN TURNO.
+// Estados operacionales diarios (disponible/en uso/cerrada) viven en GESTIÓN TURNO.
+
+type SlotType = "principal" | "secundaria-1" | "secundaria-2" | "contingencia";
 
 type CajaSlot = {
   code: string;
-  isContingency: boolean;
+  slotType: SlotType;
   hasHistory: boolean; // fue usada operacionalmente alguna vez — restringe eliminación estructural
 };
 
@@ -31,24 +33,30 @@ const MOCK_BLOCKS: OperationalBlock[] = [
     id: "b100", blockBase: 100, operatorName: "FERNANDO", active: true,
     createdAt: new Date("2024-01-10T08:00:00"), createdBy: "ADMIN",
     slots: [
-      { code: "100", isContingency: false, hasHistory: true  },
-      { code: "101", isContingency: true,  hasHistory: true  },
-      { code: "102", isContingency: true,  hasHistory: false },
+      { code: "100", slotType: "principal",    hasHistory: true  },
+      { code: "101", slotType: "secundaria-1", hasHistory: true  },
+      { code: "102", slotType: "secundaria-2", hasHistory: false },
+      { code: "150", slotType: "contingencia", hasHistory: false },
     ],
   },
   {
     id: "b200", blockBase: 200, operatorName: "CARLOS", active: true,
     createdAt: new Date("2024-03-15T09:30:00"), createdBy: "FERNANDO",
     slots: [
-      { code: "200", isContingency: false, hasHistory: true  },
-      { code: "201", isContingency: true,  hasHistory: false },
+      { code: "200", slotType: "principal",    hasHistory: true  },
+      { code: "201", slotType: "secundaria-1", hasHistory: false },
+      { code: "202", slotType: "secundaria-2", hasHistory: false },
+      { code: "250", slotType: "contingencia", hasHistory: false },
     ],
   },
   {
     id: "b300", blockBase: 300, operatorName: "LUCÍA", active: false,
     createdAt: new Date("2023-11-02T10:00:00"), createdBy: "ADMIN",
     slots: [
-      { code: "300", isContingency: false, hasHistory: true },
+      { code: "300", slotType: "principal",    hasHistory: true  },
+      { code: "301", slotType: "secundaria-1", hasHistory: false },
+      { code: "302", slotType: "secundaria-2", hasHistory: false },
+      { code: "350", slotType: "contingencia", hasHistory: false },
     ],
   },
 ];
@@ -71,11 +79,23 @@ function nextBlockBase(blocks: OperationalBlock[]): number {
 }
 
 function slotSummary(slots: CajaSlot[]): string {
-  const principal   = slots.filter(s => !s.isContingency).length;
-  const contingency = slots.filter(s =>  s.isContingency).length;
-  return contingency > 0
-    ? `${principal}P · ${contingency}C`
-    : `${principal}P`;
+  const codes = slots.map(s => s.code).join(" · ");
+  return codes;
+}
+
+function slotLabel(t: SlotType): string {
+  if (t === "principal")    return "PRINCIPAL";
+  if (t === "secundaria-1") return "SECUNDARIA 01";
+  if (t === "secundaria-2") return "SECUNDARIA 02";
+  return "CONTINGENCIA";
+}
+
+function slotObservacion(slot: CajaSlot, blockBase: number): string {
+  if (slot.slotType === "principal")    return "Sin restricciones — flujo principal de ventas";
+  if (slot.slotType === "secundaria-1") return `Requiere caja ${blockBase} cerrada`;
+  if (slot.slotType === "secundaria-2") return `Requiere caja ${blockBase + 1} cerrada`;
+  if (slot.slotType === "contingencia") return `Requiere caja ${blockBase} sin apertura · PIN + motivo obligatorio`;
+  return "";
 }
 
 // ── componente ─────────────────────────────────────────────────────────────
@@ -89,13 +109,6 @@ export function CajasWorkspace() {
   const selected     = blocks.find(b => b.id === selectedId) ?? null;
   const canActOnSel  = selected !== null;
 
-  const nextSlotCode = selected && selected.slots.length < 5
-    ? selected.blockBase + selected.slots.length : null;
-  const canAddSlot   = nextSlotCode !== null && (selected?.active ?? false);
-
-  const lastSlot    = selected?.slots[selected.slots.length - 1] ?? null;
-  const canRemoveLast = (lastSlot?.isContingency && !lastSlot.hasHistory) ?? false;
-
   const thirdAction: ThirdAction =
     !canActOnSel        ? null
     : !selected!.active ? "activate"
@@ -108,19 +121,6 @@ export function CajasWorkspace() {
     setBlocks(prev => prev.map(b => b.id === selectedId ? fn(b) : b));
   }
 
-  function handleAddContingency() {
-    if (!selected || !nextSlotCode) return;
-    mutateBlock(b => ({
-      ...b,
-      slots: [...b.slots, { code: String(nextSlotCode), isContingency: true, hasHistory: false }],
-    }));
-  }
-
-  function handleRemoveLastSlot() {
-    if (!canRemoveLast) return;
-    mutateBlock(b => ({ ...b, slots: b.slots.slice(0, -1) }));
-  }
-
   function handleSave() {
     if (!editOperator.trim()) return;
     if (mode === "create") {
@@ -128,7 +128,12 @@ export function CajasWorkspace() {
       const next: OperationalBlock = {
         id: `b${base}`, blockBase: base,
         operatorName: editOperator.trim().toUpperCase(), active: true,
-        slots: [{ code: String(base), isContingency: false, hasHistory: false }],
+        slots: [
+          { code: String(base),      slotType: "principal",    hasHistory: false },
+          { code: String(base + 1),  slotType: "secundaria-1", hasHistory: false },
+          { code: String(base + 2),  slotType: "secundaria-2", hasHistory: false },
+          { code: String(base + 50), slotType: "contingencia", hasHistory: false },
+        ],
         createdAt: new Date(), createdBy: "OPERADOR",
       };
       setBlocks(prev => [...prev, next]);
@@ -273,63 +278,40 @@ export function CajasWorkspace() {
 
               {/* Composición de cajas */}
               <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Composición</span>
-                  <span className={`text-[10px] font-bold tabular-nums ${
-                    selected.slots.length - 1 > 0 ? "text-amber-600" : "text-[#9ca3af]"
-                  }`}>
-                    {selected.slots.length - 1}/4 contingencias
-                  </span>
-                </div>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Composición del bloque</span>
 
-                {selected.slots.map((slot, idx) => {
-                  const isLast       = idx === selected.slots.length - 1;
-                  const showRemove   = isLast && canRemoveLast;
-
+                {selected.slots.map(slot => {
+                  const isContg = slot.slotType === "contingencia";
+                  const isSec   = slot.slotType === "secundaria-1" || slot.slotType === "secundaria-2";
                   return (
                     <div key={slot.code}
-                      className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 ${
-                        slot.isContingency
-                          ? "border-amber-100 bg-amber-50/40"
-                          : "border-[#e4e9f0] bg-[#f8fafc]"
+                      className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 ${
+                        isContg ? "border-amber-100 bg-amber-50/30" :
+                        isSec   ? "border-[#dbeafe] bg-[#f0f6ff]" :
+                        "border-[#e4e9f0] bg-[#f8fafc]"
                       }`}>
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                        slot.isContingency ? "bg-amber-400" : "bg-[#78C487]"
-                      }`} />
-                      <span className="text-[11px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                        slot.isContingency ? "text-amber-600" : "text-[#4a7a55]"
-                      }`}>
-                        {slot.isContingency ? "CONTINGENCIA" : "PRINCIPAL"}
-                      </span>
-                      {slot.hasHistory && (
-                        <span className="rounded bg-[#e8f5ea] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#4a7a55]">
-                          CON USO
+                      <div className="flex items-center gap-2">
+                        {isContg ? <ShieldAlert size={11} strokeWidth={2} className="shrink-0 text-amber-500" /> :
+                         isSec   ? <Monitor size={11} strokeWidth={2} className="shrink-0 text-[#2154d8]/60" /> :
+                                   <CircleCheck size={11} strokeWidth={2} className="shrink-0 text-emerald-500" />}
+                        <span className="text-[12px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                          isContg ? "text-amber-600" : isSec ? "text-[#2154d8]/70" : "text-[#4a7a55]"
+                        }`}>
+                          {slotLabel(slot.slotType)}
                         </span>
-                      )}
-
-                      {showRemove && (
-                        <button onClick={handleRemoveLastSlot}
-                          title="Eliminar contingencia sin uso"
-                          className="ml-auto text-[10px] font-semibold uppercase tracking-wider text-[#dc2626]/60 transition hover:text-[#dc2626]">
-                          ELIMINAR
-                        </button>
-                      )}
+                        {slot.hasHistory && (
+                          <span className="ml-auto rounded bg-[#e8f5ea] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#4a7a55]">
+                            CON USO
+                          </span>
+                        )}
+                      </div>
+                      <p className={`pl-4 text-[10px] ${isContg ? "text-amber-500/80" : "text-[#b0bac8]"}`}>
+                        {slotObservacion(slot, selected.blockBase)}
+                      </p>
                     </div>
                   );
                 })}
-
-                {/* Agregar contingencia estructural */}
-                {canAddSlot ? (
-                  <button onClick={handleAddContingency}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-amber-200 bg-transparent px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-600/70 transition hover:border-amber-300 hover:bg-amber-50/40 hover:text-amber-700 active:scale-[0.98]">
-                    <Plus size={11} strokeWidth={2.5} />AGREGAR CONTINGENCIA · {nextSlotCode}
-                  </button>
-                ) : selected.active && !canAddSlot && (
-                  <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-[#b0bac8]">
-                    Máximo de contingencias · 4/4
-                  </p>
-                )}
               </div>
 
               {/* Trazabilidad silenciosa */}

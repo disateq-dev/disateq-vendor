@@ -16,8 +16,9 @@ export function operatorFromCode(code: string): string {
 // ── contingency prerequisites ───────────────────────────────────
 
 export function prereqCode(box: CashBox): string {
-  if (box.type === "contingency-1") return box.code.slice(0, 2) + "0";
-  if (box.type === "contingency-2") return box.code.slice(0, 2) + "1";
+  if (box.type === "contingency-1") return box.code.slice(0, 2) + "0"; // 101 → 100
+  if (box.type === "contingency-2") return box.code.slice(0, 2) + "1"; // 102 → 101
+  if (box.type === "contingencia")  return box.code[0] + "00";          // 150 → 100
   return "";
 }
 
@@ -35,9 +36,8 @@ export type OpeningMode = "normal" | "contingency" | "exceptional";
 
 export function detectOpeningMode(box: CashBox | null): OpeningMode {
   if (!box || box.type === "normal") return "normal";
-  if (box.available) return "contingency";   // prerequisito cumplido: principal ya fue usada y cerrada
-  // Excepcional SOLO para contingency-1: rompe únicamente el punto inicial del día
-  // contingency-2 sin contingency-1 usada = bloqueada por secuencia, no excepcional
+  if (box.type === "contingencia") return "exceptional"; // apertura excepcional: siempre PIN + motivo
+  if (box.available) return "contingency";               // secundaria con prereq cumplido: solo motivo
   if (!box.available && !box.used && box.type === "contingency-1") return "exceptional";
   return "normal";
 }
@@ -63,15 +63,19 @@ export function canOpenSession(
 ): boolean {
   if (isOpen) return false;
   if (!box) return false;
-  // Exceptional: caja no-disponible pero no-usada (se abre excepcionalmente)
-  const boxOk = mode === "exceptional" ? (!box.used && !box.available) : box.available;
-  if (!boxOk) return false;
+  // "contingencia" type: available=true cuando principal no usada; siempre requiere PIN
+  if (box.type === "contingencia") {
+    if (!box.available || box.used) return false;
+  } else {
+    const boxOk = mode === "exceptional" ? (!box.used && !box.available) : box.available;
+    if (!boxOk) return false;
+  }
   if (aperturaInput.trim() === "") return false;
   const amt = parseFloat(aperturaInput);
   if (isNaN(amt) || amt < 0) return false;
-  if (mode === "contingency")  return ctgJustif.trim().length >= MIN_MOTIVO_LEN;
-  if (mode === "exceptional")  return ctgPin === CTG_PIN && ctgJustif.trim().length >= MIN_MOTIVO_LEN;
-  return true; // normal — sin autorización adicional
+  if (mode === "contingency") return ctgJustif.trim().length >= MIN_MOTIVO_LEN;
+  if (mode === "exceptional") return ctgPin === CTG_PIN && ctgJustif.trim().length >= MIN_MOTIVO_LEN;
+  return true;
 }
 
 // ── move form validation ────────────────────────────────────────

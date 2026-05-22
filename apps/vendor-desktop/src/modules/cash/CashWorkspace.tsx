@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, RotateCcw, Pencil } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
@@ -99,53 +99,97 @@ function InfoRow({ label, value, accent, red }: { label: string; value: string; 
   );
 }
 
-function BoxStatusBadge({ box, isActive }: { box: CashBox; isActive: boolean }) {
-  if (isActive) return (
-    <span className="rounded-lg bg-emerald-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-emerald-700">ACTIVA</span>
-  );
-  if (box.used) return (
-    <span className="rounded-lg bg-[#f4f7fb] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-[#c0cad4]">CERRADO</span>
-  );
-  if (!box.available) return (
-    <span className="flex items-center gap-1 rounded-lg bg-[#fef9f0] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-[#c08000]">
-      <Lock size={8} strokeWidth={2.5} />REQ. CAJA {prereqCode(box)}
-    </span>
-  );
-  return (
-    <span className="rounded-lg bg-[#f0fdf4] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-[#16a34a]">DISPONIBLE</span>
-  );
-}
-
-function BoxRow({ box, isActive, isSelected, onSelect, onExceptional }: {
-  box: CashBox; isActive: boolean; isSelected: boolean; onSelect?: () => void; onExceptional?: () => void;
+function BoxRow({ box, isActive, isSelected, onSelect }: {
+  box: CashBox; isActive: boolean; isSelected: boolean; onSelect?: () => void;
 }) {
-  const clickable    = !isActive && box.available && !!onSelect;
-  const canExceptional = !isActive && !box.available && !box.used && !!onExceptional;
-  let cls = "flex items-center gap-3 rounded-2xl px-4 py-2.5 transition select-none";
-  if (isActive)          cls += " bg-[#f8fafd] ring-2 ring-emerald-200";
-  else if (isSelected)   cls += " bg-[#f8fafd] ring-1 ring-[#2154d8]/30";
-  else if (clickable)    cls += " cursor-pointer hover:bg-[#f4f7fb]";
-  else                   cls += " opacity-50 cursor-default";
-  const dotColor  = isActive ? "bg-emerald-500" : isSelected ? "bg-[#2154d8]" : box.available ? "bg-[#34d399]" : "bg-[#d1d5db]";
-  const nameColor = isActive ? "text-emerald-700" : isSelected ? "text-[#2154d8]" : box.used || !box.available ? "text-[#c0cad4]" : "text-[#111827]";
+  const estado: "en_uso" | "disponible" | "cerrada" | "bloqueada" =
+    isActive      ? "en_uso"    :
+    box.used      ? "cerrada"   :
+    box.available ? "disponible" :
+                    "bloqueada";
+
+  const typeLabel =
+    box.type === "normal"        ? "PRINCIPAL"     :
+    box.type === "contingency-1" ? "SECUNDARIA 01" :
+    box.type === "contingency-2" ? "SECUNDARIA 02" :
+    "CONTINGENCIA";
+
+  const comentario =
+    box.type === "normal"        ? "Flujo principal de ventas"          :
+    box.type === "contingency-1" ? "Primera continuación operacional"    :
+    box.type === "contingency-2" ? "Segunda continuación operacional"    :
+    "Apertura excepcional autorizada";
+
+  const prereq = prereqCode(box);
+  const observacion = estado === "bloqueada"
+    ? (box.type === "contingencia"
+        ? `Requiere caja ${prereq} sin apertura`
+        : `Requiere caja ${prereq} cerrada`)
+    : "";
+
+  const clickable = !isActive && box.available && !!onSelect;
+  const isContg = box.type === "contingencia";
+
   return (
-    <div className={cls} onClick={clickable ? onSelect : undefined}>
-      <div className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
-      <span className={`flex-1 text-[12px] font-bold tabular-nums ${nameColor}`}>CAJA {box.code}</span>
-      {canExceptional ? (
-        isSelected ? (
-          <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-widest text-amber-700">ESPECIAL</span>
-        ) : (
-          <button
-            onClick={e => { e.stopPropagation(); onExceptional?.(); }}
-            className="text-[9.5px] font-semibold uppercase tracking-wider text-amber-600 transition hover:text-amber-700 hover:underline underline-offset-2"
-          >
-            Excepcional →
-          </button>
-        )
-      ) : (
-        <BoxStatusBadge box={box} isActive={isActive} />
-      )}
+    <div
+      onClick={clickable ? onSelect : undefined}
+      className={`flex flex-col gap-1 rounded-2xl px-3 py-2.5 transition select-none ${
+        isActive   ? "bg-[#EEF9EF] ring-1 ring-emerald-200" :
+        isSelected ? "bg-[#EEF3FD] ring-1 ring-[#2154d8]/25" :
+        clickable  ? "cursor-pointer hover:bg-white/80" :
+        estado === "bloqueada" ? "opacity-50 cursor-default" :
+        "cursor-default"
+      }`}
+    >
+      {/* Fila principal: icono + código + tipo + badge estado */}
+      <div className="flex items-center gap-2">
+        {estado === "en_uso"    && <Monitor     size={12} strokeWidth={2} className="shrink-0 text-[#2154d8]"   />}
+        {estado === "disponible" && !isContg && <CircleCheck size={12} strokeWidth={2} className="shrink-0 text-emerald-500" />}
+        {estado === "disponible" &&  isContg && <ShieldAlert size={12} strokeWidth={2} className="shrink-0 text-amber-500"   />}
+        {estado === "cerrada"   && <Lock        size={12} strokeWidth={2} className="shrink-0 text-[#9ca3af]"   />}
+        {estado === "bloqueada" && <Lock        size={12} strokeWidth={2} className="shrink-0 text-[#d1d9e1]"   />}
+
+        <span className={`text-[12px] font-bold tabular-nums ${
+          estado === "en_uso"    ? "text-[#2154d8]"  :
+          estado === "disponible" ? "text-[#374151]" :
+          estado === "cerrada"   ? "text-[#9ca3af]"  :
+          "text-[#c0cad4]"
+        }`}>{box.code}</span>
+
+        <span className={`text-[9.5px] font-bold uppercase tracking-wide ${
+          estado === "en_uso"    ? "text-[#2154d8]/70"  :
+          estado === "disponible" ? (isContg ? "text-amber-600" : "text-[#4a7a55]") :
+          estado === "cerrada"   ? "text-[#c0cad4]"     :
+          "text-[#d1d9e1]"
+        }`}>{typeLabel}</span>
+
+        <div className="ml-auto shrink-0">
+          {estado === "en_uso" && (
+            <span className="rounded-lg bg-[#dbeafe] px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#2154d8]">EN USO</span>
+          )}
+          {estado === "disponible" && (
+            <span className={`rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${
+              isContg ? "bg-amber-50 text-amber-600" : "bg-[#f0fdf4] text-emerald-600"
+            }`}>DISPONIBLE</span>
+          )}
+          {estado === "cerrada" && (
+            <span className="rounded-lg bg-[#f4f7fb] px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">CERRADA</span>
+          )}
+          {isSelected && estado === "disponible" && (
+            <span className="ml-1 rounded bg-[#2154d8]/10 px-1.5 py-0.5 text-[8.5px] font-bold text-[#2154d8]">SEL</span>
+          )}
+        </div>
+      </div>
+
+      {/* Comentario + Observación */}
+      <div className="pl-5 flex flex-col gap-0.5">
+        <p className={`text-[10px] ${estado === "bloqueada" ? "text-[#d1d9e1]" : "text-[#b0bac8]"}`}>
+          {comentario}
+        </p>
+        {observacion && (
+          <p className="text-[9.5px] font-semibold text-amber-500">⚡ {observacion}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -987,40 +1031,33 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       {/* ── RIGHT ── */}
       {!isOpen ? (
 
-        /* BOX SELECTOR — solo bloque del operador */
+        /* BOX SELECTOR — bloque completo del operador */
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
           <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
-            <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SELECCIÓN DE CAJA</span>
+            <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INFORMACIÓN DE CAJA DISPONIBLE</span>
             <span className="text-[10px] font-semibold uppercase tracking-widest text-[#78C487]">
               BLOQUE {operatorBlockPrefix}00
             </span>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
             <div className="mb-1.5 px-1">
               <p className="text-[11px] font-semibold text-[#6b7280]">{operatorName}</p>
             </div>
             <div className="flex flex-col gap-0.5">
-              {operatorBoxes.map(box => {
-                // Elegible para excepcional: contingencia, no disponible, no usada, y caja principal también intacta
-                const primaryCode    = box.type !== "normal" ? box.code.slice(0, 2) + "0" : null;
-                const primaryBox     = primaryCode ? cashBoxes.find(b => b.code === primaryCode) : null;
-                const exceptEligible = box.type === "contingency-1" && !box.available && !box.used && !!primaryBox && !primaryBox.used;
-                return (
-                  <BoxRow
-                    key={box.code}
-                    box={box}
-                    isActive={false}
-                    isSelected={selectedCode === box.code}
-                    onSelect={() => {
-                      if (box.available) { setSelectedCode(box.code); setCtgPin(""); setCtgJustif(""); setCtgPinError(false); }
-                    }}
-                    onExceptional={exceptEligible ? () => {
+              {operatorBoxes.map(box => (
+                <BoxRow
+                  key={box.code}
+                  box={box}
+                  isActive={false}
+                  isSelected={selectedCode === box.code}
+                  onSelect={() => {
+                    if (box.available) {
                       setSelectedCode(box.code);
                       setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
-                    } : undefined}
-                  />
-                );
-              })}
+                    }
+                  }}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -1767,7 +1804,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                         : "text-[#dde4ee] hover:text-amber-400 opacity-60 hover:opacity-100"
                                     }`}
                                   >
-                                    <CheckCircle size={11} strokeWidth={2} />
+                                    <PlusCircle size={11} strokeWidth={2} />
                                   </button>
                                 )}
                                 {m.type === "egreso" && (
@@ -1794,7 +1831,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                   title="Anular movimiento"
                                   className={`transition ${isAnulando ? "text-red-500" : "text-[#c0cad4] hover:text-red-400"}`}
                                 >
-                                  <X size={11} strokeWidth={2} />
+                                  <XCircle size={11} strokeWidth={2} />
                                 </button>
                               </div>
                             )}
