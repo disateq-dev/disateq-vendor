@@ -401,7 +401,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
   // totalEsperado: arqueo operacional EFE (sin apertura) + verificaciones digitales
-  // El fondo fijo (apertura) se valida separado — siempre cuadra exacto.
+  // El fondo apertura (apertura) se valida separado — siempre cuadra exacto.
   const totalEsperado   = moneySum([arqueoOperacional, sessionStats.yape, sessionStats.tarjeta]);
   const contadoFondoNum = numericValue(contadoFondo);
   const contadoEfeNum   = numericValue(contadoEfe);
@@ -1077,7 +1077,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#FEF5F5] border-b border-red-100">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CIERRE DE TURNO</span>
               <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
-                {closingStage === 1 ? "FONDO FIJO"
+                {closingStage === 1 ? "FONDO APERTURA"
                  : closingStage === 2 ? "CONTEO OPER."
                  : closingStage === 3 ? "VALIDACIÓN"
                  : closingStage === 4 ? "CONCILIACIÓN"
@@ -1088,11 +1088,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             {/* Content por stage */}
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3.5">
 
-              {/* ── STAGE 1: FONDO FIJO ── */}
+              {/* ── STAGE 1: FONDO APERTURA ── */}
               {closingStage === 1 && (
                 <>
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
-                    Separa y cuenta el fondo fijo. Debe retornar íntegro, independiente del arqueo operacional.
+                    Separa y cuenta el fondo apertura. Debe retornar íntegro, independiente del arqueo operacional.
                   </p>
 
                   {/* Fondo esperado */}
@@ -1188,7 +1188,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-[#f0fdf4] px-3.5 py-2">
                     <div className="flex items-center gap-1.5">
                       <CheckCircle size={12} className="text-emerald-500 shrink-0" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-600">Fondo fijo validado</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-600">Fondo apertura validado</span>
                     </div>
                     <span className="text-[11px] font-bold tabular-nums text-emerald-700">S/ {contadoFondoNum.toFixed(2)}</span>
                   </div>
@@ -1282,10 +1282,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </div>
                   </div>
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
-                    {/* Fondo fijo validado en stage 1 */}
+                    {/* Fondo apertura validado en stage 1 */}
                     <div className="flex justify-between items-center px-3.5 py-1.5 bg-[#f8fafd]">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO FIJO</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO APERTURA</span>
                         <span className="text-[8px] text-[#c0cad4]">stage 1</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -1324,7 +1324,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     Confirma el arqueo para oficializar el cierre.
                   </p>
 
-                  {/* Fondo fijo — resultado validación stage 1 */}
+                  {/* Fondo apertura — resultado validación stage 1 */}
                   {(() => {
                     const diffFondo = moneySub(contadoFondoNum, apertura);
                     const fondoCuadrado = moneyIsZero(diffFondo);
@@ -1333,7 +1333,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         fondoCuadrado ? "border-[#e4e9f0] bg-[#f8fafd]" : "border-red-200 bg-[#fef2f2]"
                       }`}>
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo fijo</span>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo apertura</span>
                           <span className="ml-2 text-[8.5px] text-[#c0cad4]">esp. {apertura.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1507,7 +1507,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             {/* Timeline */}
             <div className="flex flex-col">
               {([
-                { s: 1, label: "FONDO FIJO" },
+                { s: 1, label: "FONDO APERTURA" },
                 { s: 2, label: "CONTEO OPER." },
                 { s: 3, label: "VALIDACIÓN" },
                 { s: 4, label: "CONCILIACIÓN" },
