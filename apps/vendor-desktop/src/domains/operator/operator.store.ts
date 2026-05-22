@@ -14,6 +14,8 @@ export type OperatorRecord = {
   blockBase: number | null;
   blockAssignment?: BlockAssignment;
   status: OperatorStatus;
+  statusReason?: string;   // motivo del último cambio de estado (suspensión/baja)
+  statusAt?: string;       // ISO timestamp del último cambio de estado
   pin: string;
 };
 
@@ -47,6 +49,8 @@ export function loadOperators(): OperatorRecord[] {
       status:          (o.status === "ACTIVO" || o.status === "INACTIVO" || o.status === "SUSPENDIDO")
                          ? o.status as OperatorStatus
                          : (o.active === false ? "INACTIVO" : "ACTIVO"),
+      statusReason:    typeof o.statusReason === "string" ? o.statusReason : undefined,
+      statusAt:        typeof o.statusAt     === "string" ? o.statusAt     : undefined,
       pin:             typeof o.pin === "string" ? o.pin : "",
     }));
   } catch { return SEED; }

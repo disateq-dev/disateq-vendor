@@ -416,7 +416,7 @@ interface POSContextValue {
   resetOperatorPin: (id: string, newPin: string) => boolean;
   createOperator: (data: { code: string; name: string; roleCode: string; roleName: string; blockBase: number | null }) => OperatorRecord;
   updateOperatorData: (id: string, data: { code: string; name: string; roleCode: string; roleName: string; blockBase: number | null }) => boolean;
-  setOperatorStatus: (id: string, status: OperatorStatus) => boolean;
+  setOperatorStatus: (id: string, status: OperatorStatus, reason?: string) => boolean;
   assignOperatorBlock: (id: string, blockBase: number) => boolean;
   releaseOperatorBlock: (id: string) => void;
   rubro: Rubro;
@@ -596,15 +596,28 @@ export function POSProvider({ children }: { children: ReactNode }) {
     return true;
   }, [addOpLog]);
 
-  const setOperatorStatus = useCallback((id: string, status: OperatorStatus): boolean => {
+  const setOperatorStatus = useCallback((id: string, status: OperatorStatus, reason?: string): boolean => {
     const op = operatorsRef.current.find(o => o.id === id);
     if (!op) return false;
     if (status === "ACTIVO" && op.blockBase !== null && isBlockTaken(operatorsRef.current, op.blockBase, id)) return false;
-    const updated = operatorsRef.current.map(o => o.id === id ? { ...o, status } : o);
+    const now = new Date().toISOString();
+    // Baja operacional: liberar bloque automáticamente
+    let updatedOp: typeof op = { ...op, status, statusAt: now, statusReason: reason ?? op.statusReason };
+    if (status === "INACTIVO" && op.blockBase !== null) {
+      updatedOp = {
+        ...updatedOp,
+        blockBase: null,
+        blockAssignment: op.blockAssignment
+          ? { ...op.blockAssignment, releasedAt: now }
+          : { assignedAt: now, releasedAt: now },
+      };
+    }
+    const updated = operatorsRef.current.map(o => o.id === id ? updatedOp : o);
     saveOperators(updated);
     setOperators(updated);
-    const label = status === "ACTIVO" ? "reactivado" : status === "SUSPENDIDO" ? "suspendido" : "desactivado";
-    addOpLog(`[OPERADOR] ${op.name} ${label}`);
+    const label = status === "ACTIVO" ? "reactivado" : status === "SUSPENDIDO" ? "suspendido" : "dado de baja";
+    const reasonTag = reason ? ` · Motivo: ${reason}` : "";
+    addOpLog(`[OPERADOR] ${op.name} ${label}${reasonTag}`);
     return true;
   }, [addOpLog]);
 
