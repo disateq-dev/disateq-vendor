@@ -1113,6 +1113,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         <span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egresosTotal.toFixed(2)}</span>
                       </div>
                     )}
+                    {moneyGt(totalPending, 0) && (
+                      <div className="flex justify-between items-center px-3.5 py-2 bg-amber-50">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-600">↩ PDTE. REGULARIZAR</span>
+                        <span className="text-[11px] font-semibold tabular-nums text-amber-700">S/ {totalPending.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-[10.5px] text-[#9ca3af]">

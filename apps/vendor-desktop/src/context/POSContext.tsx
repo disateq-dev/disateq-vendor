@@ -650,12 +650,15 @@ export function POSProvider({ children }: { children: ReactNode }) {
   }, [addOpLog]);
 
   const updateCashMove = useCallback((id: string, status: RegularizationStatus, mode?: RegularizationMode) => {
-    setCashMoves(prev => prev.map(m => m.id === id ? {
-      ...m,
-      regularizationStatus: status,
-      ...(mode ? { regularizationMode: mode } : {}),
-    } : m));
-  }, []);
+    setCashMoves(prev => {
+      const target = prev.find(m => m.id === id);
+      if (!target) return prev;
+      const modeLabel = mode === "integracion_fondo" ? "integrado al fondo" : "regularizado por reposición";
+      const s = cashSessionRef.current;
+      addOpLog(`[REGULARIZACIÓN] ${s.operator} — CAJA ${s.cashBox?.code ?? "?"} — S/${target.amount.toFixed(2)} ${modeLabel}: ${target.motivo}`);
+      return prev.map(m => m.id === id ? { ...m, regularizationStatus: status, ...(mode ? { regularizationMode: mode } : {}) } : m);
+    });
+  }, [addOpLog]);
 
   const [rubro, setRubroState] = useState<Rubro>(loadRubro);
   const setRubro = useCallback((r: Rubro) => {
