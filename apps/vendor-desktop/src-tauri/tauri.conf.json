@@ -13,13 +13,15 @@
     "windows": [
       {
         "title": "DisateQ VENDOR™",
-        "width": 880,
-        "height": 548,
-        "resizable": true,
+        "width": 740,
+        "height": 520,
+        "decorations": false,
+        "resizable": false,
         "fullscreen": false,
         "maximized": false,
         "center": true,
-        "closable": false
+        "closable": false,
+        "alwaysOnTop": true
       }
     ],
     "security": {

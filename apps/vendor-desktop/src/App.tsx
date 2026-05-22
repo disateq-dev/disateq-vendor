@@ -22,10 +22,14 @@ function AppRoot() {
   useEffect(() => {
     const win = getCurrentWindow();
     if (activeOperator) {
-      win.setDecorations(true);
+      // Main app — ventana operacional completa
       win.setAlwaysOnTop(false);
+      win.setDecorations(true);
+      win.setResizable(true);
       win.setSize(new LogicalSize(1366, 768)).then(() => win.center());
     } else {
+      // Login — ventana flotante exclusiva
+      win.setResizable(false);
       win.setDecorations(false);
       win.setAlwaysOnTop(true);
       win.setSize(new LogicalSize(740, 520)).then(() => win.center());
