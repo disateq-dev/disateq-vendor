@@ -119,33 +119,19 @@ function PanelActivos({ selectedId, onSelect }: {
   return (
     <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
-      {/* SheetHeader */}
-      <div className="shrink-0 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <Activity size={13} strokeWidth={2} className="text-[#4a7a55]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-            ACTIVOS
-          </span>
-          <span className="ml-auto rounded-md bg-[#78C487]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4a7a55]">
-            {activos.length}
-          </span>
-        </div>
-        <div className="mt-1 flex items-center gap-2">
+      {/* SheetHeader — línea única fija */}
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
+        <Activity size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ACTIVOS</span>
+        <span className="rounded-md bg-[#78C487]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4a7a55]">{activos.length}</span>
+        <div className="ml-auto flex items-center gap-2">
           {enTurnoCount > 0 && (
             <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-              {enTurnoCount} EN TURNO
-            </span>
-          )}
-          {disponibleCount > 0 && (
-            <span className="text-[9px] font-semibold text-[#9ca3af]">
-              {disponibleCount} disponible{disponibleCount > 1 ? "s" : ""}
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />{enTurnoCount}
             </span>
           )}
           {suspendidos.length > 0 && (
-            <span className="text-[9px] font-semibold text-amber-500">
-              · {suspendidos.length} susp.
-            </span>
+            <span className="text-[9px] font-semibold text-amber-500">{suspendidos.length} susp.</span>
           )}
         </div>
       </div>
@@ -354,16 +340,12 @@ function PanelGestion({ selectedId, onSelect }: {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
-      {/* SheetHeader */}
-      <div className="shrink-0 flex items-center justify-between border-b border-[#78C487]/15 bg-[#F3F8F4] px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <Users size={13} strokeWidth={2} className="text-[#4a7a55]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-            GESTIÓN OPERADORES
-          </span>
-        </div>
+      {/* SheetHeader — línea única fija */}
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
+        <Users size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN OPERADORES</span>
         <button onClick={handleNew}
-          className="flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
+          className="ml-auto flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
           <Plus size={10} strokeWidth={2.5} />NUEVO
         </button>
       </div>
@@ -633,32 +615,16 @@ function PanelHistorico() {
   return (
     <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#e0e5ec] bg-[#FAFBFC]">
 
-      {/* SheetHeader — tono archivístico */}
-      <div className="shrink-0 border-b border-[#e0e5ec] bg-[#F0F2F6] px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <ClipboardList size={13} strokeWidth={2} className="text-[#6b7280]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#374151] leading-none">
-            HISTÓRICO
-          </span>
-          {(suspendidos.length + bajas.length) > 0 && (
-            <span className="ml-auto rounded-md bg-[#e4e7ec] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#6b7280]">
-              {suspendidos.length + bajas.length}
-            </span>
-          )}
-        </div>
-        <div className="mt-1 flex items-center gap-2">
+      {/* SheetHeader — línea única fija, tono archivístico */}
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#e0e5ec] bg-[#F0F2F6] px-4">
+        <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#6b7280]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#374151] leading-none">HISTÓRICO</span>
+        <div className="ml-auto flex items-center gap-2">
           {suspendidos.length > 0 && (
-            <span className="text-[9px] font-semibold text-amber-500">
-              {suspendidos.length} suspendido{suspendidos.length > 1 ? "s" : ""}
-            </span>
+            <span className="text-[9px] font-semibold text-amber-500">{suspendidos.length} susp.</span>
           )}
           {bajas.length > 0 && (
-            <span className="text-[9px] font-semibold text-[#9ca3af]">
-              {bajas.length} baja{bajas.length > 1 ? "s" : ""}
-            </span>
-          )}
-          {suspendidos.length === 0 && bajas.length === 0 && (
-            <span className="text-[9px] text-[#c0cad4]">Archivo vacío</span>
+            <span className="rounded-md bg-[#e4e7ec] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#6b7280]">{bajas.length} baja{bajas.length > 1 ? "s" : ""}</span>
           )}
         </div>
       </div>
