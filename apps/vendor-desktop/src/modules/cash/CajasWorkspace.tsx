@@ -79,8 +79,10 @@ function nextBlockBase(blocks: OperationalBlock[]): number {
 }
 
 function slotSummary(slots: CajaSlot[]): string {
-  const codes = slots.map(s => s.code).join(" · ");
-  return codes;
+  const labels: Record<SlotType, string> = {
+    "principal": "P", "secundaria-1": "S1", "secundaria-2": "S2", "contingencia": "CTG",
+  };
+  return slots.map(s => labels[s.slotType]).join(" · ");
 }
 
 function slotLabel(t: SlotType): string {
