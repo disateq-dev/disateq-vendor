@@ -161,7 +161,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const {
     cashSession, cashBoxes, suggestedCashBox,
     openCashSession, closeCashSession, correctAperturaData,
-    sessionStats, cashMoves, addCashMove, updateCashMove,
+    sessionStats, cashMoves, addCashMove, updateCashMove, editCashMove,
     showNotice,
   } = usePOS();
   const {
@@ -285,17 +285,28 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [lastRepoMove,    setLastRepoMove]    = useState<CashMove | null>(null);
   const repoAmountRef = useRef<HTMLInputElement>(null);
 
+  // ── anulación / edición inline state ─────────────────────────
+  const [confirmAnulId,  setConfirmAnulId]  = useState<string | null>(null);
+  const [editingMoveId,  setEditingMoveId]  = useState<string | null>(null);
+  const [editMotivoInput, setEditMotivoInput] = useState("");
+  const [editObsInput,   setEditObsInput]   = useState("");
+
   useEffect(() => {
     setLastMove(null); setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
     setSourceType("apertura"); setMoveRegStatus(undefined);
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
+    setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
   }, [isOpen]);
 
   useEffect(() => {
-    if (closingStage > 0) { setReposingMoveId(null); setEditingApertura(false); }
+    if (closingStage > 0) {
+      setReposingMoveId(null); setEditingApertura(false);
+      setConfirmAnulId(null); setEditingMoveId(null);
+    }
   }, [closingStage]);
 
   // ── derived ───────────────────────────────────────────────────
+  const activeMoves = useMemo(() => cashMoves.filter(m => m.regularizationStatus !== "anulado"), [cashMoves]);
   const selectedBox        = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
   const openingMode: OpeningMode = isOpen ? "normal" : detectOpeningMode(selectedBox);
   const canOpen            = canOpenSession(isOpen, selectedBox, aperturaInput, openingMode, ctgPin, ctgJustif);
@@ -315,24 +326,24 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const totalAmt   = parseFloat(moveAmount) || 0;
   const canAddMove = validateCanAddMove(totalAmt, moveMotivo, sourceType, 0, 0);
 
-  // pendientes de regularización: egresos "por_regularizar" menos sus reposiciones acumuladas
+  // pendientes de regularización: egresos activos "por_regularizar" menos sus reposiciones acumuladas
   const pendingByEgresoId = useMemo(() => {
     const result: Record<string, number> = {};
-    for (const m of cashMoves) {
+    for (const m of activeMoves) {
       if (m.type === "egreso" && m.regularizationStatus === "por_regularizar") {
-        const repoTotal = moneySum(cashMoves.filter(r => r.refId === m.id).map(r => r.amount));
+        const repoTotal = moneySum(activeMoves.filter(r => r.refId === m.id).map(r => r.amount));
         const pending = moneySub(m.amount, repoTotal);
         if (moneyGt(pending, 0)) result[m.id] = pending;
       }
     }
     return result;
-  }, [cashMoves]);
+  }, [activeMoves]);
   const totalPending = moneySum(Object.values(pendingByEgresoId));
 
-  // fondo breakdown — delegated to service
+  // fondo breakdown — excluye anulados
   const {
     ingresosTotal, egresosTotal, arqueoOperacional,
-  } = calcConciliation(cashMoves, sessionStats.cash, apertura);
+  } = calcConciliation(activeMoves, sessionStats.cash, apertura);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
   // totalEsperado: arqueo operacional EFE (sin apertura) + verificaciones digitales
@@ -1505,7 +1516,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         <div className="flex min-h-0 flex-1 gap-2">
 
           {/* ─── MOVEMENTS PANEL ─── */}
-          <div className="flex min-h-0 w-[44%] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 w-[260px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
             <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
@@ -1522,11 +1533,31 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               moveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
             }`}>
 
+              {/* FONDO — selector dominante */}
+              <div className="flex gap-1.5">
+                {([
+                  { src: "apertura" as MoveSource, label: "FONDO APERTURA", Icon: Wallet },
+                  { src: "vendido"  as MoveSource, label: "FONDO VENTAS",   Icon: ShoppingCart },
+                ]).map(({ src, label, Icon }) => (
+                  <button key={src}
+                    onClick={() => setSourceType(src)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[10px] font-bold uppercase tracking-wide transition ${
+                      sourceType === src
+                        ? "bg-[#1a2d4e] text-white shadow-sm"
+                        : "border border-[#e4e9f0] bg-white/60 text-[#9ca3af] hover:border-[#c7d7f4] hover:text-[#374151]"
+                    }`}
+                  >
+                    <Icon size={12} strokeWidth={2} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               {/* Tipo */}
               <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                 {(["egreso", "ingreso"] as MoveType[]).map(t => (
                   <button key={t}
-                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setSourceType("apertura"); setLastMove(null); setMoveRegStatus(undefined); }}
+                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setLastMove(null); setMoveRegStatus(undefined); }}
                     className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
                       moveType === t
                         ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
@@ -1538,47 +1569,22 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 ))}
               </div>
 
-              {/* Monto + Origen */}
-              <div className="flex items-stretch gap-2">
-                <div className="flex flex-col gap-0.5 w-[120px] shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
-                  <div className="flex items-center gap-1 flex-1">
-                    <span className="shrink-0 text-[10px] font-bold text-[#9ca3af]">S/</span>
-                    <input
-                      ref={moveAmountRef}
-                      type="number"
-                      value={moveAmount}
-                      onChange={e => setMoveAmount(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
-                      placeholder="0.00"
-                      min="0.01"
-                      step="0.01"
-                      className="w-full min-w-0 rounded-xl border border-[#e4e9f0] px-2 py-1.5 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
-                    {moveType === "ingreso" ? "DESTINO" : "ORIGEN"}
-                  </span>
-                  <div className="flex gap-1 flex-1">
-                    {([
-                      { src: "apertura" as MoveSource, label: "FONDO APERTURA", Icon: Wallet },
-                      { src: "vendido"  as MoveSource, label: "FONDO VENTAS", Icon: ShoppingCart },
-                    ]).map(({ src, label, Icon }) => (
-                      <button key={src}
-                        onClick={() => setSourceType(src)}
-                        className={`flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[9px] font-bold uppercase tracking-wide transition ${
-                          sourceType === src
-                            ? "bg-[#2154d8] text-white"
-                            : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff]"
-                        }`}
-                      >
-                        <Icon size={10} strokeWidth={2} />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+              {/* Monto — standalone, prominente */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="shrink-0 text-[13px] font-bold text-[#9ca3af]">S/</span>
+                  <input
+                    ref={moveAmountRef}
+                    type="number"
+                    value={moveAmount}
+                    onChange={e => setMoveAmount(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
+                    placeholder="0.00"
+                    min="0.01"
+                    step="0.01"
+                    className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15"
+                  />
                 </div>
               </div>
 
@@ -1601,17 +1607,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 />
               </div>
 
-              {/* Observación */}
-              <input
-                type="text"
-                value={moveObservacion}
-                onChange={e => setMoveObservacion(e.target.value)}
-                placeholder="Observación operacional (opcional)"
-                maxLength={200}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/15"
-              />
-
-              {/* Regularización — solo egresos */}
+              {/* Marcar devolución — solo egresos */}
               {moveType === "egreso" && (
                 <button
                   type="button"
@@ -1625,6 +1621,16 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   ↩ {moveRegStatus ? "Devolución esperada" : "Marcar devolución"}
                 </button>
               )}
+
+              {/* Observación */}
+              <input
+                type="text"
+                value={moveObservacion}
+                onChange={e => setMoveObservacion(e.target.value)}
+                placeholder="Observación (opcional)"
+                maxLength={200}
+                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/15"
+              />
 
               {/* Registrar */}
               <button
@@ -1696,73 +1702,115 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         ? `fondo S/${m.fromApertura.toFixed(0)} · vnd S/${m.fromVendido.toFixed(0)}`
                         : m.sourceType === "apertura" ? "fondo" : "venta";
                       const linkedRepos: CashMove[] = m.type === "egreso" ? (reposByEgresoId[m.id] ?? []) : [];
-                      const isRepoing = reposingMoveId === m.id;
-                      const canRepo   = parseFloat(repoAmount) > 0 && repoMotivo.trim().length > 0;
+                      const isRepoing    = reposingMoveId === m.id;
+                      const isEditing    = editingMoveId === m.id;
+                      const isAnulando   = confirmAnulId === m.id;
+                      const canRepo      = parseFloat(repoAmount) > 0 && repoMotivo.trim().length > 0;
+                      const isAnulado    = m.regularizationStatus === "anulado";
                       return (
-                        <div key={m.id} className="group/move">
+                        <div key={m.id} className={`group/move ${isAnulado ? "opacity-50" : ""}`}>
                           {/* Fila principal */}
                           <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white">
                             <div className="shrink-0 w-[34px] flex flex-col items-end gap-px">
                               <span className="text-[8px] tabular-nums text-[#d1d9e1] leading-none">{dd}</span>
                               <span className="text-[9px] tabular-nums text-[#c0cad4] leading-none">{hm}</span>
                             </div>
-                            <span className={`shrink-0 text-[11px] font-bold ${m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
-                              {m.type === "ingreso" ? "↑" : "↓"}
+                            <span className={`shrink-0 text-[11px] font-bold ${isAnulado ? "text-[#c0cad4]" : m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
+                              {isAnulado ? "⊘" : m.type === "ingreso" ? "↑" : "↓"}
                             </span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</p>
+                              <p className={`text-[11px] font-semibold truncate ${isAnulado ? "text-[#9ca3af] line-through" : "text-[#374151]"}`}>
+                                {m.motivo}
+                              </p>
                               <p className="text-[10px] text-[#b0bac8] truncate">
                                 {srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}
-                                {m.regularizationStatus && (
-                                  <span className={`ml-1.5 font-bold ${
-                                    m.regularizationStatus === "por_regularizar"
-                                      ? "text-amber-500"
-                                      : m.regularizationMode === "integracion_fondo"
-                                      ? "text-[#2154d8]"
-                                      : "text-emerald-500"
-                                  }`}>
-                                    {m.regularizationStatus === "por_regularizar"
-                                      ? pendingByEgresoId[m.id] !== undefined
-                                        ? `↩ pdte. S/${pendingByEgresoId[m.id]!.toFixed(2)}`
-                                        : "↩ pdte."
-                                      : m.regularizationMode === "integracion_fondo"
-                                      ? "✓ fondo"
-                                      : "✓ regular."}
+                                {m.regularizationStatus === "anulado" ? (
+                                  <span className="ml-1.5 font-bold text-[#9ca3af]">⊘ anulado</span>
+                                ) : m.regularizationStatus === "por_regularizar" ? (
+                                  <span className="ml-1.5 font-bold text-amber-500">
+                                    {pendingByEgresoId[m.id] !== undefined
+                                      ? `↩ pdte. S/${pendingByEgresoId[m.id]!.toFixed(2)}`
+                                      : "↩ pdte."}
                                   </span>
-                                )}
+                                ) : m.regularizationStatus === "regularizado" ? (
+                                  <span className={`ml-1.5 font-bold ${m.regularizationMode === "integracion_fondo" ? "text-[#2154d8]" : "text-emerald-500"}`}>
+                                    {m.regularizationMode === "integracion_fondo" ? "✓ fondo" : "✓ devuelto"}
+                                  </span>
+                                ) : null}
                               </p>
                             </div>
-                            <span className={`shrink-0 text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
+                            <span className={`shrink-0 text-[11px] font-bold tabular-nums ${isAnulado ? "text-[#c0cad4] line-through" : m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
                               {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
                             </span>
-                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/move:opacity-100 transition">
+
+                            {/* Acciones hover */}
+                            {isAnulado ? (
                               <button onClick={() => void handlePrintVoucher(m)} title="Imprimir voucher"
-                                className="text-[#c0cad4] hover:text-[#2154d8]"
+                                className="shrink-0 opacity-0 group-hover/move:opacity-100 text-[#d1d9e1] hover:text-[#9ca3af] transition"
                               >
                                 <Printer size={11} strokeWidth={2} />
                               </button>
-                              {m.type === "egreso" && m.regularizationStatus === "por_regularizar" && (
-                                <button
-                                  onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
-                                  title="Integrar al fondo — no se espera devolución"
-                                  className="text-[#c0cad4] hover:text-amber-500 transition"
+                            ) : (
+                              <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/move:opacity-100 transition">
+                                <button onClick={() => void handlePrintVoucher(m)} title="Imprimir voucher"
+                                  className="text-[#c0cad4] hover:text-[#2154d8]"
                                 >
-                                  <CheckCircle size={11} strokeWidth={2} />
+                                  <Printer size={11} strokeWidth={2} />
                                 </button>
-                              )}
-                              {m.type === "egreso" && (
                                 <button
-                                  onClick={() => isRepoing ? closeRepo() : openRepo(m)}
-                                  title="Registrar reposición"
-                                  className={`transition ${isRepoing ? "text-emerald-500" : "text-[#c0cad4] hover:text-emerald-500"}`}
+                                  onClick={() => {
+                                    if (isEditing) { setEditingMoveId(null); return; }
+                                    setEditingMoveId(m.id);
+                                    setEditMotivoInput(m.motivo);
+                                    setEditObsInput(m.observacion ?? "");
+                                    setConfirmAnulId(null);
+                                    setReposingMoveId(null);
+                                  }}
+                                  title="Editar motivo / observación"
+                                  className={`transition ${isEditing ? "text-[#2154d8]" : "text-[#c0cad4] hover:text-[#2154d8]"}`}
                                 >
-                                  <RotateCcw size={11} strokeWidth={2} />
+                                  <Pencil size={11} strokeWidth={2} />
                                 </button>
-                              )}
-                            </div>
+                                {m.type === "egreso" && m.regularizationStatus === "por_regularizar" && (
+                                  <button
+                                    onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
+                                    title="Integrar al fondo — no se espera devolución"
+                                    className="text-[#c0cad4] hover:text-amber-500 transition"
+                                  >
+                                    <CheckCircle size={11} strokeWidth={2} />
+                                  </button>
+                                )}
+                                {m.type === "egreso" && (
+                                  <button
+                                    onClick={() => {
+                                      if (isRepoing) { closeRepo(); return; }
+                                      openRepo(m);
+                                      setEditingMoveId(null);
+                                      setConfirmAnulId(null);
+                                    }}
+                                    title="Registrar reposición"
+                                    className={`transition ${isRepoing ? "text-emerald-500" : "text-[#c0cad4] hover:text-emerald-500"}`}
+                                  >
+                                    <RotateCcw size={11} strokeWidth={2} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    if (isAnulando) { setConfirmAnulId(null); return; }
+                                    setConfirmAnulId(m.id);
+                                    setEditingMoveId(null);
+                                    setReposingMoveId(null);
+                                  }}
+                                  title="Anular movimiento"
+                                  className={`transition ${isAnulando ? "text-red-500" : "text-[#c0cad4] hover:text-red-400"}`}
+                                >
+                                  <X size={11} strokeWidth={2} />
+                                </button>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Reposiciones vinculadas — compactas, anidadas */}
+                          {/* Reposiciones vinculadas */}
                           {linkedRepos.map(repo => {
                             const rts = new Date(repo.timestamp);
                             const rhm = `${String(rts.getHours()).padStart(2, "0")}:${String(rts.getMinutes()).padStart(2, "0")}`;
@@ -1784,7 +1832,79 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                             );
                           })}
 
-                          {/* Formulario inline reposición */}
+                          {/* Panel inline: Editar */}
+                          {isEditing && (
+                            <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-1.5 rounded-xl border border-[#2154d8]/20 bg-[#f4f7ff] px-3 py-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wide text-[#2154d8]">Editar registro</span>
+                                <button onClick={() => setEditingMoveId(null)} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
+                              </div>
+                              <input
+                                autoFocus
+                                type="text"
+                                value={editMotivoInput}
+                                onChange={e => setEditMotivoInput(e.target.value)}
+                                placeholder="Motivo"
+                                maxLength={120}
+                                className="w-full rounded-lg border border-[#c7d7f4] bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/20"
+                              />
+                              <input
+                                type="text"
+                                value={editObsInput}
+                                onChange={e => setEditObsInput(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === "Enter" && editMotivoInput.trim()) {
+                                    editCashMove(m.id, editMotivoInput.trim(), editObsInput.trim() || undefined);
+                                    setEditingMoveId(null);
+                                  }
+                                  if (e.key === "Escape") setEditingMoveId(null);
+                                }}
+                                placeholder="Observación (opcional)"
+                                maxLength={200}
+                                className="w-full rounded-lg border border-[#c7d7f4] bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/20"
+                              />
+                              <button
+                                onClick={() => {
+                                  if (!editMotivoInput.trim()) return;
+                                  editCashMove(m.id, editMotivoInput.trim(), editObsInput.trim() || undefined);
+                                  setEditingMoveId(null);
+                                }}
+                                disabled={!editMotivoInput.trim()}
+                                className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                                  editMotivoInput.trim()
+                                    ? "bg-[#2154d8] text-white hover:bg-[#1a44be] active:scale-[0.98]"
+                                    : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                                }`}
+                              >
+                                Guardar cambios
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Panel inline: Confirmar anulación */}
+                          {isAnulando && (
+                            <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-1.5 rounded-xl border border-red-200 bg-[#fef2f2] px-3 py-2.5">
+                              <p className="text-[10.5px] font-semibold text-[#b91c1c] leading-snug">
+                                ⊘ Anular — queda como "no pasó" y se excluye del arqueo.
+                              </p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => { updateCashMove(m.id, "anulado"); setConfirmAnulId(null); }}
+                                  className="flex-1 rounded-lg bg-red-500 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white transition hover:bg-red-600 active:scale-[0.98]"
+                                >
+                                  Anular
+                                </button>
+                                <button
+                                  onClick={() => setConfirmAnulId(null)}
+                                  className="flex-1 rounded-lg border border-[#e4e9f0] bg-white py-1.5 text-[10.5px] font-semibold text-[#374151] transition hover:bg-[#f8fafd]"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Panel inline: Reposición */}
                           {isRepoing && (
                             <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-[#f8fafd] px-3 py-2.5">
                               {lastRepoMove ? (

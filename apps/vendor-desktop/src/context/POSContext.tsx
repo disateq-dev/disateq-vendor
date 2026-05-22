@@ -11,7 +11,7 @@ export type CashBoxType = "normal" | "contingency-1" | "contingency-2";
 
 export type MoveType             = "ingreso" | "egreso";
 export type MoveSource           = "apertura" | "vendido" | "mixto";
-export type RegularizationStatus = "por_regularizar" | "regularizado";
+export type RegularizationStatus = "por_regularizar" | "regularizado" | "anulado";
 export type RegularizationMode   = "reposicion" | "integracion_fondo";
 
 export type CashMove = {
@@ -385,6 +385,7 @@ interface POSContextValue {
   cashMoves: CashMove[];
   addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string, regularizationStatus?: RegularizationStatus, regularizationMode?: RegularizationMode) => CashMove;
   updateCashMove: (id: string, status: RegularizationStatus, mode?: RegularizationMode) => void;
+  editCashMove: (id: string, motivo: string, observacion?: string) => void;
   opLogs: OpLog[];
   addOpLog: (text: string) => void;
   comprobantes: Comprobante[];
@@ -650,14 +651,25 @@ export function POSProvider({ children }: { children: ReactNode }) {
   }, [addOpLog]);
 
   const updateCashMove = useCallback((id: string, status: RegularizationStatus, mode?: RegularizationMode) => {
-    setCashMoves(prev => {
-      const target = prev.find(m => m.id === id);
-      if (!target) return prev;
-      const modeLabel = mode === "integracion_fondo" ? "integrado al fondo" : "regularizado por reposición";
-      const s = cashSessionRef.current;
-      addOpLog(`[REGULARIZACIÓN] ${s.operator} — CAJA ${s.cashBox?.code ?? "?"} — S/${target.amount.toFixed(2)} ${modeLabel}: ${target.motivo}`);
-      return prev.map(m => m.id === id ? { ...m, regularizationStatus: status, ...(mode ? { regularizationMode: mode } : {}) } : m);
-    });
+    const target = cashMovesRef.current.find(m => m.id === id);
+    if (!target) return;
+    const modeLabel = mode === "integracion_fondo" ? "integrado al fondo"
+      : status === "anulado" ? "anulado" : "regularizado por reposición";
+    const s = cashSessionRef.current;
+    setCashMoves(prev => prev.map(m => m.id === id ? {
+      ...m, regularizationStatus: status, ...(mode ? { regularizationMode: mode } : {}),
+    } : m));
+    addOpLog(`[REGULARIZACIÓN] ${s.operator} — CAJA ${s.cashBox?.code ?? "?"} — S/${target.amount.toFixed(2)} ${modeLabel}: ${target.motivo}`);
+  }, [addOpLog]);
+
+  const editCashMove = useCallback((id: string, motivo: string, observacion?: string) => {
+    const target = cashMovesRef.current.find(m => m.id === id);
+    if (!target) return;
+    const s = cashSessionRef.current;
+    setCashMoves(prev => prev.map(m => m.id === id ? {
+      ...m, motivo, observacion: observacion || undefined,
+    } : m));
+    addOpLog(`[EDICIÓN] ${s.operator} — S/${target.amount.toFixed(2)}: ${motivo}`);
   }, [addOpLog]);
 
   const [rubro, setRubroState] = useState<Rubro>(loadRubro);
@@ -790,7 +802,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cashSession, cashBoxes, suggestedCashBox,
       openCashSession, closeCashSession, correctAperturaData,
       sessionStats, docCorrelatives, recordSale,
-      cashMoves, addCashMove, updateCashMove,
+      cashMoves, addCashMove, updateCashMove, editCashMove,
       opLogs, addOpLog,
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
