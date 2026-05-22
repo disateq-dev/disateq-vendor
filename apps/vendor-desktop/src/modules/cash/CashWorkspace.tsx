@@ -3,7 +3,7 @@ import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCi
 import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
-import { SheetOperadoresActivos, SheetOperadoresGestion, SheetOperadoresHistorico } from "./OperadoresWorkspace";
+import { OperadoresWorkspace } from "./OperadoresWorkspace";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
 import {
   printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
@@ -615,11 +615,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // ── sub-view routing ─────────────────────────────────────────
 
-  if (cashSubView === "roles")                return <RolesWorkspace />;
-  if (cashSubView === "cajas")                return <CajasWorkspace />;
-  if (cashSubView === "operadores-activos")   return <SheetOperadoresActivos />;
-  if (cashSubView === "operadores-gestion")   return <SheetOperadoresGestion />;
-  if (cashSubView === "operadores-historico") return <SheetOperadoresHistorico />;
+  if (cashSubView === "roles")      return <RolesWorkspace />;
+  if (cashSubView === "cajas")      return <CajasWorkspace />;
+  if (cashSubView === "operadores") return <OperadoresWorkspace />;
 
   // ── render ────────────────────────────────────────────────────
 

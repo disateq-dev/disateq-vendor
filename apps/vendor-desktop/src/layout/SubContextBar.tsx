@@ -12,19 +12,11 @@ interface SubContextBarProps {
 
 const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash"]);
 
-// Tabs principales del módulo CASH
-const CASH_TABS: { key: CashSubView; label: string; matchPrefix?: string }[] = [
-  { key: "turno",              label: "GESTIÓN TURNO"                      },
-  { key: "roles",              label: "ROLES"                              },
-  { key: "cajas",              label: "CAJAS"                              },
-  { key: "operadores-activos", label: "OPERADORES", matchPrefix: "operadores" },
-];
-
-// Sub-sheets de OPERADORES — se expanden en SubContextBar cuando el contexto es operadores
-const OPERADORES_SHEETS: { key: CashSubView; label: string }[] = [
-  { key: "operadores-activos",   label: "ACTIVOS"   },
-  { key: "operadores-gestion",   label: "GESTIÓN"   },
-  { key: "operadores-historico", label: "HISTÓRICO" },
+const CASH_TABS: { key: CashSubView; label: string }[] = [
+  { key: "turno",      label: "GESTIÓN TURNO" },
+  { key: "roles",      label: "ROLES"         },
+  { key: "cajas",      label: "CAJAS"         },
+  { key: "operadores", label: "OPERADORES"    },
 ];
 
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
@@ -36,14 +28,9 @@ const SHELL: Record<ActiveModule, string> = {
 };
 
 export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange }: SubContextBarProps) {
-  const { cashSession, sessionStats, operators } = usePOS();
+  const { cashSession, sessionStats } = usePOS();
   const sessionActive = cashSession.isOpen;
   const { efe, yap, tar, mix } = sessionStats.byMethod;
-
-  // Conteos para sub-sheets OPERADORES
-  const opActivos     = operators.filter(o => o.status === "ACTIVO").length;
-  const opHistorico   = operators.filter(o => o.status !== "ACTIVO").length;
-  const isOperadoresCtx = (cashSubView as string).startsWith("operadores");
 
   const show = visible && WITH_SUBOPTIONS.has(displayModule);
 
@@ -117,15 +104,11 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
           </>
         )}
 
-        {/* CASH — tabs principales + expansión contextual OPERADORES */}
+        {/* CASH — sub-view tabs */}
         {displayModule === "cash" && (
           <div className="flex items-center gap-1">
-
-            {/* Tabs principales */}
-            {CASH_TABS.map(({ key, label, matchPrefix }) => {
-              const isActive = activeModule === "cash" && (
-                matchPrefix ? (cashSubView as string).startsWith(matchPrefix) : cashSubView === key
-              );
+            {CASH_TABS.map(({ key, label }) => {
+              const isActive = activeModule === "cash" && cashSubView === key;
               return (
                 <button
                   key={key}
@@ -140,41 +123,6 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                 </button>
               );
             })}
-
-            {/* Sub-sheets OPERADORES — expansión contextual cuando está en contexto operadores */}
-            {isOperadoresCtx && (
-              <>
-                <div className="mx-1.5 h-4 w-px bg-[#78C487]/30" />
-                {OPERADORES_SHEETS.map(({ key, label }) => {
-                  const isActive = activeModule === "cash" && cashSubView === key;
-                  const count =
-                    key === "operadores-activos"   ? (opActivos   > 0 ? opActivos   : undefined) :
-                    key === "operadores-historico" ? (opHistorico > 0 ? opHistorico : undefined) :
-                    undefined;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => { if (activeModule === "cash") onCashSubViewChange(key); }}
-                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                        isActive
-                          ? "bg-[#78C487] text-white shadow-sm"
-                          : "text-[#4a7a55]/60 hover:bg-[#78C487]/10 hover:text-[#2d6640]"
-                      }`}
-                    >
-                      {label}
-                      {count !== undefined && (
-                        <span className={`rounded px-1 text-[9px] font-bold tabular-nums ${
-                          isActive ? "bg-white/25 text-white" : "bg-[#78C487]/15 text-[#4a7a55]"
-                        }`}>
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </>
-            )}
-
           </div>
         )}
 
