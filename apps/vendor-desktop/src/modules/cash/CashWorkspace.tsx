@@ -264,9 +264,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [contadoEfe,  setContadoEfe]  = useState(() => loadContadoField("efe"));
   const [contadoYape, setContadoYape] = useState(() => loadContadoField("yape"));
   const [contadoTar,  setContadoTar]  = useState(() => loadContadoField("tar"));
-  const [validatedAt, setValidatedAt] = useState<string | null>(null);
-  const [observations, setObservations] = useState("");
-  const [zeroMotive,  setZeroMotive]  = useState("");
+  const [validatedAt,       setValidatedAt]       = useState<string | null>(null);
+  const [observations,      setObservations]      = useState("");
+  const [zeroMotive,        setZeroMotive]        = useState("");
+  const [integrarFondoAuth, setIntegrarFondoAuth] = useState(false);
   const contadoFondoRef = useRef<HTMLInputElement>(null);
   const contadoEfeRef  = useRef<HTMLInputElement>(null);
   const contadoYapeRef = useRef<HTMLInputElement>(null);
@@ -296,7 +297,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     if (!isOpen) {
       setClosingStage(0);
       setContadoFondo(""); setContadoEfe(""); setContadoYape(""); setContadoTar("");
-      setValidatedAt(null); setObservations(""); setZeroMotive("");
+      setValidatedAt(null); setObservations(""); setZeroMotive(""); setIntegrarFondoAuth(false);
       localStorage.removeItem("disateq.pos.ui.closingStage");
       localStorage.removeItem("disateq.pos.ui.contado");
       setAperturaInput(""); setAperturaMotivo(""); setAperturaRefOp("");
@@ -396,12 +397,15 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // fondo breakdown — excluye anulados
   const {
-    ingresosTotal, egresosTotal, arqueoOperacional,
+    ingresosTotal, egresosTotal, arqueoOperacional, ingApertura, egApertura,
   } = calcConciliation(activeMoves, sessionStats.cash, apertura);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
+  // netIngApertura: ingresos apertura neto — si ya se egresaron, queda 0
+  const netIngApertura = moneyGt(ingApertura, egApertura) ? moneySub(ingApertura, egApertura) : 0;
+  // fondoEsperado: sin integrar → solo inicial; integrado → inicial + neto ingresos
+  const fondoEsperado  = integrarFondoAuth ? moneyAdd(apertura, netIngApertura) : apertura;
   // totalEsperado: arqueo operacional EFE (sin apertura) + verificaciones digitales
-  // El fondo apertura (apertura) se valida separado — siempre cuadra exacto.
   const totalEsperado   = moneySum([arqueoOperacional, sessionStats.yape, sessionStats.tarjeta]);
   const contadoFondoNum = numericValue(contadoFondo);
   const contadoEfeNum   = numericValue(contadoEfe);
@@ -558,7 +562,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     closeCashSession();
     setClosingStage(0);
     setContadoEfe(""); setContadoYape(""); setContadoTar("");
-    setValidatedAt(null); setObservations(""); setZeroMotive("");
+    setValidatedAt(null); setObservations(""); setZeroMotive(""); setIntegrarFondoAuth(false);
     localStorage.removeItem("disateq.pos.ui.closingStage");
     localStorage.removeItem("disateq.pos.ui.contado");
     setTimeout(() => {
@@ -1091,19 +1095,45 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               {/* ── STAGE 1: FONDO APERTURA ── */}
               {closingStage === 1 && (
                 <>
-                  <p className="text-[11px] text-[#6b7280] leading-relaxed">
-                    Separa y cuenta el fondo apertura. Debe retornar íntegro, independiente del arqueo operacional.
-                  </p>
-
-                  {/* Fondo esperado */}
-                  <div className="flex items-center justify-between rounded-xl border border-[#e4e9f0] bg-[#f8fafd] px-3.5 py-2.5">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO ESPERADO</span>
-                    <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
+                  {/* Desglose fondo apertura */}
+                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                    <div className="flex justify-between items-center px-3.5 py-2">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO APERTURA INICIAL</span>
+                      <span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-3.5 py-2">
+                      <span className={`text-[10px] font-bold uppercase tracking-[0.12em] ${moneyGt(netIngApertura, 0) ? "text-emerald-600" : "text-[#9ca3af]"}`}>INGRESOS FONDO APERTURA</span>
+                      <span className={`text-[12px] font-bold tabular-nums ${moneyGt(netIngApertura, 0) ? "text-emerald-600" : "text-[#9ca3af]"}`}>
+                        {moneyGt(netIngApertura, 0) ? `+S/ ${netIngApertura.toFixed(2)}` : "S/ 0.00"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#f8fafd]">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">FONDO ESPERADO</span>
+                      <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {fondoEsperado.toFixed(2)}</span>
+                    </div>
                   </div>
+
+                  {/* INTEGRAR INGRESOS AL FONDO APERTURA — solo si hay neto positivo */}
+                  {moneyGt(netIngApertura, 0) && (
+                    <button
+                      onClick={() => setIntegrarFondoAuth(prev => !prev)}
+                      className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[10.5px] font-semibold transition ${
+                        integrarFondoAuth
+                          ? "border-emerald-300 bg-[#f0fdf4] text-emerald-700"
+                          : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-[#c7d7f4] hover:text-[#374151]"
+                      }`}
+                    >
+                      <PlusCircle size={12} strokeWidth={2} className={integrarFondoAuth ? "text-emerald-500" : "text-[#9ca3af]"} />
+                      INTEGRAR INGRESOS AL FONDO APERTURA
+                      {integrarFondoAuth && (
+                        <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-emerald-600">✓ AUTORIZADO</span>
+                      )}
+                    </button>
+                  )}
 
                   {/* Input contado fondo */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO APERTURA CONTADO S/</span>
                     <input
                       ref={contadoFondoRef}
                       type="text"
@@ -1130,7 +1160,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
                   {/* Diferencia fondo */}
                   {contadoFondo !== "" && (() => {
-                    const diffFondo = moneySub(contadoFondoNum, apertura);
+                    const diffFondo = moneySub(contadoFondoNum, fondoEsperado);
                     const fondoCuadrado = moneyIsZero(diffFondo);
                     const fondoSobrante = !fondoCuadrado && moneyGt(diffFondo, 0);
                     return (
@@ -1147,36 +1177,8 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     );
                   })()}
 
-                  {/* Contexto operacional del turno */}
-                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
-                    {sessionStats.count > 0 && (
-                      <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">VENTAS</span>
-                        <span className="text-[11px] font-semibold tabular-nums text-[#374151]">{sessionStats.count} op. · S/ {ventasDescomp.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {ingresosTotal > 0 && (
-                      <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">INGRESOS ↑</span>
-                        <span className="text-[11px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {egresosTotal > 0 && (
-                      <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">EGRESOS ↓</span>
-                        <span className="text-[11px] font-semibold tabular-nums text-red-500">−S/ {egresosTotal.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {moneyGt(totalPending, 0) && (
-                      <div className="flex justify-between items-center px-3.5 py-2 bg-amber-50">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-600">↩ PDTE. REGULARIZAR</span>
-                        <span className="text-[11px] font-semibold tabular-nums text-amber-700">S/ {totalPending.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-
                   <p className="text-[10.5px] text-[#9ca3af]">
-                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo y pasar a conteo operacional
+                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo apertura y pasar a conteo operacional
                   </p>
                 </>
               )}
@@ -1290,9 +1292,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {contadoFondoNum.toFixed(2)}</span>
-                        {moneyIsZero(moneySub(contadoFondoNum, apertura))
+                        {moneyIsZero(moneySub(contadoFondoNum, fondoEsperado))
                           ? <span className="text-[9px] font-bold text-emerald-600">✓</span>
-                          : <span className="text-[9px] font-bold text-red-500">≠{apertura.toFixed(2)}</span>
+                          : <span className="text-[9px] font-bold text-red-500">≠{fondoEsperado.toFixed(2)}</span>
                         }
                       </div>
                     </div>
@@ -1326,7 +1328,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
                   {/* Fondo apertura — resultado validación stage 1 */}
                   {(() => {
-                    const diffFondo = moneySub(contadoFondoNum, apertura);
+                    const diffFondo = moneySub(contadoFondoNum, fondoEsperado);
                     const fondoCuadrado = moneyIsZero(diffFondo);
                     return (
                       <div className={`flex items-center justify-between rounded-xl border px-3.5 py-2 ${
@@ -1334,7 +1336,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       }`}>
                         <div>
                           <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Fondo apertura</span>
-                          <span className="ml-2 text-[8.5px] text-[#c0cad4]">esp. {apertura.toFixed(2)}</span>
+                          <span className="ml-2 text-[8.5px] text-[#c0cad4]">esp. {fondoEsperado.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] font-semibold tabular-nums text-[#374151]">S/ {contadoFondoNum.toFixed(2)}</span>
@@ -1813,15 +1815,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                 >
                                   <Pencil size={11} strokeWidth={2} />
                                 </button>
-                                {m.type === "egreso" && m.sourceType === "apertura" && m.regularizationStatus !== "anulado" && m.regularizationMode !== "integracion_fondo" && (
-                                  <button
-                                    onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
-                                    title="Integrar al fondo apertura — no se espera devolución"
-                                    className="text-[#c0cad4] hover:text-amber-500 transition"
-                                  >
-                                    <PlusCircle size={11} strokeWidth={2} />
-                                  </button>
-                                )}
                                 {m.type === "egreso" && ((repoSumByEgresoId[m.id] ?? 0) === 0 || isRepoing) && (
                                   <button
                                     onClick={() => {
