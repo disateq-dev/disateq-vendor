@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus, Pencil, CircleCheck, PauseCircle, Archive,
   KeyRound, AlertTriangle, ChevronRight, Unlink,
@@ -92,12 +92,18 @@ function PinForm({ pin, confirm, error, onPin, onConfirm, onSave, onCancel }: {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// PANEL IZQUIERDO — OPERADORES ACTIVOS
+// PANEL IZQUIERDO — OPERADORES ACTIVOS (selector maestro)
 // ══════════════════════════════════════════════════════════════════════════
 
-function PanelActivos() {
+function PanelActivos({ selectedId, onSelect }: {
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
   const { operators, cashSession, isOpen, cashBox } = usePOS();
-  const activos = operators.filter(o => o.status === "ACTIVO");
+  // ACTIVO + SUSPENDIDO — INACTIVO/BAJA quedan en HISTÓRICO
+  const visibles    = operators.filter(o => o.status !== "INACTIVO");
+  const activos     = visibles.filter(o => o.status === "ACTIVO");
+  const suspendidos = visibles.filter(o => o.status === "SUSPENDIDO");
 
   function getState(op: OperatorRecord): "EN_TURNO" | "DISPONIBLE" | "SIN_BLOQUE" {
     if (op.blockBase === null) return "SIN_BLOQUE";
@@ -107,7 +113,7 @@ function PanelActivos() {
     return enTurno ? "EN_TURNO" : "DISPONIBLE";
   }
 
-  const enTurnoCount   = activos.filter(o => getState(o) === "EN_TURNO").length;
+  const enTurnoCount    = activos.filter(o => getState(o) === "EN_TURNO").length;
   const disponibleCount = activos.filter(o => getState(o) === "DISPONIBLE").length;
 
   return (
@@ -136,50 +142,78 @@ function PanelActivos() {
               {disponibleCount} disponible{disponibleCount > 1 ? "s" : ""}
             </span>
           )}
+          {suspendidos.length > 0 && (
+            <span className="text-[9px] font-semibold text-amber-500">
+              · {suspendidos.length} susp.
+            </span>
+          )}
         </div>
       </div>
 
-      {/* SheetBody */}
+      {/* SheetBody — lista seleccionable */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        {activos.length === 0 ? (
+        {visibles.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16">
             <Users size={24} strokeWidth={1.5} className="text-[#d1d9e1]" />
             <p className="text-[11px] font-semibold text-[#c0cad4]">Sin operadores activos</p>
           </div>
         ) : (
           <div className="flex flex-col divide-y divide-[#f0f4f8]">
-            {activos.map(op => {
-              const state = getState(op);
-              const cfg = {
-                EN_TURNO:   { dot: "bg-emerald-500", text: "text-emerald-600", label: "EN TURNO",   bg: "bg-emerald-50/40"  },
-                DISPONIBLE: { dot: "bg-[#78C487]",   text: "text-[#4a7a55]",   label: "DISPONIBLE", bg: ""                 },
-                SIN_BLOQUE: { dot: "bg-[#c0cad4]",   text: "text-[#b0bac8]",   label: "SIN BLOQUE", bg: "bg-[#fafbfc]"     },
-              }[state];
+            {visibles.map(op => {
+              const isSel       = op.id === selectedId;
+              const isSuspended = op.status === "SUSPENDIDO";
+              const state       = isSuspended ? null : getState(op);
+
+              const stateCfg = state ? {
+                EN_TURNO:   { dot: "bg-emerald-500", text: "text-emerald-600", label: "EN TURNO",   rowBg: "bg-emerald-50/30" },
+                DISPONIBLE: { dot: "bg-[#78C487]",   text: "text-[#4a7a55]",   label: "DISPONIBLE", rowBg: ""                 },
+                SIN_BLOQUE: { dot: "bg-[#c0cad4]",   text: "text-[#b0bac8]",   label: "SIN BLOQUE", rowBg: "bg-[#fafbfc]"     },
+              }[state] : null;
 
               return (
-                <div key={op.id} className={`flex items-center gap-2.5 px-3.5 py-2.5 ${cfg.bg}`}>
+                <div key={op.id} onClick={() => onSelect(op.id)}
+                  className={`flex cursor-pointer items-center gap-2.5 border-l-2 px-3.5 py-2.5 transition ${
+                    isSel
+                      ? "border-[#78C487] bg-[#EFF8F0]"
+                      : `border-transparent hover:bg-[#F5FBF5] ${stateCfg?.rowBg ?? ""}`
+                  }`}>
+
                   <div className="flex flex-col items-center gap-1 pt-0.5">
-                    <CircleCheck size={13} strokeWidth={2} className={
-                      state === "EN_TURNO" ? "text-emerald-500" : "text-[#e4e9f0]"
-                    } />
-                    <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                    {isSuspended
+                      ? <PauseCircle size={13} strokeWidth={2} className="text-amber-400" />
+                      : <CircleCheck size={13} strokeWidth={2} className={state === "EN_TURNO" ? "text-emerald-500" : "text-[#e4e9f0]"} />
+                    }
+                    <span className={`h-1.5 w-1.5 rounded-full ${isSuspended ? "bg-amber-400" : (stateCfg?.dot ?? "bg-[#c0cad4]")}`} />
                   </div>
+
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="rounded bg-[#78C487] px-1.5 py-0.5 text-[9px] font-bold text-white">
+                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${
+                        isSuspended ? "bg-amber-100 text-amber-700" : isSel ? "bg-[#78C487] text-white" : "bg-[#e8f5ea] text-[#4a7a55]"
+                      }`}>
                         {op.code}
                       </span>
-                      <span className="truncate text-[12px] font-semibold text-[#2F3E46]">{op.name}</span>
+                      <span className={`truncate text-[12px] font-semibold ${
+                        isSel ? "text-[#2d6640]" : isSuspended ? "text-[#9ca3af]" : "text-[#2F3E46]"
+                      }`}>
+                        {op.name}
+                      </span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
-                      <span className={`text-[9px] font-bold uppercase tracking-wider ${cfg.text}`}>
-                        {cfg.label}
-                      </span>
+                      {isSuspended
+                        ? <span className="text-[9px] font-bold uppercase tracking-wider text-amber-500">SUSPENDIDO</span>
+                        : <span className={`text-[9px] font-bold uppercase tracking-wider ${stateCfg?.text ?? ""}`}>{stateCfg?.label}</span>
+                      }
                       {op.blockBase !== null && (
                         <span className="text-[9px] text-[#b0bac8]">· {op.blockBase}</span>
                       )}
                     </div>
                   </div>
+
+                  {op.pin === "" && op.status === "ACTIVO" && (
+                    <span className="shrink-0 rounded bg-red-50 px-1 py-0.5 text-[8px] font-bold text-red-400">PIN</span>
+                  )}
+                  <ChevronRight size={10} className={isSel ? "text-[#78C487]" : "text-[#e4e9f0]"} />
                 </div>
               );
             })}
@@ -192,18 +226,18 @@ function PanelActivos() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// PANEL CENTRAL — GESTIÓN OPERADORES
+// PANEL CENTRAL — GESTIÓN OPERADORES (detalle puro)
 // ══════════════════════════════════════════════════════════════════════════
 
-function PanelGestion() {
+function PanelGestion({ selectedId, onSelect }: {
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
   const {
     operators, isOpen, cashBox, cashSession, resetOperatorPin,
     createOperator, updateOperatorData, setOperatorStatus, releaseOperatorBlock,
   } = usePOS();
 
-  const gestionOps = operators.filter(o => o.status !== "INACTIVO");
-
-  const [selectedId,  setSelectedId]  = useState<string | null>(gestionOps[0]?.id ?? null);
   const [panel,       setPanel]       = useState<GestionPanel>("view");
   const [blockError,  setBlockError]  = useState<string | null>(null);
 
@@ -222,6 +256,12 @@ function PanelGestion() {
 
   const selected = operators.find(o => o.id === selectedId) ?? null;
 
+  // Cuando cambia la selección desde PanelActivos, volver a view
+  useEffect(() => {
+    if (selectedId !== null) resetForm();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   const hasActiveTurno = isOpen && cashBox !== null && selected !== null && selected.blockBase !== null && (
     cashSession.operatorId === selected.id ||
     cashBox.code[0] === String(selected.blockBase)[0]
@@ -233,10 +273,8 @@ function PanelGestion() {
     setPinOpen(false); setPinInput(""); setPinConfirm(""); setPinError("");
   }
 
-  function handleSelect(op: OperatorRecord) { setSelectedId(op.id); resetForm(); }
-
   function handleNew() {
-    setSelectedId(null); setPanel("create");
+    onSelect(null); setPanel("create");
     setEditCode(""); setEditName(""); setEditRole("VEN"); setEditBlock(null);
     setBlockError(null);
   }
@@ -261,7 +299,7 @@ function PanelGestion() {
           roleName:  ROLES_REF.find(r => r.code === editRole)?.name ?? editRole,
           blockBase: editBlock,
         });
-        setSelectedId(op.id); setPanel("view");
+        onSelect(op.id); setPanel("view");
       } catch (e) {
         setBlockError(e instanceof Error ? e.message : "Error al crear operador");
       }
@@ -290,7 +328,7 @@ function PanelGestion() {
     if (!selected || hasActiveTurno) return;
     setOperatorStatus(selected.id, "INACTIVO", reason.trim());
     const next = operators.filter(o => o.status !== "INACTIVO" && o.id !== selected.id);
-    setSelectedId(next[0]?.id ?? null);
+    onSelect(next[0]?.id ?? null);
     resetForm();
   }
 
@@ -330,295 +368,253 @@ function PanelGestion() {
         </button>
       </div>
 
-      {/* SheetBody — split */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* SheetBody — detalle del operador seleccionado */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
 
-        {/* Lista */}
-        <div className="w-[220px] shrink-0 overflow-y-auto border-r border-[#78C487]/10">
-          {gestionOps.length === 0 ? (
-            <p className="py-8 text-center text-[10px] text-[#c0cad4]">Sin operadores</p>
-          ) : gestionOps.map(op => {
-            const isSel = op.id === selectedId && !showForm;
-            return (
-              <div key={op.id} onClick={() => handleSelect(op)}
-                className={`flex cursor-pointer items-center gap-2 border-l-2 px-3 py-2.5 transition ${
-                  isSel ? "border-[#78C487] bg-[#EFF8F0]" : "border-transparent hover:bg-[#F5FBF5]"
-                }`}>
-                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${
-                  isSel ? "bg-[#78C487] text-white" : "bg-[#e8f5ea] text-[#4a7a55]"
-                }`}>
-                  {op.code}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className={`truncate text-[11px] font-semibold ${isSel ? "text-[#2d6640]" : "text-[#2F3E46]"}`}>
-                    {op.name}
-                  </p>
-                  <p className="text-[9px] text-[#b0bac8]">
-                    {op.roleCode}{op.blockBase !== null ? ` · ${op.blockBase}` : ""}
-                  </p>
-                </div>
-                {op.status === "SUSPENDIDO" && (
-                  <PauseCircle size={10} strokeWidth={2} className="shrink-0 text-amber-400" />
+        {blockError && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2">
+            <AlertTriangle size={10} strokeWidth={2} className="shrink-0 text-red-500" />
+            <p className="text-[10px] font-semibold text-red-600">{blockError}</p>
+          </div>
+        )}
+
+        {/* VIEW */}
+        {showView && selected && (
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-[#78C487] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.code}</span>
+                <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.name}</span>
+                {selected.status === "SUSPENDIDO" && (
+                  <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">SUSP.</span>
                 )}
-                {op.pin === "" && op.status === "ACTIVO" && (
-                  <span className="rounded bg-red-50 px-1 py-0.5 text-[8px] font-bold text-red-400">PIN</span>
-                )}
-                <ChevronRight size={10} className={isSel ? "text-[#78C487]" : "text-[#e4e9f0]"} />
               </div>
-            );
-          })}
-        </div>
-
-        {/* Panel detalle */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
-
-          {blockError && (
-            <div className="mb-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2">
-              <AlertTriangle size={10} strokeWidth={2} className="shrink-0 text-red-500" />
-              <p className="text-[10px] font-semibold text-red-600">{blockError}</p>
+              <button onClick={handleStartEdit} disabled={hasActiveTurno}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold uppercase transition ${
+                  hasActiveTurno
+                    ? "cursor-not-allowed text-[#005BE3]/30"
+                    : "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
+                }`}>
+                <Pencil size={9} strokeWidth={2.5} />EDITAR
+              </button>
             </div>
-          )}
 
-          {/* VIEW */}
-          {showView && selected && (
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="rounded bg-[#78C487] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.code}</span>
-                  <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.name}</span>
-                  {selected.status === "SUSPENDIDO" && (
-                    <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">SUSP.</span>
-                  )}
-                </div>
-                <button onClick={handleStartEdit} disabled={hasActiveTurno}
-                  className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold uppercase transition ${
-                    hasActiveTurno
-                      ? "cursor-not-allowed text-[#005BE3]/30"
-                      : "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
-                  }`}>
-                  <Pencil size={9} strokeWidth={2.5} />EDITAR
+            {hasActiveTurno && (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-1.5">
+                <AlertTriangle size={10} strokeWidth={2} className="shrink-0 text-amber-600" />
+                <p className="text-[9px] font-semibold text-amber-700">Turno activo · no modificable</p>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
+                <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">ROL</span>
+                <p className="text-[11px] font-semibold text-[#374151]">
+                  <span className="mr-1 rounded bg-[#e8f5ea] px-1 py-0.5 text-[9px] font-bold text-[#4a7a55]">{selected.roleCode}</span>
+                  {ROLES_REF.find(r => r.code === selected.roleCode)?.name ?? selected.roleCode}
+                </p>
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
+                <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">BLOQUE</span>
+                {selected.blockBase !== null ? (
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-[#374151]">
+                      <span className="mr-1 font-bold text-[#78C487]">{selected.blockBase}</span>
+                      –{selected.blockBase + 4}
+                    </p>
+                    {!hasActiveTurno && (
+                      <button onClick={() => releaseOperatorBlock(selected.id)}
+                        className="flex items-center gap-0.5 text-[8px] font-bold uppercase text-[#b0bac8] transition hover:text-red-400">
+                        <Unlink size={8} />LIBERAR
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-[#c0cad4]">Sin bloque</p>
+                )}
+              </div>
+            </div>
+
+            <div className={`flex items-center justify-between rounded-xl border px-3 py-1.5 ${
+              selected.pin !== "" ? "border-emerald-100 bg-[#f0fdf4]" : "border-red-100 bg-red-50/50"
+            }`}>
+              <div className="flex items-center gap-1.5">
+                <KeyRound size={10} strokeWidth={2} className={selected.pin !== "" ? "text-emerald-500" : "text-red-400"} />
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                  selected.pin !== "" ? "text-emerald-600" : "text-red-500"
+                }`}>
+                  {selected.pin !== "" ? "PIN OK" : "SIN PIN"}
+                </span>
+              </div>
+              {!pinOpen && (
+                <button onClick={() => { setPinOpen(true); setPinInput(""); setPinConfirm(""); setPinError(""); }}
+                  className="text-[9px] font-semibold text-[#005BE3] transition hover:underline">
+                  {selected.pin !== "" ? "Cambiar" : "Configurar →"}
                 </button>
-              </div>
-
-              {hasActiveTurno && (
-                <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-1.5">
-                  <AlertTriangle size={10} strokeWidth={2} className="shrink-0 text-amber-600" />
-                  <p className="text-[9px] font-semibold text-amber-700">
-                    Turno activo · no modificable
-                  </p>
-                </div>
               )}
+            </div>
+            {pinOpen && (
+              <PinForm pin={pinInput} confirm={pinConfirm} error={pinError}
+                onPin={setPinInput} onConfirm={setPinConfirm}
+                onSave={savePinViewMode}
+                onCancel={() => { setPinOpen(false); setPinInput(""); setPinConfirm(""); setPinError(""); }}
+              />
+            )}
 
-              <div className="flex gap-2">
-                <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">ROL</span>
-                  <p className="text-[11px] font-semibold text-[#374151]">
-                    <span className="mr-1 rounded bg-[#e8f5ea] px-1 py-0.5 text-[9px] font-bold text-[#4a7a55]">{selected.roleCode}</span>
-                    {ROLES_REF.find(r => r.code === selected.roleCode)?.name ?? selected.roleCode}
-                  </p>
-                </div>
-                <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">BLOQUE</span>
-                  {selected.blockBase !== null ? (
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-semibold text-[#374151]">
-                        <span className="mr-1 font-bold text-[#78C487]">{selected.blockBase}</span>
-                        –{selected.blockBase + 4}
-                      </p>
-                      {!hasActiveTurno && (
-                        <button onClick={() => releaseOperatorBlock(selected.id)}
-                          className="flex items-center gap-0.5 text-[8px] font-bold uppercase text-[#b0bac8] transition hover:text-red-400">
-                          <Unlink size={8} />LIBERAR
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-[#c0cad4]">Sin bloque</p>
-                  )}
-                </div>
-              </div>
-
-              <div className={`flex items-center justify-between rounded-xl border px-3 py-1.5 ${
-                selected.pin !== "" ? "border-emerald-100 bg-[#f0fdf4]" : "border-red-100 bg-red-50/50"
-              }`}>
-                <div className="flex items-center gap-1.5">
-                  <KeyRound size={10} strokeWidth={2} className={selected.pin !== "" ? "text-emerald-500" : "text-red-400"} />
-                  <span className={`text-[9px] font-bold uppercase tracking-wider ${
-                    selected.pin !== "" ? "text-emerald-600" : "text-red-500"
-                  }`}>
-                    {selected.pin !== "" ? "PIN OK" : "SIN PIN"}
-                  </span>
-                </div>
-                {!pinOpen && (
-                  <button onClick={() => { setPinOpen(true); setPinInput(""); setPinConfirm(""); setPinError(""); }}
-                    className="text-[9px] font-semibold text-[#005BE3] transition hover:underline">
-                    {selected.pin !== "" ? "Cambiar" : "Configurar →"}
+            {!hasActiveTurno && (
+              <div className="flex flex-col gap-1 border-t border-[#f1f5f9] pt-2.5">
+                {selected.status === "ACTIVO" && (
+                  <>
+                    <button onClick={() => { setPanel("confirm-suspend"); setReason(""); setReasonError(""); }}
+                      className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-amber-700 transition hover:bg-amber-50">
+                      <PauseCircle size={9} strokeWidth={2} />SUSPENDER
+                    </button>
+                    <button onClick={() => { setPanel("confirm-baja"); setReason(""); setReasonError(""); }}
+                      className="flex items-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#9ca3af] transition hover:border-red-200 hover:text-red-500">
+                      <UserX size={9} strokeWidth={2} />DAR DE BAJA
+                    </button>
+                  </>
+                )}
+                {selected.status === "SUSPENDIDO" && (
+                  <button onClick={handleActivate}
+                    className="flex items-center gap-1.5 rounded-xl border border-[#78C487]/30 bg-[#f0fdf4] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#4a7a55] transition hover:bg-[#e8f5ea]">
+                    <CircleCheck size={9} strokeWidth={2} />REACTIVAR
                   </button>
                 )}
               </div>
-              {pinOpen && (
-                <PinForm pin={pinInput} confirm={pinConfirm} error={pinError}
-                  onPin={setPinInput} onConfirm={setPinConfirm}
-                  onSave={savePinViewMode}
-                  onCancel={() => { setPinOpen(false); setPinInput(""); setPinConfirm(""); setPinError(""); }}
+            )}
+          </div>
+        )}
+
+        {/* CONFIRM SUSPEND */}
+        {showConfirmSuspend && selected && (
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2">
+              <PauseCircle size={11} strokeWidth={2} className="shrink-0 text-amber-600" />
+              <span className="text-[10px] font-bold uppercase text-amber-700">SUSPENSIÓN · {selected.code}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Motivo (obligatorio)</span>
+              <select value={reason} onChange={e => { setReason(e.target.value); setReasonError(""); }}
+                className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-amber-400">
+                <option value="" disabled>Seleccione...</option>
+                {SUSPEND_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              {reasonError && <p className="text-[9px] font-semibold text-red-500">{reasonError}</p>}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={resetForm}
+                className="flex h-8 flex-1 items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[10px] font-semibold uppercase text-[#6b7280] transition hover:border-[#b0bac8]">
+                Cancelar
+              </button>
+              <button onClick={handleConfirmSuspend}
+                className="flex h-8 flex-1 items-center justify-center rounded-lg bg-amber-500 text-[10px] font-bold uppercase text-white transition hover:bg-amber-600">
+                Confirmar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* CONFIRM BAJA */}
+        {showConfirmBaja && selected && (
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3 py-2">
+              <UserX size={11} strokeWidth={2} className="shrink-0 text-red-500" />
+              <span className="text-[10px] font-bold uppercase text-red-600">BAJA · {selected.code}</span>
+            </div>
+            {selected.blockBase !== null && (
+              <p className="text-[10px] text-amber-700">
+                El bloque {selected.blockBase} quedará disponible.
+              </p>
+            )}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Motivo (obligatorio)</span>
+              <select value={reason} onChange={e => { setReason(e.target.value); setReasonError(""); }}
+                className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-red-400">
+                <option value="" disabled>Seleccione...</option>
+                {BAJA_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              {reasonError && <p className="text-[9px] font-semibold text-red-500">{reasonError}</p>}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={resetForm}
+                className="flex h-8 flex-1 items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[10px] font-semibold uppercase text-[#6b7280] transition">
+                Cancelar
+              </button>
+              <button onClick={handleConfirmBaja}
+                className="flex h-8 flex-1 items-center justify-center rounded-lg bg-[#dc2626] text-[10px] font-bold uppercase text-white transition hover:bg-[#b91c1c]">
+                Confirmar baja
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* FORM create/edit */}
+        {showForm && (
+          <div className="flex flex-col gap-2.5">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-[#9ca3af]">
+              {panel === "create" ? "NUEVO OPERADOR" : "EDITAR"}
+            </span>
+            <div className="flex gap-2">
+              <div className="flex w-20 flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Código</span>
+                <input type="text" value={editCode} maxLength={5} placeholder="FER"
+                  onChange={e => { setEditCode(e.target.value.toUpperCase().slice(0, 5)); setBlockError(null); }}
+                  onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-bold uppercase text-[#2F3E46] outline-none focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
                 />
-              )}
-
-              {!hasActiveTurno && (
-                <div className="flex flex-col gap-1 border-t border-[#f1f5f9] pt-2.5">
-                  {selected.status === "ACTIVO" && (
-                    <>
-                      <button onClick={() => { setPanel("confirm-suspend"); setReason(""); setReasonError(""); }}
-                        className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-amber-700 transition hover:bg-amber-50">
-                        <PauseCircle size={9} strokeWidth={2} />SUSPENDER
-                      </button>
-                      <button onClick={() => { setPanel("confirm-baja"); setReason(""); setReasonError(""); }}
-                        className="flex items-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#9ca3af] transition hover:border-red-200 hover:text-red-500">
-                        <UserX size={9} strokeWidth={2} />DAR DE BAJA
-                      </button>
-                    </>
-                  )}
-                  {selected.status === "SUSPENDIDO" && (
-                    <button onClick={handleActivate}
-                      className="flex items-center gap-1.5 rounded-xl border border-[#78C487]/30 bg-[#f0fdf4] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#4a7a55] transition hover:bg-[#e8f5ea]">
-                      <CircleCheck size={9} strokeWidth={2} />REACTIVAR
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* CONFIRM SUSPEND */}
-          {showConfirmSuspend && selected && (
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2">
-                <PauseCircle size={11} strokeWidth={2} className="shrink-0 text-amber-600" />
-                <span className="text-[10px] font-bold uppercase text-amber-700">SUSPENSIÓN · {selected.code}</span>
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Motivo (obligatorio)</span>
-                <select value={reason} onChange={e => { setReason(e.target.value); setReasonError(""); }}
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-amber-400">
-                  <option value="" disabled>Seleccione...</option>
-                  {SUSPEND_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Nombre</span>
+                <input autoFocus type="text" value={editName} placeholder="NOMBRE"
+                  onChange={e => setEditName(e.target.value.toUpperCase())}
+                  onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold uppercase text-[#2F3E46] outline-none focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Rol</span>
+                <select value={editRole} onChange={e => setEditRole(e.target.value)}
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#78C487]">
+                  {ROLES_REF.map(r => <option key={r.code} value={r.code}>{r.code} — {r.name}</option>)}
                 </select>
-                {reasonError && <p className="text-[9px] font-semibold text-red-500">{reasonError}</p>}
               </div>
-              <div className="flex gap-2">
-                <button onClick={resetForm}
-                  className="flex h-8 flex-1 items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[10px] font-semibold uppercase text-[#6b7280] transition hover:border-[#b0bac8]">
-                  Cancelar
-                </button>
-                <button onClick={handleConfirmSuspend}
-                  className="flex h-8 flex-1 items-center justify-center rounded-lg bg-amber-500 text-[10px] font-bold uppercase text-white transition hover:bg-amber-600">
-                  Confirmar
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* CONFIRM BAJA */}
-          {showConfirmBaja && selected && (
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3 py-2">
-                <UserX size={11} strokeWidth={2} className="shrink-0 text-red-500" />
-                <span className="text-[10px] font-bold uppercase text-red-600">BAJA · {selected.code}</span>
-              </div>
-              {selected.blockBase !== null && (
-                <p className="text-[10px] text-amber-700">
-                  El bloque {selected.blockBase} quedará disponible.
-                </p>
-              )}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Motivo (obligatorio)</span>
-                <select value={reason} onChange={e => { setReason(e.target.value); setReasonError(""); }}
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-red-400">
-                  <option value="" disabled>Seleccione...</option>
-                  {BAJA_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Bloque</span>
+                <select value={editBlock ?? ""} onChange={e => { setEditBlock(e.target.value === "" ? null : Number(e.target.value)); setBlockError(null); }}
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#78C487]">
+                  <option value="">Sin bloque</option>
+                  {BLOCKS_REF.map(b => {
+                    const taken = operators.some(o => o.id !== selectedId && o.blockBase === b && o.status !== "INACTIVO");
+                    return <option key={b} value={b} disabled={taken}>{b}{taken ? " · OCUPADO" : ""}</option>;
+                  })}
                 </select>
-                {reasonError && <p className="text-[9px] font-semibold text-red-500">{reasonError}</p>}
-              </div>
-              <div className="flex gap-2">
-                <button onClick={resetForm}
-                  className="flex h-8 flex-1 items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[10px] font-semibold uppercase text-[#6b7280] transition">
-                  Cancelar
-                </button>
-                <button onClick={handleConfirmBaja}
-                  className="flex h-8 flex-1 items-center justify-center rounded-lg bg-[#dc2626] text-[10px] font-bold uppercase text-white transition hover:bg-[#b91c1c]">
-                  Confirmar baja
-                </button>
               </div>
             </div>
-          )}
-
-          {/* FORM create/edit */}
-          {showForm && (
-            <div className="flex flex-col gap-2.5">
-              <span className="text-[9px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                {panel === "create" ? "NUEVO OPERADOR" : "EDITAR"}
-              </span>
-              <div className="flex gap-2">
-                <div className="flex w-20 flex-col gap-0.5">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Código</span>
-                  <input type="text" value={editCode} maxLength={5} placeholder="FER"
-                    onChange={e => { setEditCode(e.target.value.toUpperCase().slice(0, 5)); setBlockError(null); }}
-                    onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
-                    className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-bold uppercase text-[#2F3E46] outline-none focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col gap-0.5">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Nombre</span>
-                  <input autoFocus type="text" value={editName} placeholder="NOMBRE"
-                    onChange={e => setEditName(e.target.value.toUpperCase())}
-                    onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
-                    className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold uppercase text-[#2F3E46] outline-none focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="flex flex-1 flex-col gap-0.5">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Rol</span>
-                  <select value={editRole} onChange={e => setEditRole(e.target.value)}
-                    className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#78C487]">
-                    {ROLES_REF.map(r => <option key={r.code} value={r.code}>{r.code} — {r.name}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-1 flex-col gap-0.5">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Bloque</span>
-                  <select value={editBlock ?? ""} onChange={e => { setEditBlock(e.target.value === "" ? null : Number(e.target.value)); setBlockError(null); }}
-                    className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#78C487]">
-                    <option value="">Sin bloque</option>
-                    {BLOCKS_REF.map(b => {
-                      const taken = operators.some(o => o.id !== selectedId && o.blockBase === b && o.status !== "INACTIVO");
-                      return <option key={b} value={b} disabled={taken}>{b}{taken ? " · OCUPADO" : ""}</option>;
-                    })}
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-0.5">
-                <button onClick={resetForm}
-                  className="flex h-8 flex-1 items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[11px] font-semibold uppercase text-[#6b7280] transition hover:border-[#b0bac8]">
-                  Cancelar
-                </button>
-                <button onClick={handleSave} disabled={!canSave}
-                  className={`flex h-8 flex-1 items-center justify-center rounded-lg text-[11px] font-semibold uppercase text-white transition ${
-                    canSave ? "bg-[#45b356] hover:bg-[#35994a]" : "cursor-not-allowed bg-[#45b356]/40"
-                  }`}>
-                  {panel === "create" ? "Crear" : "Guardar"}
-                </button>
-              </div>
+            <div className="flex gap-2 pt-0.5">
+              <button onClick={resetForm}
+                className="flex h-8 flex-1 items-center justify-center rounded-lg border border-[#e4e9f0] bg-white text-[11px] font-semibold uppercase text-[#6b7280] transition hover:border-[#b0bac8]">
+                Cancelar
+              </button>
+              <button onClick={handleSave} disabled={!canSave}
+                className={`flex h-8 flex-1 items-center justify-center rounded-lg text-[11px] font-semibold uppercase text-white transition ${
+                  canSave ? "bg-[#45b356] hover:bg-[#35994a]" : "cursor-not-allowed bg-[#45b356]/40"
+                }`}>
+                {panel === "create" ? "Crear" : "Guardar"}
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {!showView && !showForm && !showConfirmSuspend && !showConfirmBaja && !blockError && (
-            <div className="flex flex-col items-center justify-center gap-1.5 py-10 text-center">
-              <Users size={20} strokeWidth={1.5} className="text-[#d1d9e1]" />
-              <p className="text-[10px] font-semibold text-[#c0cad4]">Seleccione un operador</p>
-            </div>
-          )}
+        {!showView && !showForm && !showConfirmSuspend && !showConfirmBaja && !blockError && (
+          <div className="flex flex-col items-center justify-center gap-1.5 py-10 text-center">
+            <Users size={20} strokeWidth={1.5} className="text-[#d1d9e1]" />
+            <p className="text-[10px] font-semibold text-[#c0cad4]">Seleccione un operador</p>
+          </div>
+        )}
 
-        </div>
       </div>
     </div>
   );
@@ -742,14 +738,16 @@ function PanelHistorico() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// OPERADORES WORKSPACE — 3 paneles simultáneos
+// OPERADORES WORKSPACE — 3 paneles simultáneos, selectedId compartido
 // ══════════════════════════════════════════════════════════════════════════
 
 export function OperadoresWorkspace() {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   return (
     <section className="flex min-h-0 flex-1 gap-2">
-      <PanelActivos   />
-      <PanelGestion   />
+      <PanelActivos   selectedId={selectedId} onSelect={setSelectedId} />
+      <PanelGestion   selectedId={selectedId} onSelect={setSelectedId} />
       <PanelHistorico />
     </section>
   );
