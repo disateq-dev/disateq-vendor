@@ -9,8 +9,10 @@ type FocusZone = "search" | "ticket" | "cobro";
 
 export type CashBoxType = "normal" | "contingency-1" | "contingency-2";
 
-export type MoveType   = "ingreso" | "egreso";
-export type MoveSource = "apertura" | "vendido" | "mixto";
+export type MoveType             = "ingreso" | "egreso";
+export type MoveSource           = "apertura" | "vendido" | "mixto";
+export type RegularizationStatus = "por_regularizar" | "regularizado";
+export type RegularizationMode   = "reposicion" | "integracion_fondo";
 
 export type CashMove = {
   id: string;
@@ -23,9 +25,11 @@ export type CashMove = {
   cashBoxCode: string;
   terminal: string;
   timestamp: string;
-  sourceType:   MoveSource;
-  fromApertura: number;
-  fromVendido:  number;
+  sourceType:            MoveSource;
+  fromApertura:          number;
+  fromVendido:           number;
+  regularizationStatus?: RegularizationStatus;
+  regularizationMode?:   RegularizationMode;
 };
 
 export type CashBox = {
@@ -379,7 +383,8 @@ interface POSContextValue {
   docCorrelatives: DocCorrelatives;
   recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number, mixtoYapComponent?: number, mixtoTarComponent?: number) => void;
   cashMoves: CashMove[];
-  addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string) => CashMove;
+  addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string, regularizationStatus?: RegularizationStatus, regularizationMode?: RegularizationMode) => CashMove;
+  updateCashMove: (id: string, status: RegularizationStatus, mode?: RegularizationMode) => void;
   opLogs: OpLog[];
   addOpLog: (text: string) => void;
   comprobantes: Comprobante[];
@@ -618,6 +623,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
     type: MoveType, amount: number, motivo: string,
     sourceType: MoveSource, fromApertura: number, fromVendido: number,
     observacion?: string, refId?: string,
+    regularizationStatus?: RegularizationStatus,
+    regularizationMode?: RegularizationMode,
   ): CashMove => {
     const s = cashSessionRef.current;
     const move: CashMove = {
@@ -630,6 +637,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
       terminal:    s.terminal,
       timestamp:   new Date().toISOString(),
       sourceType, fromApertura, fromVendido,
+      ...(regularizationStatus ? { regularizationStatus } : {}),
+      ...(regularizationMode   ? { regularizationMode   } : {}),
     };
     setCashMoves(prev => [...prev, move]);
     const verb   = refId ? "registró reposición" : type === "ingreso" ? "registró ingreso" : "registró egreso";
@@ -639,6 +648,14 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}${ref}`);
     return move;
   }, [addOpLog]);
+
+  const updateCashMove = useCallback((id: string, status: RegularizationStatus, mode?: RegularizationMode) => {
+    setCashMoves(prev => prev.map(m => m.id === id ? {
+      ...m,
+      regularizationStatus: status,
+      ...(mode ? { regularizationMode: mode } : {}),
+    } : m));
+  }, []);
 
   const [rubro, setRubroState] = useState<Rubro>(loadRubro);
   const setRubro = useCallback((r: Rubro) => {
@@ -770,7 +787,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cashSession, cashBoxes, suggestedCashBox,
       openCashSession, closeCashSession, correctAperturaData,
       sessionStats, docCorrelatives, recordSale,
-      cashMoves, addCashMove,
+      cashMoves, addCashMove, updateCashMove,
       opLogs, addOpLog,
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,

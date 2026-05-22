@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, RotateCcw, Pencil } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
 import { OperadoresWorkspace } from "./OperadoresWorkspace";
-import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
+import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove, type RegularizationStatus } from "../../context/POSContext";
 import {
   printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
   printArqueo, printArqueoThermal, type ArqueoData,
@@ -161,7 +161,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const {
     cashSession, cashBoxes, suggestedCashBox,
     openCashSession, closeCashSession, correctAperturaData,
-    sessionStats, cashMoves, addCashMove,
+    sessionStats, cashMoves, addCashMove, updateCashMove,
     showNotice,
   } = usePOS();
   const {
@@ -273,6 +273,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [moveObservacion,setMoveObservacion]= useState("");
   const [sourceType,     setSourceType]     = useState<MoveSource>("apertura");
   const [lastMove,       setLastMove]       = useState<CashMove | null>(null);
+  const [moveRegStatus,  setMoveRegStatus]  = useState<RegularizationStatus | undefined>(undefined);
   const moveAmountRef = useRef<HTMLInputElement>(null);
   const motivoRef     = useRef<HTMLInputElement>(null);
 
@@ -286,7 +287,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   useEffect(() => {
     setLastMove(null); setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
-    setSourceType("apertura");
+    setSourceType("apertura"); setMoveRegStatus(undefined);
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
   }, [isOpen]);
 
@@ -313,6 +314,20 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // move form derived
   const totalAmt   = parseFloat(moveAmount) || 0;
   const canAddMove = validateCanAddMove(totalAmt, moveMotivo, sourceType, 0, 0);
+
+  // pendientes de regularización: egresos "por_regularizar" menos sus reposiciones acumuladas
+  const pendingByEgresoId = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const m of cashMoves) {
+      if (m.type === "egreso" && m.regularizationStatus === "por_regularizar") {
+        const repoTotal = moneySum(cashMoves.filter(r => r.refId === m.id).map(r => r.amount));
+        const pending = moneySub(m.amount, repoTotal);
+        if (moneyGt(pending, 0)) result[m.id] = pending;
+      }
+    }
+    return result;
+  }, [cashMoves]);
+  const totalPending = moneySum(Object.values(pendingByEgresoId));
 
   // fondo breakdown — delegated to service
   const {
@@ -387,9 +402,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     const fa  = sourceType === "apertura" ? amt : 0;
     const fv  = sourceType === "vendido"  ? amt : 0;
     const obs = moveObservacion.trim() || undefined;
-    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs);
+    const regStatus = moveType === "egreso" ? moveRegStatus : undefined;
+    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs, undefined, regStatus);
     setLastMove(move);
-    setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
+    setMoveAmount(""); setMoveMotivo(""); setMoveObservacion(""); setMoveRegStatus(undefined);
     showNotice(`${moveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => moveAmountRef.current?.focus(), 10);
   }
@@ -424,6 +440,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       repoObservacion.trim() || undefined, original.id);
     handlePrintVoucher(move);
     setLastRepoMove(move);
+    if (original.regularizationStatus === "por_regularizar") {
+      const prevRepos = moneySum(cashMoves.filter(m => m.refId === original.id).map(m => m.amount));
+      if (moneyGte(moneySum([prevRepos, amt]), original.amount)) {
+        updateCashMove(original.id, "regularizado", "reposicion");
+      }
+    }
     showNotice(`Reposición registrada · S/ ${amt.toFixed(2)}`);
   }
 
@@ -1485,6 +1507,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 <div className="flex items-center gap-2.5">
                   {ingresosTotal > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingresosTotal.toFixed(2)}</span>}
                   {egresosTotal  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egresosTotal.toFixed(2)}</span>}
+                  {moneyGt(totalPending, 0) && <span className="text-[10px] font-bold text-amber-600 tabular-nums">↩ S/ {totalPending.toFixed(2)}</span>}
                 </div>
               )}
             </div>
@@ -1497,7 +1520,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                 {(["egreso", "ingreso"] as MoveType[]).map(t => (
                   <button key={t}
-                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setSourceType("apertura"); setLastMove(null); }}
+                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setSourceType("apertura"); setLastMove(null); setMoveRegStatus(undefined); }}
                     className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
                       moveType === t
                         ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
@@ -1582,6 +1605,21 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/15"
               />
 
+              {/* Regularización — solo egresos */}
+              {moveType === "egreso" && (
+                <button
+                  type="button"
+                  onClick={() => setMoveRegStatus(prev => prev ? undefined : "por_regularizar")}
+                  className={`self-start flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
+                    moveRegStatus
+                      ? "bg-amber-100 text-amber-700 border border-amber-200"
+                      : "border border-[#e4e9f0] text-[#9ca3af] hover:border-amber-200 hover:text-amber-600"
+                  }`}
+                >
+                  ↩ {moveRegStatus ? "Devolución esperada" : "Marcar devolución"}
+                </button>
+              )}
+
               {/* Registrar */}
               <button
                 onClick={handleAddMove}
@@ -1623,9 +1661,14 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
             <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
-              {cashMoves.length > 0 && (
-                <span className="text-[10px] font-semibold text-[#9ca3af] tabular-nums">{cashMoves.length} mov.</span>
-              )}
+              <div className="flex items-center gap-2.5">
+                {moneyGt(totalPending, 0) && (
+                  <span className="text-[10px] font-bold text-amber-600 tabular-nums">⚠ S/ {totalPending.toFixed(2)} pdte.</span>
+                )}
+                {cashMoves.length > 0 && (
+                  <span className="text-[10px] font-semibold text-[#9ca3af] tabular-nums">{cashMoves.length} mov.</span>
+                )}
+              </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
@@ -1662,7 +1705,26 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</p>
-                              <p className="text-[10px] text-[#b0bac8] truncate">{srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}</p>
+                              <p className="text-[10px] text-[#b0bac8] truncate">
+                                {srcLabel}{m.observacion ? ` · ${m.observacion}` : ""}
+                                {m.regularizationStatus && (
+                                  <span className={`ml-1.5 font-bold ${
+                                    m.regularizationStatus === "por_regularizar"
+                                      ? "text-amber-500"
+                                      : m.regularizationMode === "integracion_fondo"
+                                      ? "text-[#2154d8]"
+                                      : "text-emerald-500"
+                                  }`}>
+                                    {m.regularizationStatus === "por_regularizar"
+                                      ? pendingByEgresoId[m.id] !== undefined
+                                        ? `↩ pdte. S/${pendingByEgresoId[m.id]!.toFixed(2)}`
+                                        : "↩ pdte."
+                                      : m.regularizationMode === "integracion_fondo"
+                                      ? "✓ fondo"
+                                      : "✓ regular."}
+                                  </span>
+                                )}
+                              </p>
                             </div>
                             <span className={`shrink-0 text-[11px] font-bold tabular-nums ${m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
                               {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
@@ -1673,6 +1735,15 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                               >
                                 <Printer size={11} strokeWidth={2} />
                               </button>
+                              {m.type === "egreso" && m.regularizationStatus === "por_regularizar" && (
+                                <button
+                                  onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
+                                  title="Integrar al fondo — no se espera devolución"
+                                  className="text-[#c0cad4] hover:text-amber-500 transition"
+                                >
+                                  <CheckCircle size={11} strokeWidth={2} />
+                                </button>
+                              )}
                               {m.type === "egreso" && (
                                 <button
                                   onClick={() => isRepoing ? closeRepo() : openRepo(m)}
