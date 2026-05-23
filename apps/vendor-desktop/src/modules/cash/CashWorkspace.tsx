@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks, HandCoins } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
@@ -16,7 +16,7 @@ import {
   CTG_PIN, MIN_MOTIVO_LEN,
   detectOpeningMode, type OpeningMode,
 } from "./services/cash-rules.service";
-import { toCents, moneyRound, moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
+import { moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 
 // ── helpers ────────────────────────────────────────────────────
 
@@ -330,16 +330,18 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const repoAmountRef = useRef<HTMLInputElement>(null);
 
   // ── anulación / edición inline state ─────────────────────────
-  const [confirmAnulId,  setConfirmAnulId]  = useState<string | null>(null);
-  const [editingMoveId,  setEditingMoveId]  = useState<string | null>(null);
-  const [editMotivoInput, setEditMotivoInput] = useState("");
-  const [editObsInput,   setEditObsInput]   = useState("");
+  const [confirmAnulId,      setConfirmAnulId]      = useState<string | null>(null);
+  const [editingMoveId,      setEditingMoveId]      = useState<string | null>(null);
+  const [editMotivoInput,    setEditMotivoInput]    = useState("");
+  const [editObsInput,       setEditObsInput]       = useState("");
+  const [resolvingExternoId, setResolvingExternoId] = useState<string | null>(null);
 
   useEffect(() => {
     setLastMove(null); setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
     setSourceType("vendido");
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
     setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
+    setResolvingExternoId(null);
   }, [isOpen]);
 
   useEffect(() => {
@@ -368,7 +370,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // move form derived
   const totalAmt   = parseFloat(moveAmount) || 0;
-  const canAddMove = validateCanAddMove(totalAmt, moveMotivo, sourceType, 0, 0);
+  const canAddMove = validateCanAddMove(totalAmt, moveMotivo);
 
   // repos vinculadas por egreso (de activos, usando refId)
   const repoSumByEgresoId = useMemo(() => {
@@ -397,14 +399,19 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // fondo breakdown — excluye anulados
   const {
-    ingresosTotal, egresosTotal, arqueoOperacional, ingApertura, egApertura,
+    ingresosTotal, egresosTotal, arqueoOperacional, ingApertura, egApertura, fondoApertEsp,
   } = calcConciliation(activeMoves, sessionStats.cash, apertura);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
-  // netIngApertura: ingresos apertura neto — si ya se egresaron, queda 0
+  // netIngApertura: ingresos netos de apertura (para badge "INTEGRAR INGRESOS")
   const netIngApertura = moneyGt(ingApertura, egApertura) ? moneySub(ingApertura, egApertura) : 0;
-  // fondoEsperado: sin integrar → solo inicial; integrado → inicial + neto ingresos
-  const fondoEsperado  = integrarFondoAuth ? moneyAdd(apertura, netIngApertura) : apertura;
+  // fondoEsperado:
+  //   sin integrar → apertura − egApertura (ingresos tratados como excedente separado)
+  //   integrado    → fondoApertEsp = apertura + ingApertura − egApertura
+  const fondoEsperado  = integrarFondoAuth ? fondoApertEsp : moneySub(apertura, egApertura);
+  // movimientos de fondo apertura pendientes de regularizar
+  const pendientesApertura = activeMoves.filter(m => m.sourceType === "apertura" && m.regularizationStatus === "por_regularizar");
+  const totalPendienteApertura = moneySum(pendientesApertura.map(m => m.amount));
   // totalEsperado: arqueo operacional EFE (sin apertura) + verificaciones digitales
   const totalEsperado   = moneySum([arqueoOperacional, sessionStats.yape, sessionStats.tarjeta]);
   const contadoFondoNum = numericValue(contadoFondo);
@@ -473,7 +480,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     const fa  = sourceType === "apertura" ? amt : 0;
     const fv  = sourceType === "vendido"  ? amt : 0;
     const obs = moveObservacion.trim() || undefined;
-    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs);
+    const regStatus = (sourceType === "apertura" && moveType === "egreso") || sourceType === "externo"
+      ? "por_regularizar" as const : undefined;
+    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs, undefined, regStatus);
     setLastMove(move);
     setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
     showNotice(`${moveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
@@ -498,17 +507,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     if ((repoSumByEgresoId[original.id] ?? 0) > 0) return;
     const amt = parseFloat(repoAmount) || 0;
     if (amt <= 0 || !repoMotivo.trim()) return;
-    let fa = 0, fv = 0;
-    if (original.sourceType === "apertura") { fa = amt; fv = 0; }
-    else if (original.sourceType === "vendido") { fa = 0; fv = amt; }
-    else {
-      const origCents  = toCents(original.amount);
-      const ratioCents = origCents > 0 ? toCents(original.fromApertura) / origCents : 1;
-      fa = moneyRound(amt * ratioCents);
-      fv = moneySub(amt, fa);
-    }
+    const fa = original.sourceType === "apertura" ? amt : 0;
+    const fv = original.sourceType === "vendido"  ? amt : 0;
     const move = addCashMove("ingreso", amt, repoMotivo.trim(), original.sourceType, fa, fv,
       repoObservacion.trim() || undefined, original.id);
+    if (original.regularizationStatus === "por_regularizar" && moneyGte(amt, original.amount)) {
+      updateCashMove(original.id, "regularizado", "reposicion");
+    }
     handlePrintVoucher(move);
     setLastRepoMove(move);
     showNotice(`Devolución registrada · S/ ${amt.toFixed(2)}`);
@@ -625,7 +630,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     <section className="flex min-h-0 flex-1 gap-2">
 
       {/* ── LEFT ── */}
-      <div className="flex w-[300px] shrink-0 flex-col gap-2">
+      <div className="flex w-[320px] shrink-0 flex-col gap-2">
 
         {/* Status / pre-open card */}
         {isOpen ? (
@@ -696,7 +701,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       const range = r.count === 1
                         ? `${r.series}-${fmt(r.first)}`
                         : `${r.series}-${fmt(r.first)} → ${r.series}-${fmt(r.last)}`;
-                      return <InfoRow key={type} label={docLabel[type] ?? type} value={range} />;
+                      return <InfoRow key={type} label={`${docLabel[type] ?? type} (${r.count})`} value={range} />;
                     })}
                   </>
                 );
@@ -1110,12 +1115,18 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO APERTURA INICIAL</span>
                       <span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {apertura.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between items-center px-3.5 py-2">
-                      <span className={`text-[10px] font-bold uppercase tracking-[0.12em] ${moneyGt(netIngApertura, 0) ? "text-emerald-600" : "text-[#9ca3af]"}`}>INGRESOS FONDO APERTURA</span>
-                      <span className={`text-[12px] font-bold tabular-nums ${moneyGt(netIngApertura, 0) ? "text-emerald-600" : "text-[#9ca3af]"}`}>
-                        {moneyGt(netIngApertura, 0) ? `+S/ ${netIngApertura.toFixed(2)}` : "S/ 0.00"}
-                      </span>
-                    </div>
+                    {moneyGt(egApertura, 0) && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-600">SALIDAS DEL FONDO DE CAMBIO</span>
+                        <span className="text-[12px] font-bold tabular-nums text-amber-600">−S/ {egApertura.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {moneyGt(netIngApertura, 0) && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-600">INGRESOS FONDO APERTURA</span>
+                        <span className="text-[12px] font-bold tabular-nums text-emerald-600">+S/ {netIngApertura.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#f8fafd]">
                       <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">FONDO ESPERADO</span>
                       <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {fondoEsperado.toFixed(2)}</span>
@@ -1167,19 +1178,50 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     />
                   </div>
 
+                  {/* Movimientos apertura pendientes de regularizar */}
+                  {pendientesApertura.length > 0 && (
+                    <div className="flex flex-col gap-px rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+                      <div className="flex items-center justify-between px-3.5 py-2 border-b border-amber-100">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">⚠ Por devolver</span>
+                        <span className="text-[11px] font-bold tabular-nums text-amber-700">−S/ {totalPendienteApertura.toFixed(2)}</span>
+                      </div>
+                      {pendientesApertura.map(m => {
+                        const ts = new Date(m.timestamp);
+                        const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
+                        return (
+                          <div key={m.id} className="flex items-center justify-between px-3.5 py-1.5">
+                            <span className="text-[10px] text-amber-700 truncate mr-2">{hm} · {m.motivo}</span>
+                            <span className="text-[10px] font-bold tabular-nums text-amber-600 shrink-0">S/ {m.amount.toFixed(2)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   {/* Diferencia fondo */}
                   {contadoFondo !== "" && (() => {
                     const diffFondo = moneySub(contadoFondoNum, fondoEsperado);
                     const fondoCuadrado = moneyIsZero(diffFondo);
                     const fondoSobrante = !fondoCuadrado && moneyGt(diffFondo, 0);
+                    const esPendienteReg = !fondoCuadrado && !fondoSobrante && moneyIsZero(moneySub(Math.abs(diffFondo), totalPendienteApertura));
                     return (
                       <div className={`flex items-center justify-between rounded-xl border px-3.5 py-2 ${
-                        fondoCuadrado ? "border-emerald-200 bg-[#f0fdf4]" : "border-red-200 bg-[#fef2f2]"
+                        fondoCuadrado ? "border-emerald-200 bg-[#f0fdf4]"
+                        : esPendienteReg ? "border-amber-200 bg-amber-50"
+                        : "border-red-200 bg-[#fef2f2]"
                       }`}>
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.10em] ${fondoCuadrado ? "text-emerald-600" : "text-red-600"}`}>
-                          {fondoCuadrado ? "✓ FONDO ÍNTEGRO" : fondoSobrante ? "EXCEDENTE FONDO" : "FALTANTE FONDO"}
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.10em] ${
+                          fondoCuadrado ? "text-emerald-600"
+                          : esPendienteReg ? "text-amber-700"
+                          : "text-red-600"
+                        }`}>
+                          {fondoCuadrado ? "✓ FONDO ÍNTEGRO" : fondoSobrante ? "EXCEDENTE FONDO" : esPendienteReg ? "⚠ HAY DINERO POR DEVOLVER" : "FALTANTE FONDO"}
                         </span>
-                        <span className={`text-[12px] font-bold tabular-nums ${fondoCuadrado ? "text-emerald-600" : "text-red-600"}`}>
+                        <span className={`text-[12px] font-bold tabular-nums ${
+                          fondoCuadrado ? "text-emerald-600"
+                          : esPendienteReg ? "text-amber-700"
+                          : "text-red-600"
+                        }`}>
                           {fondoCuadrado ? "±S/ 0.00" : `${moneyGte(diffFondo, 0) ? "+" : "−"}S/ ${Math.abs(diffFondo).toFixed(2)}`}
                         </span>
                       </div>
@@ -1588,83 +1630,97 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               moveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
             }`}>
 
-              {/* FONDO — selector dominante */}
-              <div className="flex gap-1.5">
+              {/* Fuente del movimiento */}
+              <div className="flex gap-1">
                 {([
-                  { src: "vendido"  as MoveSource, label: "FONDO VENTAS",   Icon: ShoppingCart },
-                  { src: "apertura" as MoveSource, label: "FONDO APERTURA", Icon: Wallet },
+                  { src: "vendido"  as MoveSource, label: "CAJA DEL DÍA",     Icon: ShoppingCart },
+                  { src: "apertura" as MoveSource, label: "FONDO DE CAMBIO",   Icon: Wallet       },
+                  { src: "externo"  as MoveSource, label: "PRÉSTAMO AL FONDO", Icon: HandCoins    },
                 ]).map(({ src, label, Icon }) => (
                   <button key={src}
-                    onClick={() => setSourceType(src)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[10px] font-bold uppercase tracking-wide transition ${
+                    onClick={() => {
+                      setSourceType(src);
+                      setMoveType(src === "externo" ? "ingreso" : src === "apertura" ? "egreso" : "egreso");
+                      setMoveMotivo(""); setMoveObservacion(""); setLastMove(null);
+                    }}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl py-2 text-[9px] font-bold uppercase tracking-wide transition ${
                       sourceType === src
                         ? "bg-[#1a2d4e] text-white shadow-sm"
                         : "border border-[#e4e9f0] bg-white/60 text-[#9ca3af] hover:border-[#c7d7f4] hover:text-[#374151]"
                     }`}
                   >
-                    <Icon size={12} strokeWidth={2} />
+                    <Icon size={13} strokeWidth={2} />
                     {label}
                   </button>
                 ))}
               </div>
 
-              {/* Tipo */}
-              <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
-                {(["ingreso", "egreso"] as MoveType[]).map(t => (
-                  <button key={t}
-                    onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setLastMove(null); }}
-                    className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
-                      moveType === t
-                        ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
-                        : "text-[#9ca3af] hover:text-[#374151]"
-                    }`}
-                  >
-                    {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
-                  </button>
-                ))}
-              </div>
-
-              {/* Monto — standalone, prominente */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">MONTO</span>
-                <div className="flex items-center gap-1.5">
-                  <span className={`shrink-0 text-[13px] font-bold ${moveType === "ingreso" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
-                  <input
-                    ref={moveAmountRef}
-                    type="number"
-                    value={moveAmount}
-                    onChange={e => setMoveAmount(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
-                      moveType === "ingreso"
-                        ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
-                        : "border-red-300 focus:border-red-500 focus:ring-red-400/15"
-                    }`}
-                  />
+              {/* Tipo — solo visible para CAJA DEL DÍA */}
+              {sourceType === "vendido" && (
+                <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+                  {(["egreso", "ingreso"] as MoveType[]).map(t => (
+                    <button key={t}
+                      onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setLastMove(null); }}
+                      className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
+                        moveType === t
+                          ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
+                          : "text-[#9ca3af] hover:text-[#374151]"
+                      }`}
+                    >
+                      {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
+                    </button>
+                  ))}
                 </div>
+              )}
+
+              {/* Contexto visual para fuentes sin toggle */}
+              {sourceType === "apertura" && (
+                <p className="text-[10px] text-amber-600 font-semibold px-1">
+                  ↓ Salida del fondo de cambio · quedará pendiente devolver
+                </p>
+              )}
+              {sourceType === "externo" && (
+                <p className="text-[10px] text-[#2154d8] font-semibold px-1">
+                  ↑ Dinero que ingresó al fondo de cambio · pendiente devolver o integrar al fondo
+                </p>
+              )}
+
+              {/* Monto */}
+              <div className="flex items-center gap-1.5">
+                <span className={`shrink-0 text-[13px] font-bold ${moveType === "ingreso" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
+                <input
+                  ref={moveAmountRef}
+                  type="number"
+                  value={moveAmount}
+                  onChange={e => setMoveAmount(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                    moveType === "ingreso"
+                      ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
+                      : "border-red-300 focus:border-red-500 focus:ring-red-400/15"
+                  }`}
+                />
               </div>
 
               {/* Motivo */}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">
-                  MOTIVO <span className="text-red-400">*</span>
-                </span>
-                <input
-                  ref={motivoRef}
-                  type="text"
-                  value={moveMotivo}
-                  onChange={e => setMoveMotivo(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && canAddMove) handleAddMove(); }}
-                  placeholder={moveType === "egreso"
-                    ? "Ej: Pago mototaxi, pago proveedor..."
-                    : "Ej: Sencillo monedas, devolución..."}
-                  maxLength={120}
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/15"
-                />
-              </div>
+              <input
+                ref={motivoRef}
+                type="text"
+                value={moveMotivo}
+                onChange={e => setMoveMotivo(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && canAddMove) handleAddMove(); }}
+                placeholder={
+                  sourceType === "apertura" ? "Ej: Saqué para buscar cambio, sencillo apartado..." :
+                  sourceType === "externo"  ? "Ej: Monedas prestadas por [nombre]..." :
+                  moveType === "egreso"     ? "Ej: Pago mototaxi, pago proveedor..." :
+                                             "Ej: Depósito, ajuste de caja..."
+                }
+                maxLength={120}
+                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+              />
 
               {/* Observación */}
               <input
@@ -1673,7 +1729,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 onChange={e => setMoveObservacion(e.target.value)}
                 placeholder="Observación (opcional)"
                 maxLength={200}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/15"
+                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
               />
 
               {/* Registrar */}
@@ -1682,13 +1738,19 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 disabled={!canAddMove}
                 className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                   canAddMove
-                    ? moveType === "ingreso"
+                    ? sourceType === "apertura"
+                      ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
+                      : sourceType === "externo"
+                      ? "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
+                      : moveType === "ingreso"
                       ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
                       : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
                     : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
                 }`}
               >
-                {moveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
+                {sourceType === "apertura" ? "REGISTRAR SALIDA DEL FONDO" :
+                 sourceType === "externo"  ? "REGISTRAR PRÉSTAMO AL FONDO" :
+                 moveType === "ingreso"    ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
               </button>
 
               {/* Feedback post-registro */}
@@ -1729,7 +1791,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
-              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO MOVIMIENTOS</span>
               <div className="ml-auto flex items-center gap-2.5">
                 {moneyGt(totalPending, 0) && (
                   <span className="text-[10px] font-bold text-amber-600 tabular-nums">⚠ S/ {totalPending.toFixed(2)} pdte.</span>
@@ -1755,15 +1817,15 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
                       const dd = `${String(ts.getDate()).padStart(2, "0")}/${String(ts.getMonth() + 1).padStart(2, "0")}`;
-                      const srcLabel = m.sourceType === "mixto"
-                        ? `F.apertura S/${m.fromApertura.toFixed(0)} · F.ventas S/${m.fromVendido.toFixed(0)}`
-                        : m.sourceType === "apertura" ? "fondo apertura" : "fondo ventas";
+                      const srcLabel = m.sourceType === "apertura" ? "fondo de cambio" : m.sourceType === "externo" ? "préstamo al fondo" : "caja del día";
                       const linkedRepos: CashMove[] = m.type === "egreso" ? (reposByEgresoId[m.id] ?? []) : [];
-                      const isRepoing    = reposingMoveId === m.id;
-                      const isEditing    = editingMoveId === m.id;
-                      const isAnulando   = confirmAnulId === m.id;
-                      const canRepo      = parseFloat(repoAmount) > 0 && repoMotivo.trim().length > 0;
-                      const isAnulado    = m.regularizationStatus === "anulado";
+                      const isRepoing          = reposingMoveId === m.id;
+                      const isEditing          = editingMoveId === m.id;
+                      const isAnulando         = confirmAnulId === m.id;
+                      const isResolvingExterno = resolvingExternoId === m.id;
+                      const canRepo            = parseFloat(repoAmount) > 0 && repoMotivo.trim().length > 0;
+                      const isAnulado          = m.regularizationStatus === "anulado";
+                      const canResolveExterno  = m.sourceType === "externo" && m.regularizationStatus === "por_regularizar";
                       return (
                         <div key={m.id} className={`group/move ${isAnulado ? "opacity-50" : ""}`}>
                           {/* Fila principal */}
@@ -1784,13 +1846,17 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                 {m.regularizationStatus === "anulado" ? (
                                   <span className="ml-1.5 font-bold text-[#9ca3af]">⊘ anulado</span>
                                 ) : m.regularizationMode === "integracion_fondo" ? (
-                                  <span className="ml-1.5 font-bold text-[#2154d8]">✓ fondo</span>
+                                  <span className="ml-1.5 font-bold text-[#2154d8]">✓ integrado al fondo</span>
+                                ) : m.regularizationStatus === "regularizado" ? (
+                                  <span className="ml-1.5 font-bold text-emerald-500">✓ devuelto</span>
                                 ) : m.type === "egreso" && (repoSumByEgresoId[m.id] ?? 0) > 0 ? (
                                   moneyGte(repoSumByEgresoId[m.id]!, m.amount) ? (
                                     <span className="ml-1.5 font-bold text-emerald-500">✓ devuelto</span>
                                   ) : (
                                     <span className="ml-1.5 font-bold text-amber-500">↩ pdte. S/{pendingByEgresoId[m.id]?.toFixed(2) ?? "?"}</span>
                                   )
+                                ) : m.regularizationStatus === "por_regularizar" ? (
+                                  <span className="ml-1.5 font-bold text-amber-500">⚠ pendiente devolver</span>
                                 ) : null}
                               </p>
                             </div>
@@ -1838,6 +1904,21 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                     className={`transition ${isRepoing ? "text-emerald-500" : "text-[#c0cad4] hover:text-emerald-500"}`}
                                   >
                                     <RotateCcw size={11} strokeWidth={2} />
+                                  </button>
+                                )}
+                                {canResolveExterno && (
+                                  <button
+                                    onClick={() => {
+                                      if (isResolvingExterno) { setResolvingExternoId(null); return; }
+                                      setResolvingExternoId(m.id);
+                                      setEditingMoveId(null);
+                                      setReposingMoveId(null);
+                                      setConfirmAnulId(null);
+                                    }}
+                                    title="Resolver préstamo"
+                                    className={`transition ${isResolvingExterno ? "text-[#2154d8]" : "text-[#c0cad4] hover:text-[#2154d8]"}`}
+                                  >
+                                    <CircleCheck size={11} strokeWidth={2} />
                                   </button>
                                 )}
                                 <button
@@ -1948,6 +2029,33 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                   className="flex-1 rounded-lg border border-[#e4e9f0] bg-white py-1.5 text-[10.5px] font-semibold text-[#374151] transition hover:bg-[#f8fafd]"
                                 >
                                   Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Panel inline: Resolver préstamo al fondo */}
+                          {isResolvingExterno && (
+                            <div className="mx-2 mb-1 mt-0.5 flex flex-col gap-1.5 rounded-xl border border-[#2154d8]/20 bg-[#f0f4ff] px-3 py-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wide text-[#2154d8]">¿Qué pasó con este dinero?</span>
+                                <button onClick={() => setResolvingExternoId(null)} className="text-[#9ca3af] hover:text-[#374151] transition"><X size={12} /></button>
+                              </div>
+                              <p className="text-[9.5px] text-[#2154d8]/70 leading-snug -mt-0.5">
+                                {m.motivo} · S/ {m.amount.toFixed(2)}
+                              </p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => { updateCashMove(m.id, "regularizado", "reposicion"); setResolvingExternoId(null); }}
+                                  className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white transition hover:bg-emerald-600 active:scale-[0.98]"
+                                >
+                                  DEVOLVER
+                                </button>
+                                <button
+                                  onClick={() => { updateCashMove(m.id, "regularizado", "integracion_fondo"); setResolvingExternoId(null); }}
+                                  className="flex-1 rounded-lg bg-[#2154d8] py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
+                                >
+                                  INTEGRAR AL FONDO
                                 </button>
                               </div>
                             </div>
