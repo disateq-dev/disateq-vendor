@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
@@ -1087,7 +1087,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
             {/* Header */}
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
-              <LogOut size={13} strokeWidth={2} className="shrink-0 text-red-400" />
+              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-red-400" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONTEO CIERRE DE TURNO</span>
               <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO APERTURA"
