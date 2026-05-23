@@ -338,7 +338,7 @@ function PanelGestion({ selectedId, onSelect }: {
   const showConfirmBaja    = panel === "confirm-baja";
 
   return (
-    <div className="flex w-[320px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
+    <div className="flex w-[420px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
