@@ -1953,8 +1953,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                               <span className="text-[8px] tabular-nums text-[#d1d9e1] leading-none">{dd}</span>
                               <span className="text-[9px] tabular-nums text-[#c0cad4] leading-none">{hm}</span>
                             </div>
-                            <span className={`shrink-0 text-[11px] font-bold ${isAnulado ? "text-[#c0cad4]" : m.type === "ingreso" ? "text-emerald-500" : "text-red-400"}`}>
-                              {isAnulado ? "⊘" : m.type === "ingreso" ? "↑" : "↓"}
+                            <span className={`shrink-0 text-[11px] font-bold ${
+                              isAnulado ? "text-[#c0cad4]"
+                              : m.sourceType === "externo" ? "text-[#2154d8]"
+                              : m.type === "ingreso" ? "text-emerald-500"
+                              : "text-red-400"
+                            }`}>
+                              {isAnulado ? "⊘" : m.sourceType === "externo" ? "→" : m.type === "ingreso" ? "↑" : "↓"}
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className={`text-[11px] font-semibold truncate ${isAnulado ? "text-[#9ca3af] line-through" : "text-[#374151]"}`}>
@@ -1979,8 +1984,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                 ) : null}
                               </p>
                             </div>
-                            <span className={`shrink-0 text-[11px] font-bold tabular-nums ${isAnulado ? "text-[#c0cad4] line-through" : m.type === "ingreso" ? "text-emerald-600" : "text-red-500"}`}>
-                              {m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
+                            <span className={`shrink-0 text-[11px] font-bold tabular-nums ${
+                              isAnulado ? "text-[#c0cad4] line-through"
+                              : m.sourceType === "externo" ? "text-[#2154d8]"
+                              : m.type === "ingreso" ? "text-emerald-600"
+                              : "text-red-500"
+                            }`}>
+                              {m.sourceType === "externo" ? "" : m.type === "ingreso" ? "+" : "−"}S/ {m.amount.toFixed(2)}
                             </span>
 
                             {/* Acciones hover */}

@@ -20,7 +20,7 @@ export function calcConciliation(
   cashVendido: number,
   apertura: number,
 ): ConciliationBreakdown {
-  const ingresos = moves.filter(m => m.type === "ingreso");
+  const ingresos = moves.filter(m => m.type === "ingreso" && m.sourceType !== "externo");
   const egresos  = moves.filter(m => m.type === "egreso");
 
   const ingApertura   = moneySum(ingresos.map(m => m.fromApertura));
