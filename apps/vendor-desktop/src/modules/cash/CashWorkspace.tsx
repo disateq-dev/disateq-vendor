@@ -1650,11 +1650,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             </div>
 
             {/* Tab switcher — fijo */}
-            <div className={`shrink-0 px-3 py-2 border-b border-[#e8edf3] transition-colors duration-150 ${
-              movPanel === "vendido"
-                ? vendidoMoveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
-                : fondoSubTab === "apertura" ? "bg-[#fffdf7]" : "bg-[#f4f7ff]"
-            }`}>
+            <div className="shrink-0 px-3 py-2 border-b border-[#e8edf3]">
               <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                 <button
                   onClick={() => setMovPanel("vendido")}
@@ -1683,7 +1679,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               {/* Sheet: CAJA DEL DÍA */}
               <div className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 ${
                 movPanel === "vendido" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-              } ${vendidoMoveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"}`}>
+              }`}>
                 <div className="flex flex-col gap-2.5 px-4 py-4">
 
                   <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
@@ -1786,7 +1782,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               {/* Sheet: FONDO DE CAMBIO */}
               <div className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 ${
                 movPanel === "fondo" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-              } ${fondoSubTab === "apertura" ? "bg-[#fffdf7]" : "bg-[#f4f7ff]"}`}>
+              }`}>
                 <div className="flex flex-col gap-2.5 px-4 py-4">
 
                   {/* Mini-selector: SALIDA / PRÉSTAMO */}
