@@ -117,12 +117,12 @@ function PanelActivos({ selectedId, onSelect }: {
   const disponibleCount = activos.filter(o => getState(o) === "DISPONIBLE").length;
 
   return (
-    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
+    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
         <Activity size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ACTIVOS</span>
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">OPERADORES ACTIVOS</span>
         <span className="rounded-md bg-[#78C487]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4a7a55]">{activos.length}</span>
         <div className="ml-auto flex items-center gap-2">
           {enTurnoCount > 0 && (
@@ -338,12 +338,12 @@ function PanelGestion({ selectedId, onSelect }: {
   const showConfirmBaja    = panel === "confirm-baja";
 
   return (
-    <div className="flex w-[420px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
+    <div className="flex w-[480px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
         <Users size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN OPERADORES</span>
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONFIGURAR OPERADOR</span>
         <div className="ml-auto flex items-center gap-1.5">
           <button onClick={handleNew}
             className="flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
