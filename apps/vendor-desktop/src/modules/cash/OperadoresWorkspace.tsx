@@ -344,10 +344,45 @@ function PanelGestion({ selectedId, onSelect }: {
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
         <Users size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN OPERADORES</span>
-        <button onClick={handleNew}
-          className="ml-auto flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
-          <Plus size={10} strokeWidth={2.5} />NUEVO
-        </button>
+        <div className="ml-auto flex items-center gap-1.5">
+          <button onClick={handleNew}
+            className="flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
+            <Plus size={10} strokeWidth={2.5} />NUEVO
+          </button>
+          <button
+            onClick={handleStartEdit}
+            disabled={!selected || hasActiveTurno}
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+              selected && !hasActiveTurno
+                ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
+                : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/40"
+            }`}>
+            <Pencil size={10} strokeWidth={2.5} />EDITAR
+          </button>
+          {selected?.status === "SUSPENDIDO" ? (
+            <button
+              onClick={handleActivate}
+              disabled={hasActiveTurno}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+                !hasActiveTurno
+                  ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.97]"
+                  : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/40"
+              }`}>
+              <CircleCheck size={10} strokeWidth={2.5} />REACTIVAR
+            </button>
+          ) : (
+            <button
+              onClick={() => { setPanel("confirm-suspend"); setReason(""); setReasonError(""); }}
+              disabled={!selected || hasActiveTurno || selected?.status !== "ACTIVO"}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+                selected && !hasActiveTurno && selected.status === "ACTIVO"
+                  ? "bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97]"
+                  : "cursor-not-allowed bg-amber-500/[0.15] text-amber-500/40"
+              }`}>
+              <PauseCircle size={10} strokeWidth={2.5} />SUSPENDER
+            </button>
+          )}
+        </div>
       </div>
 
       {/* SheetBody — detalle del operador seleccionado */}
@@ -363,22 +398,12 @@ function PanelGestion({ selectedId, onSelect }: {
         {/* VIEW */}
         {showView && selected && (
           <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="rounded bg-[#78C487] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.code}</span>
-                <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.name}</span>
-                {selected.status === "SUSPENDIDO" && (
-                  <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">SUSP.</span>
-                )}
-              </div>
-              <button onClick={handleStartEdit} disabled={hasActiveTurno}
-                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold uppercase transition ${
-                  hasActiveTurno
-                    ? "cursor-not-allowed text-[#005BE3]/30"
-                    : "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
-                }`}>
-                <Pencil size={9} strokeWidth={2.5} />EDITAR
-              </button>
+            <div className="flex items-center gap-2">
+              <span className="rounded bg-[#78C487] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.code}</span>
+              <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.name}</span>
+              {selected.status === "SUSPENDIDO" && (
+                <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">SUSP.</span>
+              )}
             </div>
 
             {hasActiveTurno && (
@@ -443,26 +468,12 @@ function PanelGestion({ selectedId, onSelect }: {
               />
             )}
 
-            {!hasActiveTurno && (
-              <div className="flex flex-col gap-1 border-t border-[#f1f5f9] pt-2.5">
-                {selected.status === "ACTIVO" && (
-                  <>
-                    <button onClick={() => { setPanel("confirm-suspend"); setReason(""); setReasonError(""); }}
-                      className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-amber-700 transition hover:bg-amber-50">
-                      <PauseCircle size={9} strokeWidth={2} />SUSPENDER
-                    </button>
-                    <button onClick={() => { setPanel("confirm-baja"); setReason(""); setReasonError(""); }}
-                      className="flex items-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#9ca3af] transition hover:border-red-200 hover:text-red-500">
-                      <UserX size={9} strokeWidth={2} />DAR DE BAJA
-                    </button>
-                  </>
-                )}
-                {selected.status === "SUSPENDIDO" && (
-                  <button onClick={handleActivate}
-                    className="flex items-center gap-1.5 rounded-xl border border-[#78C487]/30 bg-[#f0fdf4] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#4a7a55] transition hover:bg-[#e8f5ea]">
-                    <CircleCheck size={9} strokeWidth={2} />REACTIVAR
-                  </button>
-                )}
+            {!hasActiveTurno && selected.status === "ACTIVO" && (
+              <div className="border-t border-[#f1f5f9] pt-2.5">
+                <button onClick={() => { setPanel("confirm-baja"); setReason(""); setReasonError(""); }}
+                  className="flex w-full items-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#9ca3af] transition hover:border-red-200 hover:text-red-500">
+                  <UserX size={9} strokeWidth={2} />DAR DE BAJA
+                </button>
               </div>
             )}
           </div>
