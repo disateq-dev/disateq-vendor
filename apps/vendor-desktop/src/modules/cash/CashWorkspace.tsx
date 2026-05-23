@@ -311,15 +311,22 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     if (!isOpen && suggestedCashBox) setSelectedCode(suggestedCashBox.code);
   }, [isOpen, suggestedCashBox]);
 
-  // ── movements state ───────────────────────────────────────────
-  const [moveType,       setMoveType]       = useState<MoveType>("egreso");
-  const [moveAmount,     setMoveAmount]     = useState("");
-  const [moveMotivo,     setMoveMotivo]     = useState("");
-  const [moveObservacion,setMoveObservacion]= useState("");
-  const [sourceType,     setSourceType]     = useState<MoveSource>("vendido");
-  const [lastMove,       setLastMove]       = useState<CashMove | null>(null);
-  const moveAmountRef = useRef<HTMLInputElement>(null);
-  const motivoRef     = useRef<HTMLInputElement>(null);
+  // ── movements state ── Área 1: CAJA DEL DÍA ──────────────────
+  const [vendidoMoveType, setVendidoMoveType] = useState<MoveType>("egreso");
+  const [vendidoAmount,   setVendidoAmount]   = useState("");
+  const [vendidoMotivo,   setVendidoMotivo]   = useState("");
+  const [vendidoObs,      setVendidoObs]      = useState("");
+  const [lastVendidoMove, setLastVendidoMove] = useState<CashMove | null>(null);
+  const vendidoAmountRef = useRef<HTMLInputElement>(null);
+  const vendidoMotivoRef = useRef<HTMLInputElement>(null);
+  // ── movements state ── Área 2: FONDO DE CAMBIO ───────────────
+  const [fondoSubTab,   setFondoSubTab]   = useState<"apertura" | "externo">("apertura");
+  const [fondoAmount,   setFondoAmount]   = useState("");
+  const [fondoMotivo,   setFondoMotivo]   = useState("");
+  const [fondoObs,      setFondoObs]      = useState("");
+  const [lastFondoMove, setLastFondoMove] = useState<CashMove | null>(null);
+  const fondoAmountRef = useRef<HTMLInputElement>(null);
+  const fondoMotivoRef = useRef<HTMLInputElement>(null);
 
   // ── reposición state ──────────────────────────────────────────
   const [reposingMoveId,  setReposingMoveId]  = useState<string | null>(null);
@@ -337,8 +344,8 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [resolvingExternoId, setResolvingExternoId] = useState<string | null>(null);
 
   useEffect(() => {
-    setLastMove(null); setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
-    setSourceType("vendido");
+    setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null);
+    setFondoSubTab("apertura"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
     setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
     setResolvingExternoId(null);
@@ -369,8 +376,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   }, [canCorrectApertura]);
 
   // move form derived
-  const totalAmt   = parseFloat(moveAmount) || 0;
-  const canAddMove = validateCanAddMove(totalAmt, moveMotivo);
+  const vendidoTotalAmt = parseFloat(vendidoAmount) || 0;
+  const fondoTotalAmt   = parseFloat(fondoAmount)   || 0;
+  const canAddVendido   = validateCanAddMove(vendidoTotalAmt, vendidoMotivo);
+  const canAddFondo     = validateCanAddMove(fondoTotalAmt,   fondoMotivo);
 
   // repos vinculadas por egreso (de activos, usando refId)
   const repoSumByEgresoId = useMemo(() => {
@@ -474,19 +483,28 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     setEditingApertura(false);
   }
 
-  function handleAddMove() {
-    if (!canAddMove) return;
-    const amt = totalAmt;
-    const fa  = sourceType === "apertura" ? amt : 0;
-    const fv  = sourceType === "vendido"  ? amt : 0;
-    const obs = moveObservacion.trim() || undefined;
-    const regStatus = (sourceType === "apertura" && moveType === "egreso") || sourceType === "externo"
-      ? "por_regularizar" as const : undefined;
-    const move = addCashMove(moveType, amt, moveMotivo.trim(), sourceType, fa, fv, obs, undefined, regStatus);
-    setLastMove(move);
-    setMoveAmount(""); setMoveMotivo(""); setMoveObservacion("");
-    showNotice(`${moveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
-    setTimeout(() => moveAmountRef.current?.focus(), 10);
+  function handleAddVendido() {
+    if (!canAddVendido) return;
+    const amt = vendidoTotalAmt;
+    const obs = vendidoObs.trim() || undefined;
+    const move = addCashMove(vendidoMoveType, amt, vendidoMotivo.trim(), "vendido", 0, amt, obs);
+    setLastVendidoMove(move);
+    setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs("");
+    showNotice(`${vendidoMoveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
+    setTimeout(() => vendidoAmountRef.current?.focus(), 10);
+  }
+
+  function handleAddFondo() {
+    if (!canAddFondo) return;
+    const amt    = fondoTotalAmt;
+    const mType  = fondoSubTab === "externo" ? "ingreso" as const : "egreso" as const;
+    const fa     = fondoSubTab === "apertura" ? amt : 0;
+    const obs    = fondoObs.trim() || undefined;
+    const move = addCashMove(mType, amt, fondoMotivo.trim(), fondoSubTab, fa, 0, obs, undefined, "por_regularizar");
+    setLastFondoMove(move);
+    setFondoAmount(""); setFondoMotivo(""); setFondoObs("");
+    showNotice(`Movimiento fondo registrado · S/ ${amt.toFixed(2)}`);
+    setTimeout(() => fondoAmountRef.current?.focus(), 10);
   }
 
   function closeRepo() {
@@ -1626,43 +1644,23 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               )}
             </div>
 
-            <div className={`flex flex-col gap-2 px-4 py-3 transition-colors duration-200 ${
-              moveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
-            }`}>
+            <div className="min-h-0 flex-1 overflow-y-auto">
 
-              {/* Fuente del movimiento */}
-              <div className="flex gap-1">
-                {([
-                  { src: "vendido"  as MoveSource, label: "CAJA DEL DÍA",     Icon: ShoppingCart },
-                  { src: "apertura" as MoveSource, label: "FONDO DE CAMBIO",   Icon: Wallet       },
-                  { src: "externo"  as MoveSource, label: "PRÉSTAMO AL FONDO", Icon: HandCoins    },
-                ]).map(({ src, label, Icon }) => (
-                  <button key={src}
-                    onClick={() => {
-                      setSourceType(src);
-                      setMoveType(src === "externo" ? "ingreso" : src === "apertura" ? "egreso" : "egreso");
-                      setMoveMotivo(""); setMoveObservacion(""); setLastMove(null);
-                    }}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl py-2 text-[9px] font-bold uppercase tracking-wide transition ${
-                      sourceType === src
-                        ? "bg-[#1a2d4e] text-white shadow-sm"
-                        : "border border-[#e4e9f0] bg-white/60 text-[#9ca3af] hover:border-[#c7d7f4] hover:text-[#374151]"
-                    }`}
-                  >
-                    <Icon size={13} strokeWidth={2} />
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {/* ── ÁREA 1: CAJA DEL DÍA ──────────────────────────── */}
+              <div className={`flex flex-col gap-2 px-4 py-3 border-b border-[#e8edf3] transition-colors ${
+                vendidoMoveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
+              }`}>
+                <div className="flex items-center gap-1.5">
+                  <ShoppingCart size={11} strokeWidth={2} className="text-[#6b7280]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-[#6b7280]">CAJA DEL DÍA</span>
+                </div>
 
-              {/* Tipo — solo visible para CAJA DEL DÍA */}
-              {sourceType === "vendido" && (
                 <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                   {(["egreso", "ingreso"] as MoveType[]).map(t => (
                     <button key={t}
-                      onClick={() => { setMoveType(t); setMoveMotivo(""); setMoveObservacion(""); setLastMove(null); }}
+                      onClick={() => { setVendidoMoveType(t); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null); }}
                       className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
-                        moveType === t
+                        vendidoMoveType === t
                           ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
                           : "text-[#9ca3af] hover:text-[#374151]"
                       }`}
@@ -1671,117 +1669,208 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </button>
                   ))}
                 </div>
-              )}
 
-              {/* Contexto visual para fuentes sin toggle */}
-              {sourceType === "apertura" && (
-                <p className="text-[10px] text-amber-600 font-semibold px-1">
-                  ↓ Salida del fondo de cambio · quedará pendiente devolver
-                </p>
-              )}
-              {sourceType === "externo" && (
-                <p className="text-[10px] text-[#2154d8] font-semibold px-1">
-                  ↑ Dinero que ingresó al fondo de cambio · pendiente devolver o integrar al fondo
-                </p>
-              )}
+                <div className="flex items-center gap-1.5">
+                  <span className={`shrink-0 text-[13px] font-bold ${vendidoMoveType === "ingreso" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
+                  <input
+                    ref={vendidoAmountRef}
+                    type="number"
+                    value={vendidoAmount}
+                    onChange={e => setVendidoAmount(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); vendidoMotivoRef.current?.focus(); } }}
+                    placeholder="0.00"
+                    min="0.01"
+                    step="0.01"
+                    className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                      vendidoMoveType === "ingreso"
+                        ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
+                        : "border-red-300 focus:border-red-500 focus:ring-red-400/15"
+                    }`}
+                  />
+                </div>
 
-              {/* Monto */}
-              <div className="flex items-center gap-1.5">
-                <span className={`shrink-0 text-[13px] font-bold ${moveType === "ingreso" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
                 <input
-                  ref={moveAmountRef}
-                  type="number"
-                  value={moveAmount}
-                  onChange={e => setMoveAmount(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); motivoRef.current?.focus(); } }}
-                  placeholder="0.00"
-                  min="0.01"
-                  step="0.01"
-                  className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
-                    moveType === "ingreso"
-                      ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
-                      : "border-red-300 focus:border-red-500 focus:ring-red-400/15"
-                  }`}
+                  ref={vendidoMotivoRef}
+                  type="text"
+                  value={vendidoMotivo}
+                  onChange={e => setVendidoMotivo(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && canAddVendido) handleAddVendido(); }}
+                  placeholder={vendidoMoveType === "egreso" ? "Ej: Pago mototaxi, pago proveedor..." : "Ej: Depósito, ajuste de caja..."}
+                  maxLength={120}
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                 />
-              </div>
 
-              {/* Motivo */}
-              <input
-                ref={motivoRef}
-                type="text"
-                value={moveMotivo}
-                onChange={e => setMoveMotivo(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && canAddMove) handleAddMove(); }}
-                placeholder={
-                  sourceType === "apertura" ? "Ej: Saqué para buscar cambio, sencillo apartado..." :
-                  sourceType === "externo"  ? "Ej: Monedas prestadas por [nombre]..." :
-                  moveType === "egreso"     ? "Ej: Pago mototaxi, pago proveedor..." :
-                                             "Ej: Depósito, ajuste de caja..."
-                }
-                maxLength={120}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-              />
+                <input
+                  type="text"
+                  value={vendidoObs}
+                  onChange={e => setVendidoObs(e.target.value)}
+                  placeholder="Observación (opcional)"
+                  maxLength={200}
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                />
 
-              {/* Observación */}
-              <input
-                type="text"
-                value={moveObservacion}
-                onChange={e => setMoveObservacion(e.target.value)}
-                placeholder="Observación (opcional)"
-                maxLength={200}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-              />
+                <button
+                  onClick={handleAddVendido}
+                  disabled={!canAddVendido}
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                    canAddVendido
+                      ? vendidoMoveType === "ingreso"
+                        ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
+                        : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
+                      : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                  }`}
+                >
+                  {vendidoMoveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
+                </button>
 
-              {/* Registrar */}
-              <button
-                onClick={handleAddMove}
-                disabled={!canAddMove}
-                className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
-                  canAddMove
-                    ? sourceType === "apertura"
-                      ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
-                      : sourceType === "externo"
-                      ? "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
-                      : moveType === "ingreso"
-                      ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
-                      : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
-                    : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
-                }`}
-              >
-                {sourceType === "apertura" ? "REGISTRAR SALIDA DEL FONDO" :
-                 sourceType === "externo"  ? "REGISTRAR PRÉSTAMO AL FONDO" :
-                 moveType === "ingreso"    ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
-              </button>
-
-              {/* Feedback post-registro */}
-              {lastMove && (
-                <div className="flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-[#f8fafd] px-3 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle size={11} className="shrink-0 text-emerald-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Movimiento registrado</p>
-                      <p className="truncate text-[10px] text-[#9ca3af]">
-                        {lastMove.type === "ingreso" ? "↑" : "↓"} S/ {lastMove.amount.toFixed(2)} · {lastMove.motivo}
-                      </p>
+                {lastVendidoMove && (
+                  <div className="flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-[#f8fafd] px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={11} className="shrink-0 text-emerald-500" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Registrado</p>
+                        <p className="truncate text-[10px] text-[#9ca3af]">
+                          {lastVendidoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastVendidoMove.amount.toFixed(2)} · {lastVendidoMove.motivo}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => void handlePrintVoucher(lastVendidoMove)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
+                      >
+                        <Printer size={10} strokeWidth={2} /> IMPRIMIR
+                      </button>
+                      <button onClick={() => setLastVendidoMove(null)}
+                        className="flex items-center justify-center rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
+                      >
+                        <X size={11} strokeWidth={2} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => void handlePrintVoucher(lastMove)}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
-                    >
-                      <Printer size={10} strokeWidth={2} /> IMPRIMIR
-                    </button>
-                    <button
-                      onClick={() => setLastMove(null)}
-                      title="Cerrar"
-                      className="flex items-center justify-center rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
-                    >
-                      <X size={11} strokeWidth={2} />
-                    </button>
-                  </div>
+                )}
+              </div>
+
+              {/* ── ÁREA 2: FONDO DE CAMBIO ───────────────────────── */}
+              <div className={`flex flex-col gap-2 px-4 py-3 transition-colors ${
+                fondoSubTab === "apertura" ? "bg-[#fffdf7]" : "bg-[#f4f7ff]"
+              }`}>
+                <div className="flex items-center gap-1.5">
+                  <Wallet size={11} strokeWidth={2} className="text-[#6b7280]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-[#6b7280]">FONDO DE CAMBIO</span>
                 </div>
-              )}
+
+                {/* Mini-selector: SALIDA / PRÉSTAMO */}
+                <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+                  {([
+                    { tab: "apertura" as const, label: "SALIDA DEL FONDO" },
+                    { tab: "externo"  as const, label: "PRÉSTAMO AL FONDO" },
+                  ]).map(({ tab, label }) => (
+                    <button key={tab}
+                      onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
+                      className={`flex-1 rounded-[9px] py-1 text-[10px] font-bold uppercase tracking-wide transition ${
+                        fondoSubTab === tab
+                          ? tab === "apertura"
+                            ? "bg-amber-500 text-white shadow-sm"
+                            : "bg-[#2154d8] text-white shadow-sm"
+                          : "text-[#9ca3af] hover:text-[#374151]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {fondoSubTab === "apertura" ? (
+                  <p className="text-[10px] text-amber-600 font-semibold px-1">
+                    ↓ Salida del fondo de cambio · quedará pendiente devolver
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-[#2154d8] font-semibold px-1">
+                    ↑ Dinero que ingresó al fondo de cambio · pendiente devolver o integrar al fondo
+                  </p>
+                )}
+
+                <div className="flex items-center gap-1.5">
+                  <span className={`shrink-0 text-[13px] font-bold ${fondoSubTab === "externo" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
+                  <input
+                    ref={fondoAmountRef}
+                    type="number"
+                    value={fondoAmount}
+                    onChange={e => setFondoAmount(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); fondoMotivoRef.current?.focus(); } }}
+                    placeholder="0.00"
+                    min="0.01"
+                    step="0.01"
+                    className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                      fondoSubTab === "externo"
+                        ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
+                        : "border-amber-300 focus:border-amber-500 focus:ring-amber-400/15"
+                    }`}
+                  />
+                </div>
+
+                <input
+                  ref={fondoMotivoRef}
+                  type="text"
+                  value={fondoMotivo}
+                  onChange={e => setFondoMotivo(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
+                  placeholder={fondoSubTab === "apertura" ? "Ej: Saqué para buscar cambio, sencillo apartado..." : "Ej: Monedas prestadas por [nombre]..."}
+                  maxLength={120}
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                />
+
+                <input
+                  type="text"
+                  value={fondoObs}
+                  onChange={e => setFondoObs(e.target.value)}
+                  placeholder="Observación (opcional)"
+                  maxLength={200}
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                />
+
+                <button
+                  onClick={handleAddFondo}
+                  disabled={!canAddFondo}
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                    canAddFondo
+                      ? fondoSubTab === "apertura"
+                        ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
+                        : "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
+                      : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                  }`}
+                >
+                  {fondoSubTab === "apertura" ? "REGISTRAR SALIDA DEL FONDO" : "REGISTRAR PRÉSTAMO AL FONDO"}
+                </button>
+
+                {lastFondoMove && (
+                  <div className={`flex flex-col gap-1.5 rounded-xl px-3 py-2.5 border ${
+                    fondoSubTab === "apertura" ? "border-amber-200 bg-[#fffdf7]" : "border-[#c7d7f4] bg-[#f0f4ff]"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={11} className={`shrink-0 ${fondoSubTab === "apertura" ? "text-amber-500" : "text-[#2154d8]"}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-[10px] font-bold uppercase tracking-wide ${fondoSubTab === "apertura" ? "text-amber-700" : "text-[#2154d8]"}`}>Registrado · pendiente devolver</p>
+                        <p className="truncate text-[10px] text-[#9ca3af]">
+                          {lastFondoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastFondoMove.amount.toFixed(2)} · {lastFondoMove.motivo}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => void handlePrintVoucher(lastFondoMove)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
+                      >
+                        <Printer size={10} strokeWidth={2} /> IMPRIMIR
+                      </button>
+                      <button onClick={() => setLastFondoMove(null)}
+                        className="flex items-center justify-center rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
+                      >
+                        <X size={11} strokeWidth={2} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
             </div>
           </div>
