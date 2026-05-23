@@ -216,13 +216,13 @@ export function LoginScreen() {
         <div className="px-4 pb-2 flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "90%", height: "auto", display: "block" }} />
         </div>
-        <div style={{ flexGrow: 5 }} />
+        <div className="[flex-grow:5]" />
         {/* Acceso Operativo */}
         <div className="px-4 mb-5 text-right">
           <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5 whitespace-nowrap">Acceso Operativo</h2>
           <p className="text-[11px] text-[#6b7a99] leading-snug">Ingrese su usuario y PIN<br />para acceder al sistema.</p>
         </div>
-        <div style={{ flexGrow: 2 }} />
+        <div className="[flex-grow:2]" />
         {/* Acceso seguro */}
         <div className="px-4 mb-5 flex items-center justify-end gap-3">
           <Shield size={22} className="shrink-0 text-[#45b356]" />
@@ -231,11 +231,11 @@ export function LoginScreen() {
             <p className="text-[10px] text-[#a0aec0] mt-1 leading-none">Conexión protegida y cifrada</p>
           </div>
         </div>
-        <div style={{ flexGrow: 3 }} />
+        <div className="[flex-grow:3]" />
         {/* Turno card (helper) */}
-        <div className="px-4 mb-3">
+        <div className="px-4 mb-1">
           {hasTurn && cashSession.cashBox ? (
-            <div className="rounded-xl border border-[#78C487]/25 bg-[#f0fbf1] px-4 py-3">
+            <div className="rounded-xl bg-[#45b356]/[0.07] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#45b356]" />
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#2d6640]">Turno activo · Caja {cashSession.cashBox.code}</p>
@@ -243,7 +243,7 @@ export function LoginScreen() {
               <p className="text-[11px] text-[#4a7a55] pl-4 leading-snug">Puede continuar sin reapertura</p>
             </div>
           ) : (
-            <div className="rounded-xl border border-[#dde6f0] bg-white/60 px-4 py-3">
+            <div className="rounded-xl bg-[#45b356]/[0.04] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#c8d3e0]" />
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7a99]">Sin turno activo</p>
@@ -253,14 +253,13 @@ export function LoginScreen() {
           )}
         </div>
         {/* Copyright */}
-        <div className="px-4 mb-2">
+        <div className="px-4 mb-5">
           <p className="text-[10px] text-[#b0bec8] leading-[1.5] text-justify">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
             Prohibida su reproducción parcial o total.
           </p>
         </div>
-        <div style={{ flexGrow: 1 }} />
       </div>
 
       {/* ══ SHEET DERECHA — 60% ══ */}
@@ -387,6 +386,12 @@ export function LoginScreen() {
                 </div>
               ) : (
                 <>
+                  {/* Header modo pin-change */}
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#e8eef6]">
+                    <Lock size={12} className="text-[#005BE3] shrink-0" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#005BE3]">Cambio de PIN</span>
+                  </div>
+
                   {/* CAMPO 2: MOTIVO */}
                   <div className="mb-2">
                     <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Motivo</label>
@@ -509,7 +514,7 @@ export function LoginScreen() {
               </button>
               <p className="text-[9px] text-[#4b5563] text-right leading-snug">
                 Podrá regenerarlo en la siguiente ventana{" "}
-                <span onClick={switchToPinChange} className="font-bold cursor-pointer hover:underline">CLIC AQUÍ</span>
+                <button type="button" onClick={switchToPinChange} className="font-bold underline hover:text-[#1a44b8] transition">CLIC AQUÍ</button>
               </p>
             </div>
           )}
