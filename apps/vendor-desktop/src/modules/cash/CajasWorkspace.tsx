@@ -264,48 +264,47 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
         <LayoutGrid size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN DE CAJAS</span>
+      </div>
 
-        <div className="ml-auto flex items-center gap-1.5">
-          <button
-            onClick={() => { onSelect(null); setMode("create"); }}
-            className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
-            <Plus size={12} strokeWidth={2.5} />CREAR BLOQUE
+      {/* ActionBar */}
+      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#78C487]/10 px-4 py-2">
+        <button
+          onClick={() => { onSelect(null); setMode("create"); }}
+          className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
+          <Plus size={10} strokeWidth={2.5} />CREAR BLOQUE
+        </button>
+        <button
+          onClick={() => { if (selected) setMode("edit"); }}
+          disabled={!canActOnSel}
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+            canActOnSel
+              ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
+              : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/50"
+          }`}>
+          <Pencil size={10} strokeWidth={2.5} />EDITAR BLOQUE
+        </button>
+        {thirdAction === null && (
+          <button disabled
+            className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-[#dc2626]/[0.15] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#dc2626]/50">
+            <Ban size={10} strokeWidth={2.5} />DESACTIVAR
           </button>
-
-          <button
-            onClick={() => { if (selected) setMode("edit"); }}
-            disabled={!canActOnSel}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-              canActOnSel
-                ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
-                : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/50"
-            }`}>
-            <Pencil size={12} strokeWidth={2.5} />EDITAR BLOQUE
+        )}
+        {thirdAction === "deactivate" && (
+          <button onClick={handleDeactivate}
+            className="flex items-center gap-1.5 rounded-lg bg-[#dc2626] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#b91c1c] active:scale-[0.97]">
+            <Ban size={10} strokeWidth={2.5} />DESACTIVAR
           </button>
-
-          {thirdAction === null && (
-            <button disabled
-              className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-[#dc2626]/[0.15] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#dc2626]/50">
-              <Ban size={12} strokeWidth={2.5} />DESACTIVAR
-            </button>
-          )}
-          {thirdAction === "deactivate" && (
-            <button onClick={handleDeactivate}
-              className="flex items-center gap-1.5 rounded-lg bg-[#dc2626] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#b91c1c] active:scale-[0.97]">
-              <Ban size={12} strokeWidth={2.5} />DESACTIVAR
-            </button>
-          )}
-          {thirdAction === "activate" && (
-            <button onClick={handleActivate}
-              className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
-              <ToggleRight size={12} strokeWidth={2.5} />ACTIVAR
-            </button>
-          )}
-        </div>
+        )}
+        {thirdAction === "activate" && (
+          <button onClick={handleActivate}
+            className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
+            <ToggleRight size={10} strokeWidth={2.5} />ACTIVAR
+          </button>
+        )}
       </div>
 
       {/* Body */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3">
 
         {/* VIEW */}
         {showView && selected && (
