@@ -629,7 +629,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
         {/* Status / pre-open card */}
         {isOpen ? (
-          <div className={`flex flex-col overflow-hidden rounded-[24px] border bg-[#FDFCF9] ${
+          <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
             closingStage > 0 ? "border-red-200" : "border-[#78C487]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
@@ -646,7 +646,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-red-400">{closingStage}/5</span>
               )}
             </div>
-            <div className="flex flex-col gap-4 px-5 py-4">
+            <div className="flex flex-col gap-3 px-4 pt-3 pb-3">
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f4f7fb] ${
                 closingStage > 0 ? "text-[#b91c1c]" : "text-emerald-600"
@@ -715,7 +715,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
         ) : (
           /* Pre-open: operator + apertura card */
-          <div className={`flex flex-col overflow-hidden rounded-[24px] border bg-[#FDFCF9] ${
+          <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
             openingMode === "exceptional" ? "border-amber-300/60" : "border-[#78C487]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
@@ -734,7 +734,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-amber-600">PIN + MOTIVO</span>
               )}
             </div>
-            <div className="flex flex-col gap-4 px-5 py-4">
+            <div className="flex flex-col gap-3 px-4 pt-3 pb-3">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f1f5f9] text-[#9ca3af]">
                 <Clock size={20} strokeWidth={1.5} />
@@ -1046,7 +1046,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       {!isOpen ? (
 
         /* BOX SELECTOR — bloque completo del operador */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/50 bg-[#FDFCF9]">
           <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
             <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
             <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INFORMACIÓN DE CAJA DISPONIBLE</span>
@@ -1054,7 +1054,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               BLOQUE {operatorBlockPrefix}00
             </span>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3">
             <div className="mb-1.5 px-1">
               <p className="text-[11px] font-semibold text-[#6b7280]">{operatorName}</p>
             </div>
@@ -1080,7 +1080,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       ) : closingStage > 0 ? (
 
         /* CLOSING FLOW — layout: flujo (izq) + timeline (der) */
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-red-200 bg-[#FDFCF9]">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[28px] border border-red-200 bg-[#FDFCF9]">
 
           {/* ── Panel izquierdo: flujo operacional ── */}
           <div className="flex min-h-0 flex-1 flex-col border-r border-[#fef2f2]">
@@ -1099,7 +1099,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             </div>
 
             {/* Content por stage */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3.5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-3">
 
               {/* ── STAGE 1: FONDO APERTURA ── */}
               {closingStage === 1 && (
@@ -1570,7 +1570,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         <div className="flex min-h-0 flex-1 gap-2">
 
           {/* ─── MOVEMENTS PANEL ─── */}
-          <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
@@ -1725,7 +1725,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           </div>
 
           {/* ─── HISTORY PANEL ─── */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
