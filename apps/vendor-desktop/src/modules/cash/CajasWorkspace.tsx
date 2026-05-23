@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Ban, ToggleRight, Layers, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
+import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 
 // ── tipos estructurales ────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
 
       {/* SheetHeader */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
-        <Layers size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <LayoutGrid size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN DE CAJAS</span>
 
         <div className="ml-auto flex items-center gap-1.5">

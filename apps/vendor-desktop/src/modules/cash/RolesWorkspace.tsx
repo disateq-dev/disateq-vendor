@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Ban, ToggleRight, Shield, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Ban, ToggleRight, Shield, SlidersHorizontal, ChevronRight } from "lucide-react";
 
 type Role = {
   id: string;
@@ -186,7 +186,7 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
 
       {/* SheetHeader — línea única fija */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
-        <Shield size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <SlidersHorizontal size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN DE ROLES</span>
 
         <div className="ml-auto flex items-center gap-1.5">
