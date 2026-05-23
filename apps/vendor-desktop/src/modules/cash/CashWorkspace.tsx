@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
@@ -632,14 +632,18 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           <div className={`flex flex-col overflow-hidden rounded-[24px] border bg-[#FDFCF9] ${
             closingStage > 0 ? "border-red-200" : "border-[#78C487]/50"
           }`}>
-            <div className={`shrink-0 flex items-center justify-between px-4 py-2.5 border-b ${
+            <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
               closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F3F8F4] border-[#78C487]/15"
             }`}>
-              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-                {closingStage > 0 ? "CIERRE DE TURNO" : "INFORMACIÓN TURNO"}
+              {closingStage > 0
+                ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-red-400" />
+                : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+              }
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+                {closingStage > 0 ? "CONTEO CIERRE DE TURNO" : "INFORMACIÓN TURNO"}
               </span>
               {closingStage > 0 && (
-                <span className="text-[9px] font-bold uppercase tracking-widest text-red-400">{closingStage}/5</span>
+                <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-red-400">{closingStage}/5</span>
               )}
             </div>
             <div className="flex flex-col gap-4 px-5 py-4">
@@ -714,16 +718,20 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           <div className={`flex flex-col overflow-hidden rounded-[24px] border bg-[#FDFCF9] ${
             openingMode === "exceptional" ? "border-amber-300/60" : "border-[#78C487]/50"
           }`}>
-            <div className={`shrink-0 flex items-center justify-between px-4 py-2.5 border-b ${
+            <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
               openingMode === "exceptional"
                 ? "bg-amber-50 border-amber-200/60"
                 : "bg-[#F3F8F4] border-[#78C487]/15"
             }`}>
-              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+              {openingMode === "exceptional"
+                ? <AlertTriangle size={13} strokeWidth={2} className="shrink-0 text-amber-500" />
+                : <LogIn         size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+              }
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 {openingMode === "exceptional" ? "APERTURA ESPECIAL" : "APERTURA DE TURNO"}
               </span>
               {openingMode === "exceptional" && (
-                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-600">PIN + MOTIVO</span>
+                <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-amber-600">PIN + MOTIVO</span>
               )}
             </div>
             <div className="flex flex-col gap-4 px-5 py-4">
@@ -1039,9 +1047,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
         /* BOX SELECTOR — bloque completo del operador */
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
-            <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INFORMACIÓN DE CAJA DISPONIBLE</span>
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-[#78C487]">
+          <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
+            <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+            <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INFORMACIÓN DE CAJA DISPONIBLE</span>
+            <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#78C487]">
               BLOQUE {operatorBlockPrefix}00
             </span>
           </div>
@@ -1077,9 +1086,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           <div className="flex min-h-0 flex-1 flex-col border-r border-[#fef2f2]">
 
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#FEF5F5] border-b border-red-100">
-              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CIERRE DE TURNO</span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
+              <LogOut size={13} strokeWidth={2} className="shrink-0 text-red-400" />
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONTEO CIERRE DE TURNO</span>
+              <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO APERTURA"
                  : closingStage === 2 ? "CONTEO OPER."
                  : closingStage === 3 ? "VALIDACIÓN"
@@ -1562,10 +1572,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           {/* ─── MOVEMENTS PANEL ─── */}
           <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
-              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
+              <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
               {cashMoves.length > 0 && (
-                <div className="flex items-center gap-2.5">
+                <div className="ml-auto flex items-center gap-2.5">
                   {ingresosTotal > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingresosTotal.toFixed(2)}</span>}
                   {egresosTotal  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egresosTotal.toFixed(2)}</span>}
                   {moneyGt(totalPending, 0) && <span className="text-[10px] font-bold text-amber-600 tabular-nums">↩ S/ {totalPending.toFixed(2)}</span>}
@@ -1716,9 +1727,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           {/* ─── HISTORY PANEL ─── */}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-[#F3F8F4] border-b border-[#78C487]/15">
-              <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
-              <div className="flex items-center gap-2.5">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
+              <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
+              <div className="ml-auto flex items-center gap-2.5">
                 {moneyGt(totalPending, 0) && (
                   <span className="text-[10px] font-bold text-amber-600 tabular-nums">⚠ S/ {totalPending.toFixed(2)} pdte.</span>
                 )}

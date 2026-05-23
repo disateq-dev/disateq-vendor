@@ -338,7 +338,7 @@ function PanelGestion({ selectedId, onSelect }: {
   const showConfirmBaja    = panel === "confirm-baja";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
+    <div className="flex w-[320px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
@@ -613,12 +613,12 @@ function PanelHistorico() {
   const bajas       = operators.filter(o => o.status === "INACTIVO");
 
   return (
-    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#e0e5ec] bg-[#FAFBFC]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
 
-      {/* SheetHeader — línea única fija, tono archivístico */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#e0e5ec] bg-[#F0F2F6] px-4">
-        <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#6b7280]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#374151] leading-none">HISTÓRICO</span>
+      {/* SheetHeader — línea única fija */}
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
+        <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
         <div className="ml-auto flex items-center gap-2">
           {suspendidos.length > 0 && (
             <span className="text-[9px] font-semibold text-amber-500">{suspendidos.length} susp.</span>
