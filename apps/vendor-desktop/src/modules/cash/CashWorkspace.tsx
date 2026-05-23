@@ -1650,7 +1650,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             </div>
 
             {/* Tab switcher — fijo */}
-            <div className="shrink-0 px-3 py-2 bg-white border-b border-[#e8edf3]">
+            <div className={`shrink-0 px-3 py-2 border-b border-[#e8edf3] transition-colors duration-150 ${
+              movPanel === "vendido"
+                ? vendidoMoveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
+                : fondoSubTab === "apertura" ? "bg-[#fffdf7]" : "bg-[#f4f7ff]"
+            }`}>
               <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                 <button
                   onClick={() => setMovPanel("vendido")}
