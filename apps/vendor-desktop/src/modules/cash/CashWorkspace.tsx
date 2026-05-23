@@ -640,7 +640,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
               }
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-                {closingStage > 0 ? "CONTEO CIERRE DE TURNO" : "INFORMACIÓN TURNO"}
+                {closingStage > 0 ? "CIERRE DE TURNO" : "INFORMACIÓN TURNO"}
               </span>
               {closingStage > 0 && (
                 <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-red-400">{closingStage}/5</span>
