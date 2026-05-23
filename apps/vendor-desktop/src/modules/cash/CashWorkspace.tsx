@@ -311,6 +311,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     if (!isOpen && suggestedCashBox) setSelectedCode(suggestedCashBox.code);
   }, [isOpen, suggestedCashBox]);
 
+  // ── movements panel tab ───────────────────────────────────────
+  const [movPanel, setMovPanel] = useState<"vendido" | "fondo">("vendido");
+
   // ── movements state ── Área 1: CAJA DEL DÍA ──────────────────
   const [vendidoMoveType, setVendidoMoveType] = useState<MoveType>("egreso");
   const [vendidoAmount,   setVendidoAmount]   = useState("");
@@ -344,6 +347,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [resolvingExternoId, setResolvingExternoId] = useState<string | null>(null);
 
   useEffect(() => {
+    setMovPanel("vendido");
     setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null);
     setFondoSubTab("apertura"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
@@ -1632,6 +1636,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           {/* ─── MOVEMENTS PANEL ─── */}
           <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/50 bg-[#FDFCF9]">
 
+            {/* SheetHeader */}
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
               <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
@@ -1644,232 +1649,257 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               )}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
-
-              {/* ── ÁREA 1: CAJA DEL DÍA ──────────────────────────── */}
-              <div className={`flex flex-col gap-2 px-4 py-3 border-b border-[#e8edf3] transition-colors ${
-                vendidoMoveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"
-              }`}>
-                <div className="flex items-center gap-1.5">
-                  <ShoppingCart size={11} strokeWidth={2} className="text-[#6b7280]" />
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-[#6b7280]">CAJA DEL DÍA</span>
-                </div>
-
-                <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
-                  {(["egreso", "ingreso"] as MoveType[]).map(t => (
-                    <button key={t}
-                      onClick={() => { setVendidoMoveType(t); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null); }}
-                      className={`flex-1 rounded-[9px] py-1 text-[11px] font-bold uppercase tracking-wide transition ${
-                        vendidoMoveType === t
-                          ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
-                          : "text-[#9ca3af] hover:text-[#374151]"
-                      }`}
-                    >
-                      {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span className={`shrink-0 text-[13px] font-bold ${vendidoMoveType === "ingreso" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
-                  <input
-                    ref={vendidoAmountRef}
-                    type="number"
-                    value={vendidoAmount}
-                    onChange={e => setVendidoAmount(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); vendidoMotivoRef.current?.focus(); } }}
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
-                      vendidoMoveType === "ingreso"
-                        ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
-                        : "border-red-300 focus:border-red-500 focus:ring-red-400/15"
-                    }`}
-                  />
-                </div>
-
-                <input
-                  ref={vendidoMotivoRef}
-                  type="text"
-                  value={vendidoMotivo}
-                  onChange={e => setVendidoMotivo(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && canAddVendido) handleAddVendido(); }}
-                  placeholder={vendidoMoveType === "egreso" ? "Ej: Pago mototaxi, pago proveedor..." : "Ej: Depósito, ajuste de caja..."}
-                  maxLength={120}
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                />
-
-                <input
-                  type="text"
-                  value={vendidoObs}
-                  onChange={e => setVendidoObs(e.target.value)}
-                  placeholder="Observación (opcional)"
-                  maxLength={200}
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                />
-
+            {/* Tab switcher — fijo */}
+            <div className="shrink-0 px-3 py-2 bg-white border-b border-[#e8edf3]">
+              <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                 <button
-                  onClick={handleAddVendido}
-                  disabled={!canAddVendido}
-                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
-                    canAddVendido
-                      ? vendidoMoveType === "ingreso"
-                        ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
-                        : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
-                      : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                  onClick={() => setMovPanel("vendido")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[9px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                    movPanel === "vendido" ? "bg-white text-[#374151] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
                   }`}
                 >
-                  {vendidoMoveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
+                  <ShoppingCart size={11} strokeWidth={2} />
+                  CAJA DEL DÍA
                 </button>
+                <button
+                  onClick={() => setMovPanel("fondo")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[9px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                    movPanel === "fondo" ? "bg-white text-[#374151] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
+                  }`}
+                >
+                  <Wallet size={11} strokeWidth={2} />
+                  FONDO DE CAMBIO
+                </button>
+              </div>
+            </div>
 
-                {lastVendidoMove && (
-                  <div className="flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-[#f8fafd] px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={11} className="shrink-0 text-emerald-500" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Registrado</p>
-                        <p className="truncate text-[10px] text-[#9ca3af]">
-                          {lastVendidoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastVendidoMove.amount.toFixed(2)} · {lastVendidoMove.motivo}
-                        </p>
+            {/* Content — sheets switcheables */}
+            <div className="relative min-h-0 flex-1">
+
+              {/* Sheet: CAJA DEL DÍA */}
+              <div className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 ${
+                movPanel === "vendido" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+              } ${vendidoMoveType === "ingreso" ? "bg-[#f7fbf7]" : "bg-[#fbf7f7]"}`}>
+                <div className="flex flex-col gap-2.5 px-4 py-4">
+
+                  <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+                    {(["egreso", "ingreso"] as MoveType[]).map(t => (
+                      <button key={t}
+                        onClick={() => { setVendidoMoveType(t); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null); }}
+                        className={`flex-1 rounded-[9px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                          vendidoMoveType === t
+                            ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
+                            : "text-[#9ca3af] hover:text-[#374151]"
+                        }`}
+                      >
+                        {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className={`shrink-0 text-[13px] font-bold ${vendidoMoveType === "ingreso" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
+                    <input
+                      ref={vendidoAmountRef}
+                      type="number"
+                      value={vendidoAmount}
+                      onChange={e => setVendidoAmount(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); vendidoMotivoRef.current?.focus(); } }}
+                      placeholder="0.00"
+                      min="0.01"
+                      step="0.01"
+                      className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                        vendidoMoveType === "ingreso"
+                          ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
+                          : "border-red-300 focus:border-red-500 focus:ring-red-400/15"
+                      }`}
+                    />
+                  </div>
+
+                  <input
+                    ref={vendidoMotivoRef}
+                    type="text"
+                    value={vendidoMotivo}
+                    onChange={e => setVendidoMotivo(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && canAddVendido) handleAddVendido(); }}
+                    placeholder={vendidoMoveType === "egreso" ? "Ej: Pago mototaxi, pago proveedor..." : "Ej: Depósito, ajuste de caja..."}
+                    maxLength={120}
+                    className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                  />
+
+                  <input
+                    type="text"
+                    value={vendidoObs}
+                    onChange={e => setVendidoObs(e.target.value)}
+                    placeholder="Observación (opcional)"
+                    maxLength={200}
+                    className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                  />
+
+                  <button
+                    onClick={handleAddVendido}
+                    disabled={!canAddVendido}
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                      canAddVendido
+                        ? vendidoMoveType === "ingreso"
+                          ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
+                          : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
+                        : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                    }`}
+                  >
+                    {vendidoMoveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
+                  </button>
+
+                  {lastVendidoMove && (
+                    <div className="flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={11} className="shrink-0 text-emerald-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Registrado</p>
+                          <p className="truncate text-[10px] text-[#9ca3af]">
+                            {lastVendidoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastVendidoMove.amount.toFixed(2)} · {lastVendidoMove.motivo}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => void handlePrintVoucher(lastVendidoMove)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
+                        >
+                          <Printer size={10} strokeWidth={2} /> IMPRIMIR
+                        </button>
+                        <button onClick={() => setLastVendidoMove(null)}
+                          className="flex items-center justify-center rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
+                        >
+                          <X size={11} strokeWidth={2} />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-1.5">
-                      <button onClick={() => void handlePrintVoucher(lastVendidoMove)}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
-                      >
-                        <Printer size={10} strokeWidth={2} /> IMPRIMIR
-                      </button>
-                      <button onClick={() => setLastVendidoMove(null)}
-                        className="flex items-center justify-center rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
-                      >
-                        <X size={11} strokeWidth={2} />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+
+                </div>
               </div>
 
-              {/* ── ÁREA 2: FONDO DE CAMBIO ───────────────────────── */}
-              <div className={`flex flex-col gap-2 px-4 py-3 transition-colors ${
-                fondoSubTab === "apertura" ? "bg-[#fffdf7]" : "bg-[#f4f7ff]"
-              }`}>
-                <div className="flex items-center gap-1.5">
-                  <Wallet size={11} strokeWidth={2} className="text-[#6b7280]" />
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-[#6b7280]">FONDO DE CAMBIO</span>
-                </div>
+              {/* Sheet: FONDO DE CAMBIO */}
+              <div className={`absolute inset-0 overflow-y-auto transition-opacity duration-150 ${
+                movPanel === "fondo" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+              } ${fondoSubTab === "apertura" ? "bg-[#fffdf7]" : "bg-[#f4f7ff]"}`}>
+                <div className="flex flex-col gap-2.5 px-4 py-4">
 
-                {/* Mini-selector: SALIDA / PRÉSTAMO */}
-                <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
-                  {([
-                    { tab: "apertura" as const, label: "SALIDA DEL FONDO" },
-                    { tab: "externo"  as const, label: "PRÉSTAMO AL FONDO" },
-                  ]).map(({ tab, label }) => (
-                    <button key={tab}
-                      onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
-                      className={`flex-1 rounded-[9px] py-1 text-[10px] font-bold uppercase tracking-wide transition ${
-                        fondoSubTab === tab
-                          ? tab === "apertura"
-                            ? "bg-amber-500 text-white shadow-sm"
-                            : "bg-[#2154d8] text-white shadow-sm"
-                          : "text-[#9ca3af] hover:text-[#374151]"
+                  {/* Mini-selector: SALIDA / PRÉSTAMO */}
+                  <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+                    {([
+                      { tab: "apertura" as const, label: "SALIDA DEL FONDO" },
+                      { tab: "externo"  as const, label: "PRÉSTAMO AL FONDO" },
+                    ]).map(({ tab, label }) => (
+                      <button key={tab}
+                        onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
+                        className={`flex-1 rounded-[9px] py-1.5 text-[10px] font-bold uppercase tracking-wide transition ${
+                          fondoSubTab === tab
+                            ? tab === "apertura"
+                              ? "bg-amber-500 text-white shadow-sm"
+                              : "bg-[#2154d8] text-white shadow-sm"
+                            : "text-[#9ca3af] hover:text-[#374151]"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {fondoSubTab === "apertura" ? (
+                    <p className="text-[10px] text-amber-600 font-semibold px-1">
+                      ↓ Salida del fondo de cambio · quedará pendiente devolver
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-[#2154d8] font-semibold px-1">
+                      ↑ Dinero que ingresó al fondo de cambio · pendiente devolver o integrar al fondo
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-1.5">
+                    <span className={`shrink-0 text-[13px] font-bold ${fondoSubTab === "externo" ? "text-emerald-500" : "text-amber-500"}`}>S/</span>
+                    <input
+                      ref={fondoAmountRef}
+                      type="number"
+                      value={fondoAmount}
+                      onChange={e => setFondoAmount(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); fondoMotivoRef.current?.focus(); } }}
+                      placeholder="0.00"
+                      min="0.01"
+                      step="0.01"
+                      className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                        fondoSubTab === "externo"
+                          ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
+                          : "border-amber-300 focus:border-amber-500 focus:ring-amber-400/15"
                       }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                    />
+                  </div>
 
-                {fondoSubTab === "apertura" ? (
-                  <p className="text-[10px] text-amber-600 font-semibold px-1">
-                    ↓ Salida del fondo de cambio · quedará pendiente devolver
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-[#2154d8] font-semibold px-1">
-                    ↑ Dinero que ingresó al fondo de cambio · pendiente devolver o integrar al fondo
-                  </p>
-                )}
-
-                <div className="flex items-center gap-1.5">
-                  <span className={`shrink-0 text-[13px] font-bold ${fondoSubTab === "externo" ? "text-emerald-500" : "text-red-500"}`}>S/</span>
                   <input
-                    ref={fondoAmountRef}
-                    type="number"
-                    value={fondoAmount}
-                    onChange={e => setFondoAmount(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); fondoMotivoRef.current?.focus(); } }}
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
-                      fondoSubTab === "externo"
-                        ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
-                        : "border-amber-300 focus:border-amber-500 focus:ring-amber-400/15"
-                    }`}
+                    ref={fondoMotivoRef}
+                    type="text"
+                    value={fondoMotivo}
+                    onChange={e => setFondoMotivo(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
+                    placeholder={fondoSubTab === "apertura" ? "Ej: Saqué para buscar cambio, sencillo apartado..." : "Ej: Monedas prestadas por [nombre]..."}
+                    maxLength={120}
+                    className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                   />
-                </div>
 
-                <input
-                  ref={fondoMotivoRef}
-                  type="text"
-                  value={fondoMotivo}
-                  onChange={e => setFondoMotivo(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
-                  placeholder={fondoSubTab === "apertura" ? "Ej: Saqué para buscar cambio, sencillo apartado..." : "Ej: Monedas prestadas por [nombre]..."}
-                  maxLength={120}
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                />
+                  <input
+                    type="text"
+                    value={fondoObs}
+                    onChange={e => setFondoObs(e.target.value)}
+                    placeholder="Observación (opcional)"
+                    maxLength={200}
+                    className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                  />
 
-                <input
-                  type="text"
-                  value={fondoObs}
-                  onChange={e => setFondoObs(e.target.value)}
-                  placeholder="Observación (opcional)"
-                  maxLength={200}
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                />
+                  <button
+                    onClick={handleAddFondo}
+                    disabled={!canAddFondo}
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                      canAddFondo
+                        ? fondoSubTab === "apertura"
+                          ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
+                          : "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
+                        : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                    }`}
+                  >
+                    {fondoSubTab === "apertura" ? "REGISTRAR SALIDA DEL FONDO" : "REGISTRAR PRÉSTAMO AL FONDO"}
+                  </button>
 
-                <button
-                  onClick={handleAddFondo}
-                  disabled={!canAddFondo}
-                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
-                    canAddFondo
-                      ? fondoSubTab === "apertura"
-                        ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
-                        : "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
-                      : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
-                  }`}
-                >
-                  {fondoSubTab === "apertura" ? "REGISTRAR SALIDA DEL FONDO" : "REGISTRAR PRÉSTAMO AL FONDO"}
-                </button>
-
-                {lastFondoMove && (
-                  <div className={`flex flex-col gap-1.5 rounded-xl px-3 py-2.5 border ${
-                    fondoSubTab === "apertura" ? "border-amber-200 bg-[#fffdf7]" : "border-[#c7d7f4] bg-[#f0f4ff]"
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={11} className={`shrink-0 ${fondoSubTab === "apertura" ? "text-amber-500" : "text-[#2154d8]"}`} />
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-[10px] font-bold uppercase tracking-wide ${fondoSubTab === "apertura" ? "text-amber-700" : "text-[#2154d8]"}`}>Registrado · pendiente devolver</p>
-                        <p className="truncate text-[10px] text-[#9ca3af]">
-                          {lastFondoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastFondoMove.amount.toFixed(2)} · {lastFondoMove.motivo}
-                        </p>
+                  {lastFondoMove && (
+                    <div className={`flex flex-col gap-1.5 rounded-xl border px-3 py-2.5 ${
+                      lastFondoMove.sourceType === "apertura" ? "border-amber-200 bg-white" : "border-[#c7d7f4] bg-white"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={11} className={`shrink-0 ${lastFondoMove.sourceType === "apertura" ? "text-amber-500" : "text-[#2154d8]"}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[10px] font-bold uppercase tracking-wide ${lastFondoMove.sourceType === "apertura" ? "text-amber-700" : "text-[#2154d8]"}`}>
+                            Registrado · pendiente devolver
+                          </p>
+                          <p className="truncate text-[10px] text-[#9ca3af]">
+                            {lastFondoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastFondoMove.amount.toFixed(2)} · {lastFondoMove.motivo}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => void handlePrintVoucher(lastFondoMove)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
+                        >
+                          <Printer size={10} strokeWidth={2} /> IMPRIMIR
+                        </button>
+                        <button onClick={() => setLastFondoMove(null)}
+                          className="flex items-center justify-center rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
+                        >
+                          <X size={11} strokeWidth={2} />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-1.5">
-                      <button onClick={() => void handlePrintVoucher(lastFondoMove)}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
-                      >
-                        <Printer size={10} strokeWidth={2} /> IMPRIMIR
-                      </button>
-                      <button onClick={() => setLastFondoMove(null)}
-                        className="flex items-center justify-center rounded-lg border border-[#e4e9f0] px-2.5 py-1.5 text-[#9ca3af] transition hover:bg-[#f1f5f9] hover:text-[#374151]"
-                      >
-                        <X size={11} strokeWidth={2} />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+
+                </div>
               </div>
 
             </div>
