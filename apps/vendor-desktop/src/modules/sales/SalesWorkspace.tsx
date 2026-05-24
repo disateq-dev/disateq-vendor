@@ -173,7 +173,7 @@ export function SalesWorkspace() {
 
   const catalog = rubroConfig.catalog;
 
-  const isCalcMode  = /^[0-9+\-*/.]+$/.test(query.trim()) && query.trim().length >= 1;
+  const isCalcMode  = /^[0-9+\-*/.]+$/.test(query.trim()) && /[+\-*/]/.test(query.trim());
   const calcResult  = isCalcMode ? safeCalc(query) : null;
 
   const isSearching   = searchQuery.length >= 1;
