@@ -371,7 +371,7 @@ export function CobroPanel() {
     <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <header className="shrink-0 flex items-center gap-2 border-b border-[#F2A900]/15 bg-[#F9F6EC] px-4 py-2.5">
+      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#F2A900]/15 bg-[#F9F6EC] px-4">
         <button
           title="Tecla [Esc]"
           onClick={cobroView === "client" ? resetForm : closeCobro}
@@ -781,7 +781,7 @@ export function CobroPanel() {
               title="Tecla [F12]"
               onClick={handleImprimir}
               disabled={!canConfirm}
-              className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#45b356] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(69,179,86,0.32)] transition hover:bg-[#35994a] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+              className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#56C264] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(86,194,100,0.32)] transition hover:bg-[#45b356] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Printer size={15} strokeWidth={2} />
               Imprimir
@@ -811,7 +811,7 @@ export function CobroPanel() {
               title="Tecla [Enter]"
               onClick={() => handleEstablecer(false)}
               disabled={!canEstablecer}
-              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#45b356] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(69,179,86,0.28)] transition hover:bg-[#35994a] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#56C264] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(86,194,100,0.28)] transition hover:bg-[#45b356] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
             >
               Establecer
             </button>
