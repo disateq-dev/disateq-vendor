@@ -1,481 +1,554 @@
-# ARQUITECTURA OPERACIONAL VISUAL — DISATEQ VENDOR™
+# DISATEQ VENDOR™ — Operational Visual Architecture
 
-## Objetivo
+## Purpose
 
-Formalizar la arquitectura operacional visual del entorno DISATEQ VENDOR™.
+DISATEQ VENDOR™ define una arquitectura visual operacional basada en continuidad espacial, estabilidad runtime y ergonomía desktop-first.
 
-Este documento define:
+La arquitectura visual debe permitir:
 
-* estructura visual operacional
-* jerarquía contextual
-* semántica de componentes
-* comportamiento del runtime
-* filosofía UX/UI operacional
+- continuidad operacional prolongada
+- orientación espacial consistente
+- navegación contextual clara
+- densidad operacional controlada
+- estabilidad visual
+- muscle memory operacional
+- continuidad runtime persistente
 
-IMPORTANTE:
+La interfaz debe sentirse como un único runtime operacional integrado.
 
-Esta arquitectura NO es estática.
-
-Puede evolucionar con:
-
-* nuevos contextos
-* nuevos componentes
-* nuevos patrones operacionales
-* nuevas necesidades runtime
-
-Por lo tanto:
-
-```txt
-este documento representa la filosofía operacional actual
-NO una limitación rígida futura
-```
+NO como:
+- pantallas desconectadas
+- navegación web tradicional
+- dashboards SaaS
+- layouts administrativos fragmentados
+- overlays invasivos
 
 ---
 
-# PRINCIPIO CENTRAL
+## Spatial Philosophy
 
-DISATEQ VENDOR™ NO debe sentirse como:
+La arquitectura espacial de DISATEQ VENDOR™ se basa en continuidad contextual y geometría operacional estable.
 
-* dashboard SaaS
-* ERP web clásico
-* webapp genérica dentro de desktop
-* sistema administrativo inflado
+Toda interacción debe sentirse como continuidad del mismo runtime operacional vivo.
 
-DISATEQ VENDOR™ debe sentirse como:
+La geometría principal debe mantenerse:
+- consistente
+- predecible
+- alineada
+- estable durante sesiones extensas
 
-```txt
-software operacional vivo
-```
+La navegación debe sentirse como:
+- continuidad contextual
+- profundización operacional
+- expansión natural del mismo runtime
 
-Orientado a:
-
-* desktop-first
-* continuidad operacional
-* keyboard-first
-* resiliencia operacional
-* densidad operacional
-* baja fricción cognitiva
-* runtime vivo
+NO como:
+- cambio de aplicación
+- navegación multipágina
+- pantallas aisladas
+- overlays dominantes
 
 ---
 
-# FILOSOFÍA VISUAL OPERACIONAL
+## Global Geometry
 
-Mantener siempre:
+La geometría global de DISATEQ VENDOR™ debe mantenerse estable en todo el runtime operacional.
 
-* Modern Operational UI
-* continuidad visual
-* densidad operacional
-* microcontexto contextual
-* superficies suaves
-* semántica operacional del color
-* keyboard-first
-* desktop-native feel
-* continuidad operacional viva
+El sistema debe preservar:
+- alineación consistente
+- boundaries previsibles
+- continuidad visual
+- ritmo espacial uniforme
+- orientación operacional estable
 
-Evitar:
+La interfaz debe construirse sobre una geometría madre compartida.
 
-* exceso de whitespace
-* dashboards SaaS
-* tabs modernas superficiales
-* layouts inflados
-* glassmorphism excesivo
-* UI centrada en decoración
-* navegación webapp genérica
+Toda expansión contextual debe respetar:
+- misma estructura espacial base
+- mismos límites operacionales
+- mismas líneas de continuidad
+- misma lógica de expansión contextual
 
----
+La geometría NO debe:
+- deformarse arbitrariamente
+- alterar spacing principal entre contextos
+- generar saltos espaciales bruscos
+- romper continuidad visual
 
-# ESTRUCTURA OFICIAL DEL ENTORNO
-
-El entorno operacional principal DISATEQ VENDOR™ se compone de:
-
-| Área            | Función                            |
-| --------------- | ---------------------------------- |
-| Barra de título | Integración ventana Windows/Tauri  |
-| TOPBAR          | Identidad operacional superior     |
-| CONTEXTBAR      | Navegación operacional principal   |
-| SUBCONTEXTBAR   | Subcontexto operacional contextual |
-| WORKSPACE       | Área operacional viva              |
-| PANELS          | Agrupadores funcionales            |
-| SHEETS          | Subvistas operacionales            |
-| FOOTBAR         | Estado operacional inferior        |
+La estabilidad geométrica es obligatoria para preservar:
+- muscle memory
+- velocidad operacional
+- orientación contextual
+- continuidad runtime
 
 ---
 
-# LOGIN
-
-## IMPORTANTE
-
-El LOGIN:
-
-* pertenece al entorno DISATEQ VENDOR™
-* mantiene identidad visual DISATEQ
-* mantiene filosofía operacional
-
-PERO:
-
-```txt
-opera como ventana independiente
-```
-
-con comportamiento distinto al runtime principal.
-
----
-
-# BARRA DE TÍTULO
-
-## Naturaleza
-
-Barra heredada de Windows/Tauri.
-
-## Función
-
-* mover ventana
-* controles sistema
-* integración desktop-native
-
-## IMPORTANTE
-
-NO reemplazar innecesariamente con titlebars fake webapp.
-
-Mantener:
-
-```txt
-desktop-native feel
-```
-
----
-
-# TOPBAR
-
-## Naturaleza
-
-Barra operacional superior principal.
-
-## Función
-
-Conviven:
-
-* marca DISATEQ VENDOR™
-* información negocio
-* operador actual
-* caja operativa
-* turno actual
-* estado runtime
-* acciones globales
-* botón cerrar sistema
-
-## IMPORTANTE
-
-La TOPBAR NO es decorativa.
-
-Representa:
-
-```txt
-identidad operacional viva
-```
-
-## Debe sentirse
-
-* compacta
-* contextual
-* estable
-* operacional
-* siempre presente
-
----
-
-# CONTEXTBAR
-
-## Naturaleza
-
-Barra principal de navegación operacional.
-
-## Función
-
-Contiene:
-
-```txt
-las opciones principales del sistema
-```
-
-Ejemplos:
-
-* TURNOS
-* VENTAS
-* INVENTARIO
-* CONFIGURACIÓN
-* REPORTES
-
-## IMPORTANTE
-
-La CONTEXTBAR:
-
-```txt
-NO trabaja sola
-```
-
-Tiene relación directa con:
-
-```txt
-SUBCONTEXTBAR
-```
-
----
-
-# SUBCONTEXTBAR
-
-## Naturaleza
-
-Barra contextual secundaria operacional.
-
-## Función
-
-Muestra:
-
-```txt
-subcontextos operacionales contextualizados
-```
-
-según la opción activa en la CONTEXTBAR.
-
-## Ejemplo
-
-### CONTEXTBAR
-
-```txt
-TURNOS
-```
-
-### SUBCONTEXTBAR
-
-```txt
-CAJAS
-OPERADORES
-MOVIMIENTOS
-ARQUEO
-```
-
-## IMPORTANTE
-
-La SUBCONTEXTBAR NO representa tabs SaaS.
-
-Representa:
-
-```txt
-subcontextos operacionales reales
-```
-
----
-
-# WORKSPACE
-
-## Naturaleza
-
-Área operacional viva principal.
-
-## Función
-
-Aquí se renderiza la operación real del sistema.
-
-## IMPORTANTE
-
-El WORKSPACE:
-
-```txt
-NO es una página estática
-```
-
-Es:
-
-```txt
-espacio operacional dinámico
-```
-
----
-
-# PANELS
-
-## Naturaleza
-
-Agrupadores funcionales dentro del WORKSPACE.
-
-## Función
-
-Organizan:
-
-* módulos
-* operaciones
-* flujos
-* contextos
-* herramientas
-
-## IMPORTANTE
-
-Un Panel puede contener:
-
-* una o múltiples SHEETS
-* overlays
-* bloques operacionales
-* transiciones contextuales
-
----
-
-# SHEETS
-
-## Naturaleza
-
-Subvistas operacionales completas.
-
-## IMPORTANTE
-
-En DISATEQ:
-
-```txt
-SHEET ≠ TAB
-```
-
-Una SHEET:
-
-* posee contexto propio
-* puede tener layout propio
-* puede tener scroll propio
-* puede tener acciones propias
-* puede tener footbar propia
-* puede convivir con otras sheets
-* puede mantener independencia operacional
-
-## DISPOSICIÓN
-
-Las SHEETS pueden:
-
-* ocupar todo el WORKSPACE
-* dividirse en 2
-* dividirse en 3
-* dividirse en 4
-
-según necesidad operacional.
-
-## SUPERPOSICIÓN
-
-Las SHEETS pueden:
-
-```txt
-montarse unas sobre otras
-```
-
-como transición operacional contextual.
-
-## IMPORTANTE
-
-Esto:
-
-```txt
-NO es un modal web tradicional
-```
-
-Representa:
-
-```txt
-continuidad operacional contextual
-```
-
----
-
-# SOBRE TABS
-
-## IMPORTANTE
-
-Actualmente DISATEQ prioriza:
-
-```txt
-Sheets operacionales
-```
-
-por encima de:
-
-```txt
-tabs estilo SaaS/webapp
-```
-
-PERO:
-
-```txt
-esto NO significa que las tabs estén prohibidas
-```
-
-A futuro podrían existir:
-
-* tabs internas
-* tabs contextuales
-* tabs técnicas
-* tabs auxiliares
-
-SIEMPRE que:
-
-* respeten filosofía operacional DISATEQ
-* no rompan continuidad visual
-* no conviertan la UI en dashboard web genérico
-* no destruyan densidad operacional
-* no reemplacen incorrectamente las Sheets
-
-## PRINCIPIO IMPORTANTE
-
-Una TAB:
-
-```txt
-NO reemplaza una SHEET
-```
-
-Porque una SHEET representa:
-
-```txt
-subcontexto operacional completo
-```
-
----
-
-# FOOTBAR
-
-## Naturaleza
-
-Barra operacional inferior.
-
-## Estado actual
-
-Aún sin definición funcional definitiva.
-
-## Posibles responsabilidades futuras
-
-* estado runtime
-* shortcuts
-* hints contextuales
-* métricas vivas
-* información operacional
-* mensajes sistema
-* indicadores runtime
-
----
-
-# PRINCIPIO OPERACIONAL FINAL
-
-DISATEQ VENDOR™ NO debe sentirse como:
-
-```txt
-una web dentro de desktop
-```
+## Runtime Spatial Structure
+
+DISATEQ VENDOR™ organiza su runtime mediante una estructura espacial operacional persistente.
+
+Estructura principal:
+
+→ Topbar
+→ ContextBar
+→ SubContextBar
+→ Workspace
+    → SheetWorks
+        → SheetHeader
+        → SheetBody
+            → Sections
+                → Blocks
+        → SheetFooter
+→ Footbar
+
+La estructura NO debe sentirse como navegación multipágina.
 
 Debe sentirse como:
+- continuidad operacional
+- expansión contextual
+- profundidad runtime
+- persistencia espacial
+- estabilidad operacional
 
-```txt
-software operacional vivo real
-```
+---
 
-Con:
+## Topbar
 
-* continuidad operacional
-* resiliencia
-* claridad contextual
-* velocidad operacional
-* densidad útil
-* UX operacional real
+La Topbar representa el nivel superior persistente del runtime operacional.
+
+Debe mantener:
+- estabilidad visual permanente
+- altura consistente
+- orientación contextual inmediata
+- continuidad espacial superior
+- identidad operacional estable
+
+La Topbar NO debe:
+- saturarse visualmente
+- cambiar geometría entre contextos
+- convertirse en toolbar administrativa
+- competir con el Workspace
+
+Su función es:
+- contextualizar
+- orientar
+- estabilizar el runtime global
+
+---
+
+## ContextBar
+
+La ContextBar representa el contexto operacional principal activo.
+
+Debe comunicar:
+- operación principal activa
+- identidad contextual
+- orientación inmediata
+- continuidad operacional
+
+La ContextBar debe mantener:
+- geometría consistente
+- boundaries compartidos
+- continuidad con Workspace
+- alineación estable
+
+La identidad contextual debe expresarse mediante:
+- accents moderados
+- indicadores activos
+- micro-contraste contextual
+
+NO mediante:
+- fondos saturados
+- cambios agresivos de layout
+- ruptura visual del sistema
+
+---
+
+## SubContextBar
+
+La SubContextBar representa la profundidad operacional del contexto principal activo.
+
+La relación debe sentirse como:
+
+ContextBar
+→ operación principal
+
+SubContextBar
+→ profundidad operacional contextual
+
+La SubContextBar debe permitir:
+- navegación contextual secundaria
+- cambio fluido entre operaciones relacionadas
+- continuidad operacional
+- orientación inmediata
+- profundidad contextual clara
+
+Debe mantener:
+- geometría consistente
+- continuidad espacial
+- bajo ruido visual
+- estabilidad runtime
+
+La SubContextBar NO debe sentirse como:
+- tabs web tradicionales
+- navegación multipágina
+- menú aislado
+- toolbar administrativa
+
+Debe sentirse como:
+- expansión contextual operacional
+- continuidad del mismo runtime
+- profundidad operacional integrada
+
+---
+
+## Workspace
+
+El Workspace representa la superficie operacional viva principal del runtime.
+
+Debe sentirse:
+- persistente
+- estable
+- continuo
+- integrado
+- operacionalmente activo
+
+El Workspace funciona como:
+- superficie operacional principal
+- entorno contextual persistente
+- área viva de operación runtime
+
+El Workspace debe preservar:
+- continuidad espacial
+- boundaries estables
+- alineación consistente
+- geometría compartida
+- expansión contextual ordenada
+
+El Workspace NO debe sentirse como:
+- conjunto de pantallas separadas
+- navegación multipágina
+- módulos aislados
+- overlays dominantes
+
+Debe sentirse como:
+- mismo entorno operacional persistente
+- continuidad runtime viva
+- expansión contextual natural
+
+---
+
+## SheetWorks
+
+Las SheetWorks representan superficies operacionales dinámicas dentro del Workspace.
+
+Una SheetWork NO representa:
+- página web
+- vista aislada
+- tab tradicional
+- módulo desconectado
+
+Debe sentirse como:
+- continuidad operacional
+- expansión contextual runtime
+- superficie operacional viva
+- entorno persistente de trabajo
+
+Las SheetWorks pueden:
+- coexistir
+- reutilizar el mismo emplazamiento espacial
+- expandirse contextualmente
+- mutar operacionalmente
+- realizar transiciones suaves runtime
+
+La transición entre SheetWorks debe preservar:
+- continuidad espacial
+- orientación contextual
+- estabilidad visual
+- continuidad operacional
+
+NO debe sentirse como:
+- cambio completo de pantalla
+- ruptura runtime
+- recarga visual completa
+- navegación web tradicional
+
+---
+
+## SheetHeader
+
+El SheetHeader representa el encabezado contextual operativo de una SheetWork.
+
+Debe comunicar:
+- contexto activo
+- identidad operacional
+- estado contextual
+- acciones relevantes
+- orientación inmediata
+
+Debe mantener:
+- geometría estable
+- spacing consistente
+- continuidad visual
+- alineación compartida
+
+El SheetHeader NO debe:
+- saturarse visualmente
+- competir con SheetBody
+- convertirse en toolbar compleja
+- romper continuidad espacial
+
+---
+
+## SheetBody
+
+El SheetBody representa el núcleo operacional vivo de una SheetWork.
+
+Aquí ocurre la operación principal contextual.
+
+El SheetBody debe priorizar:
+- claridad operacional
+- continuidad espacial
+- densidad útil
+- velocidad visual
+- ergonomía runtime
+- estabilidad contextual
+
+Dentro del SheetBody viven:
+- Sections
+- Blocks
+- flujos operacionales
+- componentes contextuales
+- expansión runtime
+
+La organización espacial debe preservar:
+- alineación consistente
+- spacing estructural uniforme
+- boundaries previsibles
+- continuidad visual
+
+---
+
+## SheetFooter
+
+El SheetFooter representa el cierre operacional contextual de una SheetWork.
+
+Puede contener:
+- resúmenes contextuales
+- estados runtime
+- shortcuts operacionales
+- acciones secundarias
+- información contextual persistente
+
+Debe mantener:
+- continuidad visual
+- geometría consistente
+- bajo ruido visual
+- estabilidad espacial
+
+NO debe competir con:
+- SheetBody
+- flujo operacional principal
+- navegación contextual
+
+---
+
+## Footbar
+
+La Footbar representa el cierre persistente inferior del runtime operacional global.
+
+Debe mantener:
+- continuidad visual global
+- orientación contextual persistente
+- estabilidad espacial inferior
+- bajo ruido visual
+
+La Footbar NO debe sentirse como:
+- toolbar administrativa
+- área decorativa
+- overlay persistente invasivo
+
+Debe funcionar como:
+- cierre runtime estable
+- soporte contextual persistente
+- continuidad operacional inferior
+
+---
+
+## Spatial Continuity
+
+La continuidad espacial es un principio obligatorio del runtime DISATEQ.
+
+Toda transición contextual debe preservar:
+- orientación espacial
+- estabilidad visual
+- continuidad operacional
+- geometría compartida
+- persistencia contextual
+
+La transición NO debe sentirse como:
+- cambio de aplicación
+- navegación multipágina
+- ruptura visual
+- recarga operacional
+
+---
+
+## Spatial Inheritance
+
+Toda expansión contextual debe heredar:
+- geometría madre
+- boundaries compartidos
+- spacing estructural
+- alineación operacional
+- continuidad visual
+
+La herencia espacial permite:
+- muscle memory
+- estabilidad runtime
+- velocidad operacional
+- continuidad contextual
+
+---
+
+## Overlay System
+
+Los overlays deben utilizarse de forma moderada y operacionalmente justificada.
+
+Toda expansión overlay debe preservar:
+- continuidad espacial
+- orientación contextual
+- estabilidad visual
+- foco operacional
+
+Los overlays NO deben:
+- bloquear innecesariamente operación
+- romper continuidad runtime
+- sentirse como ventanas externas
+- fragmentar el flujo operacional
+
+---
+
+## Boundary Rules
+
+Toda superficie operacional debe respetar boundaries consistentes.
+
+Los límites espaciales deben:
+- ser previsibles
+- mantener continuidad visual
+- preservar alineación
+- evitar deformaciones geométricas arbitrarias
+
+La estabilidad de boundaries es crítica para:
+- orientación operacional
+- velocidad visual
+- ergonomía runtime
+- muscle memory
+
+---
+
+## Alignment Rules
+
+La alineación operacional debe mantenerse consistente en todo el runtime.
+
+Toda expansión contextual debe preservar:
+- líneas visuales principales
+- ritmo espacial
+- continuidad geométrica
+- estabilidad estructural
+
+La alineación NO debe variar arbitrariamente entre contextos operacionales.
+
+---
+
+## Spacing Foundations
+
+El spacing operacional debe priorizar:
+- claridad contextual
+- densidad útil
+- continuidad visual
+- ergonomía prolongada
+
+El spacing NO debe:
+- inflar artificialmente layouts
+- generar whitespace innecesario
+- romper continuidad espacial
+- degradar densidad operacional
+
+---
+
+## Interaction Rhythm
+
+Toda interacción debe preservar:
+- continuidad operacional
+- estabilidad contextual
+- fluidez runtime
+- velocidad operacional
+
+La interfaz debe favorecer:
+- navegación rápida
+- orientación inmediata
+- continuidad keyboard-first
+- ergonomía operacional prolongada
+
+---
+
+## Visual Stability
+
+La estabilidad visual es obligatoria durante sesiones operacionales extensas.
+
+La interfaz debe evitar:
+- cambios bruscos de geometría
+- reflows innecesarios
+- saltos espaciales
+- overlays agresivos
+- mutaciones visuales abruptas
+
+La estabilidad visual preserva:
+- foco operacional
+- velocidad contextual
+- orientación espacial
+- continuidad runtime
+
+---
+
+## Runtime Continuity
+
+Todo el sistema debe sentirse como un único runtime operacional persistente.
+
+Cada expansión contextual debe percibirse como:
+- continuidad operacional
+- profundización contextual
+- mutación natural del mismo entorno runtime
+
+NO como:
+- cambio de aplicación
+- navegación multipágina
+- transición entre sistemas separados
+
+---
+
+## Anti-Patterns
+
+DISATEQ VENDOR™ debe evitar:
+
+- dashboards SaaS genéricos
+- ERP visual tradicional
+- layouts mobile-first
+- navegación multipágina
+- exceso de overlays
+- cards decorativas
+- spacing arbitrario
+- geometrías inconsistentes
+- UI ornamental innecesaria
+- fragmentación contextual
+- widgetización operacional
+- toolbarización excesiva
+
+Toda decisión UX/UI debe evaluarse mediante:
+
+“¿esto preserva continuidad operacional?”
+
+y:
+
+“¿esto ayuda realmente al operador durante sesiones extensas?”

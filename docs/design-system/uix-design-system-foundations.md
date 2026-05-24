@@ -1,5 +1,26 @@
 # DISATEQ VENDOR™ — UIX Design System Foundations
 
+# Estado del Documento
+
+Documento autoridad de foundations UIX.
+
+Este documento define:
+- foundations visuales
+- semántica operacional
+- identidad runtime
+- principios UIX
+- reglas geométricas base
+- comportamiento visual operacional
+
+Todo el sistema visual debe alinearse con:
+- Runtime Operacional Persistente
+- continuidad espacial
+- continuidad operacional
+- Modern Operational UI
+- Software Operacional con Identidad
+
+---
+
 # Filosofía Global
 
 DISATEQ VENDOR™ es:
@@ -10,20 +31,22 @@ Software Operacional con Identidad
 
 NO busca parecer:
 
-* dashboard SaaS
-* ERP legacy
-* admin template
-* fintech web app
+- dashboard SaaS
+- ERP legacy
+- admin template
+- fintech web app
+- sistema multipágina tradicional
 
 Busca sentirse:
 
-* operacional
-* rápido
-* contextual
-* desktop-native
-* keyboard-first
-* continuo
-* coherente
+- operacional
+- rápido
+- contextual
+- desktop-native
+- keyboard-first
+- continuo
+- coherente
+- runtime-persistente
 
 ---
 
@@ -33,12 +56,12 @@ Busca sentirse:
 
 La UI debe:
 
-* reducir fricción operacional
-* mantener continuidad visual
-* preservar densidad útil
-* acelerar orientación contextual
-* reforzar memoria muscular
-* comunicar contexto vivo
+- reducir fricción operacional
+- mantener continuidad visual
+- preservar densidad útil
+- acelerar orientación contextual
+- reforzar memoria muscular
+- comunicar contexto vivo
 
 ---
 
@@ -46,222 +69,268 @@ La UI debe:
 
 El sistema completo debe sentirse:
 
-* integrado
-* estable
-* consistente
-* continuo
+- integrado
+- estable
+- consistente
+- continuo
 
 Evitar:
 
-* fragmentación visual
-* chrome excesivo
-* cards SaaS
-* dashboards genéricos
+- fragmentación visual
+- chrome excesivo
+- cards SaaS
+- dashboards genéricos
+- widgetización
 
 ---
 
-## Keyboard-first
+## Runtime Operacional Persistente
+
+Toda interacción debe sentirse como continuidad del mismo runtime operacional.
+
+La interfaz NO debe sentirse como:
+- cambio de aplicación
+- routing multipágina
+- transición entre módulos aislados
+- navegación web tradicional
+
+Toda expansión contextual debe sentirse como:
+- continuidad operacional
+- mutación contextual
+- expansión runtime
+- persistencia espacial
+
+---
+
+## Keyboard-First Runtime
 
 Toda la arquitectura UIX debe contemplar:
 
-* navegación por teclado
-* shortcuts consistentes
-* foco visible
-* Enter/Escape semantics
-* memoria muscular operacional
+- navegación por teclado
+- shortcuts consistentes
+- foco visible
+- Enter/Escape semantics
+- memoria muscular operacional
+- velocidad contextual
+
+---
+
+## Scanner-Native Runtime
+
+El scanner debe comportarse como extensión natural del runtime operacional.
+
+La UI debe preservar:
+
+- foco persistente
+- velocidad inmediata
+- mínima interrupción visual
+- continuidad contextual
+- tolerancia operacional
+
+Evitar:
+
+- pérdida de foco
+- overlays invasivos
+- interrupciones runtime
+- recaptura constante de foco
 
 ---
 
 # Arquitectura Visual Operacional
 
 ```text
-Window
-└── AppShell
-    ├── Topbar
-    ├── ContextBar
-    ├── SubContextBar
-    ├── Workspace
-    │   ├── Panels
-    │   │   └── Sheets
-    │   │       ├── SheetHeader
-    │   │       ├── SheetBody
-    │   │       └── SheetFootbar
-    └── Global Footbar
+Runtime Operacional Persistente
+│
+├── Topbar
+├── ContextBar
+├── SubContextBar
+├── Workspace
+│   └── SheetWorks
+│       ├── SheetHeader
+│       ├── SheetBody
+│       │   ├── Sections
+│       │   │   └── Blocks
+│       └── SheetFooter
+└── Footbar
 ```
+
+La estructura completa debe preservar:
+- continuidad espacial
+- estabilidad visual
+- orientación contextual
+- geometría madre
+- persistencia runtime
 
 ---
 
 # Nomenclatura Oficial
 
-## Window
+## Runtime Operacional Persistente
 
-Contenedor nativo Tauri.
+Entorno operacional principal vivo del sistema.
 
----
-
-## AppShell
-
-Estructura operacional raíz persistente.
+Representa:
+- continuidad runtime
+- persistencia contextual
+- estabilidad operacional
+- integración espacial
 
 ---
 
 ## Topbar
 
-Header institucional compacto superior.
+Header persistente superior del runtime.
 
 Contiene:
-
-* branding
-* turno
-* caja
-* cierre operacional
+- branding
+- turno
+- caja
+- estado operacional global
 
 NO contiene:
-
-* widgets decorativos
-* telemetría excesiva
-* reloj principal
+- widgets decorativos
+- dashboards
+- telemetría invasiva
 
 ---
 
 ## ContextBar
 
-Navegación operacional primaria.
+Contexto operacional principal activo.
 
 Determina:
-
-* módulo activo
-* contexto operacional global
-* identidad contextual
+- operación principal
+- identidad contextual
+- orientación runtime global
 
 ---
 
 ## SubContextBar
 
-Navegación contextual secundaria.
+Profundidad operacional contextual secundaria.
 
-Características:
+Debe sentirse como:
+- expansión contextual
+- continuidad operacional
+- mutación runtime
 
-* aparece solo cuando corresponde
-* hover preview
-* click persistente
-* micro-contexto contextual
+NO como:
+- tabs web tradicionales
+- navegación multipágina
+- toolbar administrativa
 
 ---
 
 ## Workspace
 
-Superficie operacional principal.
+Superficie operacional principal persistente.
 
 Debe sentirse:
+- continua
+- amplia
+- estable
+- operacionalmente viva
 
-* rápida
-* amplia
-* operacional
-* continua
-
----
-
-## Panel
-
-Unidad operacional independiente.
-
-NO:
-
-* card flotante
-* widget SaaS
-
-SÍ:
-
-* superficie contextual delimitada
-* continuidad operacional
-* independencia espacial ligera
+El Workspace representa:
+- entorno operacional compartido
+- geometría runtime principal
+- persistencia espacial
 
 ---
 
-## Sheet
+## SheetWorks
 
-Vista operacional contextual dentro de un Panel.
+Las SheetWorks representan superficies operacionales dinámicas dentro del Workspace.
 
-Ejemplo:
+NO representan:
+- páginas
+- tabs tradicionales
+- módulos aislados
+- vistas desconectadas
 
-```text
-VENTAS
- ├── Venta rápida
- ├── Historial
- ├── Clientes
-```
+Representan:
+- continuidad contextual
+- expansión operacional
+- persistencia runtime
+- mutación contextual
 
 ---
 
 ## SheetHeader
 
-Contexto operacional local.
+Contexto operacional activo de una SheetWork.
 
 Contiene:
+- contexto actual
+- acciones relevantes
+- shortcuts
+- identidad contextual
 
-* título
-* acciones máximas
-* navegación contextual
-* shortcuts
-
-Características:
-
-* compacto
-* contextual
-* integrado
-* sin apariencia SaaS
+Debe sentirse:
+- compacto
+- integrado
+- operacional
+- estable
 
 ---
 
 ## SheetBody
 
-Área operacional principal.
+Núcleo operacional principal de una SheetWork.
 
-Características:
-
-* limpia
-* silenciosa
-* operacional
-* alta densidad legible
-
-Base:
-
-```text
-#FDFCF9
-```
+Debe priorizar:
+- claridad operacional
+- densidad útil
+- continuidad espacial
+- velocidad visual
+- ergonomía prolongada
 
 ---
 
-## SheetFootbar
+## SheetFooter
 
-Telemetría contextual periférica.
+Información contextual secundaria persistente.
 
-Opcional.
+Puede contener:
+- estados runtime
+- shortcuts
+- información contextual
+- metadata operacional
+
+Debe mantener:
+- bajo ruido visual
+- continuidad espacial
+- estabilidad contextual
 
 ---
 
-## Global Footbar
+## Footbar
 
-Telemetría operacional global persistente.
+Cierre persistente inferior del runtime global.
+
+Debe:
+- reforzar continuidad runtime
+- mantener estabilidad espacial
+- comunicar persistencia operacional
 
 ---
 
 # Contextual Visual Semantics
 
-## Principio
+## Principio Oficial
 
 La identidad contextual debe:
 
-* respirarse
-* contextualizar
-* orientar
+- orientar
+- contextualizar
+- comunicar estado operacional
+- reforzar continuidad runtime
 
-NO:
-
-* gritar
-* saturar
-* fragmentar
+NO debe:
+- saturar visualmente
+- fragmentar geometría
+- romper continuidad espacial
+- sentirse ornamental
 
 ---
 
@@ -277,25 +346,42 @@ micro-contexto contextual
 
 ## Identidad Contextual
 
-* TURNO → verde
-* VENTAS → ámbar
-* COMPROBANTES → cyan
-* AJUSTES → violeta
+La identidad contextual debe expresarse mediante:
 
-La identidad contextual se expresa mediante:
-
-* borders
-* accents
-* active indicators
-* micro-dividers
-* contextual strips
-* SheetHeaders
+- borders
+- accents
+- active indicators
+- contextual strips
+- micro-dividers
+- SheetHeaders
+- focus lines
 
 NO mediante:
 
-* fondos saturados
-* branding agresivo
-* gradientes
+- fondos saturados
+- gradientes agresivos
+- layouts fragmentados
+- branding invasivo
+
+---
+
+# Semántica Operacional del Color
+
+El color representa:
+- intención
+- prioridad
+- riesgo
+- continuidad operacional
+- contexto activo
+
+Semántica oficial:
+
+- verde → confirmar / registrar / continuar
+- rojo → cerrar / irreversible
+- ámbar → advertencia / revisión
+- azul/navy → navegación / contexto
+
+El color NO es decoración.
 
 ---
 
@@ -306,12 +392,12 @@ NO mediante:
 La jerarquía NO depende principalmente del color.
 
 La jerarquía depende de:
-
-* tamaño
-* peso
-* spacing
-* agrupación
-* posición
+- tamaño
+- peso
+- spacing
+- agrupación
+- posición
+- continuidad visual
 
 ---
 
@@ -320,17 +406,14 @@ La jerarquía depende de:
 ## Nivel 1
 
 Uso:
-
-* ContextBar
-* SheetHeaders
+- ContextBar
+- SheetHeaders
 
 Definición:
-
-* 14–15px
-* semibold/bold
-* uppercase
-* Inter Tight
-* #121416
+- 14–15px
+- semibold/bold
+- uppercase
+- Inter Tight
 
 ---
 
@@ -339,15 +422,12 @@ Definición:
 Texto operacional principal.
 
 Definición:
-
-* 12px
+- 12px
 
 Uso:
-
-* formularios
-* labels
-* datos operacionales
-* contenido principal
+- formularios
+- datos operacionales
+- contenido principal
 
 ---
 
@@ -356,8 +436,7 @@ Uso:
 Texto secundario.
 
 Definición:
-
-* 11px
+- 11px
 
 ---
 
@@ -366,8 +445,7 @@ Definición:
 Texto periférico.
 
 Definición:
-
-* 10px
+- 10px
 
 Uso limitado.
 
@@ -378,28 +456,10 @@ Uso limitado.
 ## Principios
 
 Las acciones deben:
-
-* comunicar operaciones claramente
-* reducir carga cognitiva
-* mantener coherencia operacional
-* reforzar memoria muscular
-
----
-
-## Semántica del Color
-
-* verde → confirmar / registrar / continuar
-* rojo → cerrar / finalizar / irreversible
-* ámbar → advertencia / revisión
-* azul/navy → navegación / contexto
-
-El color NO es decoración.
-
-El color es:
-
-```text
-semántica operacional
-```
+- comunicar operaciones claramente
+- reducir carga cognitiva
+- mantener coherencia operacional
+- reforzar memoria muscular
 
 ---
 
@@ -407,85 +467,55 @@ semántica operacional
 
 Reglas oficiales:
 
-* sólidos
-* MAYÚSCULAS
-* sin abreviaturas
-* sin contracciones
-* sin transparencias
-* sin glassmorphism
-* sin ghost buttons lavados
-* alto contraste
-* geometría consistente
+- sólidos
+- MAYÚSCULAS
+- sin abreviaturas
+- sin transparencias
+- alto contraste
+- geometría consistente
+- semántica operacional clara
+
+Evitar:
+- glassmorphism
+- ghost buttons lavados
+- botones decorativos
+- geometrías inconsistentes
 
 ---
 
 ## Geometría Operacional
 
-Dentro de una misma área operacional:
+Dentro de una misma superficie operacional:
 
-* misma altura
-* mismo padding
-* mismo radius
-* mismo tamaño tipográfico
-* misma densidad
-* misma alineación iconográfica
+- misma altura
+- mismo padding
+- mismo radius
+- misma densidad
+- misma alineación visual
+- misma lógica espacial
 
 Objetivo:
-
-* memoria muscular
-* velocidad operacional
-* precisión
-
----
-
-## Iconografía
-
-La iconografía:
-
-* NO decora
-* NO reemplaza texto
-* refuerza intención operacional
-* acelera reconocimiento
-
-Debe:
-
-* mantener consistencia
-* respetar escala oficial
-* evitar arbitrariedad
-
----
-
-# Jerarquía Visual
-
-## Orden de autoridad contextual
-
-```text
-ContextBar
-↓
-SheetHeader
-↓
-Sections
-↓
-Operational Content
-↓
-Peripheral Metadata
-```
+- muscle memory
+- precisión operacional
+- continuidad visual
+- estabilidad runtime
 
 ---
 
 # Filosofía Espacial
 
-## Workspace
+Toda expansión contextual debe preservar:
+- geometría madre
+- orientación espacial
+- continuidad runtime
+- estabilidad visual
+- persistencia contextual
 
-Superficie compartida.
-
-## Panels
-
-Unidades delimitadas semánticamente.
-
-## Sheets
-
-Contextos operacionales vivos.
+Evitar:
+- deformaciones abruptas
+- overlays destructivos
+- fragmentación operacional
+- navegación multipágina
 
 ---
 
@@ -493,17 +523,37 @@ Contextos operacionales vivos.
 
 Toda interacción debe sentirse:
 
-* rápida
-* clara
-* estable
-* operacional
+- rápida
+- clara
+- estable
+- operacional
+- contextual
+- persistente
 
 Evitar:
+- animaciones innecesarias
+- chrome excesivo
+- UI ornamental
+- dashboardización
+- widgetización
 
-* animaciones innecesarias
-* chrome excesivo
-* efectos decorativos
-* UI inflada
+---
+
+# Anti-Patterns Oficiales
+
+DISATEQ VENDOR™ debe evitar:
+
+- dashboards SaaS
+- ERP visual tradicional
+- routing multipágina
+- mobile-first accidental
+- cards decorativas
+- widgetización
+- toolbarización excesiva
+- overlays invasivos
+- modalitis
+- CRUD operacional tradicional
+- UI ornamental innecesaria
 
 ---
 
@@ -512,10 +562,10 @@ Evitar:
 Cada capa visual debe justificar su existencia operacional.
 
 Si un elemento:
-
-* no aporta contexto
-* no aporta navegación
-* no aporta claridad
-* no aporta velocidad
+- no aporta contexto
+- no aporta claridad
+- no aporta continuidad
+- no aporta orientación
+- no aporta velocidad operacional
 
 → no debe existir.
