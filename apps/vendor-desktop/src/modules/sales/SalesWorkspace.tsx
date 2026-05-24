@@ -1,19 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ScanLine, Search } from "lucide-react";
+import { ScanLine, Search, CircleCheck, AlertTriangle, CircleX, Tag, Clock } from "lucide-react";
 import { useTicketStore } from "../../domains/ticket/state/ticket.store";
 import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
 import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type CatalogProduct } from "../../data/catalogs";
 
-function getSubtitle(p: CatalogProduct): { text: string; cls: string } {
-  switch (p.status) {
-    case "low":      return { text: `${p.id} · ${p.stock} uds. · ⚠ Stock crítico`,  cls: "text-amber-400"  };
-    case "out":      return { text: `${p.id} · ⛔ Sin stock`,                        cls: "text-[#c8d0d8]"  };
-    case "promo":    return { text: `${p.id} · ${p.stock} uds. · 🔥 Promoción`,      cls: "text-orange-400" };
-    case "expiring": return { text: `${p.id} · ${p.stock} uds. · ⚠ Vence pronto`,   cls: "text-amber-400"  };
-    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-[#8aabca]" };
-  }
+function statusChip(p: CatalogProduct) {
+  if (p.status === "low")      return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Stock crítico</span>;
+  if (p.status === "out")      return <span className="flex items-center gap-0.5 text-red-400"><CircleX size={10} strokeWidth={2} />Sin stock</span>;
+  if (p.status === "promo")    return <span className="flex items-center gap-0.5 text-orange-500"><Tag size={10} strokeWidth={2} />Promoción</span>;
+  if (p.status === "expiring") return <span className="flex items-center gap-0.5 text-amber-400"><Clock size={10} strokeWidth={2} />Vence pronto</span>;
+  return <span className="flex items-center gap-0.5 text-[#45b356]"><CircleCheck size={10} strokeWidth={2} />Con stock</span>;
 }
 
 function tilePrice(p: CatalogProduct): { prefix: string; cls: string } {
@@ -430,7 +428,6 @@ export function SalesWorkspace() {
             {isSearching && filtered.length > 0 && (
               <div className="flex flex-col px-3 py-2">
                 {filtered.map((product, idx) => {
-                  const sub = getSubtitle(product);
                   const isOut = product.status === "out";
                   const isSelected = idx === selectedIndex;
 
@@ -459,8 +456,12 @@ export function SalesWorkspace() {
                           >
                             {product.name}
                           </div>
-                          <div className={`mt-0.5 text-[11px] font-semibold ${sub.cls}`}>
-                            {sub.text}
+                          <div className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold">
+                            <span className="tabular-nums text-[#374151]">
+                              {product.id}{!isOut ? ` · ${product.stock} uds.` : ""}
+                            </span>
+                            <span className="text-[#d1d9e1]">·</span>
+                            {statusChip(product)}
                           </div>
                         </div>
                       </div>
