@@ -374,16 +374,7 @@ export function SalesWorkspace() {
           autoComplete="off"
         />
 
-        {calcResult !== null && (
-          <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#f4f7fb] px-3 py-1.5">
-            <span className="text-[10px] font-semibold text-[#9ca3af]">=</span>
-            <span className="text-[14px] font-bold tabular-nums text-[#1a3a5c]">
-              S/ {calcResult.toFixed(2)}
-            </span>
-          </div>
-        )}
-
-        {!cashSession.isOpen && !isCalcMode && (
+        {!cashSession.isOpen && (
           <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-500">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
             Sin turno
@@ -398,6 +389,14 @@ export function SalesWorkspace() {
 
         {view === "dense" && <ViewToggle current={visualMode} onChange={setVisualMode} />}
       </div>
+
+      {/* CALC RESULT — debajo de la barra, como en el cierre */}
+      {calcResult !== null && (
+        <div className="shrink-0 flex items-center gap-2 border-b border-[#edf2f8] bg-[#f8fafd] px-5 py-1.5">
+          <span className="text-[10px] font-semibold text-[#9ca3af]">=</span>
+          <span className="font-mono text-[14px] font-bold tabular-nums text-[#2154d8]">S/ {calcResult.toFixed(2)}</span>
+        </div>
+      )}
 
       {/* RESULTS */}
       <div className="min-h-0 flex-1 overflow-y-auto">
