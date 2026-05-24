@@ -42,13 +42,13 @@ function PanelRoles({ roles, selectedId, onSelect }: {
   const inactivos = roles.filter(r => !r.active).length;
 
   return (
-    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
+    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#85C49C]/15 bg-[#F3F8F4] px-4">
         <Shield size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ROLES</span>
-        <span className="rounded-md bg-[#78C487]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4a7a55]">{roles.length}</span>
+        <span className="rounded-md bg-[#85C49C]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4a7a55]">{roles.length}</span>
         <div className="ml-auto flex items-center gap-1.5">
           {inactivos > 0 && (
             <span className="text-[9px] font-semibold text-amber-500">{inactivos} inact.</span>
@@ -73,10 +73,10 @@ function PanelRoles({ roles, selectedId, onSelect }: {
               return (
                 <div key={role.id} onClick={() => onSelect(role.id)}
                   className={`flex cursor-pointer items-center gap-2.5 border-l-2 px-3.5 py-2.5 transition ${
-                    isSel ? "border-[#78C487] bg-[#EFF8F0]" : "border-transparent hover:bg-[#F5FBF5]"
+                    isSel ? "border-[#85C49C] bg-[#EFF8F0]" : "border-transparent hover:bg-[#F5FBF5]"
                   }`}>
                   <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${
-                    isSel ? "bg-[#78C487] text-white" : "bg-[#e8f5ea] text-[#4a7a55]"
+                    isSel ? "bg-[#85C49C] text-white" : "bg-[#e8f5ea] text-[#4a7a55]"
                   }`}>
                     {role.code}
                   </span>
@@ -90,7 +90,7 @@ function PanelRoles({ roles, selectedId, onSelect }: {
                     {!role.active && (
                       <span className="rounded bg-amber-50 px-1 py-0.5 text-[8px] font-bold uppercase text-amber-600">INACT.</span>
                     )}
-                    <ChevronRight size={10} className={isSel ? "text-[#78C487]" : "text-[#e4e9f0]"} />
+                    <ChevronRight size={10} className={isSel ? "text-[#85C49C]" : "text-[#e4e9f0]"} />
                   </div>
                 </div>
               );
@@ -182,16 +182,16 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
   const showEditForm = (selected !== null && isEditing) || isNew;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/40 bg-[#FDFCF9]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#78C487]/15 bg-[#F3F8F4] px-4">
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#85C49C]/15 bg-[#F3F8F4] px-4">
         <SlidersHorizontal size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN DE ROLES</span>
       </div>
 
       {/* ActionBar */}
-      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#78C487]/10 px-4 py-2">
+      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#85C49C]/10 px-4 py-2">
         <button onClick={handleNew}
           className="flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
           <Plus size={10} strokeWidth={2.5} />NUEVO
@@ -238,7 +238,7 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
             <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">ROL SELECCIONADO</span>
 
             <div className="flex items-center gap-2.5">
-              <span className="rounded-md bg-[#78C487] px-2.5 py-1 text-[11px] font-bold tracking-wider text-white">
+              <span className="rounded-md bg-[#85C49C] px-2.5 py-1 text-[11px] font-bold tracking-wider text-white">
                 {selected.code}
               </span>
               <span className="text-[14px] font-semibold text-[#2F3E46]">{selected.name}</span>
@@ -301,7 +301,7 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
                   onChange={e => setEditCode(e.target.value.toUpperCase().slice(0, 5))}
                   onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") handleCancel(); }}
                   maxLength={5} placeholder="VEN"
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[13px] font-bold uppercase text-[#2F3E46] outline-none transition focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[13px] font-bold uppercase text-[#2F3E46] outline-none transition focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
                 />
               </div>
               <div className="flex flex-1 flex-col gap-0.5">
@@ -310,7 +310,7 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
                   onChange={e => setEditName(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") handleCancel(); }}
                   placeholder="Vendedor"
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[13px] font-semibold text-[#2F3E46] outline-none transition focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[13px] font-semibold text-[#2F3E46] outline-none transition focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
                 />
               </div>
             </div>
@@ -320,7 +320,7 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
                 onChange={e => setEditDesc(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") handleCancel(); }}
                 placeholder="Descripción del rol..."
-                className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[12px] font-semibold text-[#374151] outline-none transition focus:border-[#78C487] focus:ring-1 focus:ring-[#78C487]/20 placeholder:text-[#d1d9e1]"
+                className="rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[12px] font-semibold text-[#374151] outline-none transition focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -336,7 +336,7 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
               </button>
               <button onClick={handleSave} disabled={!canSave}
                 className={`flex h-10 flex-1 items-center justify-center rounded-md text-[13px] font-semibold uppercase tracking-wider text-white transition ${
-                  canSave ? "bg-[#45b356] hover:bg-[#35994a] active:scale-[0.98]" : "cursor-not-allowed bg-[#45b356]/40"
+                  canSave ? "bg-[#45b356] hover:bg-[#35994a] active:scale-[0.98]" : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
                 }`}>
                 {isNew ? "Crear rol" : "Guardar"}
               </button>

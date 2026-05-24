@@ -658,10 +658,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         {/* Status / pre-open card */}
         {isOpen ? (
           <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
-            closingStage > 0 ? "border-red-200" : "border-[#78C487]/50"
+            closingStage > 0 ? "border-red-200" : "border-[#85C49C]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
-              closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F3F8F4] border-[#78C487]/15"
+              closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F3F8F4] border-[#85C49C]/15"
             }`}>
               {closingStage > 0
                 ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-red-400" />
@@ -744,12 +744,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         ) : (
           /* Pre-open: operator + apertura card */
           <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
-            openingMode === "exceptional" ? "border-amber-300/60" : "border-[#78C487]/50"
+            openingMode === "exceptional" ? "border-amber-300/60" : "border-[#85C49C]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
               openingMode === "exceptional"
                 ? "bg-amber-50 border-amber-200/60"
-                : "bg-[#F3F8F4] border-[#78C487]/15"
+                : "bg-[#F3F8F4] border-[#85C49C]/15"
             }`}>
               {openingMode === "exceptional"
                 ? <AlertTriangle size={13} strokeWidth={2} className="shrink-0 text-amber-500" />
@@ -895,7 +895,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 <button
                   onClick={handleSaveCorrection}
                   title="Tecla [ENTER]"
-                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-emerald-800 active:scale-[0.98] focus:outline focus:outline-1 focus:outline-emerald-600/60"
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#45b356] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#45b356]/60"
                 >
                   <CheckCircle size={14} strokeWidth={2} />
                   Guardar corrección
@@ -934,8 +934,8 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     ? "bg-amber-600 text-white hover:bg-amber-700 active:scale-[0.98] focus:outline-amber-500/60"
                     : "cursor-not-allowed bg-amber-600/40 text-white/60"
                   : canOpen
-                    ? "bg-emerald-700 text-white hover:bg-emerald-800 active:scale-[0.98] focus:outline-emerald-600/60"
-                    : "cursor-not-allowed bg-emerald-700/40 text-white/60"
+                    ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98] focus:outline-[#45b356]/60"
+                    : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
               }`}
             >
               <LogIn size={14} strokeWidth={2} />
@@ -965,7 +965,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
                   contadoFondo !== ""
                     ? "bg-[#45b356] text-white shadow-[0_4px_14px_rgba(69,179,86,0.24)] hover:bg-[#35994a] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+                    : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
                 }`}
               >
                 CONFIRMAR FONDO
@@ -994,7 +994,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
                   contadoValid
                     ? "bg-[#2154d8] text-white shadow-[0_4px_14px_rgba(33,84,216,0.24)] hover:bg-[#1a44be] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+                    : "cursor-not-allowed bg-[#2154d8]/[0.15] text-[#2154d8]/50"
                 }`}
               >
                 VALIDAR CONTEO
@@ -1052,7 +1052,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
                   canClose
                     ? "bg-[#b91c1c] text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] hover:bg-[#991b1b] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-[#f4f7fb] text-[#c8d4e0]"
+                    : "cursor-not-allowed bg-[#dc2626]/[0.15] text-[#dc2626]/50"
                 }`}
               >
                 <CheckCircle size={14} strokeWidth={2.5} />
@@ -1074,11 +1074,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       {!isOpen ? (
 
         /* BOX SELECTOR — bloque completo del operador */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/50 bg-[#FDFCF9]">
+          <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
             <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
             <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INFORMACIÓN DE CAJA DISPONIBLE</span>
-            <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#78C487]">
+            <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#85C49C]">
               BLOQUE {operatorBlockPrefix}00
             </span>
           </div>
@@ -1653,10 +1653,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         <div className="flex min-h-0 flex-1 gap-2">
 
           {/* ─── MOVEMENTS PANEL ─── */}
-          <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/50 bg-[#FDFCF9]">
 
             {/* SheetHeader */}
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
               <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
               {cashMoves.length > 0 && (
@@ -1763,7 +1763,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         ? vendidoMoveType === "ingreso"
                           ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
                           : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
-                        : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                        : "bg-[#45b356]/[0.15] text-[#45b356]/50 cursor-not-allowed"
                     }`}
                   >
                     {vendidoMoveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
@@ -1882,7 +1882,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         ? fondoSubTab === "apertura"
                           ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
                           : "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
-                        : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                        : "bg-[#2154d8]/[0.15] text-[#2154d8]/50 cursor-not-allowed"
                     }`}
                   >
                     {fondoSubTab === "apertura" ? "REGISTRAR SALIDA DEL FONDO" : "REGISTRAR PRÉSTAMO AL FONDO"}
@@ -1925,9 +1925,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           </div>
 
           {/* ─── HISTORY PANEL ─── */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#78C487]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#78C487]/15">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
               <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO MOVIMIENTOS</span>
               <div className="ml-auto flex items-center gap-2.5">
@@ -2148,7 +2148,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                 className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
                                   editMotivoInput.trim()
                                     ? "bg-[#2154d8] text-white hover:bg-[#1a44be] active:scale-[0.98]"
-                                    : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                                    : "bg-[#2154d8]/[0.15] text-[#2154d8]/50 cursor-not-allowed"
                                 }`}
                               >
                                 Guardar cambios
@@ -2273,7 +2273,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                     className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
                                       canRepo
                                         ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
-                                        : "bg-[#f1f5f9] text-[#c8d4e0] cursor-not-allowed"
+                                        : "bg-[#45b356]/[0.15] text-[#45b356]/50 cursor-not-allowed"
                                     }`}
                                   >
                                     <RotateCcw size={10} strokeWidth={2} /> Registrar devolución
