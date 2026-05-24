@@ -296,10 +296,10 @@ export function SalesWorkspace() {
   }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9]">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#56C264]/50 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <div className="shrink-0 flex items-center h-[42px] px-4 bg-[#F9F6EC] border-b border-[#F2A900]/15">
+      <div className="shrink-0 flex items-center h-[42px] px-4 bg-[#F0F8F1] border-b border-[#56C264]/20">
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">VENTAS</span>
       </div>
 

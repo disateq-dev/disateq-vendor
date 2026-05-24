@@ -14,7 +14,7 @@ const OFF  = `${BASE} border-transparent hover:bg-white/60`;
 // Paleta contextual oficial DISATEQ — sobre fondo claro #F0F2F5
 const ON: Record<ActiveModule, string> = {
   cash:         `${BASE} border-[#78C487]  bg-[rgba(120,196,135,0.18)]`,
-  sales:        `${BASE} border-[#F2A900]  bg-[rgba(242,169,0,0.14)]`,
+  sales:        `${BASE} border-[#56C264]  bg-[rgba(86,194,100,0.13)]`,
   comprobantes: `${BASE} border-[#73C7D4]  bg-[rgba(115,199,212,0.18)]`,
   config:       `${BASE} border-[#9B8BFF]  bg-[rgba(155,139,255,0.15)]`,
 };

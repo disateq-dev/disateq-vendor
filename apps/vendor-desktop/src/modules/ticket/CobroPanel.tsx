@@ -368,10 +368,10 @@ export function CobroPanel() {
   const { text: rowLabel, warn: rowWarn } = getRowLabel();
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#56C264]/50 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#F2A900]/15 bg-[#F9F6EC] px-4">
+      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#56C264]/20 bg-[#F0F8F1] px-4">
         <button
           title="Tecla [Esc]"
           onClick={cobroView === "client" ? resetForm : closeCobro}

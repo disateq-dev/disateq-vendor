@@ -65,10 +65,10 @@ export function TicketGrid() {
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#F2A900]/50 bg-[#FDFCF9]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#56C264]/50 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <header className="shrink-0 flex h-[42px] items-center justify-between px-4 bg-[#F9F6EC] border-b border-[#F2A900]/15">
+      <header className="shrink-0 flex h-[42px] items-center justify-between px-4 bg-[#F0F8F1] border-b border-[#56C264]/20">
         <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">PRE-VENTA</span>
         <div className="flex items-center gap-3">
           <span className="tabular-nums text-[11px] text-[#b0bac8]">#{saleNumber}</span>
