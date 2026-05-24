@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ScanLine, Search, Package } from "lucide-react";
+import { ScanLine, Search } from "lucide-react";
 import { useTicketStore } from "../../domains/ticket/state/ticket.store";
 import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
 import { ticketService } from "../../domains/ticket/services/ticket.service";
@@ -298,12 +298,6 @@ export function SalesWorkspace() {
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#56C264]/50 bg-[#FDFCF9]">
 
-      {/* SheetHeader */}
-      <div className="shrink-0 flex items-center gap-2 h-[42px] px-4 bg-[#F0F8F1] border-b border-[#56C264]/20">
-        <Package size={14} className="shrink-0 text-[#56C264]" strokeWidth={2} />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">VENTAS</span>
-      </div>
-
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
         <div className="flex shrink-0 items-center gap-2 border-b border-[#f1f5f9] px-4 py-3">
@@ -327,8 +321,8 @@ export function SalesWorkspace() {
         </div>
       )}
 
-      {/* SEARCH ROW */}
-      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#f1f5f9] px-4">
+      {/* SEARCH ROW — primer elemento visible del panel */}
+      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#56C264]/20 bg-[#F0F8F1] px-4">
         <Search size={17} className="shrink-0 text-[#2154d8]" />
 
         <input
