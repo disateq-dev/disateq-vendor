@@ -510,8 +510,8 @@ export function CobroPanel() {
                   onClick={() => setPayMethod(id)}
                   className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition ${
                     payMethod === id
-                      ? "bg-[#2154d8] text-white shadow-[0_2px_8px_rgba(33,84,216,0.22)]"
-                      : "border border-[#e4e9f0] text-[#374151] hover:border-[#c7d7f4] hover:bg-[#f0f5ff] hover:text-[#2154d8]"
+                      ? "bg-[#56C264] text-white shadow-[0_2px_8px_rgba(86,194,100,0.25)]"
+                      : "border border-[#e4e9f0] text-[#374151] hover:border-[#56C264]/40 hover:bg-[#f0faf1] hover:text-[#1a6b2a]"
                   }`}
                 >
                   <Icon size={12} strokeWidth={2} />

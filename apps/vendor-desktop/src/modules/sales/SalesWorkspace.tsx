@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ScanLine, Search } from "lucide-react";
+import { ScanLine, Search, Package } from "lucide-react";
 import { useTicketStore } from "../../domains/ticket/state/ticket.store";
 import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
 import { ticketService } from "../../domains/ticket/services/ticket.service";
@@ -21,7 +21,7 @@ function tilePrice(p: CatalogProduct): { prefix: string; cls: string } {
     case "promo":    return { prefix: "% ", cls: "text-emerald-600" };
     case "expiring": return { prefix: "⏱ ", cls: "text-amber-500"  };
     case "out":      return { prefix: "",   cls: "text-red-400"     };
-    default:         return { prefix: "",   cls: "text-[#2154d8]"   };
+    default:         return { prefix: "",   cls: "text-[#1a6b2a]"   };
   }
 }
 
@@ -299,7 +299,8 @@ export function SalesWorkspace() {
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#56C264]/50 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <div className="shrink-0 flex items-center h-[42px] px-4 bg-[#F0F8F1] border-b border-[#56C264]/20">
+      <div className="shrink-0 flex items-center gap-2 h-[42px] px-4 bg-[#F0F8F1] border-b border-[#56C264]/20">
+        <Package size={14} className="shrink-0 text-[#56C264]" strokeWidth={2} />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">VENTAS</span>
       </div>
 
@@ -313,7 +314,7 @@ export function SalesWorkspace() {
                 onClick={() => setVisualCategory(cat.id)}
                 className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition ${
                   visualCategory === cat.id
-                    ? "bg-[#2154d8] text-white shadow-[0_2px_8px_rgba(33,84,216,0.18)]"
+                    ? "bg-[#56C264] text-white shadow-[0_2px_8px_rgba(86,194,100,0.20)]"
                     : "border border-[#e4e7ec] text-[#475467] hover:border-[#d0d5dd] hover:text-[#111827]"
                 }`}
               >
@@ -405,7 +406,7 @@ export function SalesWorkspace() {
                       onClick={() => addProductToTicket(product)}
                       className={`flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition ${
                         isSelected
-                          ? "bg-[#EDF4FF] ring-1 ring-[#2154d8]/20"
+                          ? "bg-[#EBF7ED] ring-1 ring-[#56C264]/25"
                           : "hover:bg-[#f4f7fb]"
                       }`}
                       style={isOut ? { opacity: 0.56 } : undefined}
@@ -418,7 +419,7 @@ export function SalesWorkspace() {
                         <div className="min-w-0">
                           <div
                             className={`truncate text-[14px] font-bold uppercase tracking-[0.025em] leading-tight ${
-                              isSelected ? "text-[#2154d8]" : isOut ? "text-[#9ca3af]" : "text-[#2F3E46]"
+                              isSelected ? "text-[#1a6b2a]" : isOut ? "text-[#9ca3af]" : "text-[#2F3E46]"
                             }`}
                           >
                             {product.name}
@@ -439,8 +440,8 @@ export function SalesWorkspace() {
                           onClick={e => { e.stopPropagation(); addProductToTicket(product); }}
                           className={`rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
                             isSelected
-                              ? "bg-[#2154d8] text-white hover:bg-[#1a43b0]"
-                              : "bg-[#edf4ff] text-[#2154d8] hover:bg-[#dbeafe]"
+                              ? "bg-[#56C264] text-white hover:bg-[#45b356]"
+                              : "bg-[#e8f5ea] text-[#1a6b2a] hover:bg-[#d4edda]"
                           }`}
                         >
                           Agregar
