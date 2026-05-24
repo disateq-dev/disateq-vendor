@@ -700,7 +700,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal"     value={terminal} />
-              <InfoRow label="Fondo apertura" value={`S/ ${apertura.toFixed(2)}`} />
+              <InfoRow label="Fondo de cambio" value={`S/ ${apertura.toFixed(2)}`} />
 
               {sessionStats.count > 0 && closingStage === 0 && (() => {
                 const { efe, yap, tar, mix } = sessionStats.byMethod;
@@ -776,7 +776,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo apertura S/</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo de cambio S/</span>
               <input
                 ref={aperturaRef}
                 autoFocus
@@ -909,7 +909,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#2154d8] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#2154d8]/60"
                 >
                   <Pencil size={14} strokeWidth={2} />
-                  Corregir fondo apertura
+                  Corregir fondo de cambio
                 </button>
                 <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
                   PODRÁ CORREGIR CON TURNO SIN OPERACIONES

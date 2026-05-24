@@ -10,7 +10,7 @@ type FocusZone = "search" | "ticket" | "cobro";
 export type CashBoxType = "normal" | "contingency-1" | "contingency-2" | "contingencia";
 
 export type MoveType             = "ingreso" | "egreso";
-export type MoveSource           = "apertura" | "vendido" | "mixto";
+export type MoveSource           = "apertura" | "vendido" | "externo";
 export type RegularizationStatus = "por_regularizar" | "regularizado" | "anulado";
 export type RegularizationMode   = "reposicion" | "integracion_fondo";
 
@@ -756,7 +756,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     };
     setCashMoves(prev => [...prev, move]);
     const verb   = refId ? "registró reposición" : type === "ingreso" ? "registró ingreso" : "registró egreso";
-    const srcLbl = sourceType === "apertura" ? "fondo" : sourceType === "vendido" ? "venta" : `fondo S/${fromApertura.toFixed(2)} + venta S/${fromVendido.toFixed(2)}`;
+    const srcLbl = sourceType === "apertura" ? "fondo de cambio" : sourceType === "vendido" ? "caja del día" : "dinero prestado";
     const obs    = observacion ? ` · ${observacion}` : "";
     const ref    = refId ? ` [comp.${refId.slice(0, 8)}]` : "";
     addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}${ref}`);

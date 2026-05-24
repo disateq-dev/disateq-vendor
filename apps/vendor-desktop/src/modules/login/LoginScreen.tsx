@@ -213,18 +213,18 @@ export function LoginScreen() {
 
       {/* ══ SHEET IZQUIERDA — 40% ══ */}
       <div className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8" style={{ borderRight: "1px solid #edf2f8" }}>
-        <div className="px-4 pb-2 flex justify-center">
+        <div className="px-6 pb-2 flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "90%", height: "auto", display: "block" }} />
         </div>
         <div className="[flex-grow:5]" />
         {/* Acceso Operativo */}
-        <div className="px-4 mb-5 text-right">
+        <div className="px-6 mb-5 text-right">
           <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5 whitespace-nowrap">Acceso Operativo</h2>
           <p className="text-[11px] text-[#6b7a99] leading-snug">Ingrese su usuario y PIN<br />para acceder al sistema.</p>
         </div>
         <div className="[flex-grow:2]" />
         {/* Acceso seguro */}
-        <div className="px-4 mb-5 flex items-center justify-end gap-3">
+        <div className="px-6 mb-5 flex items-center justify-end gap-3">
           <Shield size={22} className="shrink-0 text-[#45b356]" />
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#45b356] leading-none">Acceso seguro</p>
@@ -233,7 +233,7 @@ export function LoginScreen() {
         </div>
         <div className="[flex-grow:3]" />
         {/* Turno card (helper) */}
-        <div className="px-4 mb-1">
+        <div className="px-6 mb-1">
           {hasTurn && cashSession.cashBox ? (
             <div className="rounded-xl bg-[#45b356]/[0.07] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
@@ -253,7 +253,7 @@ export function LoginScreen() {
           )}
         </div>
         {/* Copyright */}
-        <div className="px-4 mb-5">
+        <div className="px-6 mb-5">
           <p className="text-[10px] text-[#b0bec8] leading-[1.5] text-justify">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
@@ -263,9 +263,9 @@ export function LoginScreen() {
       </div>
 
       {/* ══ SHEET DERECHA — 60% ══ */}
-      <div className="flex flex-1 flex-col bg-white px-3 pt-8 pb-3">
+      <div className="flex flex-1 flex-col bg-white pt-8 pb-3">
 
-        <div className="w-full max-w-[360px] mx-auto flex flex-col">
+        <div className="w-full max-w-[340px] mx-auto flex flex-col flex-1 px-2">
 
         {/* Fecha + hora */}
         <div className="flex justify-end mb-8">
@@ -346,7 +346,7 @@ export function LoginScreen() {
               </div>
 
               {/* Keypad */}
-              <div className="grid grid-cols-3 gap-2 mb-4 w-full">
+              <div className="grid grid-cols-3 gap-2 mb-1 w-full">
                 {["7","8","9","4","5","6","1","2","3"].map(d => (
                   <button key={d} onClick={() => addDigit(d)}
                     className="h-12 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[17px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
@@ -387,7 +387,7 @@ export function LoginScreen() {
               ) : (
                 <>
                   {/* Header modo pin-change */}
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#e8eef6]">
+                  <div className="flex items-center gap-2 mb-3">
                     <Lock size={12} className="text-[#005BE3] shrink-0" />
                     <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#005BE3]">Cambio de PIN</span>
                   </div>
@@ -401,7 +401,7 @@ export function LoginScreen() {
                         value={pcMotivo}
                         onChange={e => { setPcMotivo(e.target.value); setPcError(null); }}
                         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcAuthCodeRef.current?.focus(); } }}
-                        className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[12px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
+                        className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
                       >
                         <option value="" disabled hidden>Seleccionar motivo...</option>
                         {PC_MOTIVOS.map(m => <option key={m} value={m}>{m}</option>)}
@@ -465,18 +465,16 @@ export function LoginScreen() {
                   </div>
 
                   {/* Error */}
-                  {pcError ? (
+                  {pcError && (
                     <p className="mt-0.5 mb-1 text-[10px] font-semibold text-red-500">{pcError}</p>
-                  ) : (
-                    <div className="h-4" />
                   )}
 
                   {/* Botones */}
-                  <div className="mt-3 mb-4">
+                  <div className="mt-1 mb-4">
                     <button
                       onClick={handlePinChange}
                       disabled={!pcCanSave}
-                      className={`w-full h-11 rounded-xl text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
+                      className={`w-full h-12 rounded-xl text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
                         pcCanSave
                           ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_2px_14px_rgba(69,179,86,0.35)]"
                           : "bg-[#45b356]/[0.15] border border-[#45b356]/20 text-[#45b356]/50 cursor-not-allowed"
@@ -492,8 +490,8 @@ export function LoginScreen() {
         </div>
 
         {/* Acciones inferiores */}
-        <div className="flex items-center justify-between border-t border-[#f0f4f9] pt-4">
-          {view === "pin-change" ? (
+        <div className="mt-auto flex items-center justify-between pt-3">
+          {view === "pin-change" && !pcSuccess ? (
             <button
               onClick={switchToKeypad}
               className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-[#2154d8] hover:text-[#1a44b8] transition">
@@ -520,9 +518,7 @@ export function LoginScreen() {
           )}
         </div>
 
-        </div>{/* /wrapper max-w-[360px] */}
-
-        <div className="flex-1" />
+        </div>{/* /wrapper */}
       </div>
     </div>
   );
