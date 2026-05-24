@@ -33,6 +33,36 @@ function dotColor(p: CatalogProduct): string {
   return "#34d399";
 }
 
+function safeCalc(expr: string): number | null {
+  const s = expr.trim().replace(/\s+/g, "");
+  if (!s) return null;
+  if (!/^[0-9+\-*/.]+$/.test(s)) return null;
+  const parts = s.match(/[+\-*/]|[0-9]*\.?[0-9]+/g);
+  if (!parts) return null;
+  const nums: number[] = [];
+  const ops:  string[] = [];
+  for (const p of parts) {
+    if (/^[+\-*/]$/.test(p)) { ops.push(p); }
+    else { const n = parseFloat(p); if (isNaN(n)) return null; nums.push(n); }
+  }
+  if (!nums.length || nums.length !== ops.length + 1) return null;
+  let i = 0;
+  while (i < ops.length) {
+    if (ops[i] === "*" || ops[i] === "/") {
+      if (ops[i] === "/" && nums[i + 1] === 0) return null;
+      const r = ops[i] === "*" ? nums[i] * nums[i + 1] : nums[i] / nums[i + 1];
+      if (!isFinite(r)) return null;
+      nums.splice(i, 2, Math.round(r * 10000) / 10000);
+      ops.splice(i, 1);
+    } else { i++; }
+  }
+  let result = nums[0];
+  for (let j = 0; j < ops.length; j++)
+    result = ops[j] === "+" ? result + nums[j + 1] : result - nums[j + 1];
+  const rounded = Math.round(result * 100) / 100;
+  return isFinite(rounded) && rounded >= 0 ? rounded : null;
+}
+
 function normalize(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
@@ -142,6 +172,9 @@ export function SalesWorkspace() {
   }, [rubro]);
 
   const catalog = rubroConfig.catalog;
+
+  const isCalcMode  = /^[0-9+\-*/.]+$/.test(query.trim()) && query.trim().length >= 1;
+  const calcResult  = isCalcMode ? safeCalc(query) : null;
 
   const isSearching   = searchQuery.length >= 1;
   const filtered      = isSearching ? searchCatalog(catalog, searchQuery) : catalog;
@@ -321,8 +354,8 @@ export function SalesWorkspace() {
         </div>
       )}
 
-      {/* SEARCH ROW — primer elemento visible del panel */}
-      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#4F7396]/20 bg-[#F2F6FA] px-4">
+      {/* SEARCH ROW */}
+      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#e4e9f0] bg-white px-4">
         <Search size={17} className="shrink-0 text-[#2154d8]" />
 
         <input
@@ -337,11 +370,20 @@ export function SalesWorkspace() {
           onKeyDown={handleKeyDown}
           onFocus={() => enterSearch()}
           placeholder="Buscar producto por nombre, código o barra..."
-          className="w-full bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#b8c4cf]"
+          className="min-w-0 flex-1 bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#b8c4cf]"
           autoComplete="off"
         />
 
-        {!cashSession.isOpen && (
+        {calcResult !== null && (
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#f4f7fb] px-3 py-1.5">
+            <span className="text-[10px] font-semibold text-[#9ca3af]">=</span>
+            <span className="text-[14px] font-bold tabular-nums text-[#1a3a5c]">
+              S/ {calcResult.toFixed(2)}
+            </span>
+          </div>
+        )}
+
+        {!cashSession.isOpen && !isCalcMode && (
           <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-500">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
             Sin turno
