@@ -12,7 +12,7 @@ function getSubtitle(p: CatalogProduct): { text: string; cls: string } {
     case "out":      return { text: `${p.id} · ⛔ Sin stock`,                        cls: "text-[#c8d0d8]"  };
     case "promo":    return { text: `${p.id} · ${p.stock} uds. · 🔥 Promoción`,      cls: "text-orange-400" };
     case "expiring": return { text: `${p.id} · ${p.stock} uds. · ⚠ Vence pronto`,   cls: "text-amber-400"  };
-    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-emerald-300" };
+    default:         return { text: `${p.id} · ${p.stock} uds. · ✓ Con stock`,      cls: "text-[#8aabca]" };
   }
 }
 
@@ -21,7 +21,7 @@ function tilePrice(p: CatalogProduct): { prefix: string; cls: string } {
     case "promo":    return { prefix: "% ", cls: "text-emerald-600" };
     case "expiring": return { prefix: "⏱ ", cls: "text-amber-500"  };
     case "out":      return { prefix: "",   cls: "text-red-400"     };
-    default:         return { prefix: "",   cls: "text-[#1a6b2a]"   };
+    default:         return { prefix: "",   cls: "text-[#2d4f6b]"   };
   }
 }
 
@@ -296,7 +296,7 @@ export function SalesWorkspace() {
   }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#56C264]/50 bg-[#FDFCF9]">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4F7396]/50 bg-[#FDFCF9]">
 
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
@@ -308,7 +308,7 @@ export function SalesWorkspace() {
                 onClick={() => setVisualCategory(cat.id)}
                 className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition ${
                   visualCategory === cat.id
-                    ? "bg-[#56C264] text-white shadow-[0_2px_8px_rgba(86,194,100,0.20)]"
+                    ? "bg-[#4F7396] text-white shadow-[0_2px_8px_rgba(79,115,150,0.20)]"
                     : "border border-[#e4e7ec] text-[#475467] hover:border-[#d0d5dd] hover:text-[#111827]"
                 }`}
               >
@@ -322,7 +322,7 @@ export function SalesWorkspace() {
       )}
 
       {/* SEARCH ROW — primer elemento visible del panel */}
-      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#56C264]/20 bg-[#F0F8F1] px-4">
+      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#4F7396]/20 bg-[#F2F6FA] px-4">
         <Search size={17} className="shrink-0 text-[#2154d8]" />
 
         <input
@@ -400,7 +400,7 @@ export function SalesWorkspace() {
                       onClick={() => addProductToTicket(product)}
                       className={`flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition ${
                         isSelected
-                          ? "bg-[#EBF7ED] ring-1 ring-[#56C264]/25"
+                          ? "bg-[#EEF3F8] ring-1 ring-[#4F7396]/25"
                           : "hover:bg-[#f4f7fb]"
                       }`}
                       style={isOut ? { opacity: 0.56 } : undefined}
@@ -413,7 +413,7 @@ export function SalesWorkspace() {
                         <div className="min-w-0">
                           <div
                             className={`truncate text-[14px] font-bold uppercase tracking-[0.025em] leading-tight ${
-                              isSelected ? "text-[#1a6b2a]" : isOut ? "text-[#9ca3af]" : "text-[#2F3E46]"
+                              isSelected ? "text-[#2d4f6b]" : isOut ? "text-[#9ca3af]" : "text-[#2F3E46]"
                             }`}
                           >
                             {product.name}
@@ -434,8 +434,8 @@ export function SalesWorkspace() {
                           onClick={e => { e.stopPropagation(); addProductToTicket(product); }}
                           className={`rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
                             isSelected
-                              ? "bg-[#56C264] text-white hover:bg-[#45b356]"
-                              : "bg-[#e8f5ea] text-[#1a6b2a] hover:bg-[#d4edda]"
+                              ? "bg-[#4F7396] text-white hover:bg-[#3d5c7a]"
+                              : "bg-[#EEF3F8] text-[#2d4f6b] hover:bg-[#e0e9f0]"
                           }`}
                         >
                           Agregar

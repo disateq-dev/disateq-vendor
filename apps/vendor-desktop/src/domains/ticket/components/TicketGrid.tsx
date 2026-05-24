@@ -65,12 +65,12 @@ export function TicketGrid() {
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#56C264]/50 bg-[#FDFCF9]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#4F7396]/50 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <header className="shrink-0 flex h-[42px] items-center justify-between px-4 bg-[#F0F8F1] border-b border-[#56C264]/20">
+      <header className="shrink-0 flex h-[42px] items-center justify-between px-4 bg-[#F2F6FA] border-b border-[#4F7396]/20">
         <div className="flex items-center gap-2">
-          <ClipboardList size={14} className="shrink-0 text-[#56C264]" strokeWidth={2} />
+          <ClipboardList size={14} className="shrink-0 text-[#4F7396]" strokeWidth={2} />
           <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">PRE-VENTA</span>
         </div>
         <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ export function TicketGrid() {
                   onClick={() => setActiveLineIdx(isSelected ? -1 : idx)}
                   className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 transition-colors ${
                     isSelected
-                      ? "bg-[#EBF7ED] ring-1 ring-[#56C264]/25"
+                      ? "bg-[#EEF3F8] ring-1 ring-[#4F7396]/25"
                       : isLastLine
                       ? "bg-white ring-1 ring-[#e4e9f0]"
                       : "hover:bg-white"
@@ -112,7 +112,7 @@ export function TicketGrid() {
                   {/* Name + price + note */}
                   <div className="min-w-0 flex-1 pt-px">
                     <p className={`truncate text-[13px] font-semibold uppercase leading-tight tracking-[0.02em] ${
-                      isSelected ? "text-[#1a6b2a]" : "text-[#2F3E46]"
+                      isSelected ? "text-[#2d4f6b]" : "text-[#2F3E46]"
                     }`}>
                       {line.description}
                     </p>
@@ -170,14 +170,14 @@ export function TicketGrid() {
                       −
                     </button>
                     <span className={`w-6 text-center text-[13px] font-bold tabular-nums ${
-                      isSelected ? "text-[#1a6b2a]" : "text-[#2F3E46]"
+                      isSelected ? "text-[#2d4f6b]" : "text-[#2F3E46]"
                     }`}>
                       {line.quantity}
                     </span>
                     <button
                       title="Tecla [→]"
                       onClick={e => { e.stopPropagation(); ticketService.incrementLine(line.lineId); }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-[15px] font-bold text-[#56C264] transition hover:bg-green-100 hover:text-[#45b356]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF3F8] text-[15px] font-bold text-[#4F7396] transition hover:bg-[#e0e9f0] hover:text-[#3d5c7a]"
                     >
                       +
                     </button>
@@ -202,8 +202,8 @@ export function TicketGrid() {
                       }}
                       className={`flex items-center justify-center rounded-lg p-1.5 transition ${
                         line.note
-                          ? "text-[#56C264] hover:bg-green-50 hover:text-[#45b356]"
-                          : "text-[#86c98d] hover:bg-green-50 hover:text-[#56C264]"
+                          ? "text-[#4F7396] hover:bg-[#EEF3F8] hover:text-[#3d5c7a]"
+                          : "text-[#8aabca] hover:bg-[#EEF3F8] hover:text-[#4F7396]"
                       }`}
                     >
                       <Pin size={12} />
