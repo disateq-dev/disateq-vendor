@@ -21,7 +21,7 @@ const CASH_TABS: { key: CashSubView; label: string }[] = [
 
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
 const SHELL: Record<ActiveModule, string> = {
-  cash:         "border-t border-[#78C487]/20 bg-[rgba(183,231,190,0.22)]",
+  cash:         "border-t border-[#85C49C]/20 bg-[rgba(183,231,190,0.22)]",
   sales:        "border-t border-[#4F7396]/20 bg-[rgba(79,115,150,0.10)]",
   comprobantes: "border-t border-[#73C7D4]/20 bg-[rgba(200,238,244,0.30)]",
   config:       "border-t border-[#9B8BFF]/20 bg-[rgba(221,217,255,0.22)]",
@@ -58,17 +58,17 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
 
             <div className="mx-1 h-5 w-px bg-[#4F7396]/20" />
 
-            <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#4F7396]/50 hover:bg-[#EEF3F8] hover:text-[#2d4f6b]">
+            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <Percent size={13} strokeWidth={2} />
               <span>Descuento</span>
             </button>
 
-            <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#4F7396]/50 hover:bg-[#EEF3F8] hover:text-[#2d4f6b]">
+            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <FileText size={13} strokeWidth={2} />
               <span>Observación</span>
             </button>
 
-            <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#4F7396]/50 hover:bg-[#EEF3F8] hover:text-[#2d4f6b]">
+            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <BarChart2 size={13} strokeWidth={2} />
               <span>Reportes</span>
             </button>
@@ -115,8 +115,8 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                   onClick={() => { if (activeModule === "cash") onCashSubViewChange(key); }}
                   className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
                     isActive
-                      ? "bg-[#78C487] text-white shadow-sm"
-                      : "text-[#4a7a55]/70 hover:bg-[#78C487]/10 hover:text-[#2d6640]"
+                      ? "bg-[#85C49C] text-white shadow-sm"
+                      : "text-[#4a7a55]/70 hover:bg-[#85C49C]/10 hover:text-[#2d6640]"
                   }`}
                 >
                   {label}

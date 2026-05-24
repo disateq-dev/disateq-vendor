@@ -26,17 +26,17 @@ export function ContextBar({ activeModule }: ContextBarProps) {
 
         <div className="mx-1 h-5 w-px bg-[#4F7396]/20" />
 
-        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#4F7396]/50 hover:bg-[#EEF3F8] hover:text-[#2d4f6b]">
+        <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
           <Percent size={13} strokeWidth={2} />
           <span>Descuento</span>
         </button>
 
-        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#4F7396]/50 hover:bg-[#EEF3F8] hover:text-[#2d4f6b]">
+        <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
           <FileText size={13} strokeWidth={2} />
           <span>Observación</span>
         </button>
 
-        <button className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-[#4F7396]/50 hover:bg-[#EEF3F8] hover:text-[#2d4f6b]">
+        <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
           <BarChart2 size={13} strokeWidth={2} />
           <span>Reportes</span>
         </button>
