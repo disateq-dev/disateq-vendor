@@ -425,11 +425,11 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
             )}
 
             <div className="flex gap-2 pt-1">
-              <button onClick={() => setMode("view")} title="Tecla [ESC]"
+              <button onClick={() => setMode("view")} title="Tecla [Escape]"
                 className="flex h-10 flex-1 items-center justify-center rounded-md border border-[#e4e9f0] bg-white text-[13px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8] hover:text-[#374151]">
                 Cancelar
               </button>
-              <button onClick={handleSave} title="Tecla [ENTER]"
+              <button onClick={handleSave} title="Tecla [Enter]"
                 className="flex h-10 flex-1 items-center justify-center rounded-md bg-[#45b356] text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98]">
                 {mode === "create" ? "Crear bloque" : "Confirmar"}
               </button>

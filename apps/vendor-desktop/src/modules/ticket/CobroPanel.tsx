@@ -373,7 +373,7 @@ export function CobroPanel() {
       {/* SheetHeader */}
       <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4F7396]/20 bg-[#F2F6FA] px-4">
         <button
-          title="Tecla [Esc]"
+          title="Tecla [Escape]"
           onClick={cobroView === "client" ? resetForm : closeCobro}
           className="flex shrink-0 items-center gap-1 text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none transition hover:text-[#374151]"
         >
@@ -412,7 +412,7 @@ export function CobroPanel() {
           {/* CLIENTE strip */}
           <div className="shrink-0 px-4 pt-3 pb-1">
             <button
-              title="Tecla [Ctrl+Enter]"
+              title="Tecla [Ctrl + Enter]"
               onClick={openClientForm}
               className={`flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left transition ${
                 rowWarn && !customerDisplay
@@ -801,7 +801,7 @@ export function CobroPanel() {
         <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
           <div className="flex gap-1.5 items-stretch">
             <button
-              title="Tecla [Esc]"
+              title="Tecla [Escape]"
               onClick={resetForm}
               className="flex flex-1 items-center justify-center rounded-2xl border border-[#e4e9f0] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
             >

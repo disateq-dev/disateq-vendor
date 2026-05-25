@@ -894,7 +894,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
                 <button
                   onClick={handleSaveCorrection}
-                  title="Tecla [ENTER]"
+                  title="Tecla [Enter]"
                   className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#45b356] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#45b356]/60"
                 >
                   <CheckCircle size={14} strokeWidth={2} />
@@ -905,7 +905,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <>
                 <button
                   onClick={openEditApertura}
-                  title="Tecla [CTRL + INSERT]"
+                  title="Tecla [Ctrl + Insert]"
                   className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#2154d8] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#2154d8]/60"
                 >
                   <Pencil size={14} strokeWidth={2} />
@@ -927,7 +927,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             <button
               onClick={handleOpen}
               disabled={!canOpen}
-              title="Tecla [ENTER]"
+              title="Tecla [Enter]"
               className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 ${
                 openingMode === "exceptional"
                   ? canOpen
