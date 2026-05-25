@@ -206,20 +206,20 @@ export function SalesWorkspace() {
     selectedItemRef.current?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  // F2/F4/F9 — scoped to VENTAS mount (no collision with CashWorkspace F4)
+  // F2 / Ctrl+Enter / F9 — scoped to VENTAS mount
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (cobroOpen) return;
-      if (e.key === "F2") {
+      if (e.key === "F2" && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         enterSearch();
         inputRef.current?.focus();
       }
-      if (e.key === "F4") {
+      if (e.ctrlKey && e.key === "Enter") {
         e.preventDefault();
         openCobro();
       }
-      if (e.key === "F9") {
+      if (e.key === "F9" && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         if (lines.length > 0) openCobro();
       }
@@ -274,6 +274,7 @@ export function SalesWorkspace() {
         }
         break;
       case "Enter": {
+        if (e.ctrlKey) break; // Ctrl+Enter → openCobro, handled by global listener
         if (isSearching) {
           e.preventDefault();
           const product = selectedIndex >= 0 ? filtered[selectedIndex] : filtered[0];
