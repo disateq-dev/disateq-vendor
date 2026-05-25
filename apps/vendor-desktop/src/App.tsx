@@ -19,7 +19,7 @@ function AppRoot() {
   const { activeOperator } = usePOS();
   const [activeModule,      setActiveModule]      = useState<ActiveModule>("cash");
   const [cashSubView,       setCashSubView]       = useState<CashSubView>("turno");
-  const [inventorySubView,  setInventorySubView]  = useState<InventorySubView>("disponibilidad");
+  const [inventorySubView,  setInventorySubView]  = useState<InventorySubView>("items");
   const prevOpId = useRef<string | null>(null);
 
   useEffect(() => {

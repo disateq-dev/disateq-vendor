@@ -22,9 +22,9 @@ const CASH_TABS: { key: CashSubView; label: string }[] = [
 ];
 
 const INVENTORY_TABS: { key: InventorySubView; label: string }[] = [
-  { key: "disponibilidad", label: "DISPONIBILIDAD" },
-  { key: "movimientos",    label: "MOVIMIENTOS"    },
   { key: "items",          label: "ÍTEMS"          },
+  { key: "movimientos",    label: "MOVIMIENTOS"    },
+  { key: "disponibilidad", label: "DISPONIBILIDAD" },
 ];
 
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
