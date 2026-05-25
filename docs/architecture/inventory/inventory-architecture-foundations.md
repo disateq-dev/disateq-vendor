@@ -17,6 +17,76 @@ Consolidar los principios arquitectónicos, operacionales y filosóficos que reg
 
 ---
 
+## Índice de navegación
+
+### Principios fundacionales (1–20)
+
+| Sección | Título | Núcleo semántico |
+|---|---|---|
+| [1](#1-principio-raíz) | Principio raíz | Inventario ≠ stock · coordinación de disponibilidad viva |
+| [2](#2-filosofía-operacional) | Filosofía operacional | Continuidad responsable · entre rigidez ERP y caos |
+| [3](#3-movimiento-como-verdad-persistente) | Movimiento como verdad persistente | Eventos inmutables como fuente de verdad |
+| [4](#4-disponibilidad-contextual) | Disponibilidad contextual | Disponibilidad ≠ existencia · proyección por contexto |
+| [5](#5-almacén-como-contexto-operacional) | Almacén como contexto operacional | Ubicación como dimensión de disponibilidad |
+| [6](#6-ownership-operacional) | Ownership operacional | Responsabilidad contextual de la disponibilidad |
+| [7](#7-reservas-operacionales) | Reservas operacionales | Compromiso previo a materialización |
+| [8](#8-inventario-como-sistema-temporal) | Inventario como sistema temporal | Tiempo como dimensión operacional |
+| [9](#9-materialización-operacional) | Materialización operacional | Transición de compromiso a movimiento definitivo |
+| [10](#10-edge-first-operational-runtime) | Edge-first operational runtime | Autonomía de runtime sin conectividad |
+| [11](#11-nube-como-capa-de-coordinación) | Nube como capa de coordinación | Sincronización eventual, no fuente de verdad primaria |
+| [12](#12-precisión-operacional-y-tributaria) | Precisión operacional y tributaria | Exactitud operacional vs exactitud contable |
+| [13](#13-unidades-operacionales-flexibles) | Unidades operacionales flexibles | Presentaciones múltiples sin modelo rígido |
+| [14](#14-transformaciones-operacionales) | Transformaciones operacionales | Causalidad insumo → derivado |
+| [15](#15-confianza-operacional) | Confianza operacional | Nivel de certeza como atributo de disponibilidad |
+| [16](#16-reconciliación-física) | Reconciliación física | Convergencia progresiva por conteo físico |
+| [17](#17-prioridad-operacional) | Prioridad operacional | Arbitraje contextual bajo escasez |
+| [18](#18-reposiciones) | Reposiciones | Reposición como evento causal trazable |
+| [19](#19-inventario-como-sistema-humano) | Inventario como sistema humano | El operador humano como actor central |
+| [20](#20-complejidad-interna--simplicidad-operacional) | Complejidad interna + simplicidad operacional | Complejidad interna controlada, superficie operacional simple |
+
+### Marco de validación (21–25)
+
+| Sección | Título | Propósito |
+|---|---|---|
+| [21](#21-validación-operacional-semántica) | Validación operacional semántica | Criterios para validar que el modelo respeta la filosofía |
+| [22](#22-escenarios-operacionales-canónicos) | Escenarios operacionales canónicos | Estructura canónica de escenarios de comportamiento |
+| [23](#23-principios-de-validación) | Principios de validación | Reglas de validación transversal del dominio |
+| [24](#24-escenarios-prioritarios-iniciales) | Escenarios prioritarios iniciales | Escenarios críticos para la primera fase |
+| [25](#25-transición-de-etapa) | Transición de etapa | Criterios para avanzar de modelado a implementación |
+
+### Escenarios canónicos (26–42)
+
+| Escenario | Situación central |
+|---|---|
+| [26](#26-escenario-canónico--venta-offline-prolongada-con-divergencia-posterior) | Venta offline prolongada con divergencia posterior |
+| [27](#27-escenario-canónico--reserva-concurrente-contextual) | Reserva concurrente contextual |
+| [28](#28-escenario-canónico--reconciliación-física-después-de-divergencia-operacional) | Reconciliación física después de divergencia operacional |
+| [29](#29-escenario-canónico--transformación-operacional-y-fraccionamiento) | Transformación operacional y fraccionamiento |
+| [30](#30-escenario-canónico--expiración-bajo-presión-operacional) | Expiración bajo presión operacional |
+| [31](#31-escenario-canónico--continuidad-operacional-bajo-baja-confianza) | Continuidad operacional bajo baja confianza |
+| [32](#32-escenario-canónico--arbitraje-operacional-bajo-escasez) | Arbitraje operacional bajo escasez |
+| [33](#33-escenario-canónico--devolución-posterior-a-divergencia-operacional) | Devolución posterior a divergencia operacional |
+| [34](#34-escenario-canónico--sincronización-diferida-con-causalidad-cruzada) | Sincronización diferida con causalidad cruzada |
+| [35](#35-escenario-canónico--materialización-diferida-bajo-continuidad-operacional) | Materialización diferida bajo continuidad operacional |
+| [36](#36-escenario-canónico--prioridad-operacional-dinámica-bajo-contexto-cambiante) | Prioridad operacional dinámica bajo contexto cambiante |
+| [37](#37-escenario-canónico--reserva-expirada-con-continuidad-operacional-activa) | Reserva expirada con continuidad operacional activa |
+| [38](#38-escenario-canónico--conteo-físico-parcial-bajo-operación-activa) | Conteo físico parcial bajo operación activa |
+| [39](#39-escenario-canónico--transferencia-operacional-en-tránsito-con-sincronización-diferida) | Transferencia operacional en tránsito con sincronización diferida |
+| [40](#40-escenario-canónico--operación-en-contingencia-con-reconciliación-diferida) | Operación en contingencia con reconciliación diferida |
+| [41](#41-escenario-canónico--override-operacional-contextual-bajo-presión-crítica) | Override operacional contextual bajo presión crítica |
+| [42](#42-escenario-canónico--reinterpretación-operacional-posterior-a-nueva-evidencia) | Reinterpretación operacional posterior a nueva evidencia |
+
+---
+
+## Documentos relacionados
+
+| Documento | Propósito |
+|---|---|
+| `inventory-architecture-foundations.md` | Principios filosóficos · Escenarios canónicos de comportamiento · Invariantes por escenario |
+| `inventory-operational-evolution.md` | Capas evolutivas · Protocolo de decisión · Tensiones arquitectónicas · Glosario operacional |
+
+---
+
 # 1. PRINCIPIO RAÍZ
 
 ## INVENTARIO NO ES STOCK
