@@ -1183,3 +1183,326 @@ Evaluar antes de revertir si la fricción es de adaptación o de diseño incorre
 
 ---
 
+# 9. TENSIONES ARQUITECTÓNICAS ENTRE CAPAS
+
+## PROPÓSITO
+
+Las capas evolutivas no son muros aislados.
+
+Cuando coexisten, generan tensiones: dos principios válidos que tiran en direcciones opuestas en una misma situación operacional.
+
+Este documento no resuelve las tensiones con una respuesta única.
+
+Las documenta para que sean reconocibles cuando aparecen y navegables con criterio operacional, no con improvisación.
+
+---
+
+## ESTRUCTURA DE CADA TENSIÓN
+
+Cada tensión responde:
+
+* **Tensión:** los dos polos en conflicto
+* **Dónde aparece:** en qué situación operacional concreta emerge
+* **Por qué no tiene resolución universal:** qué hace que la respuesta dependa del contexto
+* **Criterio de navegación:** cómo decidir hacia dónde inclinar la balanza en un caso concreto
+* **Señal de desequilibrio:** qué indica que la balanza se inclinó demasiado hacia un lado
+
+---
+
+## TENSIÓN T-01 — SIMPLICIDAD DE CAPA 0 vs NECESIDAD DE CONTEXTO DE CAPA 1
+
+**Tensión:**
+
+Mantener la disponibilidad simple y directamente consultable (CAPA 0) versus modelar el contexto completo que la hace operacionalmente precisa (CAPA 1).
+
+**Dónde aparece:**
+
+Cuando el negocio crece y aparecen múltiples ubicaciones o estados, pero la operación cotidiana sigue siendo mayoritariamente simple.
+
+Añadir contexto a toda la disponibilidad complica las consultas simples que representan el 90% del uso real.
+
+**Por qué no tiene resolución universal:**
+
+Para un negocio con un solo punto operacional, el contexto de CAPA 1 es ruido.
+
+Para un negocio con múltiples puntos, la simplicidad de CAPA 0 genera errores operacionales reales.
+
+**Criterio de navegación:**
+
+El contexto solo vale cuando el operador toma decisiones distintas en función de él.
+
+Si el operador consulta disponibilidad y actúa igual independientemente de la ubicación o el estado, el contexto no agrega valor operacional.
+
+**Señal de desequilibrio hacia CAPA 0 en exceso:**
+
+El operador consulta disponibilidad total y luego verifica manualmente en qué punto está físicamente el ítem antes de comprometerse.
+
+**Señal de desequilibrio hacia CAPA 1 en exceso:**
+
+Para consultar disponibilidad básica el operador debe especificar ubicación y estado aunque en la práctica la disponibilidad siempre está en el mismo lugar.
+
+---
+
+## TENSIÓN T-02 — CONTINUIDAD OPERACIONAL vs INTEGRIDAD DE DATOS
+
+**Tensión:**
+
+Permitir que la operación continúe bajo condiciones de incertidumbre (CAPA 2) versus garantizar que los datos reflejen la realidad antes de comprometer disponibilidad.
+
+**Dónde aparece:**
+
+Cuando la sincronización está degradada o la confianza operacional es baja pero la operación no puede detenerse.
+
+El sistema puede comprometer disponibilidad cuya certeza es reducida, o puede bloquear hasta recuperar certeza plena.
+
+**Por qué no tiene resolución universal:**
+
+Bloquear protege la integridad de datos pero puede paralizar la operación y generar pérdida comercial real.
+
+Continuar sin certeza puede generar compromisos que luego no pueden honrarse.
+
+El equilibrio correcto depende del tipo de ítem, del nivel real de incertidumbre, y de las consecuencias de comprometerse incorrectamente.
+
+**Criterio de navegación:**
+
+El costo de comprometerse incorrectamente versus el costo de no comprometerse es diferente por ítem y por contexto.
+
+Para ítems donde el error de sobrecompromiso es crítico (un solo servicio de alto valor), inclinar hacia integridad.
+
+Para ítems donde la operación cotidiana debe fluir y los errores se reconcilian (productos de alta rotación), inclinar hacia continuidad.
+
+**Señal de desequilibrio hacia continuidad en exceso:**
+
+Los compromisos bajo baja confianza generan regularmente diferencias en reconciliación que requieren corrección manual frecuente.
+
+**Señal de desequilibrio hacia integridad en exceso:**
+
+La operación se frena frecuentemente esperando confirmación de datos que raramente cambian el resultado operacional.
+
+---
+
+## TENSIÓN T-03 — AUTONOMÍA DE RUNTIME vs CONVERGENCIA DISTRIBUIDA
+
+**Tensión:**
+
+Cada runtime opera autónomamente con su propia disponibilidad (CAPA 3) versus la necesidad de que todos los runtimes converjan hacia una disponibilidad coherente.
+
+**Dónde aparece:**
+
+Cuando dos runtimes operan de forma autónoma y luego se reconcilian.
+
+La disponibilidad comprometida en runtime A mientras runtime B también comprometía la misma disponibilidad genera divergencia que no se resuelve sola.
+
+**Por qué no tiene resolución universal:**
+
+La autonomía total permite operación sin interrupciones pero puede generar divergencias graves en ítems con disponibilidad escasa compartida entre runtimes.
+
+La sincronización frecuente reduce divergencias pero introduce latencia y fragilidad operacional.
+
+**Criterio de navegación:**
+
+El nivel tolerable de divergencia es proporcional a la disponibilidad total del ítem versus la velocidad de consumo compartida.
+
+Un ítem con alta disponibilidad puede tolerar más autonomía porque la probabilidad de sobrecompromiso es baja.
+
+Un ítem con disponibilidad escasa compartida entre runtimes requiere sincronización más frecuente o reserva centralizada.
+
+**Señal de desequilibrio hacia autonomía en exceso:**
+
+Los runtimes generan regularmente sobrecompromisos en ítems escasos que requieren cancelaciones o sustituciones con el cliente.
+
+**Señal de desequilibrio hacia convergencia en exceso:**
+
+Los runtimes no pueden operar de forma autónoma durante períodos breves de desconectividad sin que la operación se detenga.
+
+---
+
+## TENSIÓN T-04 — CAUSALIDAD TRAZABLE vs RENDIMIENTO OPERACIONAL
+
+**Tensión:**
+
+Registrar la causalidad completa de cada movimiento de disponibilidad (principio raíz de foundations.md) versus la velocidad de registro en alta frecuencia operacional.
+
+**Dónde aparece:**
+
+En operaciones de alta frecuencia donde registrar el contexto causal completo en cada movimiento introduce latencia o complejidad de datos que afecta la velocidad del scanner o del teclado.
+
+**Por qué no tiene resolución universal:**
+
+Sin causalidad trazable, la reconciliación y el diagnóstico de diferencias son imposibles.
+
+Con causalidad completa en cada movimiento de alta frecuencia, el sistema puede volverse lento en el punto de venta activo.
+
+**Criterio de navegación:**
+
+La causalidad mínima necesaria es: origen del movimiento (quién, qué operación, cuándo).
+
+El contexto adicional (por qué, en qué circunstancias, con qué nivel de confianza) puede enriquecerse asincrónicamente sin bloquear el registro del movimiento.
+
+La trazabilidad no requiere que todo el contexto se capture de forma síncrona.
+
+**Señal de desequilibrio hacia trazabilidad en exceso:**
+
+El scanner o el flujo de cobro introduce latencia visible al operador por la carga de registro de contexto causal.
+
+**Señal de desequilibrio hacia rendimiento en exceso:**
+
+Al revisar diferencias de disponibilidad no es posible determinar la causa sin investigación manual porque los movimientos no tienen contexto suficiente.
+
+---
+
+## TENSIÓN T-05 — INMUTABILIDAD DE EVENTOS vs CORRECCIÓN OPERACIONAL
+
+**Tensión:**
+
+Los eventos pasados no se reescriben (invariante absoluto de foundations.md) versus la necesidad real del negocio de corregir errores de registro sin que quede rastro confuso en la historia.
+
+**Dónde aparece:**
+
+Cuando un operador registró un movimiento incorrecto (cantidad equivocada, ítem equivocado, operación duplicada) y quiere simplemente borrarlo o corregirlo directamente.
+
+**Por qué no tiene resolución universal:**
+
+La inmutabilidad es necesaria para la integridad del sistema y la trazabilidad de reconciliaciones.
+
+Pero exigir al operador que genere un evento de reversión explícito para cada error puede ser cognitivamente costoso en operación de alta presión.
+
+**Criterio de navegación:**
+
+El sistema puede ofrecer una operación de corrección que internamente genera el evento de reversión de forma automática, sin exponer al operador al modelo de eventos.
+
+El operador dice "esto estuvo mal" y el sistema genera los eventos necesarios manteniendo la causalidad.
+
+La abstracción operacional protege la inmutabilidad sin cargar al operador con el modelo interno.
+
+**Señal de desequilibrio hacia inmutabilidad expuesta en exceso:**
+
+El operador necesita entender el modelo de eventos para corregir errores simples y esto genera errores adicionales o resistencia a corregir.
+
+**Señal de desequilibrio hacia corrección directa en exceso:**
+
+Las correcciones no dejan rastro causal suficiente y las diferencias de disponibilidad son inexplicables en retrospectiva.
+
+---
+
+## TENSIÓN T-06 — COMPLEJIDAD OPCIONAL vs ACTIVACIÓN REAL
+
+**Tensión:**
+
+Las capas superiores son opcionales y se activan cuando el problema las justifica (principio raíz de este documento) versus la presión operacional de activar capacidades preventivamente para evitar dolores futuros.
+
+**Dónde aparece:**
+
+Cuando el negocio está creciendo y el equipo técnico puede anticipar que dentro de tres meses necesitará CAPA 3.
+
+La tentación es activarla ahora para no tener que hacerlo bajo presión después.
+
+**Por qué no tiene resolución universal:**
+
+Activar preventivamente evita la urgencia futura pero introduce complejidad presente que puede generar problemas operacionales actuales.
+
+No activar preventivamente puede generar la situación de activar bajo presión con menos tiempo para validar.
+
+**Criterio de navegación:**
+
+El criterio no es temporal (cuándo lo necesitaremos) sino operacional (lo necesitamos ahora).
+
+Si el dolor aún no existe en operación real, la activación preventiva es siempre prematura.
+
+La preparación correcta es tener el diseño listo, no tener la activación hecha.
+
+**Señal de desequilibrio hacia activación preventiva en exceso:**
+
+Hay capacidades activas en el sistema que ningún operador usa porque el problema que resuelven todavía no existe.
+
+**Señal de desequilibrio hacia activación reactiva en exceso:**
+
+La activación de una capa necesaria ocurre siempre bajo crisis, sin tiempo para validar, generando problemas operacionales en la transición.
+
+---
+
+## TENSIÓN T-07 — TRANSFORMACIÓN ATÓMICA vs CONTINUIDAD DURANTE TRANSFORMACIÓN
+
+**Tensión:**
+
+Una transformación debería ser atómica: o se completa o se revierte (CAPA 4) versus la realidad operacional donde las transformaciones ocurren en el tiempo y el negocio necesita visibilidad del estado intermedio.
+
+**Dónde aparece:**
+
+Cuando una transformación larga (proceso de producción de varias horas) está en curso y el operador necesita saber qué disponibilidad está comprometida, qué ya se generó, y cuánto falta.
+
+La atomicidad completa haría que el estado intermedio fuera invisible hasta la conclusión.
+
+**Por qué no tiene resolución universal:**
+
+La atomicidad completa simplifica el modelo de datos pero oculta información operacional real que el negocio necesita para tomar decisiones durante la transformación.
+
+La visibilidad completa del estado intermedio añade complejidad al modelo y puede generar lecturas de disponibilidad ambiguas para otros operadores.
+
+**Criterio de navegación:**
+
+El estado intermedio es visible como estado diferenciado (en transformación), no como disponibilidad comprometible.
+
+La disponibilidad en transformación no puede ser comprometida para otras operaciones hasta que la transformación genere disponibilidad derivada.
+
+La visibilidad del estado intermedio es informativa para el operador que gestiona la transformación, no operacionalmente disponible para el resto.
+
+**Señal de desequilibrio hacia atomicidad en exceso:**
+
+El operador gestiona manualmente el seguimiento de transformaciones en curso porque el sistema no muestra el estado intermedio.
+
+**Señal de desequilibrio hacia visibilidad en exceso:**
+
+Otros operadores ven disponibilidad en estado intermedio y la comprometen antes de que la transformación la genere efectivamente.
+
+---
+
+## TENSIONES CRUZADAS ENTRE CAPAS NO ADYACENTES
+
+Las tensiones más difíciles son las que involucran capas no adyacentes donde el principio de una capa baja entra en conflicto con una capacidad de una capa alta.
+
+### CAPA 0 (disponibilidad simple) vs CAPA 3 (edge distribuido)
+
+La disponibilidad simple de CAPA 0 asume que hay una única fuente de verdad para la cantidad disponible.
+
+CAPA 3 introduce múltiples fuentes que pueden diverger temporalmente.
+
+La tensión aparece en la proyección de disponibilidad: ¿qué número muestra CAPA 0 cuando hay divergencia distribuida activa?
+
+Criterio: CAPA 0 proyecta la disponibilidad del runtime local activo, no la disponibilidad global consolidada. La consolidación es responsabilidad de CAPA 3, no de la consulta de CAPA 0.
+
+### CAPA 1 (reservas) vs CAPA 3 (autonomía de runtime)
+
+Una reserva generada en runtime A puede afectar disponibilidad que runtime B también necesita comprometer.
+
+Si los runtimes son autónomos, runtime B no conoce la reserva de runtime A hasta la reconciliación.
+
+Criterio: las reservas tienen ámbito de runtime. Una reserva en runtime A no bloquea operaciones en runtime B. La divergencia se reconcilia; los sobrecompromisos tienen protocolo de resolución explícito en foundations.md.
+
+### CAPA 2 (confianza) vs CAPA 4 (transformaciones)
+
+Una transformación iniciada bajo alta confianza puede encontrar que la confianza se degrada durante su ejecución.
+
+¿Debe la transformación detenerse, continuar, o cambiar de estado?
+
+Criterio: la transformación continúa con su estado intermedio visible y marcado con el nivel de confianza vigente en cada etapa. El resultado final registra el contexto de confianza durante el proceso.
+
+---
+
+## PRINCIPIO DE NAVEGACIÓN DE TENSIONES
+
+Cuando una tensión aparece sin respuesta clara en este documento:
+
+```text
+1. Identificar cuál es el costo operacional real de cada polo
+2. Identificar cuál de los dos costos es recuperable
+3. Preferir el polo cuyo error es más fácilmente reconciliable
+4. Documentar la decisión y el criterio usado
+5. Revisar si el comportamiento observado valida el criterio elegido
+```
+
+Las tensiones no resueltas no son fracasos arquitectónicos.
+
+Son puntos de tensión activos que el sistema debe poder navegar con criterio, no eliminar con reglas rígidas.
+
+---
