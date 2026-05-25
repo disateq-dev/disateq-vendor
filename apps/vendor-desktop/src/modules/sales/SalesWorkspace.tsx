@@ -206,7 +206,7 @@ export function SalesWorkspace() {
     selectedItemRef.current?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  // F2 global → focus search (blocked when cobro is open)
+  // F2/F4/F9 — scoped to VENTAS mount (no collision with CashWorkspace F4)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (cobroOpen) return;
@@ -214,6 +214,10 @@ export function SalesWorkspace() {
         e.preventDefault();
         enterSearch();
         inputRef.current?.focus();
+      }
+      if (e.key === "F4") {
+        e.preventDefault();
+        openCobro();
       }
       if (e.key === "F9") {
         e.preventDefault();
