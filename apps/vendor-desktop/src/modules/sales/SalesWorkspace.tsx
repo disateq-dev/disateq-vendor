@@ -181,10 +181,17 @@ export function SalesWorkspace() {
     ? visualCatalog
     : visualCatalog.filter(p => p.category === visualCategory);
 
-  // Focus search input whenever zone returns to "search" — guard against cobro stealing focus
+  // Mount — scanner readiness on every runtime re-entry (CASH/CONFIG/COMP → VENTAS)
+  // inputRef is stable so [] is correct; fires even when zone/cobroOpen haven't changed value
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 80);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Zone transition — focus when returning from cobro or ticket zone
   useEffect(() => {
     if (cobroOpen || zone !== "search") return;
-    const t = setTimeout(() => inputRef.current?.focus(), 40);
+    const t = setTimeout(() => inputRef.current?.focus(), 80);
     return () => clearTimeout(t);
   }, [zone, cobroOpen]);
 
