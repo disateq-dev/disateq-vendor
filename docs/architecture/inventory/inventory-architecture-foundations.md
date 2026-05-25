@@ -82,6 +82,7 @@ Consolidar los principios arquitectónicos, operacionales y filosóficos que reg
 |---|---|---|
 | [43](#43-anti-patrones-del-dominio-inventarios) | AP-01 a AP-12 — trampas de diseño con apariencia de solución | Reconocer decisiones incorrectas antes de tomarlas |
 | [44](#44-preguntas-de-validación-del-dominio) | PV-01 a PV-32 — preguntas de validación por grupo temático | Verificar que un diseño o implementación respeta la filosofía del dominio |
+| [45](#45-mapa-de-relaciones-entre-principios) | Árbol de derivación · clusters · refuerzos · tensiones · transversales | Navegar el sistema de principios como estructura coherente |
 
 ---
 
@@ -2803,5 +2804,228 @@ Usar estas preguntas en tres momentos:
 **Antes de implementar:** verificar que el diseño propuesto responde afirmativamente a las preguntas relevantes.
 
 **Antes de consolidar:** confirmar que el comportamiento observado en runtime valida las respuestas afirmativas del diseño.
+
+---
+
+# 45. MAPA DE RELACIONES ENTRE PRINCIPIOS
+
+## PROPÓSITO
+
+Este mapa muestra cómo los 20 principios fundacionales se relacionan entre sí: cuáles son raíz, cuáles derivan, cuáles se refuerzan mutuamente, cuáles están en tensión, y cuáles son transversales al conjunto.
+
+El mapa no reemplaza la lectura de cada principio.
+
+Permite navegar el sistema de principios como una estructura coherente, no como una lista independiente.
+
+---
+
+## ÁRBOL DE DERIVACIÓN
+
+El principio raíz es **P1 — Inventario ≠ stock**.
+
+Todo el sistema de principios deriva de esta afirmación central.
+
+```text
+P1 — INVENTARIO ≠ STOCK (raíz)
+│
+├── P2 — FILOSOFÍA OPERACIONAL
+│     Continuidad responsable como marco de la filosofía de P1
+│
+├── P3 — MOVIMIENTO COMO VERDAD PERSISTENTE
+│     Mecanismo concreto que hace operacional a P1
+│     │
+│     ├── P4 — DISPONIBILIDAD CONTEXTUAL
+│     │     La disponibilidad es proyección sobre eventos de P3
+│     │     │
+│     │     ├── P5 — ALMACÉN COMO CONTEXTO OPERACIONAL
+│     │     │     La ubicación como dimensión de P4
+│     │     │
+│     │     ├── P6 — OWNERSHIP OPERACIONAL
+│     │     │     La responsabilidad contextual de P4
+│     │     │
+│     │     ├── P7 — RESERVAS OPERACIONALES
+│     │     │     Estados de disponibilidad de P4
+│     │     │
+│     │     ├── P15 — CONFIANZA OPERACIONAL
+│     │     │     La certeza como atributo de P4
+│     │     │
+│     │     └── P17 — PRIORIDAD OPERACIONAL
+│     │           Arbitraje sobre P4 bajo escasez
+│     │
+│     ├── P8 — INVENTARIO COMO SISTEMA TEMPORAL
+│     │     La dimensión temporal de los eventos de P3
+│     │
+│     ├── P9 — MATERIALIZACIÓN OPERACIONAL
+│     │     Conversión de compromiso en evento definitivo de P3
+│     │
+│     └── P16 — RECONCILIACIÓN FÍSICA
+│           Convergencia entre eventos de P3 y realidad física
+│
+├── P10 — EDGE-FIRST OPERATIONAL RUNTIME
+│     Autonomía operacional que respeta P1 sin conectividad
+│     │
+│     └── P11 — NUBE COMO CAPA DE COORDINACIÓN
+│           La nube como sincronización eventual de P10,
+│           no como fuente de verdad
+│
+├── P14 — TRANSFORMACIONES OPERACIONALES
+│     Causalidad entre P3 de insumos y P3 de derivados
+│
+├── P19 — INVENTARIO COMO SISTEMA HUMANO
+│     La dimensión humana de P1: el operador como actor central
+│
+└── P20 — COMPLEJIDAD INTERNA + SIMPLICIDAD OPERACIONAL
+      La forma en que P1 debe manifestarse en la superficie operacional
+```
+
+---
+
+## CLUSTERS SEMÁNTICOS
+
+Los 20 principios se agrupan en cuatro clusters según su función en el modelo:
+
+### CLUSTER FUNDACIONAL
+
+Principios que definen la naturaleza y filosofía del dominio.
+
+```text
+P1  — Inventario ≠ stock
+P2  — Filosofía operacional
+P3  — Movimiento como verdad persistente
+P19 — Inventario como sistema humano
+P20 — Complejidad interna + simplicidad operacional
+```
+
+Todo diseño debe ser coherente con este cluster antes que con cualquier otro.
+
+### CLUSTER MODELO DE DISPONIBILIDAD
+
+Principios que definen cómo se modela, proyecta y opera la disponibilidad.
+
+```text
+P4  — Disponibilidad contextual
+P5  — Almacén como contexto operacional
+P6  — Ownership operacional
+P7  — Reservas operacionales
+P8  — Inventario como sistema temporal
+P9  — Materialización operacional
+```
+
+Este cluster es la implementación operacional del cluster fundacional.
+
+### CLUSTER RUNTIME OPERACIONAL
+
+Principios que definen cómo el sistema opera bajo condiciones reales: conectividad imperfecta, confianza variable, divergencia entre runtimes.
+
+```text
+P10 — Edge-first operational runtime
+P11 — Nube como capa de coordinación
+P15 — Confianza operacional
+P16 — Reconciliación física
+```
+
+Este cluster es el que diferencia a DISATEQ de un sistema ERP clásico.
+
+### CLUSTER OPERACIONES ESPECIALIZADAS
+
+Principios que cubren operaciones específicas del dominio que no encajan en los clusters anteriores pero deben respetar todos ellos.
+
+```text
+P12 — Precisión operacional y tributaria
+P13 — Unidades operacionales flexibles
+P14 — Transformaciones operacionales
+P17 — Prioridad operacional
+P18 — Reposiciones
+```
+
+---
+
+## RELACIONES DE REFUERZO
+
+Pares o grupos de principios que se refuerzan mutuamente: cuando uno se respeta, el otro también.
+
+| Relación | Principios | Cómo se refuerzan |
+|---|---|---|
+| Verdad + Proyección | P3 + P4 | Los eventos de P3 son la fuente de la proyección de P4 |
+| Contexto + Ownership | P4 + P6 | La disponibilidad contextual de P4 hace posible el ownership de P6 |
+| Contexto + Reservas | P4 + P7 | Los estados de P7 son estados de la disponibilidad contextual de P4 |
+| Edge + Confianza | P10 + P15 | La operación autónoma de P10 genera degradación de confianza que P15 formaliza |
+| Edge + Reconciliación | P10 + P16 | La divergencia de P10 requiere la reconciliación de P16 |
+| Nube + Reconciliación | P11 + P16 | La sincronización de P11 alimenta la reconciliación de P16 |
+| Confianza + Reconciliación | P15 + P16 | La reconciliación de P16 restaura la confianza de P15 |
+| Temporal + Materialización | P8 + P9 | El tiempo de P8 determina el momento de materialización de P9 |
+| Humano + Simplicidad | P19 + P20 | La superficie simple de P20 sirve al operador humano de P19 |
+| Transformación + Verdad | P14 + P3 | Las transformaciones de P14 son eventos de P3 con causalidad doble |
+
+---
+
+## RELACIONES DE TENSIÓN
+
+Pares de principios que tiran en direcciones opuestas en situaciones concretas.
+
+Estas tensiones no anulan ninguno de los dos principios: deben navegarse con criterio, no resolviendo eliminando un polo.
+
+| Tensión | Principios | Naturaleza del conflicto |
+|---|---|---|
+| Continuidad vs Exactitud | P2 + P12 | Operar sin certeza plena (P2) vs precisión operacional y tributaria (P12) |
+| Autonomía vs Convergencia | P10 + P11 | Runtime autónomo (P10) vs coordinación eventual con nube (P11) |
+| Inmutabilidad vs Corrección | P3 + P12 | Eventos inmutables (P3) vs necesidad de corregir errores de registro (P12) |
+| Confianza vs Continuidad | P15 + P2 | Certeza antes de comprometer (P15) vs no detener la operación (P2) |
+| Simplicidad vs Riqueza contextual | P20 + P4 | Superficie operacional simple (P20) vs disponibilidad contextual compleja (P4) |
+| Ownership vs Continuidad | P6 + P2 | Responsabilidad contextual estricta (P6) vs operar aunque el responsable no esté disponible (P2) |
+
+Ver tensiones arquitectónicas completas en `inventory-operational-evolution.md`, sección 9.
+
+---
+
+## PRINCIPIOS TRANSVERSALES
+
+Tres principios no pertenecen a ningún cluster específico porque aplican a todos:
+
+**P2 — Filosofía operacional**
+
+Es el marco de decisión de todo el dominio.
+
+Cuando hay conflicto entre principios, P2 establece que la continuidad operacional responsable es el criterio de desempate.
+
+**P19 — Inventario como sistema humano**
+
+Recuerda que el destinatario final de todo el modelo es el operador humano.
+
+Un diseño técnicamente correcto pero inoperable para el humano viola P19.
+
+**P20 — Complejidad interna + simplicidad operacional**
+
+Establece que la complejidad del modelo interno es aceptable solo si no se filtra a la superficie operacional.
+
+Un modelo con 20 principios interdependientes debe presentarse al operador como una experiencia directa y simple.
+
+---
+
+## PRINCIPIOS CON MAYOR NÚMERO DE DEPENDENCIAS
+
+Los principios más conectados son los más críticos para la coherencia del modelo.
+
+Modificar uno de estos sin revisar sus dependientes genera inconsistencias arquitectónicas.
+
+| Principio | Dependientes directos | Relevancia |
+|---|---|---|
+| P1 — Inventario ≠ stock | Todos (raíz) | No modificable sin replantear el dominio completo |
+| P3 — Movimiento como verdad | P4, P8, P9, P14, P16 | Base del modelo de eventos |
+| P4 — Disponibilidad contextual | P5, P6, P7, P15, P17 | Base del modelo de disponibilidad |
+| P10 — Edge-first | P11, P15, P16 | Base del modelo de runtime operacional |
+| P2 — Filosofía operacional | Transversal | Marco de decisión de todo conflicto |
+
+---
+
+## USO DEL MAPA
+
+**Al diseñar una nueva capacidad:** identificar en qué cluster opera y qué principios debe respetar obligatoriamente.
+
+**Al detectar una inconsistencia:** usar el árbol de derivación para encontrar qué principio está siendo violado y cuáles dependientes se ven afectados.
+
+**Al navegar una tensión:** usar la tabla de tensiones para identificar el par en conflicto y referir a la sección 9 del documento de evolución para los criterios de navegación.
+
+**Al evaluar un cambio de modelo:** verificar que los principios de mayor número de dependencias no sean alterados sin revisión explícita de sus dependientes.
 
 ---
