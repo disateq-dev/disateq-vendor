@@ -17,6 +17,7 @@ const ON: Record<ActiveModule, string> = {
   sales:        `${BASE} border-[#4F7396]  bg-[rgba(79,115,150,0.12)]`,
   comprobantes: `${BASE} border-[#73C7D4]  bg-[rgba(115,199,212,0.18)]`,
   config:       `${BASE} border-[#9B8BFF]  bg-[rgba(155,139,255,0.15)]`,
+  inventory:    `${BASE} border-[#C4844A]  bg-[rgba(196,132,74,0.12)]`,
 };
 
 function cls(m: ActiveModule, display: ActiveModule): string {
@@ -49,7 +50,7 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
         <span>CLIENTES</span>
       </button>
 
-      <button className={OFF}>
+      <button onClick={() => onChange("inventory")} onMouseEnter={() => onHover("inventory")} className={cls("inventory", display)}>
         <Package size={16} />
         <span>INVENTARIO</span>
       </button>

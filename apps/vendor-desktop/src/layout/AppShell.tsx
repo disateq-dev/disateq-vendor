@@ -4,7 +4,7 @@ import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { usePOS } from "../context/POSContext";
-import { type ActiveModule, type CashSubView } from "../App";
+import { type ActiveModule, type CashSubView, type InventorySubView } from "../App";
 
 interface AppShellProps {
   children: ReactNode;
@@ -12,6 +12,8 @@ interface AppShellProps {
   onModuleChange: (m: ActiveModule) => void;
   cashSubView: CashSubView;
   onCashSubViewChange: (sv: CashSubView) => void;
+  inventorySubView: InventorySubView;
+  onInventorySubViewChange: (sv: InventorySubView) => void;
 }
 
 function OperationalNotice() {
@@ -27,7 +29,7 @@ function OperationalNotice() {
   );
 }
 
-export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange }: AppShellProps) {
+export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, inventorySubView, onInventorySubViewChange }: AppShellProps) {
   const { closeCobro, logoutOperator, cobroOpen } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
 
@@ -72,6 +74,8 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
             visible={visible}
             cashSubView={cashSubView}
             onCashSubViewChange={onCashSubViewChange}
+            inventorySubView={inventorySubView}
+            onInventorySubViewChange={onInventorySubViewChange}
           />
         </header>
 

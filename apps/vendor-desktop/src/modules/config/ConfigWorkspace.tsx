@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { Settings2 } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
-import { useInventoryStore, deriveDisponibilidad } from "../../domains/inventory/store";
-import { inventoryService } from "../../domains/inventory/service";
 
 const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia"];
 
@@ -175,7 +172,6 @@ export function ConfigWorkspace() {
         {import.meta.env.DEV && (
           <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 flex flex-col gap-2">
             <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Herramientas de testing</p>
-            <Capa0Dev />
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => {
@@ -226,132 +222,4 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── CAPA 0 — Validación runtime (solo DEV) ──────────────────────────────────
 
-const TEST_ITEM_ID = "TEST-001";
-
-function Capa0Dev() {
-  const { runtimeId, items, movimientos } = useInventoryStore();
-  const [cantidad, setCantidad] = useState("1");
-  const [causa, setCausa] = useState("validacion-dev");
-  const [log, setLog] = useState<string[]>([]);
-
-  const disponibilidad = deriveDisponibilidad(movimientos, TEST_ITEM_ID);
-  const itemRegistrado = items.some(i => i.itemId === TEST_ITEM_ID);
-
-  function addLog(msg: string) {
-    setLog(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 12));
-  }
-
-  function ensureItem() {
-    if (!itemRegistrado) {
-      inventoryService.registrarItem({ itemId: TEST_ITEM_ID, nombre: "Ítem Test CAPA 0", unidadBase: "unidad" });
-      addLog("registrarItem → TEST-001");
-    }
-  }
-
-  function handleEntrada() {
-    ensureItem();
-    const n = parseFloat(cantidad);
-    if (isNaN(n) || n <= 0) return;
-    inventoryService.registrarEntrada(TEST_ITEM_ID, n, causa);
-    addLog(`entrada +${n} → disp: ${disponibilidad + n}`);
-  }
-
-  function handleSalida() {
-    ensureItem();
-    const n = parseFloat(cantidad);
-    if (isNaN(n) || n <= 0) return;
-    inventoryService.registrarSalida(TEST_ITEM_ID, n, causa);
-    addLog(`salida -${n} → disp: ${disponibilidad - n}`);
-  }
-
-  function handleAjuste() {
-    ensureItem();
-    const n = parseFloat(cantidad);
-    if (isNaN(n)) return;
-    inventoryService.registrarAjuste(TEST_ITEM_ID, n, causa);
-    addLog(`ajuste Δ${n} → disp: ${disponibilidad + n}`);
-  }
-
-  function handleReconstruir() {
-    inventoryService.reconstruirDesdeLog();
-    const d = inventoryService.diagnostico();
-    addLog(`reconstruir → items:${d.items} movs:${d.movimientos}`);
-  }
-
-  function handleReset() {
-    ["inv_v0_items", "inv_v0_movimientos"].forEach(k => localStorage.removeItem(k));
-    inventoryService.reconstruirDesdeLog();
-    setLog([]);
-    addLog("reset inventario CAPA 0");
-  }
-
-  return (
-    <div className="flex flex-col gap-2 border-t border-amber-200 pt-2 mt-1">
-      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-amber-700">CAPA 0 — Validación runtime</p>
-
-      {/* estado */}
-      <div className="rounded-xl bg-white border border-amber-200 px-3 py-2 flex flex-col gap-0.5">
-        <p className="text-[9.5px] text-[#6b7280]">
-          <span className="font-semibold text-[#374151]">Runtime:</span>{" "}
-          <span className="font-mono">{runtimeId.slice(0, 8)}…</span>
-        </p>
-        <p className="text-[9.5px] text-[#6b7280]">
-          <span className="font-semibold text-[#374151]">Ítems:</span> {items.length} ·{" "}
-          <span className="font-semibold text-[#374151]">Movimientos:</span> {movimientos.length}
-        </p>
-        <p className="text-[9.5px]">
-          <span className="font-semibold text-[#374151]">Disponibilidad TEST-001:</span>{" "}
-          <span className={`font-bold ${disponibilidad < 0 ? "text-red-600" : "text-[#45b356]"}`}>
-            {disponibilidad}
-          </span>{" "}
-          {itemRegistrado ? "" : <span className="text-amber-500">(ítem no registrado)</span>}
-        </p>
-      </div>
-
-      {/* controles */}
-      <div className="flex gap-1.5 items-center flex-wrap">
-        <input
-          type="number"
-          value={cantidad}
-          onChange={e => setCantidad(e.target.value)}
-          className="w-16 rounded-lg border border-amber-300 bg-white px-2 py-1 text-[11px] font-mono text-center focus:outline-none"
-          placeholder="qty"
-        />
-        <input
-          value={causa}
-          onChange={e => setCausa(e.target.value)}
-          className="flex-1 min-w-[80px] rounded-lg border border-amber-300 bg-white px-2 py-1 text-[11px] focus:outline-none"
-          placeholder="causa"
-        />
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {[
-          { label: "+ ENTRADA",    fn: handleEntrada,    color: "text-[#45b356] border-[#45b356]/40" },
-          { label: "− SALIDA",     fn: handleSalida,     color: "text-red-600 border-red-300"        },
-          { label: "± AJUSTE",     fn: handleAjuste,     color: "text-[#005BE3] border-[#005BE3]/40" },
-          { label: "↺ RECONSTRUIR",fn: handleReconstruir,color: "text-[#7c6f5b] border-amber-300"   },
-          { label: "✕ RESET",      fn: handleReset,      color: "text-red-500 border-red-200"        },
-        ].map(({ label, fn, color }) => (
-          <button
-            key={label}
-            onClick={fn}
-            className={`rounded-lg border bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition hover:opacity-80 active:scale-95 ${color}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* log */}
-      {log.length > 0 && (
-        <div className="rounded-xl bg-[#1e1e1e] px-3 py-2 flex flex-col gap-0.5 max-h-32 overflow-y-auto">
-          {log.map((l, i) => (
-            <p key={i} className="font-mono text-[9.5px] text-[#a8d8a8] leading-snug">{l}</p>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
