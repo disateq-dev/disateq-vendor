@@ -7,7 +7,7 @@ interface ContextBarProps {
 }
 
 export function ContextBar({ activeModule }: ContextBarProps) {
-  const { cashSession, sessionStats } = usePOS();
+  const { cashSession, sessionStats, newSale } = usePOS();
   const sessionActive = cashSession.isOpen;
   const { efe, yap, tar, mix } = sessionStats.byMethod;
 
@@ -15,11 +15,14 @@ export function ContextBar({ activeModule }: ContextBarProps) {
   if (activeModule === "sales") {
     return (
       <section className="flex h-[44px] items-center gap-2 border-t border-[#4F7396]/25 bg-[linear-gradient(180deg,rgba(79,115,150,0.07)_0%,rgba(79,115,150,0.02)_100%)] px-3">
-        <button className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
-          sessionActive
-            ? "bg-[#4F7396] text-white shadow-[0_2px_8px_rgba(79,115,150,0.28)] hover:bg-[#3d5c7a]"
-            : "bg-[rgba(79,115,150,0.15)] text-[#2d4f6b]/50 cursor-default"
-        }`}>
+        <button
+          onClick={sessionActive ? newSale : undefined}
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
+            sessionActive
+              ? "bg-[#4F7396] text-white shadow-[0_2px_8px_rgba(79,115,150,0.28)] hover:bg-[#3d5c7a]"
+              : "bg-[rgba(79,115,150,0.15)] text-[#2d4f6b]/50 cursor-default"
+          }`}
+        >
           <Plus size={13} strokeWidth={2.5} />
           <span>Nueva venta</span>
         </button>

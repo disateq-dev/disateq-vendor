@@ -382,6 +382,7 @@ interface POSContextValue {
   cobroOpen: boolean;
   openCobro: () => void;
   closeCobro: () => void;
+  newSale: () => void;
   cashSession: CashSession;
   cashBoxes: CashBox[];
   suggestedCashBox: CashBox | null;
@@ -825,6 +826,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   }, [showNotice]);
 
   const closeCobro = useCallback(() => { setCobroOpen(false); setZone("search"); }, []);
+  const newSale    = useCallback(() => { useTicketStore.getState().clearTicket(); setCobroOpen(false); setZone("search"); }, []);
 
   const openCashSession = useCallback((
     boxCode: string, apertura: number, motivo?: string, refOp?: string,
@@ -913,7 +915,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   return (
     <POSContext.Provider value={{
       zone, enterTicket, enterSearch,
-      cobroOpen, openCobro, closeCobro,
+      cobroOpen, openCobro, closeCobro, newSale,
       cashSession, cashBoxes, suggestedCashBox,
       openCashSession, closeCashSession, correctAperturaData,
       sessionStats, docCorrelatives, recordSale,
