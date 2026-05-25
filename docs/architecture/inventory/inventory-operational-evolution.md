@@ -21,6 +21,32 @@ Complementa:
 
 ---
 
+## Índice de navegación
+
+| Sección | Contenido | Para qué usarla |
+|---|---|---|
+| [1. Principio raíz](#1-principio-raíz) | Crecimiento por capas, invariante de no-ruptura | Entender la filosofía base del crecimiento |
+| [2. Capas evolutivas](#2-capas-evolutivas) | CAPA 0–5 con problema, complejidad, dependencias, capacidades | Entender qué resuelve cada capa y qué no puede romper |
+| [3. Matriz de capacidades](#3-matriz-de-capacidades) | Núcleo vs opcionales, dependencias mínimas, materializaciones | Identificar qué capacidades son necesarias en cada capa |
+| [4. Núcleo mínimo estable](#4-núcleo-mínimo-estable) | Invariantes absolutos, lo que no es este núcleo, principio de gravedad | Verificar qué jamás puede romperse al evolucionar |
+| [5. Relación con foundations](#5-relación-con-foundations) | Mapa de complementariedad entre documentos | Saber dónde buscar qué tipo de información |
+| [6. Escenarios evolutivos por capa](#6-escenarios-evolutivos-por-capa) | ESC-EV-01 a 13, señales de activación y riesgos | Decidir si el negocio actual justifica activar la siguiente capa |
+| [7. Relación escenarios evolutivos / foundations](#7-relación-entre-escenarios-evolutivos-y-escenarios-de-foundations) | Distinción entre cuándo activar y cómo comportarse | Navegar entre los dos documentos sin confundirlos |
+| [8. Protocolo de decisión de capas](#8-protocolo-de-decisión-de-capas) | Fases 1–5, árbol de decisión, anti-patrones | Ejecutar el proceso de activación de forma controlada |
+| [9. Tensiones arquitectónicas entre capas](#9-tensiones-arquitectónicas-entre-capas) | T-01 a T-07 + tensiones cruzadas, criterios de navegación | Reconocer y navegar conflictos entre principios de capas distintas |
+| [10. Glosario operacional del dominio](#10-glosario-operacional-del-dominio) | 26 términos con definición operacional propia | Resolver ambigüedad semántica en escenarios, decisiones y diseño |
+
+---
+
+## Documentos relacionados
+
+| Documento | Propósito |
+|---|---|
+| `inventory-architecture-foundations.md` | Principios filosóficos del dominio · Escenarios canónicos de comportamiento · Invariantes por escenario |
+| `inventory-operational-evolution.md` | Cómo crecer sin romper · Capas evolutivas · Protocolo de decisión · Glosario |
+
+---
+
 # 1. PRINCIPIO RAÍZ
 
 ## CRECIMIENTO POR CAPAS, NO POR REESCRITURAS
