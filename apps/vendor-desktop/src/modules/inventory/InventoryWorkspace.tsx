@@ -28,6 +28,7 @@ export function InventoryWorkspace({ subView }: Props) {
         {subView === "disponibilidad" && <ViewDisponibilidad items={items} movimientos={movimientos} />}
         {subView === "movimientos"    && <ViewMovimientos    items={items} movimientos={movimientos} />}
         {subView === "items"          && <ViewItems          items={items} />}
+        {subView === "reset"          && <ViewReset />}
       </div>
 
     </section>
@@ -257,6 +258,48 @@ function ViewItems({ items }: { items: ReturnType<typeof useInventoryStore>["ite
       ) : (
         <p className="text-center text-[11px] text-[#b0bac8] py-8">Sin ítems. Registra el primero arriba.</p>
       )}
+    </div>
+  );
+}
+
+// ── RESET (DEV) ──────────────────────────────────────────────────────────────
+
+function ViewReset() {
+  function resetDatos() {
+    localStorage.removeItem("inv_v0_items");
+    localStorage.removeItem("inv_v0_movimientos");
+    window.location.reload();
+  }
+
+  function resetTotal() {
+    localStorage.removeItem("inv_v0_items");
+    localStorage.removeItem("inv_v0_movimientos");
+    localStorage.removeItem("inv_v0_runtime_id");
+    window.location.reload();
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-4 flex flex-col gap-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Reset temporal — Inventario CAPA 0</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={resetDatos}
+            className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100 transition active:scale-95"
+          >
+            RESET ÍTEMS + MOVIMIENTOS
+          </button>
+          <button
+            onClick={resetTotal}
+            className="rounded-xl border border-red-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-red-600 hover:bg-red-50 transition active:scale-95"
+          >
+            RESET TOTAL (+ runtimeId)
+          </button>
+        </div>
+        <p className="text-[9px] text-amber-500 leading-snug">
+          ÍTEMS + MOVIMIENTOS conserva runtimeId · RESET TOTAL genera nueva identidad de runtime.
+        </p>
+      </div>
     </div>
   );
 }

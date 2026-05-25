@@ -154,6 +154,21 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                 </button>
               );
             })}
+            {import.meta.env.DEV && (
+              <>
+                <div className="h-4 w-px bg-[#C4844A]/20 mx-1" />
+                <button
+                  onClick={() => { if (activeModule === "inventory") onInventorySubViewChange("reset"); }}
+                  className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                    activeModule === "inventory" && inventorySubView === "reset"
+                      ? "bg-amber-400 text-white shadow-sm"
+                      : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
+                  }`}
+                >
+                  DEV·RESET
+                </button>
+              </>
+            )}
           </div>
         )}
 
