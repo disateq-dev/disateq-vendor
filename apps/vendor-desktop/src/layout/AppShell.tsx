@@ -28,7 +28,7 @@ function OperationalNotice() {
 }
 
 export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange }: AppShellProps) {
-  const { closeCobro, logoutOperator } = usePOS();
+  const { closeCobro, logoutOperator, cobroOpen } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
 
   useEffect(() => {
@@ -38,6 +38,18 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [logoutOperator]);
+
+  // Escape global — scanner focus recovery en VENTAS (CobroPanel maneja su propio Escape cuando cobroOpen)
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key !== "Escape" || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (!cobroOpen && activeModule === "sales") {
+        document.dispatchEvent(new CustomEvent("pos:focusSearch"));
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [cobroOpen, activeModule]);
 
   // hover → preview; leave → back to active; click → permanent (hoveredModule = null, activeModule updated)
   const displayModule = hoveredModule ?? activeModule;
