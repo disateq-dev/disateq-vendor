@@ -81,6 +81,7 @@ Consolidar los principios arquitectónicos, operacionales y filosóficos que reg
 | Sección | Contenido | Para qué usarla |
 |---|---|---|
 | [43](#43-anti-patrones-del-dominio-inventarios) | AP-01 a AP-12 — trampas de diseño con apariencia de solución | Reconocer decisiones incorrectas antes de tomarlas |
+| [44](#44-preguntas-de-validación-del-dominio) | PV-01 a PV-32 — preguntas de validación por grupo temático | Verificar que un diseño o implementación respeta la filosofía del dominio |
 
 ---
 
@@ -2620,5 +2621,187 @@ La divergencia es normal. La reconciliación es el proceso normal de convergenci
 | AP-10 | Override como corrupción | Workarounds sin trazabilidad que destruyen el modelo |
 | AP-11 | Reposición sin causalidad | Imposibilidad de trazar discrepancias con proveedores |
 | AP-12 | Reconciliación como evento de error | Proceso de convergencia que no escala operacionalmente |
+
+---
+
+# 44. PREGUNTAS DE VALIDACIÓN DEL DOMINIO
+
+## PROPÓSITO
+
+Estas preguntas permiten validar que una decisión de diseño, una implementación concreta, o una propuesta de cambio respeta la filosofía operacional del dominio.
+
+No son preguntas teóricas.
+
+Son preguntas que se responden mirando el código, el modelo de datos, o el comportamiento observado en runtime.
+
+Una respuesta negativa no bloquea automáticamente, pero sí exige una justificación explícita antes de continuar.
+
+---
+
+## GRUPO 1 — MODELO DE DISPONIBILIDAD
+
+**PV-01** ¿La disponibilidad es una proyección sobre eventos, o un campo mutable que se modifica directamente?
+
+Si es un campo mutable, revisar AP-01.
+
+**PV-02** ¿La consulta de disponibilidad incluye el contexto operacional (runtime, ubicación, estado) o devuelve un número global?
+
+Si devuelve un número global sin contexto, revisar AP-07.
+
+**PV-03** ¿La disponibilidad puede ser consultada sin conectividad al núcleo central?
+
+Si no puede, revisar AP-04 y el principio 10 (edge-first).
+
+**PV-04** ¿El modelo distingue entre existencia física y disponibilidad operacional?
+
+Si trata ambos como equivalentes, revisar el principio 4 y el glosario.
+
+---
+
+## GRUPO 2 — EVENTOS Y CAUSALIDAD
+
+**PV-05** ¿Todo cambio de disponibilidad genera un evento con causa identificable?
+
+Si hay cambios sin evento causal, revisar el principio 3 y AP-01.
+
+**PV-06** ¿Los eventos pasados son inmutables?
+
+Si pueden modificarse o eliminarse, revisar AP-06.
+
+**PV-07** ¿Las correcciones operacionales generan nuevos eventos de ajuste con causalidad, en lugar de sobrescribir eventos anteriores?
+
+Si sobrescriben, revisar AP-06.
+
+**PV-08** ¿Es posible reconstruir el estado de disponibilidad de cualquier ítem en cualquier momento pasado a partir del log de eventos?
+
+Si no es posible, el modelo de eventos tiene una brecha de trazabilidad.
+
+---
+
+## GRUPO 3 — CONTINUIDAD OPERACIONAL
+
+**PV-09** ¿El runtime puede continuar operando cuando la sincronización falla o está degradada?
+
+Si no puede, revisar AP-04 y el principio 10.
+
+**PV-10** ¿El sistema señaliza presión operacional con contexto para que el operador decida, en lugar de bloquear automáticamente?
+
+Si bloquea sin contexto humano, revisar AP-03 y AP-05.
+
+**PV-11** ¿El override contextual del operador tiene representación formal con trazabilidad?
+
+Si no existe o se trata como anomalía, revisar AP-10.
+
+**PV-12** ¿La operación de CAPA 0 (disponibilidad simple) funciona íntegramente aunque fallen las capas superiores?
+
+Si no, hay una violación del invariante raíz de no-ruptura de capas.
+
+---
+
+## GRUPO 4 — CONFIANZA Y PRESIÓN OPERACIONAL
+
+**PV-13** ¿La confianza operacional tiene niveles intermedios o es binaria (confiable / no confiable)?
+
+Si es binaria, revisar AP-08.
+
+**PV-14** ¿El operador tiene visibilidad explícita del nivel de confianza al tomar decisiones sobre disponibilidad?
+
+Si no la tiene, el modo degradado no cumple su función operacional.
+
+**PV-15** ¿La merma operacional normal tiene un tipo de evento propio diferenciado del error de registro?
+
+Si no, revisar AP-09.
+
+**PV-16** ¿Las señales de presión (escasez, expiración, confianza baja) son preventivas y contextuales, no reactivas y bloqueantes?
+
+Si son bloqueantes, revisar AP-03 y el principio 15.
+
+---
+
+## GRUPO 5 — RECONCILIACIÓN Y DIVERGENCIA
+
+**PV-17** ¿La divergencia entre runtimes se trata como condición operacional normal o como estado de error?
+
+Si se trata como error, revisar AP-12 y el principio 10.
+
+**PV-18** ¿La reconciliación genera eventos de convergencia con causalidad, en lugar de sobrescribir el estado de alguno de los runtimes?
+
+Si sobrescribe, revisar AP-06 y AP-12.
+
+**PV-19** ¿El proceso de reconciliación está diseñado para ejecutarse frecuentemente y sin intervención manual en el caso común?
+
+Si requiere intervención manual frecuente, revisar AP-12.
+
+**PV-20** ¿Las operaciones realizadas bajo baja confianza quedan marcadas con el contexto de confianza vigente en el momento?
+
+Si no, la trazabilidad de la reconciliación posterior será incompleta.
+
+---
+
+## GRUPO 6 — TRANSFORMACIONES
+
+**PV-21** ¿La relación causal entre insumo y derivado en una transformación es trazable en el log de eventos?
+
+Si no, revisar el principio 14.
+
+**PV-22** ¿El estado intermedio de una transformación activa es visible al operador que la gestiona?
+
+Si es invisible hasta completarse, revisar la tensión T-07 en el documento de evolución.
+
+**PV-23** ¿La disponibilidad en estado intermedio de transformación no puede ser comprometida por otras operaciones?
+
+Si puede comprometerse, hay un riesgo de sobrecompromiso desde estado intermedio.
+
+**PV-24** ¿El rendimiento real de las transformaciones queda registrado para contraste posterior con el rendimiento esperado?
+
+Si no, revisar AP-09 y el principio 14.
+
+---
+
+## GRUPO 7 — COMPLEJIDAD Y CAPAS
+
+**PV-25** ¿Las capacidades activas en el sistema responden a problemas operacionales reales ya presentes en el negocio?
+
+Si hay capacidades activas sin problema operacional que las justifique, revisar el protocolo de decisión de capas (sección 8 del documento de evolución).
+
+**PV-26** ¿La activación de la capa actual no rompió ninguna capacidad de las capas anteriores?
+
+Si algo dejó de funcionar en capas inferiores, revisar el invariante raíz de no-ruptura.
+
+**PV-27** ¿La nueva complejidad introducida puede revertirse si genera problemas sin pérdida operacional crítica?
+
+Si no puede revertirse, la activación requería validación más exhaustiva antes de proceder.
+
+**PV-28** ¿La superficie operacional que el operador ve permanece simple aunque la complejidad interna haya aumentado?
+
+Si la complejidad interna se filtró a la experiencia del operador, revisar el principio 20.
+
+---
+
+## GRUPO 8 — PREGUNTAS DE CIERRE
+
+Preguntas transversales para cualquier propuesta de cambio al dominio:
+
+**PV-29** ¿Si se corta la conectividad ahora mismo, la operación continúa sin degradación visible para el operador?
+
+**PV-30** ¿Si se produce un error de registro ahora mismo, es posible corregirlo sin destruir la historia operacional?
+
+**PV-31** ¿Si se incorpora un nuevo runtime mañana, puede reconciliarse con los eventos existentes sin intervención manual extraordinaria?
+
+**PV-32** ¿Si el negocio creciera al doble de volumen operacional, el modelo escala sin reescrituras destructivas?
+
+Una respuesta negativa a cualquiera de estas cuatro preguntas indica que el diseño tiene una brecha arquitectónica que debe resolverse antes de avanzar.
+
+---
+
+## USO RECOMENDADO
+
+Usar estas preguntas en tres momentos:
+
+**Antes de diseñar:** identificar qué invariantes debe respetar la solución.
+
+**Antes de implementar:** verificar que el diseño propuesto responde afirmativamente a las preguntas relevantes.
+
+**Antes de consolidar:** confirmar que el comportamiento observado en runtime valida las respuestas afirmativas del diseño.
 
 ---
