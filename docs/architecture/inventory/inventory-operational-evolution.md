@@ -1506,3 +1506,448 @@ Las tensiones no resueltas no son fracasos arquitectónicos.
 Son puntos de tensión activos que el sistema debe poder navegar con criterio, no eliminar con reglas rígidas.
 
 ---
+
+# 10. GLOSARIO OPERACIONAL DEL DOMINIO
+
+## PROPÓSITO
+
+Este glosario fija el significado operacional de los términos usados en este documento y en `inventory-architecture-foundations.md`.
+
+No son definiciones académicas ni de estándar externo.
+
+Son definiciones operacionales: cómo DISATEQ VENDOR™ entiende y usa cada término dentro de su dominio.
+
+Cuando un término aparece en cualquier escenario, protocolo o principio de estos documentos, su significado es el aquí registrado.
+
+---
+
+## DISPONIBILIDAD OPERACIONAL
+
+Cantidad de un ítem que puede ser comprometida en el runtime activo actual, en el contexto operacional vigente.
+
+No es lo mismo que existencia ni que stock contable.
+
+La disponibilidad operacional es siempre contextual: depende del runtime, la ubicación, el estado y el nivel de confianza vigente.
+
+```text
+disponibilidad operacional ≠ existencia física
+disponibilidad operacional ≠ cantidad en base de datos
+disponibilidad operacional = proyección sobre eventos en contexto activo
+```
+
+Ver: `EXISTENCIA`, `CONFIANZA OPERACIONAL`, `CONTEXTO OPERACIONAL`
+
+---
+
+## EXISTENCIA
+
+Cantidad física real de un ítem en un punto operacional, independientemente de su estado de disponibilidad.
+
+La existencia puede ser mayor que la disponibilidad operacional (hay ítems físicamente presentes pero bloqueados, reservados o expirados).
+
+La existencia se valida mediante conteo físico.
+
+La disponibilidad operacional se calcula a partir de eventos.
+
+La brecha entre existencia y disponibilidad operacional es un indicador de confianza.
+
+Ver: `DISPONIBILIDAD OPERACIONAL`, `CONFIANZA OPERACIONAL`, `RECONCILIACIÓN`
+
+---
+
+## MOVIMIENTO
+
+Evento operacional que modifica la disponibilidad de un ítem.
+
+Todo movimiento tiene:
+
+* tipo (entrada, salida, ajuste, reserva, liberación, transformación)
+* cantidad
+* ítem afectado
+* origen causal (operación que lo generó)
+* contexto operacional (runtime, ubicación, operador, momento)
+
+Un movimiento sin origen causal trazable no es válido en el modelo operacional.
+
+Ver: `EVENTO`, `CAUSALIDAD`, `TRAZABILIDAD`
+
+---
+
+## EVENTO
+
+Registro inmutable de algo que ocurrió en el dominio operacional.
+
+Los eventos son la fuente de verdad del sistema de inventarios.
+
+La disponibilidad operacional actual es una proyección sobre el log de eventos, no un valor almacenado directamente.
+
+Los eventos no se modifican.
+
+Las correcciones generan nuevos eventos con causalidad explícita.
+
+Ver: `MOVIMIENTO`, `INMUTABILIDAD`, `PROYECCIÓN`
+
+---
+
+## CAUSALIDAD
+
+Relación entre un evento y el origen operacional que lo causó.
+
+La causalidad responde: ¿por qué ocurrió este movimiento?
+
+Sin causalidad, los movimientos son datos sin contexto.
+
+Con causalidad, los movimientos son historia operacional trazable.
+
+La causalidad fuerte es uno de los principios raíz de `foundations.md`: todo cambio de disponibilidad tiene una causa identificable y registrada.
+
+Ver: `EVENTO`, `TRAZABILIDAD`, `RECONCILIACIÓN`
+
+---
+
+## TRAZABILIDAD
+
+Capacidad de reconstruir la historia operacional de un ítem: qué movimientos ocurrieron, cuándo, por qué, y quién los generó.
+
+La trazabilidad no es auditoría contable.
+
+Es la capacidad operacional de responder preguntas como:
+
+* ¿Por qué la disponibilidad de este ítem bajó a cero?
+* ¿Qué operación generó este ajuste?
+* ¿Qué transformaciones usaron este insumo?
+* ¿Qué compromisos están activos sobre esta disponibilidad?
+
+Ver: `CAUSALIDAD`, `EVENTO`, `RECONCILIACIÓN`
+
+---
+
+## RESERVA
+
+Estado temporal de disponibilidad que la compromete para una operación específica sin materializarla todavía.
+
+La reserva reduce la disponibilidad operacional disponible para otros compromisos.
+
+No reduce la existencia física ni genera un movimiento de salida definitivo.
+
+La reserva se convierte en movimiento de salida cuando la operación se materializa, o se libera cuando la operación se cancela.
+
+Ver: `COMPROMISO`, `MATERIALIZACIÓN`, `DISPONIBILIDAD OPERACIONAL`
+
+---
+
+## COMPROMISO
+
+Promesa operacional de entregar o usar disponibilidad de un ítem.
+
+El compromiso puede estar reservado (la disponibilidad está apartada) o no reservado (la disponibilidad está asignada intencionalmente pero no bloqueada).
+
+El compromiso sin reserva es más frágil: otro proceso puede comprometer la misma disponibilidad antes de que el primero se materialice.
+
+Ver: `RESERVA`, `MATERIALIZACIÓN`, `ARBITRAJE`
+
+---
+
+## MATERIALIZACIÓN
+
+Momento en que un compromiso se convierte en movimiento definitivo.
+
+La materialización reduce la existencia física (una salida ocurre) y registra el evento con causalidad desde el compromiso original.
+
+Antes de la materialización, la disponibilidad está comprometida pero físicamente presente.
+
+Después de la materialización, la disponibilidad fue consumida y el movimiento es irreversible salvo por reversión explícita con causalidad.
+
+Ver: `COMPROMISO`, `RESERVA`, `MOVIMIENTO`
+
+---
+
+## CONFIANZA OPERACIONAL
+
+Nivel de certeza con que el sistema puede afirmar que la disponibilidad operacional proyectada refleja la realidad.
+
+La confianza operacional se degrada por:
+
+* tiempo transcurrido desde la última validación física
+* sincronización pendiente o degradada
+* movimientos no registrados conocidos
+* divergencia activa entre runtimes
+
+La confianza operacional no es binaria: tiene niveles intermedios que informan las decisiones del operador.
+
+La baja confianza no paraliza la operación; la contextualiza con visibilidad explícita.
+
+Ver: `DISPONIBILIDAD OPERACIONAL`, `MODO DEGRADADO`, `RECONCILIACIÓN`
+
+---
+
+## PRESIÓN OPERACIONAL
+
+Condición del sistema donde la disponibilidad está bajo tensión: escasez real o proyectada, expiración próxima, baja confianza, o divergencia activa.
+
+La presión operacional no es un error.
+
+Es un estado normal que el sistema debe señalizar al operador con suficiente contexto para tomar decisiones informadas.
+
+Ver: `ESCASEZ`, `EXPIRACIÓN`, `CONFIANZA OPERACIONAL`, `SEÑAL DE PRESIÓN`
+
+---
+
+## SEÑAL DE PRESIÓN
+
+Indicador contextual que el sistema emite cuando la disponibilidad operacional se aproxima a un estado crítico.
+
+Las señales de presión son preventivas: aparecen antes de que el problema se materialice.
+
+No son errores ni bloqueos: son información operacional para el operador.
+
+Ver: `PRESIÓN OPERACIONAL`, `MODO DEGRADADO`
+
+---
+
+## ESCASEZ
+
+Condición donde la disponibilidad operacional de un ítem es insuficiente para todos los compromisos activos o proyectados.
+
+La escasez requiere arbitraje: decidir qué compromiso tiene prioridad sobre la disponibilidad disponible.
+
+La escasez no bloquea automáticamente la operación; genera presión operacional que el sistema señaliza.
+
+Ver: `ARBITRAJE`, `PRESIÓN OPERACIONAL`, `COMPROMISO`
+
+---
+
+## ARBITRAJE
+
+Proceso de asignación de disponibilidad escasa entre múltiples compromisos concurrentes.
+
+El arbitraje puede ser:
+
+* automático por regla (FIFO, prioridad comercial, proximidad de expiración)
+* contextual por operador (decisión humana explícita con trazabilidad)
+
+El arbitraje es siempre un evento con causalidad: la disponibilidad se asignó a X compromiso por Y criterio.
+
+Ver: `ESCASEZ`, `COMPROMISO`, `CAUSALIDAD`
+
+---
+
+## MODO DEGRADADO
+
+Estado operacional donde el runtime continúa funcionando con confianza reducida o capacidades parciales.
+
+En modo degradado:
+
+* la operación no se detiene
+* el operador tiene visibilidad explícita del nivel de degradación
+* las operaciones realizadas quedan marcadas con el contexto de degradación para reconciliación posterior
+
+El modo degradado es una condición operacional normal en entornos edge-first, no un estado de error.
+
+Ver: `CONFIANZA OPERACIONAL`, `EDGE-FIRST`, `RECONCILIACIÓN`
+
+---
+
+## EDGE-FIRST
+
+Principio operacional que establece que el runtime local debe poder operar autónomamente sin depender de conectividad al núcleo central.
+
+La sincronización con el núcleo es eventual y progresiva, nunca un requisito bloqueante para la operación cotidiana.
+
+Edge-first no significa offline permanente: significa que la operación no puede romperse por pérdida de conectividad.
+
+Ver: `RUNTIME`, `SINCRONIZACIÓN`, `RECONCILIACIÓN`
+
+---
+
+## RUNTIME
+
+Instancia operacional activa del sistema en un punto específico.
+
+Cada runtime tiene:
+
+* identidad propia
+* disponibilidad operacional propia (proyección local)
+* log de eventos propio
+* capacidad de operar autónomamente
+
+Los runtimes pueden diverger cuando operan sin sincronización.
+
+La divergencia es una condición normal que se reconcilia progresivamente.
+
+Ver: `EDGE-FIRST`, `DIVERGENCIA`, `RECONCILIACIÓN`
+
+---
+
+## DIVERGENCIA
+
+Condición donde dos o más runtimes tienen proyecciones de disponibilidad distintas para el mismo ítem.
+
+La divergencia no es un error: es una condición operacional esperada en sistemas edge-first.
+
+La divergencia se detecta en la reconciliación y se resuelve progresivamente generando eventos de convergencia con causalidad explícita.
+
+Ver: `RUNTIME`, `RECONCILIACIÓN`, `CAUSALIDAD`
+
+---
+
+## SINCRONIZACIÓN
+
+Proceso de transmisión de eventos entre runtimes para reducir divergencia.
+
+La sincronización es eventual y progresiva: no requiere que todos los runtimes estén sincronizados en todo momento.
+
+Una sincronización exitosa no garantiza convergencia inmediata: puede requerir reconciliación posterior si los eventos se aplicaron en órdenes distintos.
+
+Ver: `DIVERGENCIA`, `RECONCILIACIÓN`, `RUNTIME`
+
+---
+
+## RECONCILIACIÓN
+
+Proceso de convergencia progresiva entre disponibilidades divergentes, sin reescribir la historia de eventos.
+
+La reconciliación genera nuevos eventos de ajuste con causalidad explícita que explican por qué la disponibilidad de un runtime cambia al integrar eventos de otro.
+
+La reconciliación no es corrección de errores: es el mecanismo normal de convergencia en un sistema edge-first.
+
+Ver: `DIVERGENCIA`, `SINCRONIZACIÓN`, `INMUTABILIDAD`
+
+---
+
+## INMUTABILIDAD
+
+Principio que establece que los eventos pasados no se modifican.
+
+Las correcciones operacionales generan nuevos eventos de reversión o ajuste con causalidad explícita, no sobrescriben eventos anteriores.
+
+La inmutabilidad garantiza que la historia operacional sea siempre reconstruible y auditable.
+
+Ver: `EVENTO`, `CAUSALIDAD`, `TRAZABILIDAD`
+
+---
+
+## PROYECCIÓN
+
+Cálculo de la disponibilidad operacional actual a partir del log de eventos en un contexto específico.
+
+La proyección no es una lectura directa de un campo almacenado: es el resultado de aplicar todos los eventos relevantes al estado inicial.
+
+La disponibilidad operacional es siempre una proyección, no un valor absoluto.
+
+Ver: `EVENTO`, `DISPONIBILIDAD OPERACIONAL`, `CONTEXTO OPERACIONAL`
+
+---
+
+## CONTEXTO OPERACIONAL
+
+Combinación de runtime, ubicación, estado de disponibilidad y nivel de confianza que determina cómo se proyecta y opera la disponibilidad de un ítem.
+
+El mismo ítem puede tener disponibilidades operacionales distintas en contextos distintos.
+
+El contexto operacional es siempre explícito: no hay disponibilidad "global" sin contexto.
+
+Ver: `DISPONIBILIDAD OPERACIONAL`, `RUNTIME`, `CONFIANZA OPERACIONAL`
+
+---
+
+## TRANSFORMACIÓN
+
+Operación que consume disponibilidad de uno o más ítems (insumos) y genera disponibilidad de uno o más ítems distintos (derivados).
+
+La transformación tiene:
+
+* causalidad trazable entre insumo y derivado
+* estado intermedio visible durante el proceso
+* rendimiento real versus rendimiento esperado
+* posibilidad de reversión parcial con causalidad preservada
+
+Ver: `INSUMO`, `DERIVADO`, `MERMA`, `ESTADO INTERMEDIO`
+
+---
+
+## INSUMO
+
+Ítem cuya disponibilidad se consume en una transformación para generar derivados.
+
+La disponibilidad del insumo se reduce al iniciarse la transformación (queda en estado intermedio) y se materializa como salida definitiva al completarse.
+
+Ver: `TRANSFORMACIÓN`, `DERIVADO`
+
+---
+
+## DERIVADO
+
+Ítem cuya disponibilidad se genera como resultado de una transformación a partir de insumos.
+
+La disponibilidad del derivado no existe antes de que la transformación la genere.
+
+La causalidad entre insumo y derivado es trazable y forma parte del registro operacional de la transformación.
+
+Ver: `TRANSFORMACIÓN`, `INSUMO`
+
+---
+
+## MERMA
+
+Diferencia entre el rendimiento esperado y el rendimiento real de una transformación.
+
+La merma esperada es una condición operacional normal, no un error.
+
+La merma inesperada (fuera del rango operacional normal) es una señal de presión que requiere investigación.
+
+El sistema distingue entre merma dentro del rango esperado y pérdida real que requiere acción.
+
+Ver: `TRANSFORMACIÓN`, `RENDIMIENTO`, `SEÑAL DE PRESIÓN`
+
+---
+
+## RENDIMIENTO
+
+Relación entre la cantidad de insumo consumido y la cantidad de derivado generado en una transformación.
+
+El rendimiento esperado es una referencia operacional.
+
+El rendimiento real es el registrado en cada transformación concreta.
+
+La diferencia acumulada entre rendimiento real y esperado es un indicador operacional de control de procesos.
+
+Ver: `TRANSFORMACIÓN`, `MERMA`
+
+---
+
+## ESTADO INTERMEDIO
+
+Condición de la disponibilidad durante una transformación activa: el insumo ya fue consumido del disponible para otros usos, pero el derivado todavía no fue generado.
+
+El estado intermedio es visible al operador que gestiona la transformación.
+
+No es disponibilidad comprometible para otras operaciones.
+
+Se resuelve al completarse la transformación (genera derivado) o al revertirse (libera insumo con causalidad).
+
+Ver: `TRANSFORMACIÓN`, `INSUMO`, `DERIVADO`
+
+---
+
+## CAPA EVOLUTIVA
+
+Conjunto coherente de capacidades operacionales que el sistema puede activar para resolver una familia de problemas operacionales relacionados.
+
+Las capas son evolutivas: cada una se construye sobre las anteriores y puede coexistir con ellas sin romperlas.
+
+La activación de una capa es una decisión operacional deliberada, no una consecuencia automática del crecimiento del negocio.
+
+Ver: `CAPACIDAD OPERACIONAL`, `PROTOCOLO DE DECISIÓN DE CAPAS`
+
+---
+
+## CAPACIDAD OPERACIONAL
+
+Una función concreta que el sistema puede ofrecer al operador para resolver un problema operacional específico.
+
+Las capacidades se clasifican en núcleo (presentes desde CAPA 0, siempre disponibles) y opcionales (activables con capas superiores cuando el problema las justifica).
+
+Ver: `CAPA EVOLUTIVA`, `DISPONIBILIDAD OPERACIONAL`
+
+---
