@@ -83,6 +83,7 @@ Consolidar los principios arquitectónicos, operacionales y filosóficos que reg
 | [43](#43-anti-patrones-del-dominio-inventarios) | AP-01 a AP-12 — trampas de diseño con apariencia de solución | Reconocer decisiones incorrectas antes de tomarlas |
 | [44](#44-preguntas-de-validación-del-dominio) | PV-01 a PV-32 — preguntas de validación por grupo temático | Verificar que un diseño o implementación respeta la filosofía del dominio |
 | [45](#45-mapa-de-relaciones-entre-principios) | Árbol de derivación · clusters · refuerzos · tensiones · transversales | Navegar el sistema de principios como estructura coherente |
+| [46](#46-criterios-de-completitud-del-dominio) | 5 dimensiones · estado actual · umbral mínimo para implementación · criterios de revisión | Determinar cuándo el modelo semántico está listo para implementar |
 
 ---
 
@@ -3027,5 +3028,184 @@ Modificar uno de estos sin revisar sus dependientes genera inconsistencias arqui
 **Al navegar una tensión:** usar la tabla de tensiones para identificar el par en conflicto y referir a la sección 9 del documento de evolución para los criterios de navegación.
 
 **Al evaluar un cambio de modelo:** verificar que los principios de mayor número de dependencias no sean alterados sin revisión explícita de sus dependientes.
+
+---
+
+# 46. CRITERIOS DE COMPLETITUD DEL DOMINIO
+
+## PROPÓSITO
+
+Este documento describe un dominio en construcción.
+
+La completitud no es un estado final: el dominio evoluciona con el negocio.
+
+Pero existe un umbral mínimo de completitud que habilita avanzar de la fase de modelado semántico a la siguiente fase de implementación.
+
+Esta sección define ese umbral con criterios verificables, no con sensaciones de "está listo".
+
+---
+
+## LO QUE COMPLETITUD NO ES
+
+Antes de los criterios, es necesario aclarar qué no constituye completitud en este dominio.
+
+**Completitud no es exhaustividad de escenarios.**
+
+No es necesario documentar todos los escenarios posibles del negocio para avanzar.
+
+Los escenarios cubren situaciones canónicas que revelan comportamiento del modelo, no un catálogo de todos los casos.
+
+**Completitud no es ausencia de puntos abiertos.**
+
+Los puntos abiertos son normales en un dominio vivo.
+
+Su presencia indica honestidad sobre el alcance actual, no incompletitud del modelo.
+
+**Completitud no es implementación técnica.**
+
+El modelo semántico puede estar completo antes de que exista una sola línea de código de implementación.
+
+La completitud aquí se refiere al marco conceptual y filosófico, no al runtime.
+
+**Completitud no es estabilidad permanente.**
+
+Un modelo completo puede evolucionar cuando el negocio lo requiere.
+
+Completitud significa que el modelo es suficientemente estable para guiar decisiones de implementación sin ambigüedad frecuente.
+
+---
+
+## DIMENSIONES DE COMPLETITUD
+
+La completitud del dominio se evalúa en cinco dimensiones independientes.
+
+Cada dimensión tiene criterios verificables.
+
+El dominio puede estar completo en algunas dimensiones y en progreso en otras.
+
+---
+
+### DIMENSIÓN 1 — COMPLETITUD FILOSÓFICA
+
+El marco filosófico es completo cuando:
+
+* El principio raíz (P1) es estable y no requiere revisión frecuente
+* Las tensiones entre principios están identificadas y tienen criterios de navegación
+* Hay consenso sobre qué problemas el dominio resuelve y cuáles no resuelve
+* Un nuevo integrante puede leer los principios y tomar decisiones coherentes con la filosofía sin preguntar a los autores originales
+
+Indicador de incompletitud filosófica:
+
+Dos decisiones de diseño independientes tomadas con los mismos principios producen resultados contradictorios.
+
+---
+
+### DIMENSIÓN 2 — COMPLETITUD SEMÁNTICA
+
+El vocabulario es completo cuando:
+
+* Los términos críticos del dominio tienen definición operacional propia en el glosario
+* No existen términos usados en los escenarios o principios que no estén definidos o sean ambiguos
+* Dos personas leen el mismo escenario y llegan a la misma interpretación del comportamiento esperado
+* Los anti-patrones están documentados con suficiente precisión para reconocerlos al verlos
+
+Indicador de incompletitud semántica:
+
+Una discusión sobre un escenario se bloquea porque dos personas usan el mismo término con significados diferentes.
+
+---
+
+### DIMENSIÓN 3 — COMPLETITUD DE ESCENARIOS
+
+La cobertura de escenarios es suficiente cuando:
+
+* Los escenarios cubren todas las situaciones operacionales que generan comportamiento no obvio del modelo
+* Cada principio fundacional tiene al menos un escenario que lo pone a prueba en condición límite
+* Los escenarios de mayor riesgo operacional (divergencia, reconciliación, escasez, override) tienen comportamiento esperado documentado
+* Las preguntas de validación (sección 44) pueden responderse con referencia a escenarios específicos
+
+Indicador de incompletitud de escenarios:
+
+Al diseñar una capacidad concreta, surge frecuentemente una situación operacional sin escenario de referencia y el diseño no tiene orientación sobre cómo proceder.
+
+---
+
+### DIMENSIÓN 4 — COMPLETITUD DE VALIDACIÓN
+
+El sistema de validación es suficiente cuando:
+
+* Existe un conjunto de preguntas que permiten evaluar si una propuesta de diseño respeta el modelo
+* Los anti-patrones están documentados con suficiente detalle para reconocerlos en propuestas reales
+* El protocolo de decisión de capas permite tomar decisiones de activación con criterio, no con intuición
+* El mapa de relaciones permite identificar el impacto de cambiar un principio sobre sus dependientes
+
+Indicador de incompletitud de validación:
+
+Una propuesta de diseño que viola la filosofía del dominio pasa revisión sin que nadie la detecte.
+
+---
+
+### DIMENSIÓN 5 — COMPLETITUD OPERACIONAL
+
+El modelo es operacionalmente completo cuando:
+
+* El modelo puede guiar la implementación de CAPA 0 sin ambigüedad
+* Las materializaciones runtime de CAPA 0 están identificadas con suficiente claridad para implementarlas
+* El protocolo de decisión permite determinar cuándo activar CAPA 1 en el contexto del negocio real
+* Las preguntas PV-29 a PV-32 (cierre) pueden responderse afirmativamente para el diseño de CAPA 0
+
+Esta es la dimensión que habilita el avance a implementación.
+
+Las otras cuatro dimensiones pueden estar en progreso; esta debe estar completa para que la implementación tenga base sólida.
+
+Indicador de incompletitud operacional:
+
+Al intentar implementar CAPA 0, surgen decisiones frecuentes que el modelo no orienta y que generan inconsistencias entre implementadores.
+
+---
+
+## ESTADO ACTUAL DE COMPLETITUD
+
+Evaluación del estado actual del dominio al momento de redactar esta sección:
+
+| Dimensión | Estado | Notas |
+|---|---|---|
+| Filosófica | En consolidación | 20 principios estables · tensiones identificadas · mapa de relaciones completo |
+| Semántica | En consolidación | Glosario con 26 términos · puntos abiertos en términos de CAPA 3+ |
+| Escenarios | En progreso | 17 escenarios canónicos (26–42) · 13 escenarios evolutivos · cobertura de situaciones críticas |
+| Validación | Completa para fase actual | 32 preguntas · 12 anti-patrones · protocolo de decisión de capas |
+| Operacional | En progreso | CAPA 0 orientada · materializaciones identificadas · sin decisiones de implementación final |
+
+---
+
+## UMBRAL MÍNIMO PARA AVANZAR A IMPLEMENTACIÓN
+
+El dominio está listo para iniciar implementación de CAPA 0 cuando:
+
+1. **Dimensión filosófica:** los principios P1, P3, P4, P10 son estables y no tienen ambigüedad activa
+2. **Dimensión semántica:** disponibilidad operacional, evento, movimiento, causalidad y contexto operacional tienen definición operacional inequívoca
+3. **Dimensión de escenarios:** los escenarios 26, 27, 28 (venta offline, reserva concurrente, reconciliación) tienen comportamiento esperado e invariantes completos
+4. **Dimensión de validación:** las preguntas PV-01 a PV-12 (grupos 1–3) pueden responderse sobre el diseño propuesto
+5. **Dimensión operacional:** las materializaciones runtime de CAPA 0 están definidas y el modelo de eventos mínimo está especificado
+
+Estos cinco criterios son necesarios.
+
+No se puede compensar la ausencia de uno con fortaleza en otro.
+
+---
+
+## CRITERIOS DE REVISIÓN POSTERIOR
+
+Una vez iniciada la implementación, el modelo semántico debe revisarse cuando:
+
+* Una decisión de implementación no puede tomarse con referencia al modelo actual
+* Una situación operacional real genera comportamiento que ningún escenario orientó
+* Un nuevo anti-patrón aparece en el código que no está documentado
+* Una tensión arquitectónica genera un bug o inconsistencia real en producción
+* El negocio cambia de forma que invalida un principio o escenario existente
+
+La revisión no reinicia el modelo.
+
+Genera una actualización puntual en la sección correspondiente con trazabilidad del motivo.
 
 ---
