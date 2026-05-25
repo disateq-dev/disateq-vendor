@@ -76,6 +76,12 @@ Consolidar los principios arquitectónicos, operacionales y filosóficos que reg
 | [41](#41-escenario-canónico--override-operacional-contextual-bajo-presión-crítica) | Override operacional contextual bajo presión crítica |
 | [42](#42-escenario-canónico--reinterpretación-operacional-posterior-a-nueva-evidencia) | Reinterpretación operacional posterior a nueva evidencia |
 
+### Anti-patrones del dominio (43)
+
+| Sección | Contenido | Para qué usarla |
+|---|---|---|
+| [43](#43-anti-patrones-del-dominio-inventarios) | AP-01 a AP-12 — trampas de diseño con apariencia de solución | Reconocer decisiones incorrectas antes de tomarlas |
+
 ---
 
 ## Documentos relacionados
@@ -2249,3 +2255,370 @@ Integrar la nueva evidencia sin destruir el historial requiere modelar la reinte
 * Criterios para determinar si la nueva evidencia requiere acción operacional activa o solo actualización de interpretación
 * Tratamiento de compromisos futuros adquiridos bajo la interpretación anterior que ya no es válida
 * Comunicación contextual a operadores sobre el impacto de la reinterpretación en operaciones en curso
+
+---
+
+# 43. ANTI-PATRONES DEL DOMINIO INVENTARIOS
+
+## PROPÓSITO
+
+Los anti-patrones documentan decisiones de diseño que parecen razonables o convenientes pero que violan la filosofía operacional del dominio y generan problemas reales en operación.
+
+No son errores obvios.
+
+Son trampas con apariencia de solución que el sistema debe reconocer y evitar activamente.
+
+Cada anti-patrón tiene un nombre operacional, una descripción de cómo aparece, por qué parece razonable, qué problema real genera, y cuál es la dirección correcta.
+
+---
+
+## AP-01 — DISPONIBILIDAD COMO CONTADOR MUTABLE
+
+**Cómo aparece:**
+
+El sistema almacena la disponibilidad de cada ítem como un campo numérico que se incrementa o decrementa directamente con cada operación.
+
+**Por qué parece razonable:**
+
+Es simple de implementar, fácil de consultar, y produce el número correcto en condiciones normales.
+
+**Problema real:**
+
+Cuando ocurren operaciones concurrentes, offline, o con divergencia entre runtimes, el campo mutable colapsa: no hay historia, no hay causalidad, no hay reconciliación posible.
+
+Una corrección incorrecta destruye información irrecuperable.
+
+La disponibilidad se convierte en un número sin contexto ni trazabilidad.
+
+**Dirección correcta:**
+
+La disponibilidad es una proyección sobre un log de eventos inmutables.
+
+El número es un resultado calculado, no un campo almacenado directamente.
+
+---
+
+## AP-02 — SNAPSHOT ABSOLUTO COMO FUENTE DE VERDAD
+
+**Cómo aparece:**
+
+El sistema toma fotografías periódicas del estado del inventario y las usa como punto de partida para calcular disponibilidad futura.
+
+Los movimientos anteriores al último snapshot se descartan o archivan como irrelevantes.
+
+**Por qué parece razonable:**
+
+Reduce el volumen de datos históricos, simplifica las consultas, y aparentemente mantiene el sistema liviano.
+
+**Problema real:**
+
+El snapshot destruye la causalidad de los eventos anteriores.
+
+No es posible reconstruir por qué la disponibilidad llegó al estado del snapshot.
+
+La reconciliación con sistemas externos o con eventos generados offline se vuelve imposible o aproximada.
+
+La reinterpretación posterior a nueva evidencia no tiene historia para operar.
+
+**Dirección correcta:**
+
+Los eventos son la fuente de verdad permanente.
+
+Los snapshots pueden existir como optimización de lectura (proyecciones materializadas), nunca como reemplazo del log de eventos.
+
+---
+
+## AP-03 — BLOQUEO AUTOMÁTICO POR LÍMITE RÍGIDO
+
+**Cómo aparece:**
+
+El sistema bloquea automáticamente operaciones cuando la disponibilidad llega a cero, cuando la confianza cae bajo un umbral, o cuando la sincronización lleva más de N minutos sin completarse.
+
+**Por qué parece razonable:**
+
+Parece proteger la integridad del inventario y evitar compromisos imposibles de cumplir.
+
+**Problema real:**
+
+El bloqueo automático sin contexto humano detiene la operación en situaciones donde el operador tiene información que el sistema no tiene.
+
+Un producto con disponibilidad cero en el sistema puede estar físicamente presente pero no registrado.
+
+Una sincronización tardía puede deberse a conectividad, no a divergencia real.
+
+El bloqueo convierte la incertidumbre del sistema en paralización del negocio.
+
+**Dirección correcta:**
+
+El sistema señaliza presión operacional con contexto suficiente para que el operador tome la decisión.
+
+El override contextual con trazabilidad explícita es preferible al bloqueo automático.
+
+La continuidad operacional tiene prioridad sobre la exactitud preventiva del sistema.
+
+---
+
+## AP-04 — SINCRONIZACIÓN COMO REQUISITO BLOQUEANTE
+
+**Cómo aparece:**
+
+El runtime local no puede operar hasta completar la sincronización con el núcleo central.
+
+Las operaciones quedan en cola hasta que la sincronización confirme que el estado es válido.
+
+**Por qué parece razonable:**
+
+Garantiza que el runtime siempre opera con datos actualizados y evita divergencias.
+
+**Problema real:**
+
+En entornos de conectividad imperfecta, el negocio se detiene cada vez que la red falla.
+
+La dependencia de sincronización convierte un sistema edge-first en un sistema que requiere conectividad permanente.
+
+La operación humana no puede esperar a que la red coopere.
+
+**Dirección correcta:**
+
+El runtime local opera autónomamente con su proyección local.
+
+La sincronización es eventual y progresiva: reduce divergencia pero no es prerequisito de operación.
+
+---
+
+## AP-05 — EXACTITUD INMEDIATA SOBRE CONTINUIDAD OPERACIONAL
+
+**Cómo aparece:**
+
+El sistema exige que la disponibilidad sea exacta antes de permitir cualquier operación.
+
+Si hay duda sobre el estado real del inventario, se bloquea la operación hasta resolver la duda.
+
+**Por qué parece razonable:**
+
+Parece razonable no comprometer disponibilidad que podría no existir.
+
+**Problema real:**
+
+La exactitud perfecta en tiempo real no es alcanzable en sistemas edge-first con operación humana real.
+
+Exigirla paraliza la operación continuamente por razones que el sistema no puede resolver sin intervención humana.
+
+La continuidad operacional tiene valor económico real que se destruye con cada bloqueo.
+
+**Dirección correcta:**
+
+Operar con la mejor información disponible más visibilidad contextual del nivel de confianza.
+
+La reconciliación posterior corrige las diferencias sin destruir la continuidad operacional.
+
+---
+
+## AP-06 — CORRECCIÓN DESTRUCTIVA DE HISTORIA
+
+**Cómo aparece:**
+
+Cuando se detecta un error de registro, el sistema permite modificar o eliminar el evento incorrecto directamente.
+
+El historial queda "limpio" pero no refleja lo que realmente ocurrió.
+
+**Por qué parece razonable:**
+
+Parece más limpio tener un historial sin errores que uno con eventos de corrección.
+
+**Problema real:**
+
+Modificar eventos pasados destruye la trazabilidad y hace imposible reconstruir qué ocurrió realmente.
+
+Las reconciliaciones externas (con otros sistemas, con conteos físicos, con auditorías) pierden su punto de referencia.
+
+La historia operacional deja de ser confiable como evidencia.
+
+**Dirección correcta:**
+
+Las correcciones generan nuevos eventos de reversión o ajuste con causalidad explícita.
+
+La historia permanece inmutable. El estado actual refleja los eventos incluyendo las correcciones.
+
+---
+
+## AP-07 — DISPONIBILIDAD GLOBAL SIN CONTEXTO
+
+**Cómo aparece:**
+
+El sistema expone un único número de disponibilidad por ítem, sin distinción de ubicación, estado, runtime, ni nivel de confianza.
+
+**Por qué parece razonable:**
+
+Simplifica la consulta: el operador ve un único número que representa "cuánto hay".
+
+**Problema real:**
+
+El número global oculta información operacionalmente crítica.
+
+Disponibilidad en tránsito, en bodega, reservada, o con baja confianza es diferente de disponibilidad disponible en mostrador para venta inmediata.
+
+Las decisiones basadas en el número global generan compromisos incorrectos con frecuencia.
+
+**Dirección correcta:**
+
+La disponibilidad es siempre contextual.
+
+El sistema expone disponibilidad en el contexto operacional relevante para la operación en curso, no un número global descontextualizado.
+
+---
+
+## AP-08 — CONFIANZA BINARIA
+
+**Cómo aparece:**
+
+El sistema trata la confianza operacional como un valor binario: o la información es confiable o no lo es.
+
+Cuando la confianza cae de "confiable" a "no confiable", el sistema bloquea o ignora la disponibilidad afectada.
+
+**Por qué parece razonable:**
+
+Parece más simple operar con certeza total o no operar.
+
+**Problema real:**
+
+La confianza operacional tiene niveles intermedios con diferentes implicaciones prácticas.
+
+Tratar cualquier reducción de confianza como falta total de confianza exagera las restricciones operacionales.
+
+El operador pierde acceso a información que, aunque imperfecta, tiene valor operacional real.
+
+**Dirección correcta:**
+
+La confianza es un atributo gradual.
+
+El sistema comunica el nivel de confianza con contexto suficiente para que el operador tome decisiones informadas, sin bloquear automáticamente.
+
+---
+
+## AP-09 — MERMA COMO ERROR
+
+**Cómo aparece:**
+
+El sistema trata toda diferencia entre disponibilidad esperada y disponibilidad real como un error que debe ser investigado y corregido.
+
+La merma operacional normal aparece como anomalía permanente en el sistema.
+
+**Por qué parece razonable:**
+
+Parece correcto que cualquier diferencia entre lo que debería haber y lo que hay sea un problema a resolver.
+
+**Problema real:**
+
+La merma operacional normal es una condición del negocio, no un error del sistema.
+
+Tratar toda merma como error genera ruido constante de alertas y desgasta la atención operacional sobre diferencias que sí requieren investigación.
+
+El operador aprende a ignorar las alertas porque la mayoría son merma normal, y pierde sensibilidad ante las que son pérdida real.
+
+**Dirección correcta:**
+
+El sistema distingue entre merma dentro del rango operacional esperado y pérdida real fuera de ese rango.
+
+La merma esperada es un evento de primera clase con su propio tipo operacional, no un error de disponibilidad.
+
+---
+
+## AP-10 — OVERRIDE COMO CORRUPCIÓN
+
+**Cómo aparece:**
+
+El sistema trata cualquier operación que supera un límite de disponibilidad como un error o corrupción.
+
+El override contextual del operador no tiene representación formal: o no existe o se registra como anomalía.
+
+**Por qué parece razonable:**
+
+Parece que si el sistema tiene reglas, las excepciones deberían eliminarse, no formalizarse.
+
+**Problema real:**
+
+Las operaciones reales incluyen legítimamente situaciones que los límites del sistema no anticipan.
+
+Un operador que conoce el contexto real puede tener razones válidas para comprometer disponibilidad que el sistema marca como insuficiente.
+
+Sin override formal, el operador busca workarounds que destruyen la trazabilidad completamente.
+
+**Dirección correcta:**
+
+El override contextual es una operación de primera clase con trazabilidad explícita: quién, cuándo, sobre qué, con qué justificación.
+
+El sistema habilita el override con visibilidad, no lo elimina ni lo ignora.
+
+---
+
+## AP-11 — REPOSICIÓN SIN CAUSALIDAD
+
+**Cómo aparece:**
+
+Las entradas de reposición se registran como incrementos simples de disponibilidad sin vínculo causal con la orden de compra, el proveedor, o el contexto que las originó.
+
+**Por qué parece razonable:**
+
+Simplifica el registro: el operador solo aumenta el número.
+
+**Problema real:**
+
+Sin causalidad, no es posible saber qué orden de compra generó esta entrada.
+
+Las discrepancias con proveedores no pueden trazarse.
+
+Las reposiciones parciales no tienen contexto de qué falta por llegar.
+
+**Dirección correcta:**
+
+Toda reposición tiene causalidad trazable desde el origen del requerimiento hasta la entrada de disponibilidad.
+
+La reposición es un evento con contexto, no un ajuste numérico.
+
+---
+
+## AP-12 — RECONCILIACIÓN COMO EVENTO DE ERROR
+
+**Cómo aparece:**
+
+El sistema trata la reconciliación entre runtimes divergentes como una situación excepcional de error que requiere intervención manual de soporte técnico.
+
+**Por qué parece razonable:**
+
+Si el sistema fuera perfecto, no habría divergencias que reconciliar.
+
+**Problema real:**
+
+En sistemas edge-first con operación real, la divergencia es una condición normal, no un error.
+
+Tratar la reconciliación como excepción significa que nunca está diseñada correctamente para el volumen real de divergencias.
+
+El sistema colapsa operacionalmente cuando la reconciliación es frecuente, porque el proceso no escala.
+
+**Dirección correcta:**
+
+La reconciliación es un mecanismo operacional de primera clase, diseñado para ejecutarse con frecuencia y sin intervención manual en el caso común.
+
+La divergencia es normal. La reconciliación es el proceso normal de convergencia.
+
+---
+
+## RESUMEN DE ANTI-PATRONES
+
+| Código | Anti-patrón | Riesgo principal |
+|---|---|---|
+| AP-01 | Disponibilidad como contador mutable | Pérdida de trazabilidad y causalidad |
+| AP-02 | Snapshot absoluto como fuente de verdad | Imposibilidad de reconciliación y reinterpretación |
+| AP-03 | Bloqueo automático por límite rígido | Paralización operacional sin contexto humano |
+| AP-04 | Sincronización como requisito bloqueante | Dependencia de conectividad permanente |
+| AP-05 | Exactitud inmediata sobre continuidad | Paralización por exigencia inalcanzable |
+| AP-06 | Corrección destructiva de historia | Pérdida de trazabilidad e integridad histórica |
+| AP-07 | Disponibilidad global sin contexto | Decisiones incorrectas por falta de contexto operacional |
+| AP-08 | Confianza binaria | Bloqueos exagerados por reducción parcial de confianza |
+| AP-09 | Merma como error | Ruido operacional que oculta pérdidas reales |
+| AP-10 | Override como corrupción | Workarounds sin trazabilidad que destruyen el modelo |
+| AP-11 | Reposición sin causalidad | Imposibilidad de trazar discrepancias con proveedores |
+| AP-12 | Reconciliación como evento de error | Proceso de convergencia que no escala operacionalmente |
+
+---
