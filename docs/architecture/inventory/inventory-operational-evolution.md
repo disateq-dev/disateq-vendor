@@ -961,3 +961,225 @@ Un escenario canónico describe el comportamiento esperado una vez que la capa e
 
 ---
 
+# 8. PROTOCOLO DE DECISIÓN DE CAPAS
+
+## PROPÓSITO
+
+Este protocolo define el proceso explícito para tomar la decisión de activar una capa superior.
+
+No es una guía académica.
+
+Es un proceso operacional que protege al sistema de dos riesgos simétricos:
+
+```text
+Activación prematura → complejidad sin valor, carga operacional innecesaria
+Activación tardía    → problemas reales sin resolver, fricciones acumuladas
+```
+
+---
+
+## FASE 1 — IDENTIFICACIÓN DEL DOLOR OPERACIONAL
+
+Antes de evaluar cualquier capa, debe existir un dolor operacional real y documentable.
+
+Un dolor operacional es real cuando cumple al menos uno de estos criterios:
+
+* Ocurre con frecuencia suficiente como para afectar la operación cotidiana
+* Ha generado pérdida económica concreta o riesgo operacional documentado
+* El operador lo menciona de forma recurrente como fricción sin resolver
+* Genera trabajo manual compensatorio habitual (workarounds estables)
+
+Un dolor operacional NO es válido como señal de activación cuando:
+
+* Es hipotético o proyectado sin evidencia actual
+* Ocurrió una sola vez en circunstancias excepcionales
+* Es resuelto actualmente por el operador sin fricción significativa
+* La solución es un cambio de proceso, no de sistema
+
+---
+
+## FASE 2 — DIAGNÓSTICO DE CAPA ACTUAL
+
+Antes de proponer activar la siguiente capa, verificar que la capa actual fue implementada correctamente.
+
+Preguntas de diagnóstico de capa actual:
+
+* ¿La capa actual está completamente implementada o hay capacidades no activadas?
+* ¿El operador conoce y usa todas las capacidades disponibles en la capa actual?
+* ¿El dolor existe porque la capa actual tiene un bug o limitación de implementación?
+* ¿El dolor existe porque la capa actual no fue configurada correctamente para este negocio?
+
+Si la respuesta a cualquiera es afirmativa, la acción correcta es corregir o completar la capa actual, no activar la siguiente.
+
+La activación de una capa nueva no resuelve problemas de implementación incompleta en capas anteriores.
+
+---
+
+## FASE 3 — EVALUACIÓN DE LA TRANSICIÓN
+
+Si el dolor es real y la capa actual está correctamente implementada, evaluar la transición.
+
+### 3.1 — Verificación de dependencias
+
+La capa a activar tiene dependencias explícitas (ver Sección 2).
+
+Verificar que todas las dependencias están operacionalmente estables, no solo técnicamente presentes.
+
+Una dependencia es operacionalmente estable cuando:
+
+* Está implementada completamente
+* El equipo operacional la usa con fluidez
+* No tiene deuda técnica activa relevante
+* No tiene problemas de confianza operacional sin resolver
+
+Si alguna dependencia no cumple esto, estabilizarla antes de continuar.
+
+### 3.2 — Evaluación de complejidad nueva
+
+Cada capa introduce complejidad documentada (ver Sección 2).
+
+Evaluar explícitamente:
+
+* ¿El equipo operacional puede absorber los nuevos conceptos sin perder continuidad?
+* ¿La complejidad nueva requiere cambios en procesos operacionales existentes?
+* ¿Existe capacidad de implementación y mantenimiento de la nueva capa?
+* ¿El costo de la complejidad nueva es proporcionado al valor operacional que resuelve?
+
+### 3.3 — Verificación de reversibilidad
+
+La activación de una capa debe ser reversible si genera problemas.
+
+Antes de activar, definir explícitamente:
+
+* ¿Qué datos o eventos generados por la nueva capa son irreversibles?
+* ¿Cuál es el procedimiento concreto para desactivar la capa si la operación se ve afectada?
+* ¿La reversión restaura la operación anterior sin pérdida de datos históricos?
+
+Si la reversión no es posible sin pérdida operacional significativa, la activación requiere validación más exhaustiva antes de proceder.
+
+---
+
+## FASE 4 — ACTIVACIÓN CONTROLADA
+
+La activación de una capa no es un cambio de implementación masivo.
+
+Es una secuencia controlada:
+
+### 4.1 — Activación mínima
+
+Activar solo las capacidades mínimas de la nueva capa que resuelven el dolor operacional identificado.
+
+No activar todas las capacidades de la capa porque están disponibles.
+
+La capa se expande cuando el negocio lo necesita, no porque técnicamente sea posible.
+
+### 4.2 — Período de coexistencia
+
+Durante la activación, la capa anterior debe seguir funcionando íntegramente.
+
+El operador trabaja con ambas capas simultáneamente durante un período de transición.
+
+Las operaciones del período de transición deben ser válidas en el modelo de ambas capas.
+
+### 4.3 — Validación operacional
+
+La activación es exitosa cuando:
+
+* El dolor operacional identificado en Fase 1 está resuelto
+* La operación en capas anteriores no fue afectada
+* El equipo operacional usa las nuevas capacidades sin fricción visible
+* No aparecieron efectos secundarios inesperados en las capas dependientes
+
+Si alguno de estos criterios no se cumple, evaluar si continuar, corregir o revertir.
+
+---
+
+## FASE 5 — CONSOLIDACIÓN
+
+Una vez que la activación es operacionalmente estable:
+
+* Documentar las capacidades activadas y su estado en el contexto del negocio
+* Actualizar la evaluación de señales de activación para la siguiente capa
+* Identificar si el dolor operacional resuelto generó visibilidad de nuevos dolores en capas superiores
+* Registrar el aprendizaje operacional de la transición para informar futuras activaciones
+
+---
+
+## ÁRBOL DE DECISIÓN COMPACTO
+
+```text
+¿Existe dolor operacional real y documentable?
+  NO → no activar ninguna capa
+  SÍ ↓
+
+¿La capa actual está correctamente implementada?
+  NO → corregir/completar capa actual primero
+  SÍ ↓
+
+¿Todas las dependencias de la nueva capa son operacionalmente estables?
+  NO → estabilizar dependencias primero
+  SÍ ↓
+
+¿La complejidad nueva es absorbible por el equipo operacional?
+  NO → posponer hasta que haya capacidad operacional
+  SÍ ↓
+
+¿La activación es reversible sin pérdida operacional crítica?
+  NO → validación exhaustiva antes de proceder
+  SÍ ↓
+
+Activar mínimo necesario → validar → consolidar
+```
+
+---
+
+## ANTI-PATRONES DE DECISIÓN
+
+### Activación por anticipación técnica
+
+```text
+"Vamos a activar CAPA 3 ahora que podemos,
+para cuando tengamos el segundo punto de venta ya estará listo."
+```
+
+La complejidad no activada no es gratuita: requiere mantenimiento, genera confusión, y puede interferir con la operación actual.
+
+Activar solo cuando el dolor existe, no cuando el dolor es posible.
+
+### Activación por presión de funcionalidad
+
+```text
+"El cliente pidió esta funcionalidad específica,
+tenemos que activar la capa que la habilita."
+```
+
+La funcionalidad solicitada debe evaluarse contra el protocolo completo.
+
+Una solicitud de funcionalidad no es suficiente para saltar fases de diagnóstico y evaluación.
+
+### Activación por inercia tecnológica
+
+```text
+"Esta tecnología ya soporta distribución,
+aprovechemos que lo tenemos disponible."
+```
+
+La disponibilidad tecnológica de una capacidad no justifica su activación operacional.
+
+La tecnología sirve a los problemas operacionales, no al revés.
+
+### Reversión por impaciencia
+
+```text
+"La activación generó fricción al principio,
+mejor revertimos."
+```
+
+Toda activación genera fricción inicial.
+
+La fricción inicial de adaptación es diferente de la fricción sistémica que indica un problema real.
+
+Evaluar antes de revertir si la fricción es de adaptación o de diseño incorrecto.
+
+---
+
