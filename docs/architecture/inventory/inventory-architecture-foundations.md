@@ -655,3 +655,572 @@ La arquitectura emergente prioriza:
 * responsabilidad contextual
 * trazabilidad fuerte
 * simplicidad operacional
+
+---
+
+# 21. VALIDACIÓN OPERACIONAL SEMÁNTICA
+
+## OBJETIVO
+
+La siguiente etapa del dominio INVENTARIOS NO busca todavía:
+
+* arquitectura runtime final
+* sincronización definitiva
+* modelos persistentes finales
+* APIs
+* tablas complejas
+* UX final
+
+El objetivo ahora es:
+
+```text
+tensionar la semántica operacional
+contra escenarios reales de operación
+
+Para:
+
+detectar contradicciones
+evitar colapso ERP clásico
+validar coherencia contextual
+consolidar invariantes reales
+refinar límites conceptuales
+validar comportamiento bajo presión operacional
+
+22. ESCENARIOS OPERACIONALES CANÓNICOS
+
+Los escenarios canónicos deben utilizarse para validar:
+
+continuidad operacional
+reconciliación contextual
+disponibilidad usable
+arbitraje operacional
+presión operacional
+confianza operacional
+temporalidad
+comportamiento edge-first
+Estructura recomendada
+
+Cada escenario debe analizar:
+
+ESCENARIO
+CONTEXTO
+TENSIÓN OPERACIONAL
+RIESGO ERP A EVITAR
+COMPORTAMIENTO ESPERADO
+INVARIANTES
+PUNTOS ABIERTOS
+
+23. PRINCIPIOS DE VALIDACIÓN
+
+La validación semántica debe priorizar:
+
+operación humana real
+continuidad operacional
+causalidad fuerte
+reconciliación progresiva
+degradación controlada
+simplicidad operacional externa
+
+Evitar:
+
+academicismo artificial
+sobre-DDD
+complejidad ceremonial
+centralización rígida
+snapshots absolutos
+bloqueo operacional prematuro
+
+24. ESCENARIOS PRIORITARIOS INICIALES
+Escenarios iniciales sugeridos
+venta offline prolongada
+divergencia post-sincronización
+reserva concurrente contextual
+arbitraje por prioridad operacional
+reconciliación física parcial
+expiración bajo compromiso activo
+continuidad bajo baja confianza
+transformación/fraccionamiento
+devolución posterior a divergencia
+sincronización diferida prolongada
+
+25. TRANSICIÓN DE ETAPA
+
+La siguiente transición natural del dominio será:
+
+semántica consolidada
+→ validación operacional
+→ modelo operacional mínimo implementable
+
+Todavía NO corresponde avanzar a:
+
+runtime definitivo
+sincronización técnica final
+arquitectura distribuida definitiva
+WMS avanzado
+tablas persistentes finales
+APIs definitivas
+UX operacional final
+
+hasta estabilizar suficientemente
+la semántica operacional contextual.
+
+---
+
+# 26. ESCENARIO CANÓNICO — VENTA OFFLINE PROLONGADA CON DIVERGENCIA POSTERIOR
+
+## ESCENARIO
+
+Un runtime desktop continúa operando localmente durante una caída prolongada de conectividad.
+
+Durante ese periodo:
+
+* se realizan ventas
+* existen reservas activas
+* algunos productos poseen alta rotación
+* ocurren transformaciones operacionales
+* existen otros runtimes operando simultáneamente
+
+La sincronización ocurre posteriormente.
+
+Al reconectarse:
+
+* aparecen divergencias
+* diferencias físicas
+* conflictos de disponibilidad
+* presión operacional acumulada
+
+---
+
+## CONTEXTO
+
+El sistema debe preservar:
+
+* continuidad operacional humana
+* operación edge-first
+* velocidad operacional
+* trazabilidad fuerte
+* causalidad operacional
+
+SIN asumir:
+
+```text
+consistencia global inmediata
+
+---
+
+# 27. ESCENARIO CANÓNICO — RESERVA CONCURRENTE CONTEXTUAL
+
+## ESCENARIO
+
+Múltiples operaciones intentan utilizar simultáneamente una misma disponibilidad operacional.
+
+Ejemplos posibles:
+
+* venta presencial
+* pedido delivery
+* preparación interna
+* reserva temporal
+* contingencia offline
+* runtime remoto parcialmente sincronizado
+
+La existencia física total NO alcanza para satisfacer todas las presiones operacionales simultáneamente.
+
+---
+
+## CONTEXTO
+
+La tensión NO debe modelarse únicamente como:
+
+```text
+quién descuenta primero
+
+---
+
+# 28. ESCENARIO CANÓNICO — RECONCILIACIÓN FÍSICA DESPUÉS DE DIVERGENCIA OPERACIONAL
+
+## ESCENARIO
+
+Después de un periodo de operación normal y múltiples movimientos operacionales:
+
+* ventas
+* reservas
+* devoluciones
+* transformaciones
+* sincronizaciones parciales
+* operación offline
+
+Se realiza un conteo físico.
+
+El resultado físico NO coincide con:
+
+```text
+la disponibilidad operacional derivada actual
+
+---
+
+# 29. ESCENARIO CANÓNICO — TRANSFORMACIÓN OPERACIONAL Y FRACCIONAMIENTO
+
+## ESCENARIO
+
+Una operación transforma disponibilidad existente en nuevas capacidades operacionales.
+
+Ejemplos posibles:
+
+* fraccionamiento
+* corte
+* pesado variable
+* conversión
+* empaquetado
+* preparación
+* producción ligera
+* armado de combos
+* derivados operacionales
+
+La operación NO representa simplemente:
+
+```text
+entrada/salida tradicional
+
+---
+
+# 30. ESCENARIO CANÓNICO — EXPIRACIÓN BAJO PRESIÓN OPERACIONAL
+
+## ESCENARIO
+
+Determinada disponibilidad operacional se aproxima a expiración mientras existen:
+
+* reservas activas
+* compromiso operacional
+* presión comercial
+* continuidad operacional requerida
+* sincronización parcial
+* divergencia contextual entre runtimes
+
+La expiración afecta:
+
+* confianza operacional
+* prioridad utilizable
+* arbitraje operacional
+* continuidad futura
+
+SIN necesariamente convertir inmediatamente la disponibilidad en:
+
+```text
+inexistente absoluta
+
+---
+
+# 31. ESCENARIO CANÓNICO — CONTINUIDAD OPERACIONAL BAJO BAJA CONFIANZA
+
+## ESCENARIO
+
+Un runtime operacional continúa funcionando mientras existen señales de:
+
+* sincronización degradada
+* reconciliación pendiente
+* divergencia contextual
+* validación física antigua
+* presión operacional acumulada
+* incertidumbre parcial de disponibilidad
+
+La operación humana necesita continuar.
+
+Pero el sistema NO posee:
+
+```text
+certeza operacional absoluta
+
+---
+
+# 32. ESCENARIO CANÓNICO — ARBITRAJE OPERACIONAL BAJO ESCASEZ
+
+## ESCENARIO
+
+La disponibilidad operacional existente NO alcanza para satisfacer simultáneamente:
+
+* ventas presenciales
+* delivery
+* reservas activas
+* compromiso operacional previo
+* preparación interna
+* contingencias runtime
+* sincronización pendiente
+
+Existe presión operacional extrema sobre una misma capacidad contextual.
+
+---
+
+## CONTEXTO
+
+La tensión principal NO es solamente:
+
+```text id="u6f2mx"
+quién consume primero
+
+---
+
+# 33. ESCENARIO CANÓNICO — DEVOLUCIÓN POSTERIOR A DIVERGENCIA OPERACIONAL
+
+## ESCENARIO
+
+Un producto vendido previamente retorna al sistema después de:
+
+* operación offline
+* sincronización diferida
+* reconciliaciones parciales
+* transformaciones operacionales
+* divergencias contextuales entre runtimes
+
+La devolución ocurre cuando:
+
+* la causalidad original ya no es perfectamente lineal
+* existen reinterpretaciones posteriores
+* la disponibilidad actual ya cambió contextual y temporalmente
+
+---
+
+## CONTEXTO
+
+La tensión principal NO es únicamente:
+
+```text id="m4x8pv"
+sumar nuevamente cantidad disponible
+
+---
+
+# 34. ESCENARIO CANÓNICO — SINCRONIZACIÓN DIFERIDA CON CAUSALIDAD CRUZADA
+
+## ESCENARIO
+
+Múltiples runtimes operan de manera parcialmente independiente durante un periodo prolongado.
+
+Durante ese tiempo ocurren:
+
+* ventas
+* reservas
+* reconciliaciones
+* devoluciones
+* transformaciones
+* arbitraje operacional
+* degradación de confianza
+
+Posteriormente:
+
+* los runtimes sincronizan
+* aparecen causalidades cruzadas
+* eventos afectan disponibilidad derivada mutuamente
+* existen reinterpretaciones contextuales simultáneas
+
+---
+
+## CONTEXTO
+
+La tensión principal NO es:
+
+```text id="g9t2mr"
+qué runtime posee la verdad absoluta
+
+---
+
+# 35. ESCENARIO CANÓNICO — MATERIALIZACIÓN DIFERIDA BAJO CONTINUIDAD OPERACIONAL
+
+## ESCENARIO
+
+Una operación genera intención operacional válida antes de que exista:
+
+* materialización física completa
+* sincronización consolidada
+* confirmación distribuida total
+* disponibilidad absoluta validada
+
+Ejemplos posibles:
+
+* preparación pendiente
+* separación parcial
+* transferencia en curso
+* transformación progresiva
+* contingencia offline
+* ejecución humana diferida
+
+La operación necesita continuar SIN esperar:
+
+```text
+certeza material absoluta inmediata
+
+---
+
+# 36. ESCENARIO CANÓNICO — PRIORIDAD OPERACIONAL DINÁMICA BAJO CONTEXTO CAMBIANTE
+
+## ESCENARIO
+
+Distintas operaciones compiten simultáneamente por capacidad operacional limitada.
+
+Pero la prioridad contextual cambia dinámicamente debido a:
+
+* presión comercial
+* contingencia operacional
+* degradación runtime
+* expiración próxima
+* continuidad humana
+* sincronización pendiente
+* autorización contextual
+* arbitraje operacional
+
+Una operación inicialmente secundaria puede convertirse posteriormente en:
+
+```text
+prioridad operacional crítica
+
+---
+
+# 37. ESCENARIO CANÓNICO — RESERVA EXPIRADA CON CONTINUIDAD OPERACIONAL ACTIVA
+
+## ESCENARIO
+
+Una reserva operacional alcanza su ventana de expiración mientras:
+
+* existe operación humana en curso
+* la materialización aún no termina
+* existen runtimes parcialmente sincronizados
+* la disponibilidad continúa bajo presión
+* persiste intención operacional válida
+* existe continuidad contextual activa
+
+Formalmente la reserva debería:
+
+```text
+expirar
+
+---
+
+# 38. ESCENARIO CANÓNICO — CONTEO FÍSICO PARCIAL BAJO OPERACIÓN ACTIVA
+
+## ESCENARIO
+
+Se realiza un conteo físico parcial mientras:
+
+* continúan ventas activas
+* existen reservas operacionales
+* ocurren transformaciones
+* persiste sincronización parcial
+* existen runtimes concurrentes
+* continúa presión operacional
+
+El conteo NO cubre:
+
+```text
+la totalidad del contexto operacional
+
+---
+
+# 39. ESCENARIO CANÓNICO — TRANSFERENCIA OPERACIONAL EN TRÁNSITO CON SINCRONIZACIÓN PARCIAL
+
+## ESCENARIO
+
+Determinada disponibilidad operacional es transferida entre contextos operacionales distintos.
+
+Ejemplos:
+
+* tienda → tienda
+* depósito → tienda
+* preparación → despacho
+* runtime móvil → runtime fijo
+* contingencia → operación normal
+
+Durante el tránsito:
+
+* la sincronización es parcial
+* la materialización física puede ser incompleta
+* existe incertidumbre contextual
+* continúan operaciones concurrentes
+* persiste presión operacional
+
+La disponibilidad NO pertenece completamente:
+
+```text
+a un único contexto absoluto
+
+---
+
+# 40. ESCENARIO CANÓNICO — OPERACIÓN EN CONTINGENCIA CON RECONCILIACIÓN DIFERIDA
+
+## ESCENARIO
+
+El runtime operacional entra en modo contingencia debido a:
+
+* caída prolongada de conectividad
+* degradación de sincronización
+* indisponibilidad parcial de servicios externos
+* falla de coordinación distribuida
+* operación edge aislada temporalmente
+
+La operación humana debe continuar mientras:
+
+* persisten ventas
+* reservas continúan activas
+* ocurren transformaciones
+* existe presión operacional
+* la confianza operacional comienza a degradarse
+
+La reconciliación completa solo será posible posteriormente.
+
+---
+
+## CONTEXTO
+
+La tensión principal NO es:
+
+```text id="x5m8vq"
+detener operación hasta restaurar consistencia global
+
+---
+
+# 41. ESCENARIO CANÓNICO — OVERRIDE OPERACIONAL CONTEXTUAL BAJO PRESIÓN CRÍTICA
+
+## ESCENARIO
+
+Determinada operación requiere continuar aun cuando el sistema detecta:
+
+* disponibilidad degradada
+* confianza operacional baja
+* reserva conflictiva
+* sincronización incompleta
+* expiración contextual
+* divergencia parcial
+* arbitraje no resuelto completamente
+
+La continuidad operacional posee prioridad contextual crítica.
+
+La operación requiere:
+
+```text
+override contextual explícito
+
+---
+
+# 42. ESCENARIO CANÓNICO — REINTERPRETACIÓN OPERACIONAL POSTERIOR A NUEVA EVIDENCIA
+
+## ESCENARIO
+
+Después de múltiples operaciones ya materializadas:
+
+* ventas
+* reservas
+* reconciliaciones
+* arbitrajes
+* transformaciones
+* sincronizaciones parciales
+
+Aparece nueva evidencia operacional:
+
+* conteo físico tardío
+* sincronización diferida
+* evento omitido
+* causalidad incompleta
+* validación contextual nueva
+* divergencia previamente invisible
+
+La nueva evidencia altera parcialmente:
+
+```text
+la interpretación operacional previa
