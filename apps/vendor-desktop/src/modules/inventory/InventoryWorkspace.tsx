@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Archive } from "lucide-react";
 import { type InventorySubView } from "../../App";
-import { useInventoryStore, deriveDisponibilidad } from "../../domains/inventory/store";
+import { useInventoryStore, deriveDisponibilidad, deriveEstado } from "../../domains/inventory/store";
 import { inventoryService } from "../../domains/inventory/service";
-import type { TipoMovimiento } from "../../domains/inventory/types";
+import type { TipoMovimiento, EstadoDisponibilidad } from "../../domains/inventory/types";
 
 interface Props {
   subView: InventorySubView;
 }
 
 export function InventoryWorkspace({ subView }: Props) {
-  const { runtimeId, items, movimientos } = useInventoryStore();
+  const { runtimeId, items, movimientos, contexto } = useInventoryStore();
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C4844A]/30 bg-[#FDFCF9]">
@@ -25,9 +25,9 @@ export function InventoryWorkspace({ subView }: Props) {
 
       {/* SheetBody */}
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
-        {subView === "disponibilidad" && <ViewDisponibilidad items={items} movimientos={movimientos} />}
+        {subView === "disponibilidad" && <ViewDisponibilidad items={items} movimientos={movimientos} contexto={contexto} />}
         {subView === "movimientos"    && <ViewMovimientos    items={items} movimientos={movimientos} />}
-        {subView === "items"          && <ViewItems          items={items} />}
+        {subView === "items"          && <ViewItems          items={items} contexto={contexto} />}
         {subView === "reset"          && <ViewReset />}
       </div>
 
@@ -37,12 +37,20 @@ export function InventoryWorkspace({ subView }: Props) {
 
 // ── DISPONIBILIDAD ───────────────────────────────────────────────────────────
 
+const ESTADO_CFG: Record<EstadoDisponibilidad, { label: string; badge: string; qty: string }> = {
+  disponible: { label: "DISPONIBLE", badge: "bg-[#45b356]/12 text-[#45b356]",   qty: "text-[#45b356]"  },
+  bajo_stock: { label: "BAJO STOCK", badge: "bg-[#C4844A]/12 text-[#C4844A]",   qty: "text-[#C4844A]"  },
+  agotado:    { label: "AGOTADO",    badge: "bg-red-50 text-red-500",            qty: "text-red-400"    },
+};
+
 function ViewDisponibilidad({
   items,
   movimientos,
+  contexto,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
+  contexto: ReturnType<typeof useInventoryStore>["contexto"];
 }) {
   if (items.length === 0) {
     return (
@@ -56,18 +64,24 @@ function ViewDisponibilidad({
 
   return (
     <div className="flex flex-col gap-2">
-      <Label>Disponibilidad derivada — {items.length} ítem{items.length !== 1 ? "s" : ""} · {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""}</Label>
+      <Label>Disponibilidad contextual — {items.length} ítem{items.length !== 1 ? "s" : ""} · {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""}</Label>
       <div className="flex flex-col gap-1.5">
         {items.map(item => {
-          const qty = deriveDisponibilidad(movimientos, item.itemId);
+          const existencia = deriveDisponibilidad(movimientos, item.itemId);
+          const umbral     = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
+          const estado     = deriveEstado(existencia, umbral);
+          const cfg        = ESTADO_CFG[estado];
           return (
             <div key={item.itemId} className="flex items-center gap-3 rounded-xl border border-[#e9e4dc] bg-white px-4 py-2.5">
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
-                <p className="text-[10px] text-[#9ca3af]">{item.itemId} · {item.unidadBase}</p>
+                <p className="text-[10px] text-[#9ca3af]">{item.unidadBase}{umbral > 0 && ` · umbral ${umbral}`}</p>
               </div>
-              <span className={`tabular-nums text-[20px] font-bold leading-none ${qty < 0 ? "text-red-500" : qty === 0 ? "text-[#9ca3af]" : "text-[#45b356]"}`}>
-                {qty}
+              <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
+                {cfg.label}
+              </span>
+              <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>
+                {existencia}
               </span>
               <span className="text-[10px] text-[#b0bac8]">{item.unidadBase}</span>
             </div>
@@ -198,10 +212,17 @@ function ViewMovimientos({
 
 // ── ÍTEMS ────────────────────────────────────────────────────────────────────
 
-function ViewItems({ items }: { items: ReturnType<typeof useInventoryStore>["items"] }) {
-  const [nombre,      setNombre]      = useState("");
-  const [unidadBase,  setUnidadBase]  = useState("unidad");
-  const [error,       setError]       = useState("");
+function ViewItems({
+  items,
+  contexto,
+}: {
+  items: ReturnType<typeof useInventoryStore>["items"];
+  contexto: ReturnType<typeof useInventoryStore>["contexto"];
+}) {
+  const [nombre,     setNombre]     = useState("");
+  const [unidadBase, setUnidadBase] = useState("unidad");
+  const [umbral,     setUmbral]     = useState("");
+  const [error,      setError]      = useState("");
 
   function handleRegistrar() {
     const name = nombre.trim();
@@ -209,7 +230,10 @@ function ViewItems({ items }: { items: ReturnType<typeof useInventoryStore>["ite
     setError("");
     const itemId = `IT-${Date.now()}`;
     inventoryService.registrarItem({ itemId, nombre: name, unidadBase: unidadBase || "unidad" });
+    const u = parseFloat(umbral);
+    if (!isNaN(u) && u > 0) inventoryService.setUmbral(itemId, u);
     setNombre("");
+    setUmbral("");
   }
 
   return (
@@ -232,6 +256,14 @@ function ViewItems({ items }: { items: ReturnType<typeof useInventoryStore>["ite
             placeholder="unidad"
             className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           />
+          <input
+            type="number"
+            value={umbral}
+            onChange={e => setUmbral(e.target.value)}
+            placeholder="umbral"
+            title="Umbral mínimo de stock (opcional)"
+            className="w-20 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+          />
           <button
             onClick={handleRegistrar}
             className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95"
@@ -240,24 +272,68 @@ function ViewItems({ items }: { items: ReturnType<typeof useInventoryStore>["ite
           </button>
         </div>
         {error && <p className="text-[11px] text-red-500">{error}</p>}
+        <p className="text-[9.5px] text-[#b0bac8]">umbral: cantidad mínima antes de marcar BAJO STOCK · 0 = sin umbral</p>
       </div>
 
       {/* Lista */}
       {items.length > 0 ? (
         <div className="flex flex-col gap-1">
           <Label>{items.length} ítem{items.length !== 1 ? "s" : ""} registrado{items.length !== 1 ? "s" : ""}</Label>
-          {items.map(item => (
-            <div key={item.itemId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-4 py-2.5">
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
-                <p className="text-[10px] text-[#9ca3af] font-mono">{item.itemId} · {item.unidadBase}</p>
-              </div>
-            </div>
-          ))}
+          {items.map(item => {
+            const umbralMinimo = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
+            return <ItemRow key={item.itemId} item={item} umbralMinimo={umbralMinimo} />;
+          })}
         </div>
       ) : (
         <p className="text-center text-[11px] text-[#b0bac8] py-8">Sin ítems. Registra el primero arriba.</p>
       )}
+    </div>
+  );
+}
+
+function ItemRow({ item, umbralMinimo }: {
+  item: ReturnType<typeof useInventoryStore>["items"][number];
+  umbralMinimo: number;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [val,     setVal]     = useState(String(umbralMinimo > 0 ? umbralMinimo : ""));
+
+  function handleSave() {
+    const u = parseFloat(val);
+    inventoryService.setUmbral(item.itemId, isNaN(u) || u < 0 ? 0 : u);
+    setEditing(false);
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-4 py-2.5">
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
+        <p className="text-[10px] text-[#9ca3af] font-mono">{item.itemId} · {item.unidadBase}</p>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className="text-[10px] text-[#b0bac8]">umbral</span>
+        {editing ? (
+          <input
+            autoFocus
+            type="number"
+            value={val}
+            onChange={e => setVal(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={e => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") { setVal(String(umbralMinimo > 0 ? umbralMinimo : "")); setEditing(false); }
+            }}
+            className="w-14 rounded border border-[#C4844A]/40 px-1.5 py-0.5 text-[11px] tabular-nums text-center focus:outline-none"
+          />
+        ) : (
+          <button
+            onClick={() => { setVal(String(umbralMinimo > 0 ? umbralMinimo : "")); setEditing(true); }}
+            className="min-w-[28px] rounded border border-[#e9e4dc] px-2 py-0.5 text-[11px] tabular-nums text-[#6b7280] hover:border-[#C4844A]/40 transition"
+          >
+            {umbralMinimo > 0 ? umbralMinimo : "—"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -268,12 +344,14 @@ function ViewReset() {
   function resetDatos() {
     localStorage.removeItem("inv_v0_items");
     localStorage.removeItem("inv_v0_movimientos");
+    localStorage.removeItem("inv_v0_contexto");
     window.location.reload();
   }
 
   function resetTotal() {
     localStorage.removeItem("inv_v0_items");
     localStorage.removeItem("inv_v0_movimientos");
+    localStorage.removeItem("inv_v0_contexto");
     localStorage.removeItem("inv_v0_runtime_id");
     window.location.reload();
   }

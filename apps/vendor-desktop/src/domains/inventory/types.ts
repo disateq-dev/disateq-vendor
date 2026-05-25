@@ -17,3 +17,12 @@ export interface MovimientoOperacional {
   runtimeId: string;
   causa: string;
 }
+
+// 1.1 — Estado operacional derivado de existencia + contexto de umbral
+export type EstadoDisponibilidad = 'disponible' | 'bajo_stock' | 'agotado';
+
+// 1.2 — Contexto operacional por ítem (umbralMinimo=0 → sin umbral configurado)
+export interface ContextoItem {
+  itemId: string;
+  umbralMinimo: number;
+}

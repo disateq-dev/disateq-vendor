@@ -1,17 +1,20 @@
 import { create } from 'zustand';
-import type { ItemOperacional, MovimientoOperacional, TipoMovimiento } from './types';
+import type { ItemOperacional, MovimientoOperacional, TipoMovimiento, ContextoItem, EstadoDisponibilidad } from './types';
 import {
   loadItems, saveItems,
   loadMovimientos, saveMovimientos,
   loadOrCreateRuntimeId,
+  loadContexto, saveContexto,
 } from './persistence';
 
 interface InventoryState {
   runtimeId: string;
   items: ItemOperacional[];
   movimientos: MovimientoOperacional[]; // log inmutable — solo append
+  contexto: ContextoItem[];
   registrarItem: (item: ItemOperacional) => void;
   registrarMovimiento: (itemId: string, tipo: TipoMovimiento, cantidad: number, causa: string) => void;
+  setUmbral: (itemId: string, umbral: number) => void;
   reconstruir: () => void;
 }
 
@@ -19,6 +22,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   runtimeId:   loadOrCreateRuntimeId(),
   items:       loadItems(),
   movimientos: loadMovimientos(),
+  contexto:    loadContexto(),
 
   registrarItem(item) {
     const { items } = get();
@@ -44,10 +48,28 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     set({ movimientos: next });
   },
 
+  setUmbral(itemId, umbral) {
+    const { contexto } = get();
+    const exists = contexto.some(c => c.itemId === itemId);
+    const next = exists
+      ? contexto.map(c => c.itemId === itemId ? { ...c, umbralMinimo: umbral } : c)
+      : [...contexto, { itemId, umbralMinimo: umbral }];
+    saveContexto(next);
+    set({ contexto: next });
+  },
+
   reconstruir() {
-    set({ items: loadItems(), movimientos: loadMovimientos() });
+    set({ items: loadItems(), movimientos: loadMovimientos(), contexto: loadContexto() });
   },
 }));
+
+// 1.1 — Estado operacional derivado de existencia + umbral (CAPA 1)
+// umbral=0 significa sin umbral configurado → solo agotado/disponible
+export function deriveEstado(existencia: number, umbral: number): EstadoDisponibilidad {
+  if (existencia <= 0)      return 'agotado';
+  if (umbral > 0 && existencia <= umbral) return 'bajo_stock';
+  return 'disponible';
+}
 
 // 0.3 — Disponibilidad derivada desde el log de movimientos
 // Nunca un contador mutable: proyección pura sobre eventos (AP-01 evitado)

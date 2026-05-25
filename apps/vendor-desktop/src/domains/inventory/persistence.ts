@@ -1,4 +1,4 @@
-import type { ItemOperacional, MovimientoOperacional } from './types';
+import type { ItemOperacional, MovimientoOperacional, ContextoItem } from './types';
 
 // 0.5 — Persistencia local edge-first (localStorage)
 // Prefijo inv_v0_ para evitar colisión con otros módulos
@@ -7,6 +7,7 @@ const K = {
   items:      'inv_v0_items',
   movimientos:'inv_v0_movimientos',
   runtimeId:  'inv_v0_runtime_id',
+  contexto:   'inv_v0_contexto',
 } as const;
 
 function tryParse<T>(raw: string | null, fallback: T): T {
@@ -28,6 +29,14 @@ export function loadMovimientos(): MovimientoOperacional[] {
 
 export function saveMovimientos(movimientos: MovimientoOperacional[]): void {
   localStorage.setItem(K.movimientos, JSON.stringify(movimientos));
+}
+
+export function loadContexto(): ContextoItem[] {
+  return tryParse(localStorage.getItem(K.contexto), []);
+}
+
+export function saveContexto(contexto: ContextoItem[]): void {
+  localStorage.setItem(K.contexto, JSON.stringify(contexto));
 }
 
 // runtimeId persiste entre sesiones — identidad del runtime edge
