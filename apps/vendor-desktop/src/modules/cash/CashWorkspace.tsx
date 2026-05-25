@@ -1204,6 +1204,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       onKeyDown={e => {
                         if (e.key === "Enter" && contadoFondo !== "") {
                           e.preventDefault();
+                          e.stopPropagation();
                           const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
                           setClosingStage(2);
                         }
