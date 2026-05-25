@@ -522,3 +522,442 @@ Ninguno de los dos documentos define implementación técnica final.
 Ambos definen el marco semántico y operacional dentro del cual la implementación técnica debe encuadrarse.
 
 ---
+
+# 6. ESCENARIOS EVOLUTIVOS POR CAPA
+
+## PROPÓSITO
+
+Los escenarios evolutivos muestran situaciones operacionales concretas que justifican la activación de cada capa.
+
+No son escenarios de comportamiento esperado (eso es responsabilidad de `foundations.md`).
+
+Son escenarios de **decisión de crecimiento**: cuándo y por qué una capa inferior ya no es suficiente y se justifica activar la siguiente.
+
+---
+
+## ESTRUCTURA DE CADA ESCENARIO EVOLUTIVO
+
+Cada escenario responde:
+
+* **Situación:** qué ocurre en la operación real
+* **Límite de capa actual:** por qué la capa activa no puede resolverlo
+* **Capa que lo resuelve:** cuál es la transición necesaria
+* **Señal de activación:** qué evidencia operacional concreta indica que es momento de activar
+* **Riesgo de activación prematura:** qué pasa si se activa antes de que el problema sea real
+
+---
+
+## CAPA 0 → CAPA 1: DE DISPONIBILIDAD SIMPLE A CONTEXTO OPERACIONAL
+
+### ESC-EV-01 — EL MISMO ÍTEM EN DOS LUGARES
+
+**Situación:**
+
+El negocio tiene el mismo producto en bodega y en mostrador.
+
+La disponibilidad total es suficiente pero no toda es accesible desde el punto de venta activo.
+
+El operador vende desde mostrador y hay ruptura de disponibilidad local aunque en total el stock es positivo.
+
+**Límite de CAPA 0:**
+
+CAPA 0 solo conoce disponibilidad total del ítem.
+
+No puede distinguir qué porción está en qué ubicación operacional.
+
+El operador no puede saber si la disponibilidad está donde la necesita.
+
+**Capa que lo resuelve:**
+
+CAPA 1 — contexto operacional con disponibilidad por ubicación.
+
+**Señal de activación:**
+
+El negocio tiene más de un punto operacional con disponibilidad diferenciada y el operador necesita saber cuál tiene qué.
+
+**Riesgo de activación prematura:**
+
+Si el negocio opera en un solo punto, la contextualización por ubicación agrega complejidad sin valor.
+
+El operador gestiona mentalmente la ubicación sin necesitar que el sistema lo modele.
+
+---
+
+### ESC-EV-02 — LA RESERVA QUE NO SE VE
+
+**Situación:**
+
+Un cliente solicita apartar un producto antes de pagar.
+
+El operador separa físicamente el ítem pero el sistema sigue mostrando la disponibilidad como si estuviera disponible para cualquier venta.
+
+Otro operador vende el ítem apartado sin saber que estaba reservado.
+
+**Límite de CAPA 0:**
+
+CAPA 0 no modela estados de disponibilidad.
+
+No puede distinguir disponibilidad libre de disponibilidad comprometida pero no materializada.
+
+**Capa que lo resuelve:**
+
+CAPA 1 — estados de disponibilidad: libre, reservada, comprometida, bloqueada.
+
+**Señal de activación:**
+
+El negocio tiene flujos donde el compromiso ocurre antes de la materialización y esa brecha genera conflictos operacionales reales.
+
+**Riesgo de activación prematura:**
+
+Si el negocio no tiene flujos de reserva previos a la venta, el modelo de estados agrega complejidad de sincronización sin resolver ningún problema real.
+
+---
+
+### ESC-EV-03 — EL ÍTEM QUE TIENE TALLAS
+
+**Situación:**
+
+El negocio vende ropa o calzado.
+
+El mismo producto en talla S y talla L son disponibilidades diferentes.
+
+El sistema trata ambas como el mismo ítem y la disponibilidad se mezcla.
+
+**Límite de CAPA 0:**
+
+CAPA 0 solo tiene identidad mínima de ítem.
+
+No puede modelar variantes con disponibilidad independiente.
+
+**Capa que lo resuelve:**
+
+CAPA 1 — variantes de ítem con disponibilidad contextual por atributo.
+
+**Señal de activación:**
+
+El negocio vende ítems donde el atributo diferenciador (talla, color, presentación) genera disponibilidades independientes que el operador necesita consultar por separado.
+
+**Riesgo de activación prematura:**
+
+Si todos los ítems del negocio son genéricos sin variantes, el modelo de variantes agrega estructura de datos sin valor operacional.
+
+---
+
+## CAPA 1 → CAPA 2: DE CONTEXTO OPERACIONAL A PRESIÓN OPERACIONAL
+
+### ESC-EV-04 — EL CONTEO QUE LLEVA DÍAS SIN VALIDARSE
+
+**Situación:**
+
+El sistema muestra disponibilidad de un ítem importante.
+
+Pero el último conteo físico fue hace tres semanas.
+
+Hubo movimientos de ajuste no registrados en ese tiempo.
+
+El operador no sabe si puede confiar en lo que ve.
+
+**Límite de CAPA 1:**
+
+CAPA 1 muestra disponibilidad contextual pero no tiene concepto de confianza ni de degradación temporal de esa confianza.
+
+La disponibilidad se presenta como cierta aunque la evidencia que la sustenta sea antigua.
+
+**Capa que lo resuelve:**
+
+CAPA 2 — nivel de confianza operacional por ítem o por punto operacional.
+
+**Señal de activación:**
+
+El negocio tiene ítems críticos cuya disponibilidad no se valida con frecuencia suficiente y los operadores toman decisiones basadas en datos potencialmente desactualizados.
+
+**Riesgo de activación prematura:**
+
+Si el negocio valida físicamente con frecuencia suficiente y los movimientos se registran en tiempo real, la degradación de confianza no es un problema operacional presente.
+
+---
+
+### ESC-EV-05 — LA ESCASEZ QUE NADIE VE VENIR
+
+**Situación:**
+
+El negocio tiene disponibilidad de un ítem que se agotará en el turno actual según el ritmo de ventas.
+
+Hay múltiples operadores vendiendo simultáneamente.
+
+El sistema permite comprometer más disponibilidad de la que existe porque cada operador ve la disponibilidad total antes de que los demás materialicen sus ventas.
+
+**Límite de CAPA 1:**
+
+CAPA 1 puede mostrar reservas pero no señaliza activamente la presión de escasez ni arbitra cuando la disponibilidad se aproxima al límite.
+
+**Capa que lo resuelve:**
+
+CAPA 2 — señales de presión y arbitraje bajo escasez.
+
+**Señal de activación:**
+
+El negocio tiene ítems con alta rotación y múltiples puntos de venta o múltiples operadores donde la escasez simultánea genera compromisos incobrables.
+
+**Riesgo de activación prematura:**
+
+Si el negocio opera con un solo operador o tiene disponibilidad suficientemente holgada, el arbitraje bajo escasez no resuelve ningún problema real.
+
+---
+
+### ESC-EV-06 — EL PRODUCTO QUE VENCE ESTA SEMANA
+
+**Situación:**
+
+El negocio tiene disponibilidad de un producto perecedero con expiración próxima.
+
+El sistema lo muestra con la misma prioridad que disponibilidad con mayor vida útil.
+
+El producto vence sin ser utilizado aunque había demanda que podría haberlo consumido.
+
+**Límite de CAPA 1:**
+
+CAPA 1 puede registrar la fecha de expiración como atributo pero no genera señalización activa de presión ni afecta la prioridad operacional de la disponibilidad.
+
+**Capa que lo resuelve:**
+
+CAPA 2 — señalización de expiración próxima y reducción progresiva de confianza operacional.
+
+**Señal de activación:**
+
+El negocio tiene disponibilidad con expiración real que genera pérdida económica cuando no se prioriza su consumo antes de vencer.
+
+**Riesgo de activación prematura:**
+
+Si el negocio no maneja disponibilidad perecedera, la señalización de expiración agrega complejidad sin valor.
+
+---
+
+## CAPA 2 → CAPA 3: DE PRESIÓN OPERACIONAL A EDGE DISTRIBUIDO
+
+### ESC-EV-07 — DOS PUNTOS DE VENTA SIN INTERNET
+
+**Situación:**
+
+El negocio tiene dos puntos de venta en la misma ciudad.
+
+La conectividad es intermitente.
+
+Cuando el servicio se interrumpe, ambos puntos necesitan seguir vendiendo de forma autónoma.
+
+Al recuperar conectividad, los movimientos de ambos puntos deben reconciliarse sin generar disponibilidad fantasma ni pérdidas de registro.
+
+**Límite de CAPA 2:**
+
+CAPA 2 opera dentro de un runtime.
+
+No tiene mecanismo para manejar divergencia entre runtimes independientes ni para reconciliar eventos originados en runtimes distintos.
+
+**Capa que lo resuelve:**
+
+CAPA 3 — identidad de runtime, operación autónoma, reconciliación distribuida.
+
+**Señal de activación:**
+
+El negocio tiene múltiples runtimes operacionales con disponibilidad compartida que pueden divergir y necesitan reconciliarse sin perder continuidad operacional en ninguno.
+
+**Riesgo de activación prematura:**
+
+Si el negocio opera en un solo punto, la distribución agrega complejidad de reconciliación sin resolver ningún problema real.
+
+---
+
+### ESC-EV-08 — EL INVENTARIO QUE SE ACTUALIZA EN VIAJE
+
+**Situación:**
+
+El negocio tiene un vendedor que opera en campo con una tablet.
+
+El vendedor registra pedidos y salidas de disponibilidad sin conectividad durante horas.
+
+Al volver, los movimientos deben integrarse sin sobrescribir lo que ocurrió en el punto fijo durante ese tiempo.
+
+**Límite de CAPA 2:**
+
+CAPA 2 no tiene concepto de origen de evento por runtime ni de reconciliación progresiva entre orígenes distintos.
+
+**Capa que lo resuelve:**
+
+CAPA 3 — trazabilidad de origen de evento por runtime y reconciliación progresiva con causalidad preservada.
+
+**Señal de activación:**
+
+El negocio tiene operación desconectada real y frecuente con necesidad de integración posterior sin pérdida de eventos.
+
+**Riesgo de activación prematura:**
+
+Si el negocio siempre opera conectado o el volumen de operación desconectada es tan bajo que se gestiona manualmente, la distribución complica sin valor.
+
+---
+
+## CAPA 3 → CAPA 4: DE EDGE DISTRIBUIDO A TRANSFORMACIONES OPERACIONALES
+
+### ESC-EV-09 — EL POLLO QUE SE CONVIERTE EN PRESAS
+
+**Situación:**
+
+El negocio compra pollos enteros y los procesa para vender presas por separado.
+
+La disponibilidad de pollos enteros se reduce al transformarlos.
+
+La disponibilidad de presas aumenta como resultado de la transformación.
+
+La relación causal entre ambos debe ser trazable.
+
+**Límite de CAPA 3:**
+
+CAPA 3 puede registrar salidas y entradas pero no modela la relación causal entre insumo y derivado dentro de una misma operación de transformación.
+
+**Capa que lo resuelve:**
+
+CAPA 4 — transformaciones con insumo, derivado y causalidad trazable.
+
+**Señal de activación:**
+
+El negocio realiza transformaciones donde la trazabilidad insumo-derivado es operacionalmente relevante para el control de costos, la gestión de rendimiento o la detección de mermas.
+
+**Riesgo de activación prematura:**
+
+Si el negocio compra y vende ítems sin transformación, el modelo de transformaciones agrega estructura sin resolver ningún problema operacional presente.
+
+---
+
+### ESC-EV-10 — EL PAQUETE QUE SE DESCOMPONE
+
+**Situación:**
+
+El negocio compra cajas de 12 unidades y puede vender unidades sueltas o cajas completas.
+
+La descomposición de una caja genera disponibilidad de 12 unidades y reduce la disponibilidad de cajas en uno.
+
+La relación debe ser trazable y reversible si no se vendió ninguna unidad suelta.
+
+**Límite de CAPA 3:**
+
+CAPA 3 no modela la relación entre contenedor y contenido como transformación con reversión posible.
+
+**Capa que lo resuelve:**
+
+CAPA 4 — transformaciones reversibles con estado intermedio y causalidad preservada en reversión.
+
+**Señal de activación:**
+
+El negocio gestiona ítems con presentaciones múltiples donde la descomposición es frecuente y la trazabilidad del rendimiento por descomposición tiene valor operacional.
+
+**Riesgo de activación prematura:**
+
+Si el negocio vende solo en una presentación o la gestión de presentaciones múltiples se hace fuera del sistema, la complejidad de transformaciones no resuelve el problema operacional.
+
+---
+
+### ESC-EV-11 — LA MERMA QUE SIEMPRE EXISTE
+
+**Situación:**
+
+El negocio procesa alimentos con merma esperada.
+
+De 10 kg de carne comprada, 8.5 kg quedan disponibles después del procesado.
+
+La diferencia no es error ni pérdida inesperada: es merma operacional normal.
+
+El sistema debe distinguir merma esperada de pérdida real.
+
+**Límite de CAPA 3:**
+
+CAPA 3 registra salidas y entradas pero no tiene concepto de rendimiento esperado versus real en una operación de transformación.
+
+**Capa que lo resuelve:**
+
+CAPA 4 — rendimiento real versus esperado por tipo de transformación, con registro de merma operacional como evento de primera clase.
+
+**Señal de activación:**
+
+El negocio tiene transformaciones con merma esperada significativa y necesita distinguir operacionalmente entre merma dentro del rango esperado y pérdida real que requiere investigación.
+
+**Riesgo de activación prematura:**
+
+Si el negocio no transforma disponibilidad o la merma no es relevante operacionalmente, el modelo de rendimiento agrega complejidad sin valor.
+
+---
+
+## CAPA 4 → CAPA 5: DE TRANSFORMACIONES A COORDINACIÓN AVANZADA
+
+### ESC-EV-12 — LA COMPRA QUE REQUIERE APROBACIÓN
+
+**Situación:**
+
+El negocio creció y las compras por encima de cierto monto requieren aprobación del dueño antes de materializarse.
+
+El operador genera la orden, el dueño la aprueba desde su dispositivo, y solo entonces la disponibilidad se incrementa.
+
+**Límite de CAPA 4:**
+
+CAPA 4 no modela flujos de coordinación multi-actor con estados intermedios y responsabilidades diferenciadas por rol.
+
+**Capa que lo resuelve:**
+
+CAPA 5 — flujos de coordinación con múltiples actores, estados y reglas de aprobación.
+
+**Señal de activación:**
+
+El negocio tiene procesos de coordinación formal entre actores con roles distintos donde el sistema debe gestionar el estado del flujo y no solo el resultado final.
+
+**Riesgo de activación prematura:**
+
+Si el negocio coordina internamente sin necesidad de que el sistema gestione el flujo, la coordinación avanzada agrega burocracia digital sin valor operacional.
+
+---
+
+### ESC-EV-13 — EL PROVEEDOR QUE NECESITA REPOSICIÓN AUTOMÁTICA
+
+**Situación:**
+
+El negocio tiene ítems de alta rotación con proveedor fijo.
+
+Cuando la disponibilidad cae bajo un umbral, se necesita generar una alerta o pedido automático al proveedor.
+
+**Límite de CAPA 4:**
+
+CAPA 4 puede registrar niveles de disponibilidad pero no tiene mecanismo para disparar flujos de coordinación externos basados en umbrales de disponibilidad.
+
+**Capa que lo resuelve:**
+
+CAPA 5 — coordinación con actores externos, reglas configurables sobre umbrales de disponibilidad.
+
+**Señal de activación:**
+
+El negocio tiene volumen y frecuencia de reposición suficientes como para que la automatización de la coordinación con proveedores tenga valor real frente al costo de la complejidad.
+
+**Riesgo de activación prematura:**
+
+Si el negocio gestiona reposición manualmente sin fricción, automatizar la coordinación agrega complejidad sin resolver un dolor operacional real.
+
+---
+
+# 7. RELACIÓN ENTRE ESCENARIOS EVOLUTIVOS Y ESCENARIOS DE FOUNDATIONS
+
+Los escenarios evolutivos (Sección 6) responden:
+
+```text
+¿Cuándo y por qué activar esta capa?
+```
+
+Los escenarios canónicos de `foundations.md` responden:
+
+```text
+¿Cómo debe comportarse el sistema dentro de esta capa?
+```
+
+Son complementarios y no se solapan.
+
+Un escenario evolutivo describe la señal de transición entre capas.
+
+Un escenario canónico describe el comportamiento esperado una vez que la capa está activa.
+
+---
+
