@@ -75,7 +75,7 @@ function ViewDisponibilidad({
             <div key={item.itemId} className="flex items-center gap-3 rounded-xl border border-[#e9e4dc] bg-white px-4 py-2.5">
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
-                <p className="text-[10px] text-[#9ca3af]">{item.unidadBase}{umbral > 0 && ` · umbral ${umbral}`}</p>
+                <p className="text-[10px] text-[#9ca3af]">{item.unidadBase}{umbral > 0 && ` · mín. ${umbral}`}</p>
               </div>
               <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
                 {cfg.label}
@@ -260,8 +260,8 @@ function ViewItems({
             type="number"
             value={umbral}
             onChange={e => setUmbral(e.target.value)}
-            placeholder="umbral"
-            title="Umbral mínimo de stock (opcional)"
+            placeholder="stock mínimo"
+            title="Stock mínimo antes de alertar (opcional)"
             className="w-20 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
           />
           <button
@@ -272,7 +272,7 @@ function ViewItems({
           </button>
         </div>
         {error && <p className="text-[11px] text-red-500">{error}</p>}
-        <p className="text-[9.5px] text-[#b0bac8]">umbral: cantidad mínima antes de marcar BAJO STOCK · 0 = sin umbral</p>
+        <p className="text-[9.5px] text-[#b0bac8]">stock mínimo: cantidad antes de marcar BAJO STOCK · 0 = sin alerta</p>
       </div>
 
       {/* Lista */}
@@ -311,7 +311,7 @@ function ItemRow({ item, umbralMinimo }: {
         <p className="text-[10px] text-[#9ca3af] font-mono">{item.itemId} · {item.unidadBase}</p>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-[10px] text-[#b0bac8]">umbral</span>
+        <span className="text-[10px] text-[#b0bac8]">stock mínimo</span>
         {editing ? (
           <input
             autoFocus
