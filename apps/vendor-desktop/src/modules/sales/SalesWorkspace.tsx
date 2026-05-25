@@ -219,14 +219,11 @@ export function SalesWorkspace() {
         e.preventDefault();
         openCobro();
       }
-      if (e.key === "F9" && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        if (lines.length > 0) openCobro();
-      }
+
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [enterSearch, cobroOpen, lines.length, openCobro]);
+  }, [enterSearch, cobroOpen, openCobro]);
 
   // pos:focusSearch — restore focus after note save (blocked when cobro is open)
   useEffect(() => {
