@@ -204,6 +204,7 @@ function ViewMovimientos({
   const [error,       setError]       = useState("");
   const [busqueda,    setBusqueda]    = useState("");
   const [filtroTipo,  setFiltroTipo]  = useState<TipoMovimiento | "todos">("todos");
+  const [copiado,     setCopiado]     = useState(false);
 
   function handleRegistrar() {
     const n = parseFloat(cantidad);
@@ -222,6 +223,21 @@ function ViewMovimientos({
   }
 
   const hayFiltro = busqueda.trim() !== "" || filtroTipo !== "todos";
+
+  function exportarCSV() {
+    const header = "Fecha,Ítem,Tipo,Cantidad,Causa";
+    const filas = [...movimientos].reverse().map(m => {
+      const nombre = items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId;
+      const fecha  = new Date(m.timestamp).toLocaleString("es-PE");
+      const signo  = m.tipo === "salida" ? -Math.abs(m.cantidad) : m.cantidad;
+      return [fecha, `"${nombre}"`, m.tipo, signo, `"${m.causa}"`].join(",");
+    });
+    const csv = [header, ...filas].join("\n");
+    navigator.clipboard.writeText(csv).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    });
+  }
 
   const filtrados = [...movimientos].reverse().filter(m => {
     if (filtroTipo !== "todos" && m.tipo !== filtroTipo) return false;
@@ -323,6 +339,18 @@ function ViewMovimientos({
                 ✕
               </button>
             )}
+            <div className="ml-auto">
+              <button
+                onClick={exportarCSV}
+                className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
+                  copiado
+                    ? "bg-[#45b356] text-white"
+                    : "border border-[#e9e4dc] text-[#6b7280] hover:border-[#C4844A]/40 hover:text-[#C4844A]"
+                }`}
+              >
+                {copiado ? "¡Copiado!" : "CSV"}
+              </button>
+            </div>
           </div>
 
           {filtrados.length > 0 ? (
