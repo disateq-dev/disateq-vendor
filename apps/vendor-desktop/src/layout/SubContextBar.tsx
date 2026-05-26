@@ -1,5 +1,6 @@
 import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
+import { useInventoryStore, deriveDisponibilidad, deriveEstado } from "../domains/inventory/store";
 import { type ActiveModule, type CashSubView, type InventorySubView } from "../App";
 
 interface SubContextBarProps {
@@ -38,6 +39,13 @@ const SHELL: Record<ActiveModule, string> = {
 
 export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, inventorySubView, onInventorySubViewChange }: SubContextBarProps) {
   const { cashSession, sessionStats } = usePOS();
+  const { items: todosItems, movimientos, contexto } = useInventoryStore();
+  const alertasInventario = todosItems.filter(i => !i.eliminado).filter(i => {
+    const existencia = deriveDisponibilidad(movimientos, i.itemId);
+    const umbral     = contexto.find(c => c.itemId === i.itemId)?.umbralMinimo ?? 0;
+    const estado     = deriveEstado(existencia, umbral);
+    return estado === "bajo_stock" || estado === "agotado";
+  }).length;
   const sessionActive = cashSession.isOpen;
   const { efe, yap, tar, mix } = sessionStats.byMethod;
 
@@ -140,17 +148,25 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
           <div className="flex items-center gap-1">
             {INVENTORY_TABS.map(({ key, label }) => {
               const isActive = activeModule === "inventory" && inventorySubView === key;
+              const showBadge = key === "disponibilidad" && alertasInventario > 0;
               return (
                 <button
                   key={key}
                   onClick={() => { if (activeModule === "inventory") onInventorySubViewChange(key); }}
-                  className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                  className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
                     isActive
                       ? "bg-[#C4844A] text-white shadow-sm"
                       : "text-[#7a4f2d]/70 hover:bg-[#C4844A]/10 hover:text-[#5c3318]"
                   }`}
                 >
                   {label}
+                  {showBadge && (
+                    <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
+                      isActive ? "bg-white/25 text-white" : "bg-red-500 text-white"
+                    }`}>
+                      {alertasInventario}
+                    </span>
+                  )}
                 </button>
               );
             })}
