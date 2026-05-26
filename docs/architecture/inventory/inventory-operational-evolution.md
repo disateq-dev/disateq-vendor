@@ -36,6 +36,7 @@ Complementa:
 | [9. Tensiones arquitectónicas entre capas](#9-tensiones-arquitectónicas-entre-capas) | T-01 a T-07 + tensiones cruzadas, criterios de navegación | Reconocer y navegar conflictos entre principios de capas distintas |
 | [10. Glosario operacional del dominio](#10-glosario-operacional-del-dominio) | 26 términos con definición operacional propia | Resolver ambigüedad semántica en escenarios, decisiones y diseño |
 | [11. Semántica operacional CAPA 1 — consolidación mínima](#11-semántica-operacional-capa-1--consolidación-mínima) | Qué significa DISPONIBLE · qué altera existencia · límites · anti-patrones · tensiones de CAPA 1 implementada | Referencia semántica precisa antes de agregar cualquier funcionalidad sobre CAPA 1 |
+| [12. Exploración semántica — separación operacional mínima](#12-exploración-semántica--separación-operacional-mínima) | Triángulo semántico · modelos posibles · invariantes · tensiones · qué NO es separar | Pre-decisión: explorar el espacio semántico antes de cualquier implementación |
 
 ---
 
@@ -2585,5 +2586,850 @@ Antes de agregar cualquier funcionalidad sobre CAPA 1 mínima, verificar:
 5. ¿La nueva funcionalidad es reversible sin pérdida del log de movimientos?
 
 Si alguna respuesta es negativa o incierta, consolidar la capa actual antes de expandir.
+
+---
+
+# 12. EXPLORACIÓN SEMÁNTICA — SEPARACIÓN OPERACIONAL MÍNIMA
+
+## PROPÓSITO
+
+Esta sección explora el espacio semántico de una posible capacidad operacional:
+
+```text
+"existencia temporalmente no disponible
+para operación inmediata"
+```
+
+No es un diseño de implementación.
+
+No es una decisión de activación de capa.
+
+Es una exploración rigurosa del territorio semántico antes de tomar cualquier decisión técnica.
+
+El objetivo es entender qué significa "separar" operacionalmente, qué modelos son posibles, qué invariantes debe respetar cualquier modelo, y qué tensiones activas existen.
+
+---
+
+## PUNTO DE PARTIDA — LA PRÁCTICA REAL
+
+En el comercio minorista peruano donde opera DISATEQ, "separar un producto" es una práctica cotidiana:
+
+```text
+"Sepárame ese par, vengo mañana a pagarlo."
+"Apártame tres cajas para el pedido del lunes."
+"Guárdame eso, ahora traigo la plata."
+```
+
+Esta práctica tiene características operacionales precisas que el modelo debe entender antes de representarla:
+
+* El ítem sigue físicamente presente — no se mueve, no se entrega
+* No hay pago todavía — no hay documento ni comprobante
+* Tiene un horizonte temporal informal — hoy, mañana, esta semana
+* Es reversible sin consecuencia — si el cliente no vuelve, el ítem se pone disponible nuevamente
+* No requiere identificar al cliente en el sistema — es una promesa social, no un contrato
+* El operador gestiona mentalmente quién separó qué — el sistema puede o no saber esto
+
+Esta práctica NO es:
+
+* Una venta diferida con depósito
+* Una orden de compra
+* Una reserva con contrato
+* Un layaway plan
+* Un flujo con múltiples actores o aprobaciones
+
+---
+
+## EL TRIÁNGULO SEMÁNTICO
+
+CAPA 0 y CAPA 1 mínima establecen una distinción de dos dimensiones:
+
+```text
+existencia física
+≠ disponibilidad operacional
+```
+
+La existencia física es lo que hay en el local.
+
+La disponibilidad operacional es lo que el sistema proyecta sobre el log de movimientos.
+
+La separación introduce una tercera dimensión:
+
+```text
+existencia física
+≠ disponibilidad operacional (proyectada)
+≠ disponible para compromiso inmediato
+```
+
+El ítem existe físicamente.
+
+La disponibilidad operacional lo incluye (no se generó movimiento de salida).
+
+Pero operacionalmente no puede comprometerse con otra persona ahora mismo.
+
+```text
+Triángulo semántico completo:
+
+existencia física        → lo que hay en el depósito o mostrador
+disponibilidad operacional → proyección sobre log de movimientos
+disponible para compromiso → disponibilidad neta de separaciones activas
+```
+
+En CAPA 0 y CAPA 1 mínima, las tres dimensiones son equivalentes.
+
+La separación operacional las diferencia.
+
+---
+
+## QUÉ ES SEPARAR — DEFINICIÓN SEMÁNTICA OPERACIONAL
+
+En el contexto DISATEQ, "separar" significa:
+
+```text
+Registrar la intención de que una cantidad determinada
+de un ítem queda temporalmente fuera del flujo
+de compromiso inmediato, por razón causal explícita,
+con horizonte temporal finito.
+```
+
+Los elementos semánticos mínimos de una separación son:
+
+* **Cantidad** — cuántas unidades se separan
+* **Ítem** — qué ítem se afecta
+* **Causa** — por qué razón (cliente espera, pedido pendiente, uso interno)
+* **Timestamp** — cuándo ocurrió la separación
+* **Horizonte temporal** — hasta cuándo es válida (puede ser implícito o explícito)
+
+Lo que una separación NO requiere semánticamente:
+
+* Identidad del cliente que la generó
+* Precio o condición comercial
+* Confirmación de otro actor
+* Documento o comprobante
+* Aprobación previa
+
+---
+
+## QUÉ NO ES SEPARAR — LÍMITES SEMÁNTICOS EXPLÍCITOS
+
+### No es una venta
+
+Una venta reduce la existencia física y genera movimiento de salida definitivo.
+
+Una separación no reduce existencia.
+
+El ítem sigue ahí.
+
+### No es una reserva en el sentido ERP
+
+Las reservas enterprise tienen:
+
+* actor identificado con perfil
+* condiciones comerciales
+* estados formales (ACTIVE, CONFIRMED, CANCELLED)
+* integraciones con facturación
+* ownership formal
+
+Una separación operacional mínima no necesita ninguno de esto.
+
+### No es un bloqueo
+
+Un bloqueo impide operaciones sobre el ítem hasta que alguien lo desbloquee.
+
+Una separación es una señal informativa.
+
+El operador puede "vender sobre una separación" si tiene razón suficiente.
+
+La separación no es una guardia de sistema; es contexto operacional.
+
+### No es un movimiento físico
+
+Separar no genera un movimiento de salida.
+
+El ítem no salió.
+
+Esta distinción es crítica para el modelo: si se modela la separación como un movimiento de salida, se miente sobre la existencia física.
+
+### No es permanente
+
+Una separación tiene un horizonte temporal finito, aunque sea informal.
+
+Una separación sin expiración se convierte en disponibilidad permanentemente bloqueada sin explicación.
+
+Eso es un anti-patrón.
+
+---
+
+## LOS TRES PLANOS AFECTADOS
+
+### ¿Afecta la existencia física?
+
+No.
+
+La separación no mueve el ítem físicamente.
+
+El ítem sigue en el depósito o mostrador.
+
+`existencia física = sin cambio`
+
+### ¿Afecta la disponibilidad operacional?
+
+Depende del modelo semántico que se elija.
+
+Esta es la pregunta central de la exploración.
+
+En la nomenclatura del dominio: la disponibilidad operacional proyectada por `deriveDisponibilidad()` podría o no incluir el efecto de las separaciones.
+
+### ¿Afecta deriveEstado()?
+
+Si la separación afecta la disponibilidad para compromiso, puede cambiar el estado operacional (`DISPONIBLE` / `BAJO_STOCK` / `AGOTADO`) sin que haya ocurrido ningún movimiento físico.
+
+Esto sería análogo a cómo cambiar `umbralMinimo` cambia el estado sin movimiento.
+
+Pero tiene mayor impacto semántico: el cambio de umbral es un ajuste de contexto configuracional; una separación es un evento operacional activo con tiempo y causa.
+
+---
+
+## MODELOS SEMÁNTICOS POSIBLES
+
+Se identifican cuatro modelos semánticos posibles.
+
+No se recomienda ninguno en esta sección.
+
+El análisis expone sus propiedades semánticas para informar la decisión posterior.
+
+---
+
+### MODELO A — SEPARACIÓN COMO MOVIMIENTO ESPECIAL
+
+**Descripción:**
+
+Se agregan dos nuevos tipos de movimiento al log:
+
+* `separacion` — reduce disponibilidad (como una salida ficticia)
+* `liberacion` — restaura disponibilidad (como una entrada compensatoria)
+
+La materialización (el cliente paga) convierte la `separacion` en una `salida` real, sin registrar nueva `liberacion`.
+
+**Propiedades semánticas:**
+
+| Propiedad | Valor |
+|---|---|
+| Append-only | Sí — ambos son eventos inmutables |
+| Trazabilidad | Completa — el log registra cuándo y por qué |
+| Reconstrucción | Exacta — `deriveDisponibilidad()` proyecta todo |
+| Afecta existencia | No físicamente, pero sí la proyección del log |
+| Degradación offline | Funciona — los movimientos son locales |
+
+**Tensión semántica crítica:**
+
+`deriveDisponibilidad()` produce un número que ya no representa existencia física proyectada.
+
+Representa existencia física proyectada **menos separaciones activas**.
+
+El contrato semántico de CAPA 0 se altera: la misma función que antes decía "cuánto hay" ahora dice "cuánto hay disponible para venta".
+
+Esto viola la distinción entre existencia y disponibilidad para compromiso del triángulo semántico.
+
+**Riesgo de AP-01 aplicado:**
+
+Si `deriveDisponibilidad()` incluye separaciones, un conteo físico no coincidirá con la proyección aunque no haya diferencia real.
+
+El operador verá disponibilidad = 5 aunque haya 8 unidades físicas, de las cuales 3 están separadas.
+
+Reconciliar físico contra proyección se vuelve ambiguo.
+
+---
+
+### MODELO B — SEPARACIÓN COMO CAPA DE CONTEXTO
+
+**Descripción:**
+
+Las separaciones viven en una estructura paralela al log de movimientos, similar a `ContextoItem`.
+
+```text
+separaciones: SeparacionContexto[]
+```
+
+Un `deriveSeparado(separaciones, itemId)` calcula la cantidad actualmente separada.
+
+La disponibilidad para compromiso se obtiene como:
+
+```text
+disponibleParaComprometer = deriveDisponibilidad() - deriveSeparado()
+```
+
+`deriveDisponibilidad()` no cambia.
+
+**Propiedades semánticas:**
+
+| Propiedad | Valor |
+|---|---|
+| Append-only del log | Preservado — los movimientos no cambian |
+| Trazabilidad | Parcial — las separaciones tienen su propio registro |
+| Reconstrucción | Parcial — la disponibilidad para compromiso en el pasado no es exactamente reconstruible si las separaciones expiraron |
+| Afecta existencia | No |
+| Degradación offline | Funciona si el contexto está en localStorage |
+
+**Triángulo semántico:**
+
+Este modelo preserva el triángulo de forma más limpia:
+
+```text
+existencia física          → deriveDisponibilidad()
+disponibilidad operacional → deriveDisponibilidad() (sin cambio)
+disponible para compromiso → deriveDisponibilidad() - deriveSeparado()
+```
+
+Cada dimensión tiene su propia función.
+
+**Tensión semántica:**
+
+El log de movimientos y el contexto de separaciones son estructuras con ciclos de vida distintos.
+
+Los movimientos son eternos.
+
+Las separaciones tienen expiración.
+
+La reconstrucción exacta del estado pasado requiere tanto el log como el historial de separaciones.
+
+Si el historial de separaciones no es permanente (se limpia al expirar), la reconstrucción queda incompleta.
+
+---
+
+### MODELO C — SEPARACIÓN COMO ESTADO OBSERVABLE SIN EFECTO EN DERIVACIÓN
+
+**Descripción:**
+
+Las separaciones se registran como notas operacionales visibles al operador pero no afectan ninguna proyección.
+
+`deriveDisponibilidad()` permanece inalterado.
+
+El operador ve "hay 3 unidades separadas" pero el sistema muestra disponibilidad = 8 sin descontar.
+
+La separación es informativa, no operativa.
+
+**Propiedades semánticas:**
+
+| Propiedad | Valor |
+|---|---|
+| Append-only | No aplica — no hay movimientos |
+| Trazabilidad | Mínima — hay nota pero no efecto |
+| Reconstrucción | Total para existencia, nula para compromisos |
+| Afecta existencia | No |
+| Degradación offline | Máxima — no cambia nada |
+
+**Tensión semántica:**
+
+Este modelo no resuelve el problema operacional original.
+
+Si la separación no afecta lo que otro operador ve como disponible, dos operadores pueden comprometer la misma disponibilidad.
+
+El dolor operacional de ESC-EV-02 no se resuelve.
+
+**Cuándo tiene valor:**
+
+Solo cuando el negocio tiene un único operador y la separación es puramente para su propia memoria.
+
+En ese caso, el sistema es una agenda, no un mecanismo de coordinación.
+
+---
+
+### MODELO D — PROYECCIÓN COMPUESTA
+
+**Descripción:**
+
+Se introduce una segunda función de proyección sobre `deriveDisponibilidad()`:
+
+```text
+deriveDisponibilidad(movimientos, itemId)
+  → existencia proyectada (CAPA 0, inmutable)
+
+deriveDisponibleParaOperar(movimientos, separaciones, itemId)
+  → existencia proyectada − separaciones activas no expiradas
+```
+
+`deriveEstado()` puede recibir ambas proyecciones o solo la segunda según el contexto de la vista.
+
+Las separaciones se almacenan como estructura con trazabilidad propia:
+
+* timestamp de creación
+* causa
+* cantidad
+* expiración
+* estado: `activa` | `materializada` | `liberada`
+
+Los cambios de estado de separación generan eventos en su propio log de separaciones (append-only dentro de la capa de separaciones).
+
+**Propiedades semánticas:**
+
+| Propiedad | Valor |
+|---|---|
+| Append-only de movimientos | Preservado absolutamente |
+| Trazabilidad | Alta — las separaciones tienen su propio log de estados |
+| Reconstrucción | Alta — tanto el log de movimientos como el de separaciones son append-only |
+| Afecta existencia | No — `deriveDisponibilidad()` no cambia |
+| Degradación offline | Funciona — ambas estructuras son locales |
+
+**Triángulo semántico:**
+
+```text
+existencia física          → deriveDisponibilidad()          (CAPA 0)
+disponibilidad operacional → deriveDisponibilidad()          (sin cambio)
+disponible para compromiso → deriveDisponibleParaOperar()    (CAPA 1 expandida)
+```
+
+`deriveEstado()` usa `deriveDisponibleParaOperar()` en contextos donde la separación es relevante.
+
+**Tensión semántica:**
+
+Introduce dos números de disponibilidad para el mismo ítem.
+
+El operador necesita entender la diferencia entre ambos.
+
+Si la UI no comunica claramente cuál está viendo, puede generar confusión operacional.
+
+La complejidad de la capa de separaciones debe estar oculta para el operador, expuesta solo como resultado.
+
+---
+
+## TRAZABILIDAD Y CAUSALIDAD
+
+Cualquier modelo que decida implementarse debe responder:
+
+**¿Qué causalidad mínima tiene una separación?**
+
+```text
+itemId     → qué ítem
+cantidad   → cuánto
+causa      → por qué (cliente espera, pedido pendiente, uso interno)
+timestamp  → cuándo se registró
+expiración → hasta cuándo es válida
+```
+
+**¿Qué causalidad tiene la liberación?**
+
+```text
+referencia a la separación original
+razón de liberación: expirada | cancelada por operador | materializada como venta
+timestamp de liberación
+```
+
+**¿Qué causalidad tiene la materialización?**
+
+Una separación materializada debería generar un movimiento de salida estándar (CAPA 0) con referencia causal a la separación que la originó.
+
+La causalidad es: separación → venta → salida.
+
+El movimiento de salida es el evento definitivo.
+
+La separación fue el estado previo.
+
+---
+
+## RECONSTRUCCIÓN
+
+### Lo que siempre debe ser reconstruible
+
+La existencia física proyectada en cualquier momento pasado:
+
+```text
+deriveDisponibilidad(movimientos filtrados hasta T, itemId)
+```
+
+Esto está garantizado por el log append-only de CAPA 0.
+
+Ningún modelo de separación puede comprometer esta capacidad.
+
+### Lo que la separación afecta sobre reconstrucción
+
+Si las separaciones afectan la disponibilidad para compromiso (Modelos B y D), la reconstrucción del estado pasado requiere también el historial de separaciones en ese momento.
+
+Si ese historial no es permanente, la reconstrucción quedará incompleta.
+
+**Invariante de reconstrucción para cualquier modelo:**
+
+Si se activa separación operacional, las separaciones y sus cambios de estado deben ser persistentes por el mismo período que los movimientos que afectan.
+
+No se puede tener movimientos eternos y separaciones temporales si la reconstrucción del estado requiere ambos.
+
+---
+
+## DEGRADACIÓN OFFLINE
+
+Una separación operacional mínima debe poder:
+
+* Registrarse sin conectividad
+* Expirarse sin conectividad (auto-liberación local)
+* Consultarse sin conectividad
+* Materializarse sin conectividad
+
+Cualquier modelo que requiera sincronización para gestionar separaciones rompe la invariante edge-first.
+
+Las separaciones son contexto operacional local, no coordinación distribuida.
+
+En un runtime offline, las separaciones de otros runtimes no son visibles.
+
+Esto es una consecuencia normal del modelo edge-first, no un defecto.
+
+---
+
+## REVERSIBILIDAD
+
+Una separación debe ser reversible sin destruir la historia.
+
+La reversión no borra la separación del registro.
+
+Genera un evento de liberación con causalidad explícita:
+
+```text
+"esta separación fue liberada porque el cliente no volvió"
+"esta separación fue liberada por decisión del operador"
+"esta separación fue materializada como venta"
+```
+
+La historia completa queda: separación → liberación → movimiento de salida (si corresponde).
+
+---
+
+## EXPIRACIÓN
+
+### Semántica de expiración
+
+Una separación que no se materializa ni se libera explícitamente en su horizonte temporal pierde relevancia operacional.
+
+La expiración no es un error: es el ciclo de vida normal de la separación.
+
+La mayoría de las separaciones terminarán por expiración, no por materialización.
+
+### Quién genera la liberación por expiración
+
+Opciones semánticas:
+
+**Expiración activa (automática):** el sistema genera un evento de liberación cuando el tiempo expira, incluso sin intervención del operador.
+
+Problema: si el operador extiende verbalmente la separación sin actualizar el sistema, la expiración automática libera algo que aún está comprometido.
+
+**Expiración pasiva:** la separación se considera inactiva después de su horizonte pero no genera evento hasta que el operador o el sistema la confirma explícitamente.
+
+El sistema la marca como expirada pero la cantidad no vuelve al disponible hasta confirmación.
+
+**Expiración contextual:** la separación expira en el próximo momento de inicio de operación (apertura de turno, nuevo día), no por temporizador exacto.
+
+Esta es más cercana a la práctica real: "si no vino hoy, mañana está disponible".
+
+### Expiración sin registro de horizonte
+
+Una separación sin horizonte temporal definido es semánticamente incompleta.
+
+Toda separación debe tener una expiración, aunque sea el "cierre del día actual".
+
+El modelo no debe permitir separaciones permanentes.
+
+---
+
+## CONFLICTOS OPERACIONALES POSIBLES
+
+### Conflicto 1: Venta sobre separación activa
+
+Un operador registra una venta de un ítem que tiene separaciones activas.
+
+Si la venta reduce la disponibilidad por debajo de lo separado, ¿qué ocurre?
+
+**Semántica correcta:**
+
+La separación es una señal, no un bloqueo.
+
+El operador puede vender sobre la separación.
+
+El sistema señaliza que hay una separación activa afectada.
+
+El operador decide con esa información.
+
+La separación no cancelada queda como separación sobre disponibilidad insuficiente — esto es una tensión operacional visible, no una corrupción.
+
+### Conflicto 2: Separación sobre disponibilidad agotada
+
+Se intenta registrar una separación cuando la existencia proyectada es cero o insuficiente.
+
+**Semántica correcta:**
+
+El sistema puede señalizar que se está separando sobre disponibilidad insuficiente.
+
+Pero no bloquea. El operador puede estar esperando una entrada próxima.
+
+La separación "sobre cero" es un compromiso anticipado, semánticamente válido en el contexto operacional peruano.
+
+### Conflicto 3: Dos separaciones sobre el mismo ítem
+
+Si el total separado supera la disponibilidad disponible para compromiso, existe sobrecompromiso.
+
+**Semántica correcta:**
+
+El sistema registra ambas separaciones con trazabilidad.
+
+Señaliza que el total separado supera la disponibilidad.
+
+No cancela ninguna separación automáticamente.
+
+El operador gestiona el conflicto con la información del sistema.
+
+### Conflicto 4: Separación sobre ítem con BAJO_STOCK o AGOTADO
+
+Una separación puede ocurrir sobre un ítem cuyo estado derivado es `BAJO_STOCK` o `AGOTADO`.
+
+Esto no es inválido semánticamente.
+
+El estado de `deriveEstado()` es la proyección de existencia versus umbral.
+
+La separación opera sobre disponibilidad para compromiso, no sobre umbral.
+
+Ambas dimensiones coexisten.
+
+---
+
+## RELACIÓN CON deriveEstado()
+
+### Situación actual (CAPA 1 mínima)
+
+```text
+deriveEstado(existencia, umbralMinimo) → DISPONIBLE | BAJO_STOCK | AGOTADO
+```
+
+donde `existencia = deriveDisponibilidad(movimientos, itemId)`
+
+### Con separación en Modelo A
+
+```text
+existencia = deriveDisponibilidad(movimientos incluyendo separacion/liberacion)
+deriveEstado(existencia, umbralMinimo) → estado
+```
+
+`deriveEstado()` no necesita cambiar.
+
+Pero `deriveDisponibilidad()` ya no representa existencia física proyectada.
+
+### Con separación en Modelos B y D
+
+```text
+existencia = deriveDisponibilidad(movimientos, itemId)   // sin cambio
+disponibleParaComprometer = existencia − deriveSeparado(separaciones, itemId)
+deriveEstado(existencia, umbralMinimo)                   // estado de existencia
+deriveEstadoParaComprometer(disponibleParaComprometer, umbralMinimo)  // estado de compromiso
+```
+
+Existen dos proyecciones de estado para el mismo ítem.
+
+La UI debe elegir cuál mostrar y cuándo.
+
+### Con separación en Modelo C
+
+`deriveEstado()` no cambia en absoluto.
+
+Las separaciones son observaciones sin efecto en el modelo de estado.
+
+---
+
+## TENSIONES SEMÁNTICAS IDENTIFICADAS
+
+### T-SEP-01 — TRAZABILIDAD DE LOG vs LIMPIEZA DEL MODELO DE EXISTENCIA
+
+**Tensión:**
+
+Modelo A preserva la trazabilidad completa en el log pero contamina la semántica de `deriveDisponibilidad()`.
+
+Modelos B y D preservan la semántica de existencia pero distribuyen la trazabilidad entre dos estructuras.
+
+**Criterio de navegación:**
+
+La invariante raíz es que `deriveDisponibilidad()` represente fielmente la existencia física proyectada.
+
+Un modelo que altera esa semántica compromete la reconciliación física (conteo físico vs proyección).
+
+---
+
+### T-SEP-02 — SEÑAL vs MECANISMO DE COORDINACIÓN
+
+**Tensión:**
+
+Una separación que solo informa (Modelo C) no resuelve el conflicto operacional real.
+
+Una separación que afecta disponibilidad (Modelos A, B, D) es un mecanismo de coordinación entre operadores, no solo una señal.
+
+**Consecuencia semántica:**
+
+En un sistema de operador único, Modelo C puede ser suficiente.
+
+En un sistema con múltiples operadores sobre el mismo runtime (posible en bodega con dos personas atendiendo), Modelos A, B o D son necesarios.
+
+La pregunta operacional relevante: ¿hay situaciones donde dos operadores del mismo runtime necesiten coordinarse sobre la misma disponibilidad?
+
+---
+
+### T-SEP-03 — EXPIRACIÓN AUTOMÁTICA vs GESTIÓN HUMANA
+
+**Tensión:**
+
+La expiración automática es más limpia para el sistema pero puede liberar compromisos que el operador extendió verbalmente sin actualizar el sistema.
+
+La gestión humana es más segura operacionalmente pero requiere intervención activa del operador para limpiar separaciones vencidas.
+
+**Criterio de navegación:**
+
+El modelo debe soportar ambas:
+
+* Señalización automática al expirar (el sistema marca la separación como vencida)
+* Confirmación humana para liberar (el operador confirma la liberación o la extiende)
+
+La expiración automática sin confirmación corre el riesgo de liberar compromisos vigentes.
+
+---
+
+### T-SEP-04 — SIMPLICIDAD OPERACIONAL vs COMPLETITUD SEMÁNTICA
+
+**Tensión:**
+
+Un modelo completamente trazable y reconstruible (Modelo D) requiere que el operador entienda la diferencia entre disponibilidad bruta y disponibilidad neta.
+
+Un modelo simple (Modelo C) no le exige nada pero no resuelve el problema real.
+
+**Criterio de navegación:**
+
+La complejidad del modelo puede estar oculta en la implementación siempre que la superficie operacional sea simple.
+
+El operador no necesita entender proyecciones dobles.
+
+El operador necesita ver: "este ítem tiene 3 unidades separadas activas" y actuar con esa información.
+
+La complejidad semántica es interna; la experiencia del operador debe ser directa.
+
+---
+
+## INVARIANTES QUE TODO MODELO DEBE RESPETAR
+
+```text
+I-SEP-01  deriveDisponibilidad(movimientos, itemId)
+          NO puede cambiar su semántica.
+          Debe representar siempre la existencia física proyectada
+          desde el log de movimientos.
+          Ningún modelo de separación puede alterar esta función.
+
+I-SEP-02  CAPA 0 debe operar íntegramente si el modelo de separación
+          no está disponible.
+          Las separaciones son contexto superior.
+          Su ausencia no puede romper la consulta de existencia.
+
+I-SEP-03  Toda separación tiene causalidad mínima:
+          itemId + cantidad + causa + timestamp + expiración.
+          No existen separaciones anónimas ni atemporales.
+
+I-SEP-04  Toda separación es reversible.
+          La liberación genera evento con causalidad explícita.
+          No existe liberación silenciosa.
+
+I-SEP-05  Las separaciones son señales operacionales, no bloqueos.
+          El sistema nunca impide una operación porque existe
+          una separación activa.
+          El operador siempre puede operar con visibilidad de la tensión.
+
+I-SEP-06  Las separaciones no son permanentes.
+          Toda separación tiene un horizonte temporal finito.
+          Un modelo que permita separaciones sin expiración crea
+          disponibilidad permanentemente bloqueada sin mecanismo de liberación.
+
+I-SEP-07  La materialización de una separación genera
+          un movimiento de salida estándar (CAPA 0)
+          con referencia causal a la separación original.
+          La separación no reemplaza al movimiento; lo precede.
+
+I-SEP-08  El modelo de separación debe funcionar edge-first.
+          Las separaciones se registran, consultan y expiran
+          sin requerir conectividad.
+```
+
+---
+
+## QUÉ NO DEBE SER "SEPARAR"
+
+Para evitar que la separación operacional mínima derive hacia complejidad no justificada, se define explícitamente lo que no debe ser:
+
+**No es un sistema de clientes.**
+
+La separación no requiere registrar quién la hizo.
+
+Introducir identidad de cliente para gestionar separaciones transforma INVENTARIOS en un módulo de CRM.
+
+**No es un sistema de órdenes.**
+
+La separación no tiene ítems múltiples, no tiene total, no tiene número de orden.
+
+Si se necesita agrupar separaciones bajo un "pedido", eso es CAPA 5 (coordinación avanzada).
+
+**No es un flujo de aprobación.**
+
+No hay confirmación de otro actor para que la separación sea válida.
+
+No hay estado `pendiente_aprobación`.
+
+**No es un compromiso comercial formal.**
+
+No hay precio comprometido, no hay descuento aplicado, no hay documentación tributaria.
+
+Una separación no genera comprobante ni línea en ningún documento.
+
+**No es una reserva con estados complejos.**
+
+La separación tiene dos estados operacionales: activa (vigente) y no activa (materializada o liberada).
+
+No hay PREPARING, CONFIRMED, RECONCILING ni estados de coordinación multi-actor.
+
+**No es permanente.**
+
+Toda separación expira. Sin excepción.
+
+---
+
+## CRITERIOS DE VALIDACIÓN ANTES DE DECIDIR IMPLEMENTAR
+
+Antes de seleccionar un modelo semántico e implementarlo, el negocio y el equipo técnico deben poder responder afirmativamente a:
+
+**Sobre el dolor operacional (Fase 1 del protocolo de decisión):**
+
+1. ¿Existe un caso concreto y recurrente donde no tener separaciones generó un conflicto operacional real (dos operadores comprometieron el mismo ítem)?
+2. ¿El operador actualmente gestiona las separaciones fuera del sistema (cuaderno, memoria, marcas físicas) y eso genera fricción o errores documentables?
+
+**Sobre el modelo semántico elegido (antes de implementar):**
+
+3. ¿El modelo preserva `deriveDisponibilidad()` sin alterar su semántica? (I-SEP-01)
+4. ¿CAPA 0 funciona íntegramente si la capa de separaciones no está disponible? (I-SEP-02)
+5. ¿Toda separación tiene causalidad mínima incluyendo expiración? (I-SEP-03)
+6. ¿Las separaciones son señales y no bloqueos? (I-SEP-05)
+7. ¿El modelo funciona offline sin requerir sincronización? (I-SEP-08)
+8. ¿La materialización de una separación genera un movimiento de salida CAPA 0? (I-SEP-07)
+
+**Sobre la superficie operacional:**
+
+9. ¿El operador puede gestionar separaciones sin entender el modelo interno?
+10. ¿La UI puede comunicar el estado de separación sin añadir complejidad cognitiva al flujo principal de consulta de disponibilidad?
+
+Si alguna de las primeras dos preguntas (dolor operacional) no puede responderse afirmativamente, no es momento de activar esta capacidad.
+
+Si alguna de las preguntas 3–8 (modelo semántico) no puede responderse afirmativamente, el modelo elegido viola invariantes y debe revisarse antes de implementar.
+
+---
+
+## ESTADO DE LA EXPLORACIÓN
+
+```text
+EXPLORACIÓN SEMÁNTICA: completada
+DECISIÓN DE ACTIVACIÓN: pendiente (requiere validación operacional real)
+MODELO SELECCIONADO: ninguno — pendiente de decisión
+IMPLEMENTACIÓN: NO INICIADA
+```
+
+La exploración semántica está completa.
+
+La activación requiere confirmar el dolor operacional real según el Protocolo de Decisión de Capas (Sección 8).
+
+Si el dolor se confirma, la selección del modelo semántico debe hacerse contra los invariantes I-SEP-01 a I-SEP-08 antes de escribir una sola línea de código.
 
 ---
