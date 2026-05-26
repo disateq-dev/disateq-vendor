@@ -349,12 +349,38 @@ function ViewHistorial() {
 }
 
 function IngresoRow({ compra }: { compra: CompraOperacional }) {
-  const [open, setOpen] = useState(false);
-  const cfg = ESTADO_VISIBLE[compra.estado];
+  const [open,     setOpen]     = useState(false);
+  const [deltaMap, setDeltaMap] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const cfg           = ESTADO_VISIBLE[compra.estado];
   const totalProductos = compra.lineas.reduce((s, l) => s + l.cantidad, 0);
+  const puedeRecibir  = compra.estado !== "recibida";
+
+  function handleRecibirParcial() {
+    const recepciones = compra.lineas
+      .map(l => ({
+        lineaId: l.lineaId,
+        itemId:  l.itemId,
+        cantidad: Math.max(0, parseFloat(deltaMap[l.lineaId] ?? "") || 0),
+      }))
+      .filter(r => r.cantidad > 0);
+
+    if (recepciones.length === 0) {
+      setFeedback({ msg: "Ingresa al menos una cantidad para registrar.", ok: false });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+    purchasesService.recibirParcial(compra.purchaseId, recepciones);
+    setDeltaMap({});
+    setFeedback({ msg: "Llegada registrada. Stock actualizado.", ok: true });
+    setTimeout(() => setFeedback(null), 3000);
+  }
 
   return (
     <div className="rounded-xl border border-[#e5e7eb] bg-white overflow-hidden">
+
+      {/* Fila resumen — siempre visible */}
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[#f9fafb] transition"
@@ -375,49 +401,94 @@ function IngresoRow({ compra }: { compra: CompraOperacional }) {
         <span className={`shrink-0 text-[11px] text-[#9ca3af] transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
       </button>
 
+      {/* Panel expandido */}
       {open && (
-        <div className="border-t border-[#f3f4f6] px-4 py-3">
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="text-left text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af]">
-                <th className="pb-1.5 pr-3">Producto</th>
-                <th className="pb-1.5 pr-3 text-right">Cantidad</th>
-                <th className="pb-1.5 pr-3">Unidad</th>
-                <th className="pb-1.5 text-right">Precio unit.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {compra.lineas.map(l => (
-                <tr key={l.lineaId} className="border-t border-[#f3f4f6]">
-                  <td className="py-1 pr-3 font-medium text-[#374151]">{l.nombreItem}</td>
-                  <td className="py-1 pr-3 text-right tabular-nums text-[#121416]">{l.cantidad}</td>
-                  <td className="py-1 pr-3 text-[#6b7280]">{l.unidadBase}</td>
-                  <td className="py-1 text-right tabular-nums text-[#6b7280]">
-                    {l.costoUnitario != null ? `S/ ${l.costoUnitario.toFixed(2)}` : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="border-t border-[#f3f4f6] px-4 py-3 space-y-3">
 
+          {/* Columnas */}
+          <div className={`grid gap-2 px-1 ${puedeRecibir ? "grid-cols-[1fr_52px_56px_52px_76px]" : "grid-cols-[1fr_52px_52px_52px_80px]"}`}>
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af]">Producto</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af] text-right">Pedido</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af] text-right">Recibido</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af] text-right">Pendiente</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-[#9ca3af] text-right">
+              {puedeRecibir ? "¿Cuánto llegó?" : "Precio unit."}
+            </span>
+          </div>
+
+          {/* Líneas */}
+          <div className="space-y-1">
+            {compra.lineas.map(l => {
+              const recibido  = l.cantidadRecibida ?? 0;
+              const pendiente = Math.max(0, l.cantidad - recibido);
+              const completa  = pendiente === 0;
+              return (
+                <div
+                  key={l.lineaId}
+                  className={`grid gap-2 rounded-lg px-3 py-2 ${
+                    puedeRecibir ? "grid-cols-[1fr_52px_56px_52px_76px]" : "grid-cols-[1fr_52px_52px_52px_80px]"
+                  } ${completa ? "bg-[#EBF4FA]" : "bg-[#fafafa]"}`}
+                >
+                  <span className="text-[12px] font-medium text-[#374151] truncate">{l.nombreItem}</span>
+                  <span className="text-[11px] text-right tabular-nums text-[#6b7280]">{l.cantidad}</span>
+                  <span className={`text-[11px] text-right tabular-nums font-semibold ${recibido > 0 ? "text-[#2A7CA8]" : "text-[#d1d5db]"}`}>
+                    {recibido > 0 ? recibido : "—"}
+                  </span>
+                  <span className={`text-[11px] text-right tabular-nums font-semibold ${completa ? "text-[#2A7CA8]" : "text-amber-600"}`}>
+                    {completa ? "✓" : pendiente}
+                  </span>
+                  {puedeRecibir ? (
+                    <input
+                      type="number"
+                      min={0}
+                      max={pendiente}
+                      step={1}
+                      value={deltaMap[l.lineaId] ?? ""}
+                      onChange={e => setDeltaMap(prev => ({ ...prev, [l.lineaId]: e.target.value }))}
+                      disabled={completa}
+                      placeholder={completa ? "—" : `máx ${pendiente}`}
+                      className="w-full rounded border border-[#d1d5db] bg-white px-2 py-0.5 text-[11px] text-right tabular-nums text-[#121416] disabled:opacity-30 disabled:bg-transparent disabled:border-transparent focus:outline-none focus:ring-1 focus:ring-[#6670A8]/40"
+                    />
+                  ) : (
+                    <span className="text-[11px] text-right tabular-nums text-[#6b7280]">
+                      {l.costoUnitario != null ? `S/ ${l.costoUnitario.toFixed(2)}` : "—"}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Anotación */}
           {compra.observacion && (
-            <p className="mt-2 text-[11px] text-[#6b7280]">Nota: {compra.observacion}</p>
+            <p className="text-[11px] text-[#6b7280]">Nota: {compra.observacion}</p>
           )}
 
-          {compra.estado === "registrada" && (
-            <div className="mt-3 flex items-center gap-3">
-              <button
-                onClick={() => purchasesService.recibirLineas(compra.purchaseId, compra.lineas)}
-                className="flex items-center gap-1.5 rounded-lg bg-[#6670A8] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5560a0] transition"
-              >
-                <PackageCheck size={12} strokeWidth={2.5} />
-                Confirmar llegada — actualizar stock
-              </button>
-              <span className="text-[10px] text-[#9ca3af]">Actualiza el inventario con los productos de este ingreso.</span>
+          {/* Acción recepción */}
+          {puedeRecibir && (
+            <div className="flex items-center gap-3 pt-1">
+              {feedback ? (
+                <span className={`text-[11px] font-semibold ${feedback.ok ? "text-[#6670A8]" : "text-red-600"}`}>
+                  {feedback.msg}
+                </span>
+              ) : (
+                <>
+                  <button
+                    onClick={handleRecibirParcial}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#6670A8] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5560a0] transition"
+                  >
+                    <PackageCheck size={12} strokeWidth={2.5} />
+                    Registrar lo que llegó
+                  </button>
+                  <span className="text-[10px] text-[#9ca3af]">
+                    Ingresa las cantidades que llegaron ahora y confirma.
+                  </span>
+                </>
+              )}
             </div>
           )}
 
-          <p className="mt-3 font-mono text-[9px] text-[#e5e7eb]">{compra.purchaseId}</p>
+          <p className="font-mono text-[9px] text-[#e5e7eb]">{compra.purchaseId}</p>
         </div>
       )}
     </div>

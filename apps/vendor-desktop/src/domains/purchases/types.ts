@@ -13,7 +13,8 @@ export interface LineaCompra {
   nombreItem: string;   // snapshot — preserva historia si el ítem se da de baja
   unidadBase: string;   // snapshot
   cantidad: number;
-  costoUnitario?: number; // opcional — sin IGV, sin tributación aquí (CAPA 0)
+  costoUnitario?: number;    // opcional — sin IGV, sin tributación aquí (CAPA 0)
+  cantidadRecibida?: number; // acumulado recibido — undefined = sin recepción registrada
 }
 
 // Hecho operacional de abastecimiento (purchases-domain-foundations.md §"Hecho operacional")

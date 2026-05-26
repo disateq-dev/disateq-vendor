@@ -7,6 +7,7 @@ interface PurchasesState {
   compras: CompraOperacional[];
   registrarCompra: (compra: CompraOperacional) => void;
   actualizarEstado: (purchaseId: string, estado: EstadoCompra) => void;
+  actualizarRecepcionLinea: (purchaseId: string, lineaId: string, deltaRecibida: number) => void;
 }
 
 export const usePurchasesStore = create<PurchasesState>((set, get) => ({
@@ -23,6 +24,23 @@ export const usePurchasesStore = create<PurchasesState>((set, get) => ({
     const next = get().compras.map(c =>
       c.purchaseId === purchaseId ? { ...c, estado } : c
     );
+    saveCompras(next);
+    set({ compras: next });
+  },
+
+  actualizarRecepcionLinea(purchaseId, lineaId, deltaRecibida) {
+    const next = get().compras.map(c => {
+      if (c.purchaseId !== purchaseId) return c;
+      const lineas = c.lineas.map(l =>
+        l.lineaId === lineaId
+          ? { ...l, cantidadRecibida: (l.cantidadRecibida ?? 0) + deltaRecibida }
+          : l
+      );
+      const todasCompletas = lineas.every(l => (l.cantidadRecibida ?? 0) >= l.cantidad);
+      const algunaRecibida = lineas.some(l => (l.cantidadRecibida ?? 0) > 0);
+      const estado: EstadoCompra = todasCompletas ? 'recibida' : algunaRecibida ? 'recibida_parcial' : 'registrada';
+      return { ...c, lineas, estado };
+    });
     saveCompras(next);
     set({ compras: next });
   },

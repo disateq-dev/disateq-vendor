@@ -24,12 +24,29 @@ export const purchasesService = {
   },
 
   // Registrar entradas en INVENTARIOS — causalidad explícita "compra:XXXX"
+  // Solo registra el delta pendiente (cantidad - cantidadRecibida) para evitar doble entrada
   recibirLineas(purchaseId: string, lineas: LineaCompra[]): void {
     const causal = `compra:${purchaseId.slice(0, 8)}`;
     for (const linea of lineas) {
-      inventoryService.registrarEntrada(linea.itemId, linea.cantidad, causal);
+      const delta = linea.cantidad - (linea.cantidadRecibida ?? 0);
+      if (delta > 0) {
+        inventoryService.registrarEntrada(linea.itemId, delta, causal);
+        store().actualizarRecepcionLinea(purchaseId, linea.lineaId, delta);
+      }
     }
-    store().actualizarEstado(purchaseId, 'recibida');
+  },
+
+  // Recepción parcial incremental — registra solo las cantidades ingresadas ahora
+  recibirParcial(
+    purchaseId: string,
+    recepciones: Array<{ lineaId: string; itemId: string; cantidad: number }>,
+  ): void {
+    const causal = `compra:${purchaseId.slice(0, 8)}`;
+    for (const r of recepciones) {
+      if (r.cantidad <= 0) continue;
+      inventoryService.registrarEntrada(r.itemId, r.cantidad, causal);
+      store().actualizarRecepcionLinea(purchaseId, r.lineaId, r.cantidad);
+    }
   },
 
   actualizarEstado(purchaseId: string, estado: EstadoCompra): void {
