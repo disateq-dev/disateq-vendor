@@ -223,6 +223,7 @@ function ViewItems({
   const [unidadBase, setUnidadBase] = useState("unidad");
   const [umbral,     setUmbral]     = useState("");
   const [error,      setError]      = useState("");
+  const [busqueda,   setBusqueda]   = useState("");
 
   function handleRegistrar() {
     const name = nombre.trim();
@@ -278,11 +279,39 @@ function ViewItems({
       {/* Lista */}
       {items.length > 0 ? (
         <div className="flex flex-col gap-1">
-          <Label>{items.length} ítem{items.length !== 1 ? "s" : ""} registrado{items.length !== 1 ? "s" : ""}</Label>
-          {items.map(item => {
-            const umbralMinimo = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
-            return <ItemRow key={item.itemId} item={item} umbralMinimo={umbralMinimo} />;
-          })}
+          <div className="flex items-center gap-2">
+            <input
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              placeholder="buscar ítem…"
+              className="flex-1 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            />
+            {busqueda && (
+              <button
+                onClick={() => setBusqueda("")}
+                className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {(() => {
+            const filtrados = busqueda.trim()
+              ? items.filter(i => i.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+              : items;
+            if (filtrados.length === 0) {
+              return <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin resultados para "{busqueda}".</p>;
+            }
+            return (
+              <>
+                <Label>{filtrados.length} de {items.length} ítem{items.length !== 1 ? "s" : ""}</Label>
+                {filtrados.map(item => {
+                  const umbralMinimo = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
+                  return <ItemRow key={item.itemId} item={item} umbralMinimo={umbralMinimo} />;
+                })}
+              </>
+            );
+          })()}
         </div>
       ) : (
         <p className="text-center text-[11px] text-[#b0bac8] py-8">Sin ítems. Registra el primero arriba.</p>
