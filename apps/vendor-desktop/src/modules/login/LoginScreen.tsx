@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Shield, LogIn, Eye, EyeOff, HelpCircle, Lock, CheckCircle2 } from "lucide-react";
+import { Shield, LogIn, HelpCircle, Lock, CheckCircle2 } from "lucide-react";
 import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../../context/POSContext";
@@ -42,7 +42,6 @@ export function LoginScreen() {
   const [step,       setStep]       = useState<LoginStep>("alias");
   const [selectedId, setSelectedId] = useState(""); // sin selección por defecto
   const [pin,        setPin]        = useState("");
-  const [showPin,    setShowPin]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
   const [now,        setNow]        = useState(new Date());
 
@@ -93,7 +92,8 @@ export function LoginScreen() {
   const pcCanSave =
     !!selectedId &&
     !!pcMotivo &&
-    pcAuthCode.trim().length > 0 &&
+    /[a-zA-Z]/.test(pcAuthCode) &&
+    /[0-9]/.test(pcAuthCode) &&
     pcPinNuevo.length >= 4 &&
     pcPinConfirm.length >= 4;
 
@@ -211,7 +211,7 @@ export function LoginScreen() {
   return (
     <div className="flex h-screen" style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.18s ease" }}>
 
-      {/* ══ SHEET IZQUIERDA — 40% ══ */}
+      {/* ══ SHEET IZQUIERDA — 45% ══ */}
       <div className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8" style={{ borderRight: "1px solid #edf2f8" }}>
         <div className="px-5 pb-2 flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "90%", height: "auto", display: "block" }} />
@@ -228,7 +228,7 @@ export function LoginScreen() {
           <Shield size={22} className="shrink-0 text-[#45b356]" />
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#45b356] leading-none">Acceso seguro</p>
-            <p className="text-[10px] text-[#a0aec0] mt-1 leading-none">Conexión protegida y cifrada</p>
+            <p className="text-[10px] text-[#a0aec0] mt-1 leading-none">Acceso local · sin conexión de red</p>
           </div>
         </div>
         <div className="[flex-grow:3]" />
@@ -262,8 +262,8 @@ export function LoginScreen() {
         </div>
       </div>
 
-      {/* ══ SHEET DERECHA — 60% ══ */}
-      <div className="flex flex-1 flex-col bg-white px-4 pt-8 pb-3">
+      {/* ══ SHEET DERECHA — 55% ══ */}
+      <div className="flex flex-1 flex-col bg-white px-5 pt-8 pb-3">
 
         <div className="w-full flex flex-col flex-1">
 
@@ -303,6 +303,11 @@ export function LoginScreen() {
                 </svg>
               </div>
             </div>
+            {activeOps.length === 0 && (
+              <p className="mt-1.5 text-[10px] font-semibold text-amber-600">
+                Sin operadores activos — configure operadores en GESTIÓN TURNO
+              </p>
+            )}
           </div>
 
           {/* ══ VISTA: KEYPAD ════════════════════════════════════════ */}
@@ -314,7 +319,7 @@ export function LoginScreen() {
                   <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
                   <input
                     ref={pinInputRef}
-                    type={showPin ? "text" : "password"}
+                    type="password"
                     inputMode="numeric"
                     autoComplete="off"
                     value={pin}
@@ -330,15 +335,8 @@ export function LoginScreen() {
                     onFocus={() => setStep("pin")}
                     placeholder="Ingrese PIN de 4 a 6 números"
                     maxLength={6}
-                    className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-11 py-2.5 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
+                    className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                   />
-                  <button
-                    type="button" tabIndex={-1}
-                    onClick={() => setShowPin(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b8c4d4] hover:text-[#6b7a99] transition"
-                  >
-                    {showPin ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
                 </div>
                 {error && (
                   <p className="absolute left-0 top-full mt-1 text-[10px] font-semibold text-red-500">{error}</p>

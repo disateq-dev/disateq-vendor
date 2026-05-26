@@ -436,7 +436,7 @@ export function CobroPanel() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-3">
 
             {/* AFECTACIÓN TRIBUTARIA */}
             <div className="flex items-center gap-2">
@@ -629,7 +629,7 @@ export function CobroPanel() {
       ) : (
 
         /* ── CLIENT FORM ── */
-        <div className="flex-1 overflow-y-auto flex flex-col px-5 pt-4 pb-2 gap-3">
+        <div className="flex-1 overflow-y-auto flex flex-col px-4 pt-3 pb-3 gap-3">
 
           <p className="shrink-0 text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">
             {docType === "factura" ? "Datos de facturación" :
