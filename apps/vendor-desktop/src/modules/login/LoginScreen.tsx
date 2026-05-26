@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Shield, LogIn, HelpCircle, Lock, CheckCircle2 } from "lucide-react";
+import { Shield, LogIn, HelpCircle, Lock, CheckCircle2, X } from "lucide-react";
 import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../../context/POSContext";
@@ -82,7 +82,7 @@ export function LoginScreen() {
 
   // Auto-volver tras éxito
   useEffect(() => {
-    if (pcSuccess) { const t = setTimeout(() => switchToKeypad(), 2200); return () => clearTimeout(t); }
+    if (pcSuccess) { const t = setTimeout(() => switchToKeypad(), 3500); return () => clearTimeout(t); }
   }, [pcSuccess]);
 
   const selected = activeOps.find(o => o.id === selectedId) ?? null;
@@ -213,8 +213,8 @@ export function LoginScreen() {
 
       {/* ══ SHEET IZQUIERDA — 45% ══ */}
       <div className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8 pb-5 px-5" style={{ borderRight: "1px solid #edf2f8" }}>
-        <div className="pb-2 flex justify-center">
-          <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "90%", height: "auto", display: "block" }} />
+        <div className="flex justify-center">
+          <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
         <div className="[flex-grow:5]" />
         {/* Acceso Operativo */}
@@ -263,7 +263,7 @@ export function LoginScreen() {
       </div>
 
       {/* ══ SHEET DERECHA — 55% ══ */}
-      <div className="flex flex-1 flex-col bg-white px-5 pt-8 pb-3">
+      <div className="flex flex-1 flex-col bg-white px-5 pt-8 pb-5">
 
         <div className="w-full flex flex-col flex-1">
 
@@ -488,20 +488,21 @@ export function LoginScreen() {
         </div>
 
         {/* Acciones inferiores */}
-        <div className="mt-auto flex items-center justify-between pt-3">
-          {view === "pin-change" && !pcSuccess ? (
+        <div className="mt-auto flex items-start justify-between pt-3">
+          {view === "keypad" ? (
+            <button
+              onClick={() => void invoke("app_exit")}
+              className="flex items-center gap-1.5 rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[#b8c4d4] hover:border-red-200 hover:bg-red-50 hover:text-[#dc2626] transition active:scale-95">
+              <X size={12} strokeWidth={2.5} />
+              Cancelar
+            </button>
+          ) : !pcSuccess ? (
             <button
               onClick={switchToKeypad}
               className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-[#2154d8] hover:text-[#1a44b8] transition">
               <span className="text-[12px] leading-none">←</span> Volver al LOGIN
             </button>
-          ) : (
-            <button
-              onClick={() => void invoke("app_exit")}
-              className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b8c4d4] hover:text-[#dc2626] transition">
-              Cancelar
-            </button>
-          )}
+          ) : null}
           {view === "keypad" && (
             <div className="flex flex-col items-end gap-1">
               <button onClick={switchToPinChange}
