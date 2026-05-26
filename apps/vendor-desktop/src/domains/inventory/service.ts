@@ -1,5 +1,12 @@
-import { useInventoryStore, deriveDisponibilidad, deriveEstado } from './store';
-import type { ItemOperacional } from './types';
+import {
+  useInventoryStore,
+  deriveDisponibilidad,
+  deriveEstado,
+  deriveReservado,
+  deriveDisponibleParaOperar,
+  deriveDisponibilidadEn,
+} from './store';
+import type { ItemOperacional, Reserva } from './types';
 
 // Boundary de servicio — módulos usan inventoryService, no el store directamente
 
@@ -55,5 +62,64 @@ export const inventoryService = {
   diagnostico(): { runtimeId: string; items: number; movimientos: number } {
     const { runtimeId, items, movimientos } = store();
     return { runtimeId, items: items.length, movimientos: movimientos.length };
+  },
+
+  // ── 1.3 — RESERVAS OPERACIONALES ─────────────────────────────────────────
+
+  // Reserva: señal contextual, NO movimiento físico. deriveDisponibilidad() no cambia.
+  reservar(itemId: string, cantidad: number, causa: string, expiracion?: number): string {
+    return store().crearReserva(itemId, cantidad, causa, expiracion);
+  },
+
+  liberarReserva(reservaId: string, motivo: string): void {
+    store().liberarReserva(reservaId, motivo);
+  },
+
+  // Materializar: convierte reserva en salida CAPA 0 (I-SEP-07)
+  materializarReserva(reservaId: string): void {
+    store().materializarReserva(reservaId);
+  },
+
+  // Proyección: disponible para comprometer = existencia - reservado activo
+  disponibleParaOperar(itemId: string): number {
+    const { movimientos, reservas } = store();
+    return deriveDisponibleParaOperar(movimientos, reservas, itemId);
+  },
+
+  reservadoPor(itemId: string): number {
+    return deriveReservado(store().reservas, itemId);
+  },
+
+  reservasActivasPor(itemId: string): Reserva[] {
+    return store().reservas.filter(r => r.itemId === itemId && r.estado === 'activa');
+  },
+
+  todasLasReservas(): Reserva[] {
+    return store().reservas;
+  },
+
+  // ── RECONCILIACIÓN OPERACIONAL ────────────────────────────────────────────
+
+  // Conteo físico → ajuste automático con causalidad explícita
+  // No sobrescribe historia. El log permanece inmutable.
+  // Genera movimiento de ajuste (delta firmado) si hay diferencia.
+  reconciliar(
+    itemId: string,
+    conteoFisico: number,
+    causa: string,
+  ): { existenciaAntes: number; conteoFisico: number; delta: number; movimientoGenerado: boolean } {
+    const existenciaAntes = deriveDisponibilidad(store().movimientos, itemId);
+    const delta = conteoFisico - existenciaAntes;
+    if (delta !== 0) {
+      store().registrarMovimiento(itemId, 'ajuste', delta, causa);
+    }
+    return { existenciaAntes, conteoFisico, delta, movimientoGenerado: delta !== 0 };
+  },
+
+  // ── TEMPORALIDAD MÍNIMA ───────────────────────────────────────────────────
+
+  // Reconstrucción simple desde log hasta un timestamp dado
+  disponibilidadEn(itemId: string, hasta: number): number {
+    return deriveDisponibilidadEn(store().movimientos, itemId, hasta);
   },
 };

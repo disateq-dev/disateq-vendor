@@ -1,4 +1,4 @@
-import type { ItemOperacional, MovimientoOperacional, ContextoItem } from './types';
+import type { ItemOperacional, MovimientoOperacional, ContextoItem, Reserva } from './types';
 
 // 0.5 — Persistencia local edge-first (localStorage)
 // Prefijo inv_v0_ para evitar colisión con otros módulos
@@ -8,6 +8,7 @@ const K = {
   movimientos:'inv_v0_movimientos',
   runtimeId:  'inv_v0_runtime_id',
   contexto:   'inv_v0_contexto',
+  reservas:   'inv_v0_reservas',
 } as const;
 
 function tryParse<T>(raw: string | null, fallback: T): T {
@@ -46,4 +47,13 @@ export function loadOrCreateRuntimeId(): string {
   const id = crypto.randomUUID();
   localStorage.setItem(K.runtimeId, id);
   return id;
+}
+
+// 1.3 — Reservas operacionales (edge-first, offline-ready)
+export function loadReservas(): Reserva[] {
+  return tryParse(localStorage.getItem(K.reservas), []);
+}
+
+export function saveReservas(reservas: Reserva[]): void {
+  localStorage.setItem(K.reservas, JSON.stringify(reservas));
 }
