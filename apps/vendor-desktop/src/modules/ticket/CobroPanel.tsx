@@ -813,7 +813,7 @@ export function CobroPanel() {
               disabled={!canEstablecer}
               className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#56C264] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(86,194,100,0.28)] transition hover:bg-[#45b356] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
             >
-              Establecer
+              Confirmar
             </button>
             <button
               onClick={() => handleEstablecer(true)}

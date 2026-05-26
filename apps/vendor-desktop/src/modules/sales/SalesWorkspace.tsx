@@ -7,7 +7,7 @@ import { usePOS } from "../../context/POSContext";
 import { RUBROS, type CatalogProduct } from "../../data/catalogs";
 
 function statusChip(p: CatalogProduct) {
-  if (p.status === "low")      return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Stock crítico</span>;
+  if (p.status === "low")      return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
   if (p.status === "out")      return <span className="flex items-center gap-0.5 text-red-400"><CircleX size={10} strokeWidth={2} />Sin stock</span>;
   if (p.status === "promo")    return <span className="flex items-center gap-0.5 text-orange-500"><Tag size={10} strokeWidth={2} />Promoción</span>;
   if (p.status === "expiring") return <span className="flex items-center gap-0.5 text-amber-400"><Clock size={10} strokeWidth={2} />Vence pronto</span>;
@@ -420,7 +420,7 @@ export function SalesWorkspace() {
                 {!cashSession.isOpen && (
                   <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-amber-400">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                    Sin turno operativo · cobro deshabilitado
+                    Sin turno activo · no se puede cobrar
                   </p>
                 )}
               </div>

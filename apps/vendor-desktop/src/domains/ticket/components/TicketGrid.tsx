@@ -77,7 +77,7 @@ export function TicketGrid() {
           <span className="tabular-nums text-[11px] text-[#b0bac8]">#{saleNumber}</span>
           {lines.length > 0 && (
             <span className="text-[11px] font-semibold tabular-nums text-[#6b7280]">
-              {lines.length} {lines.length === 1 ? "ÍT." : "ÍTEMS"} · {totalUnits} UND
+              {lines.length} {lines.length === 1 ? "PROD." : "PRODS."} · {totalUnits} UND
             </span>
           )}
         </div>
@@ -144,7 +144,7 @@ export function TicketGrid() {
                           if (noteKeyHandled.current) { noteKeyHandled.current = false; return; }
                           saveNote();
                         }}
-                        placeholder="observación..."
+                        placeholder="anotación..."
                         className="mt-1 w-full border-b border-[#e4e9f0] bg-transparent pb-px text-[10.5px] text-[#374151] outline-none placeholder:text-[#d1d9e1]"
                       />
                     ) : line.note ? (
