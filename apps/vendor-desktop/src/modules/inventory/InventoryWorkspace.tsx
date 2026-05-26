@@ -9,6 +9,18 @@ interface Props {
   subView: InventorySubView;
 }
 
+// Ayuda contextual inline — discreta, no invasiva
+function Helper({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#9ca3af]/20 text-[#9ca3af] text-[8px] font-bold cursor-help select-none leading-none"
+    >
+      ?
+    </span>
+  );
+}
+
 export function InventoryWorkspace({ subView }: Props) {
   const { runtimeId, items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const items = todosItems.filter(i => !i.eliminado);
@@ -38,12 +50,13 @@ export function InventoryWorkspace({ subView }: Props) {
   );
 }
 
-// ── DISPONIBILIDAD ───────────────────────────────────────────────────────────
+// ── STOCK ACTUAL ─────────────────────────────────────────────────────────────
 
+// Lenguaje interno (tipos) ≠ lenguaje visible (UI)
 const ESTADO_CFG: Record<EstadoDisponibilidad, { label: string; badge: string; qty: string }> = {
   disponible: { label: "DISPONIBLE", badge: "bg-[#45b356]/12 text-[#45b356]",   qty: "text-[#45b356]"  },
-  bajo_stock: { label: "BAJO STOCK", badge: "bg-[#C4844A]/12 text-[#C4844A]",   qty: "text-[#C4844A]"  },
-  agotado:    { label: "AGOTADO",    badge: "bg-red-50 text-red-500",            qty: "text-red-400"    },
+  bajo_stock: { label: "QUEDA POCO", badge: "bg-[#C4844A]/12 text-[#C4844A]",   qty: "text-[#C4844A]"  },
+  agotado:    { label: "SIN STOCK",  badge: "bg-red-50 text-red-500",            qty: "text-red-400"    },
 };
 
 function ViewDisponibilidad({
@@ -61,15 +74,17 @@ function ViewDisponibilidad({
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
         <Archive size={28} strokeWidth={1.2} className="text-[#C4844A]/30" />
-        <p className="text-[12px] font-semibold text-[#9ca3af]">Sin ítems registrados</p>
-        <p className="text-[11px] text-[#b0bac8]">Registra un ítem en la pestaña ÍTEMS para comenzar.</p>
+        <p className="text-[12px] font-semibold text-[#9ca3af]">Sin productos registrados</p>
+        <p className="text-[11px] text-[#b0bac8]">Registra el primer producto en la pestaña PRODUCTOS.</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <Label>Disponibilidad contextual — {items.length} ítem{items.length !== 1 ? "s" : ""} · {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""}</Label>
+      <Label>
+        Stock actual — {items.length} producto{items.length !== 1 ? "s" : ""} · {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""}
+      </Label>
       <div className="flex flex-col gap-1.5">
         {items.map(item => {
           const existencia  = deriveDisponibilidad(movimientos, item.itemId);
@@ -139,8 +154,8 @@ function DisponibilidadCard({
         <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
         <p className="text-[10px] text-[#9ca3af]">
           {item.unidadBase}
-          {umbral > 0 && ` · mín. ${umbral}`}
-          {reservado > 0 && <span className="text-amber-500"> · {reservado} reservado{reservado !== 1 ? "s" : ""}</span>}
+          {umbral > 0 && ` · alerta desde ${umbral}`}
+          {reservado > 0 && <span className="text-amber-500"> · {reservado} separado{reservado !== 1 ? "s" : ""}</span>}
         </p>
       </div>
 
@@ -178,7 +193,7 @@ function DisponibilidadCard({
           <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
             {cfg.label}
           </span>
-          {/* disponible para operar prominente; existencia secundaria si hay reservas */}
+          {/* disponible para vender prominente; total secundario si hay separados */}
           <div className="flex flex-col items-end shrink-0">
             <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>
               {paraOperar}
@@ -194,14 +209,14 @@ function DisponibilidadCard({
             <button
               onClick={() => activar("entrada")}
               className="rounded px-2 py-1 text-[11px] font-bold text-[#45b356] border border-[#45b356]/30 hover:bg-[#45b356]/8 transition active:scale-95"
-              title="Registrar entrada"
+              title="Llegó producto"
             >
               +
             </button>
             <button
               onClick={() => activar("salida")}
               className="rounded px-2 py-1 text-[11px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition active:scale-95"
-              title="Registrar salida"
+              title="Salió producto"
             >
               −
             </button>
@@ -212,7 +227,7 @@ function DisponibilidadCard({
   );
 }
 
-// ── MOVIMIENTOS ──────────────────────────────────────────────────────────────
+// ── ENTRADAS Y SALIDAS ───────────────────────────────────────────────────────
 
 function ViewMovimientos({
   items,
@@ -232,10 +247,10 @@ function ViewMovimientos({
 
   function handleRegistrar() {
     const n = parseFloat(cantidad);
-    if (!itemId)      { setError("Selecciona un ítem."); return; }
-    if (isNaN(n))     { setError("Cantidad inválida."); return; }
+    if (!itemId)  { setError("Selecciona un producto."); return; }
+    if (isNaN(n)) { setError("Cantidad inválida."); return; }
     if ((tipo === "entrada" || tipo === "salida") && n <= 0) {
-      setError("Entrada/salida requieren cantidad positiva.");
+      setError("Entrada y salida requieren cantidad positiva.");
       return;
     }
     setError("");
@@ -249,7 +264,7 @@ function ViewMovimientos({
   const hayFiltro = busqueda.trim() !== "" || filtroTipo !== "todos";
 
   function exportarCSV() {
-    const header = "Fecha,Ítem,Tipo,Cantidad,Causa";
+    const header = "Fecha,Producto,Tipo,Cantidad,Motivo";
     const filas = [...movimientos].reverse().map(m => {
       const nombre = items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId;
       const fecha  = new Date(m.timestamp).toLocaleString("es-PE");
@@ -277,7 +292,10 @@ function ViewMovimientos({
 
       {/* Formulario */}
       <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
-        <Label>Registrar movimiento</Label>
+        <div className="flex items-center gap-1.5">
+          <Label>Registrar entrada o salida</Label>
+          <Helper text="Usa esto para registrar mercadería que llegó o salió manualmente. El historial queda guardado." />
+        </div>
 
         <div className="flex gap-2 flex-wrap">
           <select
@@ -285,7 +303,7 @@ function ViewMovimientos({
             onChange={e => setItemId(e.target.value)}
             className="flex-1 min-w-[140px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           >
-            {items.length === 0 && <option value="">— sin ítems —</option>}
+            {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => <option key={i.itemId} value={i.itemId}>{i.nombre}</option>)}
           </select>
 
@@ -294,9 +312,9 @@ function ViewMovimientos({
             onChange={e => setTipo(e.target.value as TipoMovimiento)}
             className="rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           >
-            <option value="entrada">+ Entrada</option>
-            <option value="salida">− Salida</option>
-            <option value="ajuste">± Ajuste</option>
+            <option value="entrada">+ Llegó producto</option>
+            <option value="salida">− Salió producto</option>
+            <option value="ajuste">± Ajuste de cantidad</option>
           </select>
 
           <input
@@ -310,7 +328,7 @@ function ViewMovimientos({
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
-            placeholder="causa (opcional)"
+            placeholder="motivo (opcional)"
             className="flex-1 min-w-[100px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           />
 
@@ -319,13 +337,13 @@ function ViewMovimientos({
             disabled={items.length === 0}
             className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Registrar
+            Guardar
           </button>
         </div>
 
         {error && <p className="text-[11px] text-red-500">{error}</p>}
         {items.length === 0 && (
-          <p className="text-[11px] text-[#9ca3af]">Registra un ítem en la pestaña ÍTEMS primero.</p>
+          <p className="text-[11px] text-[#9ca3af]">Registra productos en la pestaña PRODUCTOS primero.</p>
         )}
       </div>
 
@@ -336,7 +354,7 @@ function ViewMovimientos({
             <input
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              placeholder="buscar ítem…"
+              placeholder="buscar producto…"
               className="flex-1 min-w-[120px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
             />
             {(["todos", "entrada", "salida", "ajuste"] as const).map(t => (
@@ -382,7 +400,7 @@ function ViewMovimientos({
               <Label>
                 {hayFiltro
                   ? `${filtrados.length} resultado${filtrados.length !== 1 ? "s" : ""} · ${movimientos.length} total`
-                  : `Últimos ${filtrados.length} movimientos`}
+                  : `Últimas ${filtrados.length} entradas y salidas`}
               </Label>
               {filtrados.map(m => {
                 const sign  = m.tipo === "entrada" ? "+" : m.tipo === "salida" ? "−" : "±";
@@ -406,13 +424,13 @@ function ViewMovimientos({
       )}
 
       {movimientos.length === 0 && (
-        <p className="text-center text-[11px] text-[#b0bac8] py-8">Sin movimientos registrados.</p>
+        <p className="text-center text-[11px] text-[#b0bac8] py-8">Sin entradas ni salidas registradas.</p>
       )}
     </div>
   );
 }
 
-// ── ÍTEMS ────────────────────────────────────────────────────────────────────
+// ── PRODUCTOS ────────────────────────────────────────────────────────────────
 
 function ViewItems({
   items,
@@ -444,38 +462,43 @@ function ViewItems({
 
       {/* Formulario */}
       <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
-        <Label>Registrar ítem</Label>
+        <div className="flex items-center gap-1.5">
+          <Label>Agregar producto</Label>
+          <Helper text="Registra los productos que manejas en tu negocio. Después podrás registrar entradas y salidas." />
+        </div>
         <div className="flex gap-2 flex-wrap">
           <input
             value={nombre}
             onChange={e => setNombre(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") handleRegistrar(); }}
-            placeholder="nombre del ítem"
+            placeholder="nombre del producto"
             className="flex-1 min-w-[160px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           />
           <input
             value={unidadBase}
             onChange={e => setUnidadBase(e.target.value)}
-            placeholder="unidad"
+            placeholder="kg, botella…"
             className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           />
           <input
             type="number"
             value={umbral}
             onChange={e => setUmbral(e.target.value)}
-            placeholder="stock mínimo"
-            title="Stock mínimo antes de alertar (opcional)"
-            className="w-20 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+            placeholder="alerta desde"
+            title="¿Desde cuántas unidades mostrar alerta de stock bajo? Deja vacío si no quieres alerta."
+            className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
           />
           <button
             onClick={handleRegistrar}
             className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95"
           >
-            Registrar
+            Agregar
           </button>
         </div>
         {error && <p className="text-[11px] text-red-500">{error}</p>}
-        <p className="text-[9.5px] text-[#b0bac8]">stock mínimo: cantidad antes de marcar BAJO STOCK · 0 = sin alerta</p>
+        <p className="text-[9.5px] text-[#b0bac8]">
+          alerta desde: avisa cuando el stock baja de ese número · deja vacío para no alertar
+        </p>
       </div>
 
       {/* Lista */}
@@ -485,7 +508,7 @@ function ViewItems({
             <input
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              placeholder="buscar ítem…"
+              placeholder="buscar producto…"
               className="flex-1 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
             />
             {busqueda && (
@@ -506,7 +529,7 @@ function ViewItems({
             }
             return (
               <>
-                <Label>{filtrados.length} de {items.length} ítem{items.length !== 1 ? "s" : ""}</Label>
+                <Label>{filtrados.length} de {items.length} producto{items.length !== 1 ? "s" : ""}</Label>
                 {filtrados.map(item => {
                   const umbralMinimo = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
                   return <ItemRow key={item.itemId} item={item} umbralMinimo={umbralMinimo} />;
@@ -516,7 +539,7 @@ function ViewItems({
           })()}
         </div>
       ) : (
-        <p className="text-center text-[11px] text-[#b0bac8] py-8">Sin ítems. Registra el primero arriba.</p>
+        <p className="text-center text-[11px] text-[#b0bac8] py-8">Sin productos. Agrega el primero arriba.</p>
       )}
     </div>
   );
@@ -541,13 +564,13 @@ function ItemRow({ item, umbralMinimo }: {
       <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
-          <p className="text-[10px] text-red-400">¿Confirmar baja? Los movimientos se conservan.</p>
+          <p className="text-[10px] text-red-400">¿Quitar este producto? El historial se conserva.</p>
         </div>
         <button
           onClick={() => inventoryService.darDeBaja(item.itemId)}
           className="rounded px-2.5 py-1 text-[11px] font-bold bg-red-500 text-white hover:bg-red-600 transition active:scale-95"
         >
-          DAR DE BAJA
+          QUITAR
         </button>
         <button
           onClick={() => setConfirmBaja(false)}
@@ -566,7 +589,7 @@ function ItemRow({ item, umbralMinimo }: {
         <p className="text-[10px] text-[#9ca3af] font-mono">{item.itemId} · {item.unidadBase}</p>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-[10px] text-[#b0bac8]">stock mínimo</span>
+        <span className="text-[10px] text-[#b0bac8]">alerta desde</span>
         {editing ? (
           <input
             autoFocus
@@ -592,7 +615,7 @@ function ItemRow({ item, umbralMinimo }: {
       <button
         onClick={() => setConfirmBaja(true)}
         className="shrink-0 rounded p-1 text-[#d1d5db] hover:text-red-400 hover:bg-red-50 transition"
-        title="Dar de baja"
+        title="Quitar producto"
       >
         <Trash2 size={12} strokeWidth={2} />
       </button>
@@ -600,7 +623,7 @@ function ItemRow({ item, umbralMinimo }: {
   );
 }
 
-// ── RESERVAS ─────────────────────────────────────────────────────────────────
+// ── PRODUCTOS SEPARADOS ──────────────────────────────────────────────────────
 
 function ViewReservas({
   items,
@@ -618,8 +641,8 @@ function ViewReservas({
 
   function handleReservar() {
     const n = parseFloat(cantidad);
-    if (!itemId)          { setError("Selecciona un ítem."); return; }
-    if (isNaN(n) || n <= 0) { setError("Cantidad debe ser positiva."); return; }
+    if (!itemId)            { setError("Selecciona un producto."); return; }
+    if (isNaN(n) || n <= 0) { setError("La cantidad debe ser positiva."); return; }
     const causaFinal = causa.trim() || "separación";
     inventoryService.reservar(itemId, n, causaFinal);
     setCantidad("");
@@ -627,25 +650,25 @@ function ViewReservas({
     setError("");
   }
 
-  const activas = reservas.filter(r => r.estado === "activa");
+  const activas   = reservas.filter(r => r.estado === "activa");
   const historial = reservas.filter(r => r.estado !== "activa").slice().reverse().slice(0, 10);
 
   return (
     <div className="flex flex-col gap-3">
 
-      {/* Formulario nueva reserva */}
+      {/* Formulario separar producto */}
       <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
-        <Label>Nueva reserva operacional</Label>
-        <p className="text-[9.5px] text-[#b0bac8] leading-snug">
-          Señal contextual · no genera movimiento físico · no bloquea operaciones
-        </p>
+        <div className="flex items-center gap-1.5">
+          <Label>Separar producto</Label>
+          <Helper text="Separa unidades para un cliente o pedido. No descuenta el stock todavía — solo las marca como reservadas." />
+        </div>
         <div className="flex gap-2 flex-wrap">
           <select
             value={itemId}
             onChange={e => setItemId(e.target.value)}
             className="flex-1 min-w-[140px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           >
-            {items.length === 0 && <option value="">— sin ítems —</option>}
+            {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => {
               const existencia = deriveDisponibilidad(movimientos, i.itemId);
               return <option key={i.itemId} value={i.itemId}>{i.nombre} ({existencia})</option>;
@@ -661,7 +684,7 @@ function ViewReservas({
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
-            placeholder="motivo (opcional)"
+            placeholder="para quién o qué (opcional)"
             className="flex-1 min-w-[100px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           />
           <button
@@ -669,16 +692,16 @@ function ViewReservas({
             disabled={items.length === 0}
             className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95 disabled:opacity-40"
           >
-            Reservar
+            Separar
           </button>
         </div>
         {error && <p className="text-[11px] text-red-500">{error}</p>}
       </div>
 
-      {/* Reservas activas */}
+      {/* Separados activos */}
       {activas.length > 0 ? (
         <div className="flex flex-col gap-1.5">
-          <Label>{activas.length} reserva{activas.length !== 1 ? "s" : ""} activa{activas.length !== 1 ? "s" : ""}</Label>
+          <Label>{activas.length} producto{activas.length !== 1 ? "s" : ""} separado{activas.length !== 1 ? "s" : ""}</Label>
           {activas.map(r => {
             const nombreItem = items.find(i => i.itemId === r.itemId)?.nombre ?? r.itemId;
             return (
@@ -694,14 +717,14 @@ function ViewReservas({
                   <button
                     onClick={() => inventoryService.materializarReserva(r.reservaId)}
                     className="rounded px-2 py-1 text-[10px] font-bold text-[#45b356] border border-[#45b356]/30 hover:bg-[#45b356]/8 transition active:scale-95"
-                    title="Materializar como salida"
+                    title="Confirmar entrega al cliente — descuenta el stock"
                   >
                     ✓ Entregar
                   </button>
                   <button
                     onClick={() => inventoryService.liberarReserva(r.reservaId, "cancelada-operador")}
                     className="rounded px-2 py-1 text-[10px] font-bold text-[#6b7280] border border-[#e9e4dc] hover:border-red-200 hover:text-red-400 transition active:scale-95"
-                    title="Liberar reserva"
+                    title="Cancelar separación — vuelve a estar disponible"
                   >
                     ✕
                   </button>
@@ -711,7 +734,7 @@ function ViewReservas({
           })}
         </div>
       ) : (
-        <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin reservas activas.</p>
+        <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin productos separados.</p>
       )}
 
       {/* Historial reciente */}
@@ -720,7 +743,7 @@ function ViewReservas({
           <Label>Historial reciente</Label>
           {historial.map(r => {
             const nombreItem = items.find(i => i.itemId === r.itemId)?.nombre ?? r.itemId;
-            const esMateria  = r.estado === "materializada";
+            const entregado  = r.estado === "materializada";
             return (
               <div key={r.reservaId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-4 py-2 opacity-70">
                 <div className="flex-1 min-w-0">
@@ -728,9 +751,9 @@ function ViewReservas({
                   <p className="text-[10px] text-[#9ca3af]">{r.causa} · {formatTs(r.timestamp)}</p>
                 </div>
                 <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                  esMateria ? "bg-[#45b356]/10 text-[#45b356]" : "bg-[#e9e4dc] text-[#9ca3af]"
+                  entregado ? "bg-[#45b356]/10 text-[#45b356]" : "bg-[#e9e4dc] text-[#9ca3af]"
                 }`}>
-                  {esMateria ? "entregado" : "liberado"}
+                  {entregado ? "entregado" : "cancelado"}
                 </span>
                 <span className="tabular-nums text-[13px] font-bold text-[#9ca3af] shrink-0">{r.cantidad}</span>
               </div>
@@ -742,7 +765,7 @@ function ViewReservas({
   );
 }
 
-// ── RECONCILIACIÓN ───────────────────────────────────────────────────────────
+// ── CORREGIR DIFERENCIA ──────────────────────────────────────────────────────
 
 function ViewReconciliacion({
   items,
@@ -751,26 +774,26 @@ function ViewReconciliacion({
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
 }) {
-  const [itemId,      setItemId]      = useState(items[0]?.itemId ?? "");
-  const [conteo,      setConteo]      = useState("");
-  const [causa,       setCausa]       = useState("reconciliacion");
-  const [error,       setError]       = useState("");
-  const [resultado,   setResultado]   = useState<{
+  const [itemId,    setItemId]    = useState(items[0]?.itemId ?? "");
+  const [conteo,    setConteo]    = useState("");
+  const [causa,     setCausa]     = useState("conteo físico");
+  const [error,     setError]     = useState("");
+  const [resultado, setResultado] = useState<{
     delta: number; existenciaAntes: number; conteoFisico: number; movimientoGenerado: boolean;
   } | null>(null);
 
   function handleReconciliar() {
     const n = parseFloat(conteo);
-    if (!itemId)    { setError("Selecciona un ítem."); return; }
-    if (isNaN(n) || n < 0) { setError("Conteo físico debe ser ≥ 0."); return; }
-    const causaFinal = causa.trim() || "reconciliacion";
+    if (!itemId)        { setError("Selecciona un producto."); return; }
+    if (isNaN(n) || n < 0) { setError("El número debe ser 0 o mayor."); return; }
+    const causaFinal = causa.trim() || "conteo físico";
     const res = inventoryService.reconciliar(itemId, n, causaFinal);
     setResultado(res);
     setConteo("");
     setError("");
   }
 
-  const reconciliaciones = [...movimientos]
+  const correcciones = [...movimientos]
     .filter(m => m.tipo === "ajuste" && m.causa.startsWith("reconciliacion"))
     .reverse()
     .slice(0, 8);
@@ -783,10 +806,10 @@ function ViewReconciliacion({
 
       {/* Formulario conteo físico */}
       <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
-        <Label>Conteo físico → ajuste automático</Label>
-        <p className="text-[9.5px] text-[#b0bac8] leading-snug">
-          No sobrescribe historial · genera movimiento de ajuste con causalidad explícita
-        </p>
+        <div className="flex items-center gap-1.5">
+          <Label>Corregir diferencia de stock</Label>
+          <Helper text="Cuenta los productos físicamente y compara con lo que dice el sistema. Si hay diferencia, se corrige automáticamente." />
+        </div>
 
         <div className="flex gap-2 flex-wrap">
           <select
@@ -794,24 +817,24 @@ function ViewReconciliacion({
             onChange={e => { setItemId(e.target.value); setResultado(null); }}
             className="flex-1 min-w-[160px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           >
-            {items.length === 0 && <option value="">— sin ítems —</option>}
+            {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => {
               const ex = deriveDisponibilidad(movimientos, i.itemId);
-              return <option key={i.itemId} value={i.itemId}>{i.nombre} (sistema: {ex})</option>;
+              return <option key={i.itemId} value={i.itemId}>{i.nombre} — sistema: {ex}</option>;
             })}
           </select>
           <input
             type="number"
             value={conteo}
             onChange={e => { setConteo(e.target.value); setResultado(null); }}
-            placeholder="conteo físico"
+            placeholder="¿cuántos tienes?"
             min="0"
-            className="w-28 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+            className="w-32 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
           />
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
-            placeholder="causa"
+            placeholder="motivo del ajuste"
             className="flex-1 min-w-[120px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
           />
           <button
@@ -819,7 +842,7 @@ function ViewReconciliacion({
             disabled={items.length === 0}
             className="rounded-lg bg-[#005BE3] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#0049b5] active:scale-95 disabled:opacity-40"
           >
-            Reconciliar
+            Aplicar
           </button>
         </div>
 
@@ -828,11 +851,11 @@ function ViewReconciliacion({
         {/* Existencia actual del ítem seleccionado */}
         {itemSeleccionado && existenciaActual !== null && !resultado && (
           <p className="text-[10px] text-[#9ca3af]">
-            Sistema actual: <span className="font-bold tabular-nums text-[#374151]">{existenciaActual}</span> {itemSeleccionado.unidadBase}
+            El sistema dice: <span className="font-bold tabular-nums text-[#374151]">{existenciaActual}</span> {itemSeleccionado.unidadBase}
           </p>
         )}
 
-        {/* Resultado de la reconciliación */}
+        {/* Resultado */}
         {resultado && (
           <div className={`rounded-xl px-3 py-2 flex flex-col gap-0.5 ${
             resultado.delta === 0
@@ -843,24 +866,24 @@ function ViewReconciliacion({
           }`}>
             <p className="text-[11px] font-bold text-[#1f2937]">
               {resultado.delta === 0
-                ? "Sin diferencia — sistema y físico coinciden."
+                ? "Sin diferencia — todo cuadra."
                 : resultado.delta > 0
-                ? `Diferencia +${resultado.delta}: se registró entrada de reconciliación.`
-                : `Diferencia ${resultado.delta}: se registró salida de reconciliación.`}
+                ? `Faltaban ${resultado.delta} en el sistema — ajuste aplicado.`
+                : `Sobraban ${Math.abs(resultado.delta)} en el sistema — ajuste aplicado.`}
             </p>
             <p className="text-[10px] text-[#6b7280]">
-              Sistema antes: {resultado.existenciaAntes} · Conteo físico: {resultado.conteoFisico}
-              {resultado.movimientoGenerado && " · Ajuste generado en log"}
+              Sistema antes: {resultado.existenciaAntes} · Contaste: {resultado.conteoFisico}
+              {resultado.movimientoGenerado && " · Corrección guardada en historial"}
             </p>
           </div>
         )}
       </div>
 
-      {/* Historial de reconciliaciones */}
-      {reconciliaciones.length > 0 && (
+      {/* Historial de correcciones */}
+      {correcciones.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <Label>Reconciliaciones recientes</Label>
-          {reconciliaciones.map(m => {
+          <Label>Correcciones recientes</Label>
+          {correcciones.map(m => {
             const nombre = items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId;
             const pos    = m.cantidad >= 0;
             return (
@@ -881,8 +904,8 @@ function ViewReconciliacion({
         </div>
       )}
 
-      {reconciliaciones.length === 0 && (
-        <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin reconciliaciones registradas.</p>
+      {correcciones.length === 0 && (
+        <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin correcciones registradas.</p>
       )}
     </div>
   );
