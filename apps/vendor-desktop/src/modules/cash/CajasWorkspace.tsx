@@ -134,22 +134,22 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
   const inactiveCount = blocks.filter(b => !b.active).length;
 
   const statusColor: Record<BlockStatus, string> = {
-    DISPONIBLE: "text-[#85C49C]",
+    DISPONIBLE: "text-[#2A7CA8]",
     ASIGNADO:   "text-[#2154d8]/80",
     EN_USO:     "text-emerald-600",
     INACTIVO:   "text-[#dc2626]/70",
   };
 
   return (
-    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/40 bg-[#FDFCF9]">
+    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#85C49C]/15 bg-[#F3F8F4] px-4">
-        <Layers size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
+        <Layers size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS OPERATIVAS</span>
         <div className="ml-auto flex items-center gap-1">
           {activeCount > 0 && (
-            <span className="rounded bg-[#e8f5ea] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4a7a55]">{activeCount}</span>
+            <span className="rounded bg-[#EBF4FA] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#1a5f7a]">{activeCount}</span>
           )}
           {inactiveCount > 0 && (
             <span className="rounded bg-red-50 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#dc2626]/70">{inactiveCount}</span>
@@ -168,10 +168,10 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
               key={block.id}
               onClick={() => onSelect(block.id)}
               className={`flex cursor-pointer items-start gap-3 border-l-2 px-4 py-3 transition ${
-                isSel ? "border-[#85C49C] bg-[#EFF8F0]" : "border-transparent hover:bg-[#F5FBF5]"
+                isSel ? "border-[#2A7CA8] bg-[#EBF4FA]" : "border-transparent hover:bg-[#F2F7FA]"
               }`}>
               <span className={`mt-px shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-                isSel ? "bg-[#85C49C] text-white" : "bg-[#e8f5ea] text-[#4a7a55]"
+                isSel ? "bg-[#2A7CA8] text-white" : "bg-[#EBF4FA] text-[#1a5f7a]"
               }`}>
                 {block.blockBase}
               </span>
@@ -184,7 +184,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
                   <span className="normal-case tracking-normal text-[#9ca3af]">{slotSummary(block.slots)}</span>
                 </p>
               </div>
-              <ChevronRight size={12} className={`mt-1 shrink-0 ${isSel ? "text-[#85C49C]" : "text-[#d1d9e1]"}`} />
+              <ChevronRight size={12} className={`mt-1 shrink-0 ${isSel ? "text-[#2A7CA8]" : "text-[#d1d9e1]"}`} />
             </div>
           );
         })}
@@ -258,16 +258,16 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   const showForm = mode === "create" || mode === "edit";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/40 bg-[#FDFCF9]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#85C49C]/15 bg-[#F3F8F4] px-4">
-        <LayoutGrid size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
+        <LayoutGrid size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN DE CAJAS</span>
       </div>
 
       {/* ActionBar */}
-      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#85C49C]/10 px-4 py-2">
+      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#2A7CA8]/10 px-4 py-2">
         <button
           onClick={() => { onSelect(null); setMode("create"); }}
           className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
@@ -319,14 +319,14 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                 DISPONIBLE: "DISPONIBLE", ASIGNADO: "ASIGNADO", EN_USO: "EN USO", INACTIVO: "INACTIVO",
               };
               const statusCls: Record<string, string> = {
-                DISPONIBLE: "bg-[#e8f5ea] text-[#4a7a55]",
+                DISPONIBLE: "bg-[#EBF4FA] text-[#1a5f7a]",
                 ASIGNADO:   "bg-[#dbeafe] text-[#2154d8]",
                 EN_USO:     "bg-emerald-100 text-emerald-700",
                 INACTIVO:   "bg-red-50 text-[#dc2626]",
               };
               return (
                 <div className="flex items-center gap-2.5">
-                  <span className="rounded-md bg-[#85C49C] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">
+                  <span className="rounded-md bg-[#2A7CA8] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">
                     {selected.blockBase}
                   </span>
                   <span className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase ${statusCls[bStatus]}`}>
@@ -334,7 +334,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                   </span>
                   {blockOp && (
                     <div className="flex items-center gap-1.5 rounded-lg border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1">
-                      <User size={10} strokeWidth={2} className="shrink-0 text-[#85C49C]" />
+                      <User size={10} strokeWidth={2} className="shrink-0 text-[#2A7CA8]" />
                       <span className="text-[11px] font-semibold text-[#374151]">{blockOp.name}</span>
                       <span className="text-[10px] text-[#9ca3af]">· {blockOp.code}</span>
                     </div>
@@ -366,12 +366,12 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                                  <CircleCheck size={11} strokeWidth={2} className="shrink-0 text-emerald-500" />}
                       <span className="text-[12px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
                       <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                        isContg ? "text-amber-600" : isSec ? "text-[#2154d8]/70" : "text-[#4a7a55]"
+                        isContg ? "text-amber-600" : isSec ? "text-[#2154d8]/70" : "text-[#1a5f7a]"
                       }`}>
                         {slotLabel(slot.slotType)}
                       </span>
                       {slot.hasHistory && (
-                        <span className="ml-auto rounded bg-[#e8f5ea] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#4a7a55]">
+                        <span className="ml-auto rounded bg-[#EBF4FA] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#1a5f7a]">
                           CON USO
                         </span>
                       )}
@@ -405,7 +405,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
         {showForm && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-2">
-              <span className="rounded-md bg-[#85C49C] px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">
+              <span className="rounded-md bg-[#2A7CA8] px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">
                 {mode === "create" ? nextBlockBase(blocks) : selected?.blockBase}
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-widest text-[#9ca3af]">
