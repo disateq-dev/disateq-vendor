@@ -578,6 +578,53 @@ function ItemRow({ item, umbralMinimo }: {
 
 // ── RESET (DEV) ──────────────────────────────────────────────────────────────
 
+const MUESTRA_BODEGA = [
+  // Abarrotes
+  { nombre: "Arroz Superior Extra",            unidad: "kg",       umbral: 20, stock: 45 },
+  { nombre: "Azúcar Rubia",                    unidad: "kg",       umbral: 15, stock: 8  },
+  { nombre: "Aceite Primor 1L",                unidad: "botella",  umbral: 12, stock: 0  },
+  { nombre: "Fideo Tallarin Don Vittorio",     unidad: "paquete",  umbral: 24, stock: 36 },
+  { nombre: "Sal Emsal 1kg",                   unidad: "bolsa",    umbral: 10, stock: 22 },
+  { nombre: "Harina Preparada Blanca Flor",    unidad: "bolsa",    umbral: 6,  stock: 3  },
+  { nombre: "Avena Quaker 180g",               unidad: "bolsa",    umbral: 10, stock: 17 },
+  { nombre: "Leche Evaporada Gloria",          unidad: "lata",     umbral: 48, stock: 60 },
+  // Bebidas
+  { nombre: "Agua Cielo 625ml",                unidad: "botella",  umbral: 24, stock: 72 },
+  { nombre: "Inca Kola 1.5L",                  unidad: "botella",  umbral: 12, stock: 5  },
+  { nombre: "Coca-Cola 500ml",                 unidad: "botella",  umbral: 24, stock: 48 },
+  { nombre: "Chicha Morada Negrita 500ml",     unidad: "caja",     umbral: 12, stock: 0  },
+  { nombre: "Jugo Pulp Naranja 1L",            unidad: "caja",     umbral: 6,  stock: 14 },
+  { nombre: "Cerveza Cristal 650ml",           unidad: "botella",  umbral: 24, stock: 36 },
+  // Limpieza
+  { nombre: "Detergente Ariel 360g",           unidad: "bolsa",    umbral: 12, stock: 9  },
+  { nombre: "Lejía Clorox 1L",                 unidad: "botella",  umbral: 6,  stock: 18 },
+  { nombre: "Jabón Bolivar 200g",              unidad: "barra",    umbral: 24, stock: 48 },
+  { nombre: "Papel Higiénico Elite x4",        unidad: "paquete",  umbral: 8,  stock: 4  },
+  { nombre: "Lavavajilla Sapolio 180g",        unidad: "tarro",    umbral: 6,  stock: 12 },
+  // Snacks
+  { nombre: "Galletas Oreo 117g",              unidad: "paquete",  umbral: 12, stock: 30 },
+  { nombre: "Chifle Frito Lay 80g",            unidad: "bolsa",    umbral: 12, stock: 2  },
+  { nombre: "Papas Fritas Pringles 40g",       unidad: "lata",     umbral: 8,  stock: 0  },
+  { nombre: "Caramelos Halls Menta",           unidad: "bolsa",    umbral: 6,  stock: 15 },
+  // Cuidado personal
+  { nombre: "Shampoo Head & Shoulders 200ml",  unidad: "frasco",   umbral: 6,  stock: 8  },
+  { nombre: "Pasta Dental Colgate Triple",     unidad: "tubo",     umbral: 6,  stock: 24 },
+  { nombre: "Jabón de Tocador Lux",            unidad: "barra",    umbral: 12, stock: 5  },
+  // Lácteos
+  { nombre: "Yogurt Gloria Fresa 1kg",         unidad: "pote",     umbral: 6,  stock: 12 },
+  { nombre: "Queso Fresco La Florida 250g",    unidad: "unidad",   umbral: 4,  stock: 0  },
+  // Desayuno
+  { nombre: "Pan de Molde Bimbo Grande",       unidad: "bolsa",    umbral: 4,  stock: 7  },
+  { nombre: "Mermelada Fanny Fresa 300g",      unidad: "frasco",   umbral: 4,  stock: 9  },
+  { nombre: "Margarina Manty 100g",            unidad: "tarro",    umbral: 6,  stock: 3  },
+  // Conservas
+  { nombre: "Atún Florida en Agua",            unidad: "lata",     umbral: 12, stock: 28 },
+  { nombre: "Sardina Campomar Tomate",         unidad: "lata",     umbral: 12, stock: 16 },
+  // Otros
+  { nombre: "Vela Familiar 7cm",               unidad: "unidad",   umbral: 10, stock: 0  },
+  { nombre: "Fósforos Llama",                  unidad: "caja",     umbral: 6,  stock: 24 },
+] as const;
+
 function ViewReset() {
   function resetDatos() {
     localStorage.removeItem("inv_v0_items");
@@ -594,8 +641,78 @@ function ViewReset() {
     window.location.reload();
   }
 
+  function cargarMuestra() {
+    const now      = Date.now();
+    const day      = 86_400_000;
+    const runtimeId = localStorage.getItem("inv_v0_runtime_id") ?? crypto.randomUUID();
+
+    const items = MUESTRA_BODEGA.map((p, i) => ({
+      itemId:     `IT-SEED-${String(i + 1).padStart(3, "0")}`,
+      nombre:     p.nombre,
+      unidadBase: p.unidad,
+    }));
+
+    const contexto = MUESTRA_BODEGA.map((p, i) => ({
+      itemId:       `IT-SEED-${String(i + 1).padStart(3, "0")}`,
+      umbralMinimo: p.umbral,
+    }));
+
+    const movimientos: {
+      movementId: string; itemId: string; tipo: "entrada" | "salida" | "ajuste";
+      cantidad: number; timestamp: number; runtimeId: string; causa: string;
+    }[] = [];
+    let seq = 0;
+
+    MUESTRA_BODEGA.forEach((p, i) => {
+      const itemId = `IT-SEED-${String(i + 1).padStart(3, "0")}`;
+      const entradaInicial = p.stock + Math.floor(Math.random() * 15) + 12;
+
+      movimientos.push({
+        movementId: `MOV-SEED-${String(++seq).padStart(4, "0")}`,
+        itemId, tipo: "entrada", cantidad: entradaInicial,
+        timestamp: now - 7 * day - Math.floor(Math.random() * day),
+        runtimeId, causa: "stock inicial",
+      });
+
+      let restante = entradaInicial - p.stock;
+      const nSalidas = Math.min(restante, 4);
+      for (let s = 0; s < nSalidas && restante > 0; s++) {
+        const esUltima = s === nSalidas - 1;
+        const qty = esUltima ? restante : Math.max(1, Math.floor(restante / (nSalidas - s) * (0.4 + Math.random() * 0.8)));
+        const cantidad = Math.min(qty, restante);
+        movimientos.push({
+          movementId: `MOV-SEED-${String(++seq).padStart(4, "0")}`,
+          itemId, tipo: "salida", cantidad,
+          timestamp: now - Math.floor(Math.random() * 6 * day),
+          runtimeId, causa: "venta",
+        });
+        restante -= cantidad;
+      }
+    });
+
+    movimientos.sort((a, b) => a.timestamp - b.timestamp);
+
+    localStorage.setItem("inv_v0_items",       JSON.stringify(items));
+    localStorage.setItem("inv_v0_movimientos", JSON.stringify(movimientos));
+    localStorage.setItem("inv_v0_contexto",    JSON.stringify(contexto));
+    window.location.reload();
+  }
+
   return (
     <div className="flex flex-col gap-3">
+      <div className="rounded-2xl border border-dashed border-[#C4844A]/40 bg-[#FBF7F3] px-4 py-4 flex flex-col gap-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#C4844A]">DEV · Datos de muestra</p>
+        <button
+          onClick={cargarMuestra}
+          className="self-start rounded-xl border border-[#C4844A]/40 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[#C4844A] hover:bg-[#C4844A]/8 transition active:scale-95"
+        >
+          CARGAR MUESTRA — 35 productos
+        </button>
+        <p className="text-[9px] text-[#b0a898] leading-snug">
+          Bodega peruana — abarrotes, bebidas, limpieza, snacks, lácteos · estados mixtos · historial 7 días
+        </p>
+      </div>
+
       <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-4 flex flex-col gap-3">
         <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Reset temporal — Inventario CAPA 0</p>
         <div className="flex flex-wrap gap-2">
