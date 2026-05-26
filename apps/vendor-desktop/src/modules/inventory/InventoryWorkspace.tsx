@@ -19,7 +19,7 @@ export function InventoryWorkspace({ subView }: Props) {
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#C4844A]/15 bg-[#FBF7F3] px-4">
         <Archive size={13} strokeWidth={2} className="text-[#C4844A]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INVENTARIO</span>
-        <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#C4844A]/10 text-[#C4844A]">CAPA 0</span>
+        <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#C4844A]/10 text-[#C4844A]">CAPA 1</span>
         <span className="ml-auto font-mono text-[9px] text-[#b0a898]">{runtimeId.slice(0, 8)}…</span>
       </div>
 
