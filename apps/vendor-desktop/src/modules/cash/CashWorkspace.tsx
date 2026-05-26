@@ -99,6 +99,17 @@ function InfoRow({ label, value, accent, red }: { label: string; value: string; 
   );
 }
 
+function Helper({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      className="inline-flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full bg-[#e4e9f0] text-[8px] font-bold text-[#9ca3af] transition hover:bg-[#d1d9e1] hover:text-[#6b7280]"
+    >
+      ?
+    </span>
+  );
+}
+
 function BoxRow({ box, isActive, isSelected, onSelect }: {
   box: CashBox; isActive: boolean; isSelected: boolean; onSelect?: () => void;
 }) {
@@ -776,7 +787,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo de cambio S/</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo de cambio S/</span>
+                <Helper text="Dinero que pones en el cajón para dar vueltos. Se separa del dinero de ventas." />
+              </div>
               <input
                 ref={aperturaRef}
                 autoFocus
@@ -805,7 +819,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <div className="flex flex-col gap-2 rounded-xl border border-orange-200 bg-[#fffbf0] px-3.5 py-3">
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle size={12} strokeWidth={2.5} className="text-orange-500 shrink-0" />
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-orange-600">CONTINGENCIA OPERACIONAL</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-orange-600">CAJA DE RESPALDO</span>
                 </div>
                 <p className="text-[10px] text-orange-600/80 -mt-1">
                   Caja {prereqCode(selectedBox)} cerrada — motivo obligatorio para continuar.
@@ -815,7 +829,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   value={ctgJustif}
                   onChange={e => setCtgJustif(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && canOpen) handleOpen(); }}
-                  placeholder="Motivo operacional..."
+                  placeholder="Motivo para usar esta caja..."
                   maxLength={200}
                   className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#d97706] focus:ring-2 focus:ring-amber-300/20"
                 />
@@ -852,7 +866,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   value={ctgJustif}
                   onChange={e => setCtgJustif(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && canOpen) handleOpen(); }}
-                  placeholder="Motivo operacional obligatorio..."
+                  placeholder="Motivo obligatorio para apertura especial..."
                   maxLength={200}
                   className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-red-300 focus:ring-2 focus:ring-red-200/30"
                 />
@@ -997,7 +1011,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     : "cursor-not-allowed bg-[#2154d8]/[0.15] text-[#2154d8]/50"
                 }`}
               >
-                VALIDAR CONTEO
+                GUARDAR CONTEO
                 <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F9</span>
               </button>
               <button
@@ -1116,7 +1130,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             {/* Header */}
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
               <ListChecks size={13} strokeWidth={2} className="shrink-0 text-red-400" />
-              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONTEO CIERRE DE TURNO</span>
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONTEO PARA EL CIERRE</span>
               <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO DE CAMBIO"
                  : closingStage === 2 ? "CONTEO VENTAS"
@@ -1194,7 +1208,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
                   {/* Input contado fondo */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
+                      <Helper text="Cuenta físicamente el dinero del cajón de vueltos. Sin incluir dinero de ventas." />
+                    </div>
                     <input
                       ref={contadoFondoRef}
                       type="text"
@@ -1271,7 +1288,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   })()}
 
                   <p className="text-[10.5px] text-[#9ca3af]">
-                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo de cambio y pasar a conteo operacional
+                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo y pasar al conteo de ventas
                   </p>
                 </>
               )}
@@ -1289,7 +1306,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   </div>
 
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
-                    Ingresa el <strong className="text-[#374151]">efectivo final real</strong> del turno, el Yape y Tarjeta. El sistema los verificará contra las ventas registradas.
+                    Cuenta el <strong className="text-[#374151]">efectivo de ventas</strong>, Yape y Tarjeta. El sistema compara con lo que debería haber.
                   </p>
                   <div className="flex flex-col gap-2">
                     {([
@@ -1302,6 +1319,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         <div key={label} className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-2.5">
                             <span className="w-[64px] shrink-0 text-[10px] font-bold uppercase tracking-[0.13em] text-[#9ca3af]">{label}</span>
+                            {label === "EFECTIVO" && <Helper text="Efectivo de ventas del turno. Sin incluir el fondo de cambio." />}
                             <span className="shrink-0 text-[10px] font-bold text-[#b0bac8]">S/</span>
                             <input
                               ref={ref}
@@ -1355,7 +1373,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </div>
                   )}
                   <p className="text-[10.5px] text-[#9ca3af]">
-                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">F9</span> validar ·{" "}
+                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">F9</span> guardar conteo ·{" "}
                     <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> avanza ·{" "}
                     <span className="font-mono bg-[#f1f5f9] px-1 rounded">200+50</span> suma
                   </p>
@@ -1368,7 +1386,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-[#f0fdf4] px-3.5 py-2.5">
                     <CheckCircle size={15} className="text-emerald-500 shrink-0" />
                     <div>
-                      <p className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">CONTEO VALIDADO</p>
+                      <p className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">CONTEO GUARDADO</p>
                       {validatedAt && (
                         <p className="text-[9px] tabular-nums text-emerald-600">
                           {new Date(validatedAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -1416,7 +1434,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               {closingStage === 4 && (
                 <>
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
-                    Confirma el arqueo para oficializar el cierre.
+                    Revisa los totales y confirma el cierre del turno.
                   </p>
 
                   {/* Fondo apertura — resultado validación stage 1 */}
@@ -1679,7 +1697,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   }`}
                 >
                   <ShoppingCart size={11} strokeWidth={2} />
-                  CAJA DEL DÍA
+                  <span title="Ingresos y egresos del dinero de ventas del turno.">CAJA DEL DÍA</span>
                 </button>
                 <button
                   onClick={() => setMovPanel("fondo")}
@@ -1688,7 +1706,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   }`}
                 >
                   <Wallet size={11} strokeWidth={2} />
-                  FONDO DE CAMBIO
+                  <span title="Movimientos del cajón de vueltos — salidas y préstamos.">FONDO DE CAMBIO</span>
                 </button>
               </div>
             </div>
@@ -1712,7 +1730,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                             : "text-[#9ca3af] hover:text-[#374151]"
                         }`}
                       >
-                        {t === "ingreso" ? "↑ INGRESO" : "↓ EGRESO"}
+                        {t === "ingreso" ? "↑ INGRESAR" : "↓ SACAR"}
                       </button>
                     ))}
                   </div>
@@ -1751,7 +1769,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     type="text"
                     value={vendidoObs}
                     onChange={e => setVendidoObs(e.target.value)}
-                    placeholder="Observación (opcional)"
+                    placeholder="Anotación (opcional)"
                     maxLength={200}
                     className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
                   />
@@ -1767,7 +1785,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         : "bg-[#45b356]/[0.15] text-[#45b356]/50 cursor-not-allowed"
                     }`}
                   >
-                    {vendidoMoveType === "ingreso" ? "REGISTRAR INGRESO" : "REGISTRAR EGRESO"}
+                    {vendidoMoveType === "ingreso" ? "INGRESAR DINERO" : "SACAR DINERO"}
                   </button>
 
                   {lastVendidoMove && (
@@ -1870,7 +1888,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     type="text"
                     value={fondoObs}
                     onChange={e => setFondoObs(e.target.value)}
-                    placeholder="Observación (opcional)"
+                    placeholder="Anotación (opcional)"
                     maxLength={200}
                     className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
                   />
@@ -1886,7 +1904,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         : "bg-[#2154d8]/[0.15] text-[#2154d8]/50 cursor-not-allowed"
                     }`}
                   >
-                    {fondoSubTab === "apertura" ? "REGISTRAR SALIDA DEL FONDO" : "REGISTRAR PRÉSTAMO AL FONDO"}
+                    {fondoSubTab === "apertura" ? "REGISTRAR SALIDA" : "REGISTRAR PRÉSTAMO"}
                   </button>
 
                   {lastFondoMove && (
@@ -2135,7 +2153,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                   }
                                   if (e.key === "Escape") setEditingMoveId(null);
                                 }}
-                                placeholder="Observación (opcional)"
+                                placeholder="Anotación (opcional)"
                                 maxLength={200}
                                 className="w-full rounded-lg border border-[#c7d7f4] bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/20"
                               />
@@ -2264,7 +2282,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                                     type="text"
                                     value={repoObservacion}
                                     onChange={e => setRepoObservacion(e.target.value)}
-                                    placeholder="Observación (opcional)"
+                                    placeholder="Anotación (opcional)"
                                     maxLength={200}
                                     className="w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/20"
                                   />
