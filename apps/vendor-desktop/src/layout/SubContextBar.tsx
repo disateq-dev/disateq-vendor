@@ -1,6 +1,6 @@
 import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
-import { useInventoryStore, deriveDisponibilidad, deriveEstado } from "../domains/inventory/store";
+import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../domains/inventory/store";
 import { type ActiveModule, type CashSubView, type InventorySubView } from "../App";
 
 interface SubContextBarProps {
@@ -26,6 +26,8 @@ const INVENTORY_TABS: { key: InventorySubView; label: string }[] = [
   { key: "items",          label: "ÍTEMS"          },
   { key: "movimientos",    label: "MOVIMIENTOS"    },
   { key: "disponibilidad", label: "DISPONIBILIDAD" },
+  { key: "reservas",       label: "RESERVAS"       },
+  { key: "reconciliacion", label: "RECONCILIAR"    },
 ];
 
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
@@ -39,11 +41,13 @@ const SHELL: Record<ActiveModule, string> = {
 
 export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, inventorySubView, onInventorySubViewChange }: SubContextBarProps) {
   const { cashSession, sessionStats } = usePOS();
-  const { items: todosItems, movimientos, contexto } = useInventoryStore();
+  const { items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const alertasInventario = todosItems.filter(i => !i.eliminado).filter(i => {
     const existencia = deriveDisponibilidad(movimientos, i.itemId);
+    const reservado  = deriveReservado(reservas, i.itemId);
+    const paraOperar = existencia - reservado;
     const umbral     = contexto.find(c => c.itemId === i.itemId)?.umbralMinimo ?? 0;
-    const estado     = deriveEstado(existencia, umbral);
+    const estado     = deriveEstado(paraOperar, umbral);
     return estado === "bajo_stock" || estado === "agotado";
   }).length;
   const sessionActive = cashSession.isOpen;

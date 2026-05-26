@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Archive, Trash2 } from "lucide-react";
 import { type InventorySubView } from "../../App";
-import { useInventoryStore, deriveDisponibilidad, deriveEstado } from "../../domains/inventory/store";
+import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../../domains/inventory/store";
 import { inventoryService } from "../../domains/inventory/service";
-import type { TipoMovimiento, EstadoDisponibilidad } from "../../domains/inventory/types";
+import type { TipoMovimiento, EstadoDisponibilidad, Reserva } from "../../domains/inventory/types";
 
 interface Props {
   subView: InventorySubView;
 }
 
 export function InventoryWorkspace({ subView }: Props) {
-  const { runtimeId, items: todosItems, movimientos, contexto } = useInventoryStore();
+  const { runtimeId, items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const items = todosItems.filter(i => !i.eliminado);
 
   return (
@@ -26,10 +26,12 @@ export function InventoryWorkspace({ subView }: Props) {
 
       {/* SheetBody */}
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
-        {subView === "disponibilidad" && <ViewDisponibilidad items={items} movimientos={movimientos} contexto={contexto} />}
-        {subView === "movimientos"    && <ViewMovimientos    items={items} movimientos={movimientos} />}
-        {subView === "items"          && <ViewItems          items={items} contexto={contexto} />}
-        {subView === "reset"          && <ViewReset />}
+        {subView === "disponibilidad"  && <ViewDisponibilidad  items={items} movimientos={movimientos} contexto={contexto} reservas={reservas} />}
+        {subView === "movimientos"     && <ViewMovimientos     items={items} movimientos={movimientos} />}
+        {subView === "items"           && <ViewItems           items={items} contexto={contexto} />}
+        {subView === "reservas"        && <ViewReservas        items={items} movimientos={movimientos} reservas={reservas} />}
+        {subView === "reconciliacion"  && <ViewReconciliacion  items={items} movimientos={movimientos} />}
+        {subView === "reset"           && <ViewReset />}
       </div>
 
     </section>
@@ -48,10 +50,12 @@ function ViewDisponibilidad({
   items,
   movimientos,
   contexto,
+  reservas,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
   contexto: ReturnType<typeof useInventoryStore>["contexto"];
+  reservas: ReturnType<typeof useInventoryStore>["reservas"];
 }) {
   if (items.length === 0) {
     return (
@@ -68,15 +72,19 @@ function ViewDisponibilidad({
       <Label>Disponibilidad contextual — {items.length} ítem{items.length !== 1 ? "s" : ""} · {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""}</Label>
       <div className="flex flex-col gap-1.5">
         {items.map(item => {
-          const existencia = deriveDisponibilidad(movimientos, item.itemId);
-          const umbral     = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
-          const estado     = deriveEstado(existencia, umbral);
-          const cfg        = ESTADO_CFG[estado];
+          const existencia  = deriveDisponibilidad(movimientos, item.itemId);
+          const reservado   = deriveReservado(reservas, item.itemId);
+          const paraOperar  = existencia - reservado;
+          const umbral      = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
+          const estado      = deriveEstado(paraOperar, umbral);
+          const cfg         = ESTADO_CFG[estado];
           return (
             <DisponibilidadCard
               key={item.itemId}
               item={item}
               existencia={existencia}
+              reservado={reservado}
+              paraOperar={paraOperar}
               umbral={umbral}
               estado={estado}
               cfg={cfg}
@@ -91,11 +99,15 @@ function ViewDisponibilidad({
 function DisponibilidadCard({
   item,
   existencia,
+  reservado,
+  paraOperar,
   umbral,
   cfg,
 }: {
   item: ReturnType<typeof useInventoryStore>["items"][number];
   existencia: number;
+  reservado: number;
+  paraOperar: number;
   umbral: number;
   estado: EstadoDisponibilidad;
   cfg: typeof ESTADO_CFG[EstadoDisponibilidad];
@@ -125,7 +137,11 @@ function DisponibilidadCard({
     <div className="flex items-center gap-3 rounded-xl border border-[#e9e4dc] bg-white px-4 py-2.5">
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
-        <p className="text-[10px] text-[#9ca3af]">{item.unidadBase}{umbral > 0 && ` · mín. ${umbral}`}</p>
+        <p className="text-[10px] text-[#9ca3af]">
+          {item.unidadBase}
+          {umbral > 0 && ` · mín. ${umbral}`}
+          {reservado > 0 && <span className="text-amber-500"> · {reservado} reservado{reservado !== 1 ? "s" : ""}</span>}
+        </p>
       </div>
 
       {accion ? (
@@ -162,9 +178,17 @@ function DisponibilidadCard({
           <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
             {cfg.label}
           </span>
-          <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>
-            {existencia}
-          </span>
+          {/* disponible para operar prominente; existencia secundaria si hay reservas */}
+          <div className="flex flex-col items-end shrink-0">
+            <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>
+              {paraOperar}
+            </span>
+            {reservado > 0 && (
+              <span className="text-[9px] text-[#b0bac8] tabular-nums leading-none">
+                {existencia} total
+              </span>
+            )}
+          </div>
           <span className="text-[10px] text-[#b0bac8]">{item.unidadBase}</span>
           <div className="flex gap-1 shrink-0">
             <button
@@ -576,6 +600,294 @@ function ItemRow({ item, umbralMinimo }: {
   );
 }
 
+// ── RESERVAS ─────────────────────────────────────────────────────────────────
+
+function ViewReservas({
+  items,
+  movimientos,
+  reservas,
+}: {
+  items: ReturnType<typeof useInventoryStore>["items"];
+  movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
+  reservas: Reserva[];
+}) {
+  const [itemId,   setItemId]   = useState(items[0]?.itemId ?? "");
+  const [cantidad, setCantidad] = useState("");
+  const [causa,    setCausa]    = useState("");
+  const [error,    setError]    = useState("");
+
+  function handleReservar() {
+    const n = parseFloat(cantidad);
+    if (!itemId)          { setError("Selecciona un ítem."); return; }
+    if (isNaN(n) || n <= 0) { setError("Cantidad debe ser positiva."); return; }
+    const causaFinal = causa.trim() || "separación";
+    inventoryService.reservar(itemId, n, causaFinal);
+    setCantidad("");
+    setCausa("");
+    setError("");
+  }
+
+  const activas = reservas.filter(r => r.estado === "activa");
+  const historial = reservas.filter(r => r.estado !== "activa").slice().reverse().slice(0, 10);
+
+  return (
+    <div className="flex flex-col gap-3">
+
+      {/* Formulario nueva reserva */}
+      <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
+        <Label>Nueva reserva operacional</Label>
+        <p className="text-[9.5px] text-[#b0bac8] leading-snug">
+          Señal contextual · no genera movimiento físico · no bloquea operaciones
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          <select
+            value={itemId}
+            onChange={e => setItemId(e.target.value)}
+            className="flex-1 min-w-[140px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+          >
+            {items.length === 0 && <option value="">— sin ítems —</option>}
+            {items.map(i => {
+              const existencia = deriveDisponibilidad(movimientos, i.itemId);
+              return <option key={i.itemId} value={i.itemId}>{i.nombre} ({existencia})</option>;
+            })}
+          </select>
+          <input
+            type="number"
+            value={cantidad}
+            onChange={e => setCantidad(e.target.value)}
+            placeholder="cantidad"
+            className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+          />
+          <input
+            value={causa}
+            onChange={e => setCausa(e.target.value)}
+            placeholder="motivo (opcional)"
+            className="flex-1 min-w-[100px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+          />
+          <button
+            onClick={handleReservar}
+            disabled={items.length === 0}
+            className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95 disabled:opacity-40"
+          >
+            Reservar
+          </button>
+        </div>
+        {error && <p className="text-[11px] text-red-500">{error}</p>}
+      </div>
+
+      {/* Reservas activas */}
+      {activas.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <Label>{activas.length} reserva{activas.length !== 1 ? "s" : ""} activa{activas.length !== 1 ? "s" : ""}</Label>
+          {activas.map(r => {
+            const nombreItem = items.find(i => i.itemId === r.itemId)?.nombre ?? r.itemId;
+            return (
+              <div key={r.reservaId} className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-[#1f2937]">{nombreItem}</p>
+                  <p className="text-[10px] text-[#9ca3af]">{r.causa} · {formatTs(r.timestamp)}</p>
+                </div>
+                <span className="tabular-nums text-[16px] font-bold text-amber-600 shrink-0">
+                  {r.cantidad}
+                </span>
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    onClick={() => inventoryService.materializarReserva(r.reservaId)}
+                    className="rounded px-2 py-1 text-[10px] font-bold text-[#45b356] border border-[#45b356]/30 hover:bg-[#45b356]/8 transition active:scale-95"
+                    title="Materializar como salida"
+                  >
+                    ✓ Entregar
+                  </button>
+                  <button
+                    onClick={() => inventoryService.liberarReserva(r.reservaId, "cancelada-operador")}
+                    className="rounded px-2 py-1 text-[10px] font-bold text-[#6b7280] border border-[#e9e4dc] hover:border-red-200 hover:text-red-400 transition active:scale-95"
+                    title="Liberar reserva"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin reservas activas.</p>
+      )}
+
+      {/* Historial reciente */}
+      {historial.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <Label>Historial reciente</Label>
+          {historial.map(r => {
+            const nombreItem = items.find(i => i.itemId === r.itemId)?.nombre ?? r.itemId;
+            const esMateria  = r.estado === "materializada";
+            return (
+              <div key={r.reservaId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-4 py-2 opacity-70">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-[#374151]">{nombreItem}</p>
+                  <p className="text-[10px] text-[#9ca3af]">{r.causa} · {formatTs(r.timestamp)}</p>
+                </div>
+                <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                  esMateria ? "bg-[#45b356]/10 text-[#45b356]" : "bg-[#e9e4dc] text-[#9ca3af]"
+                }`}>
+                  {esMateria ? "entregado" : "liberado"}
+                </span>
+                <span className="tabular-nums text-[13px] font-bold text-[#9ca3af] shrink-0">{r.cantidad}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── RECONCILIACIÓN ───────────────────────────────────────────────────────────
+
+function ViewReconciliacion({
+  items,
+  movimientos,
+}: {
+  items: ReturnType<typeof useInventoryStore>["items"];
+  movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
+}) {
+  const [itemId,      setItemId]      = useState(items[0]?.itemId ?? "");
+  const [conteo,      setConteo]      = useState("");
+  const [causa,       setCausa]       = useState("reconciliacion");
+  const [error,       setError]       = useState("");
+  const [resultado,   setResultado]   = useState<{
+    delta: number; existenciaAntes: number; conteoFisico: number; movimientoGenerado: boolean;
+  } | null>(null);
+
+  function handleReconciliar() {
+    const n = parseFloat(conteo);
+    if (!itemId)    { setError("Selecciona un ítem."); return; }
+    if (isNaN(n) || n < 0) { setError("Conteo físico debe ser ≥ 0."); return; }
+    const causaFinal = causa.trim() || "reconciliacion";
+    const res = inventoryService.reconciliar(itemId, n, causaFinal);
+    setResultado(res);
+    setConteo("");
+    setError("");
+  }
+
+  const reconciliaciones = [...movimientos]
+    .filter(m => m.tipo === "ajuste" && m.causa.startsWith("reconciliacion"))
+    .reverse()
+    .slice(0, 8);
+
+  const itemSeleccionado = items.find(i => i.itemId === itemId);
+  const existenciaActual = itemId ? deriveDisponibilidad(movimientos, itemId) : null;
+
+  return (
+    <div className="flex flex-col gap-3">
+
+      {/* Formulario conteo físico */}
+      <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
+        <Label>Conteo físico → ajuste automático</Label>
+        <p className="text-[9.5px] text-[#b0bac8] leading-snug">
+          No sobrescribe historial · genera movimiento de ajuste con causalidad explícita
+        </p>
+
+        <div className="flex gap-2 flex-wrap">
+          <select
+            value={itemId}
+            onChange={e => { setItemId(e.target.value); setResultado(null); }}
+            className="flex-1 min-w-[160px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+          >
+            {items.length === 0 && <option value="">— sin ítems —</option>}
+            {items.map(i => {
+              const ex = deriveDisponibilidad(movimientos, i.itemId);
+              return <option key={i.itemId} value={i.itemId}>{i.nombre} (sistema: {ex})</option>;
+            })}
+          </select>
+          <input
+            type="number"
+            value={conteo}
+            onChange={e => { setConteo(e.target.value); setResultado(null); }}
+            placeholder="conteo físico"
+            min="0"
+            className="w-28 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+          />
+          <input
+            value={causa}
+            onChange={e => setCausa(e.target.value)}
+            placeholder="causa"
+            className="flex-1 min-w-[120px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+          />
+          <button
+            onClick={handleReconciliar}
+            disabled={items.length === 0}
+            className="rounded-lg bg-[#005BE3] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#0049b5] active:scale-95 disabled:opacity-40"
+          >
+            Reconciliar
+          </button>
+        </div>
+
+        {error && <p className="text-[11px] text-red-500">{error}</p>}
+
+        {/* Existencia actual del ítem seleccionado */}
+        {itemSeleccionado && existenciaActual !== null && !resultado && (
+          <p className="text-[10px] text-[#9ca3af]">
+            Sistema actual: <span className="font-bold tabular-nums text-[#374151]">{existenciaActual}</span> {itemSeleccionado.unidadBase}
+          </p>
+        )}
+
+        {/* Resultado de la reconciliación */}
+        {resultado && (
+          <div className={`rounded-xl px-3 py-2 flex flex-col gap-0.5 ${
+            resultado.delta === 0
+              ? "bg-[#45b356]/10 border border-[#45b356]/20"
+              : resultado.delta > 0
+              ? "bg-[#005BE3]/8 border border-[#005BE3]/20"
+              : "bg-red-50 border border-red-200"
+          }`}>
+            <p className="text-[11px] font-bold text-[#1f2937]">
+              {resultado.delta === 0
+                ? "Sin diferencia — sistema y físico coinciden."
+                : resultado.delta > 0
+                ? `Diferencia +${resultado.delta}: se registró entrada de reconciliación.`
+                : `Diferencia ${resultado.delta}: se registró salida de reconciliación.`}
+            </p>
+            <p className="text-[10px] text-[#6b7280]">
+              Sistema antes: {resultado.existenciaAntes} · Conteo físico: {resultado.conteoFisico}
+              {resultado.movimientoGenerado && " · Ajuste generado en log"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Historial de reconciliaciones */}
+      {reconciliaciones.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <Label>Reconciliaciones recientes</Label>
+          {reconciliaciones.map(m => {
+            const nombre = items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId;
+            const pos    = m.cantidad >= 0;
+            return (
+              <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-3 py-2">
+                <span className={`w-5 text-center font-bold text-[13px] ${pos ? "text-[#45b356]" : "text-red-500"}`}>
+                  {pos ? "+" : ""}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-[#374151]">{nombre}</p>
+                  <p className="text-[10px] text-[#9ca3af]">{m.causa} · {formatTs(m.timestamp)}</p>
+                </div>
+                <span className={`tabular-nums text-[13px] font-bold ${pos ? "text-[#45b356]" : "text-red-500"}`}>
+                  {pos ? "+" : ""}{m.cantidad}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {reconciliaciones.length === 0 && (
+        <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin reconciliaciones registradas.</p>
+      )}
+    </div>
+  );
+}
+
 // ── RESET (DEV) ──────────────────────────────────────────────────────────────
 
 const MUESTRA_BODEGA = [
@@ -630,6 +942,7 @@ function ViewReset() {
     localStorage.removeItem("inv_v0_items");
     localStorage.removeItem("inv_v0_movimientos");
     localStorage.removeItem("inv_v0_contexto");
+    localStorage.removeItem("inv_v0_reservas");
     window.location.reload();
   }
 
@@ -637,6 +950,7 @@ function ViewReset() {
     localStorage.removeItem("inv_v0_items");
     localStorage.removeItem("inv_v0_movimientos");
     localStorage.removeItem("inv_v0_contexto");
+    localStorage.removeItem("inv_v0_reservas");
     localStorage.removeItem("inv_v0_runtime_id");
     window.location.reload();
   }
@@ -745,7 +1059,7 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
-function formatTs(ts: string): string {
+function formatTs(ts: number): string {
   const d = new Date(ts);
   const hoy = new Date();
   const esHoy = d.toDateString() === hoy.toDateString();
