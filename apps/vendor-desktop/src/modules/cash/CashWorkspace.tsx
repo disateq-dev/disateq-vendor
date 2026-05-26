@@ -668,7 +668,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
               }
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-                {closingStage > 0 ? "CIERRE DE TURNO" : "INFORMACIÓN TURNO"}
+                {closingStage > 0 ? "CIERRE DE TURNO" : "RESUMEN DEL TURNO"}
               </span>
               {closingStage > 0 && (
                 <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-red-400">{closingStage}/5</span>
@@ -1014,7 +1014,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 onClick={() => setClosingStage(4)}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#c2410c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(194,65,12,0.24)] transition hover:bg-[#9a3412] active:scale-[0.98]"
               >
-                CONCILIAR
+                COMPARAR TOTALES
                 <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F10</span>
               </button>
               <button
@@ -1077,7 +1077,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/50 bg-[#FDFCF9]">
           <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
             <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
-            <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INFORMACIÓN DE CAJA DISPONIBLE</span>
+            <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS DISPONIBLES</span>
             <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#85C49C]">
               BLOQUE {operatorBlockPrefix}00
             </span>
@@ -1119,9 +1119,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONTEO CIERRE DE TURNO</span>
               <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO DE CAMBIO"
-                 : closingStage === 2 ? "CONTEO OPER."
+                 : closingStage === 2 ? "CONTEO VENTAS"
                  : closingStage === 3 ? "VALIDACIÓN"
-                 : closingStage === 4 ? "CONCILIACIÓN"
+                 : closingStage === 4 ? "COMPARAR TOTALES"
                  : "CIERRE"}
               </span>
             </div>
@@ -1402,12 +1402,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       </div>
                     ))}
                     <div className="flex justify-between items-center px-3.5 py-2 bg-[#f8fafd]">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">TOTAL OPER.</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">TOTAL CONTADO</span>
                       <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoTotal.toFixed(2)}</span>
                     </div>
                   </div>
                   <p className="text-[10.5px] text-[#9ca3af]">
-                    Tecla <span className="font-mono bg-[#f1f5f9] px-1 rounded">F10</span> para conciliar · <span className="font-mono bg-[#f1f5f9] px-1 rounded">F4</span> para recontar
+                    Tecla <span className="font-mono bg-[#f1f5f9] px-1 rounded">F10</span> para comparar totales · <span className="font-mono bg-[#f1f5f9] px-1 rounded">F4</span> para recontar
                   </p>
                 </>
               )}
@@ -1464,7 +1464,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   {/* Movimientos del turno — referencia/auditoría, no afectan comparación */}
                   {(moneyGt(ingresosTotal, 0) || moneyGt(egresosTotal, 0)) && (
                     <div className="flex flex-col gap-0.5 rounded-xl border border-[#f1f5f9] bg-[#f8fafc] px-3.5 py-2">
-                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Movimientos registrados — referencia</span>
+                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Movimientos del turno</span>
                       {moneyGt(ingresosTotal, 0) && (
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] text-[#9ca3af]">Ingresos</span>
@@ -1478,7 +1478,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         </div>
                       )}
                       <div className="flex justify-between items-center border-t border-[#f1f5f9] pt-0.5 mt-0.5">
-                        <span className="text-[9px] text-[#9ca3af]">Op. reconstruida</span>
+                        <span className="text-[9px] text-[#9ca3af]">Total reconstruido</span>
                         <span className="text-[10px] font-bold tabular-nums text-[#374151]">
                           S/ {moneySub(moneyAdd(contadoEfeNum, ingresosTotal), egVendido).toFixed(2)}
                         </span>
@@ -1603,9 +1603,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             <div className="flex flex-col">
               {([
                 { s: 1, label: "FONDO DE CAMBIO" },
-                { s: 2, label: "CONTEO OPER." },
+                { s: 2, label: "CONTEO VENTAS" },
                 { s: 3, label: "VALIDACIÓN" },
-                { s: 4, label: "CONCILIACIÓN" },
+                { s: 4, label: "COMPARAR TOTALES" },
                 { s: 5, label: "CIERRE" },
               ] as const).map((step, idx) => {
                 const done   = closingStage > step.s;
@@ -1930,7 +1930,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
               <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
-              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO MOVIMIENTOS</span>
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS DEL TURNO</span>
               <div className="ml-auto flex items-center gap-2.5">
                 {moneyGt(totalPending, 0) && (
                   <span className="text-[10px] font-bold text-amber-600 tabular-nums">⚠ S/ {totalPending.toFixed(2)} pdte.</span>

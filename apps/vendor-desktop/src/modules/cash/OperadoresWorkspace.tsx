@@ -343,7 +343,7 @@ function PanelGestion({ selectedId, onSelect }: {
       {/* SheetHeader — línea única fija */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#85C49C]/15 bg-[#F3F8F4] px-4">
         <Users size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONFIGURAR OPERADOR</span>
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">DATOS DEL OPERADOR</span>
       </div>
 
       {/* ActionBar */}
@@ -631,7 +631,7 @@ function PanelHistorico() {
       {/* SheetHeader — línea única fija */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#85C49C]/15 bg-[#F3F8F4] px-4">
         <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTÓRICO</span>
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTORIAL</span>
         <div className="ml-auto flex items-center gap-2">
           {suspendidos.length > 0 && (
             <span className="text-[9px] font-semibold text-amber-500">{suspendidos.length} susp.</span>

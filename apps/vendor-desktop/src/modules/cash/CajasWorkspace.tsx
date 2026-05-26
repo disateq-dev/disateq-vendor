@@ -190,7 +190,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
         })}
         {blocks.length === 0 && (
           <div className="flex items-center justify-center py-10">
-            <p className="text-[12px] font-semibold text-[#c0cad4]">Sin bloques operacionales</p>
+            <p className="text-[12px] font-semibold text-[#c0cad4]">Sin cajas creadas</p>
           </div>
         )}
       </div>

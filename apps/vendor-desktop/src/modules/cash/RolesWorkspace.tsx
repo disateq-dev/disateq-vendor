@@ -261,8 +261,8 @@ function PanelGestionRoles({ roles, setRoles, selectedId, onSelect }: {
                 selected.hasOperationalHistory ? "text-[#5b6fa8]" : "text-[#b0bac8]"
               }`}>
                 {selected.hasOperationalHistory
-                  ? "Con histórico operacional · solo desactivar"
-                  : "Sin histórico operacional · puede eliminarse"}
+                  ? "Tiene historial de uso · solo desactivar"
+                  : "Sin historial · puede eliminarse"}
               </span>
             </div>
 
