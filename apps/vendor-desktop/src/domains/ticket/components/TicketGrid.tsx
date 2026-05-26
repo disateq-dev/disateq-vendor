@@ -88,7 +88,7 @@ export function TicketGrid() {
         {lines.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
             <p className="text-[13px] font-semibold text-[#c0cad4]">Ticket vacío</p>
-            <p className="text-[11px] text-[#d1d9e1]">Busque un producto para comenzar</p>
+            <p className="text-[11px] text-[#d1d9e1]">Agrega un producto para empezar</p>
           </div>
         ) : (
           <div className="flex flex-col gap-0.5">

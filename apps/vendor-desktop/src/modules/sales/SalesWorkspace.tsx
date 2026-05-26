@@ -6,12 +6,23 @@ import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type CatalogProduct } from "../../data/catalogs";
 
+function Helper({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      className="inline-flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full bg-[#e4e9f0] text-[8px] font-bold text-[#9ca3af] transition hover:bg-[#d1d9e1] hover:text-[#6b7280]"
+    >
+      ?
+    </span>
+  );
+}
+
 function statusChip(p: CatalogProduct) {
   if (p.status === "low")      return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
-  if (p.status === "out")      return <span className="flex items-center gap-0.5 text-red-400"><CircleX size={10} strokeWidth={2} />Sin stock</span>;
-  if (p.status === "promo")    return <span className="flex items-center gap-0.5 text-orange-500"><Tag size={10} strokeWidth={2} />Promoción</span>;
-  if (p.status === "expiring") return <span className="flex items-center gap-0.5 text-amber-400"><Clock size={10} strokeWidth={2} />Vence pronto</span>;
-  return <span className="flex items-center gap-0.5 text-[#45b356]"><CircleCheck size={10} strokeWidth={2} />Con stock</span>;
+  if (p.status === "out")      return <span className="flex items-center gap-0.5 text-red-400"><CircleX size={10} strokeWidth={2} />Sin unidades</span>;
+  if (p.status === "promo")    return <span className="flex items-center gap-0.5 text-orange-500"><Tag size={10} strokeWidth={2} />Oferta</span>;
+  if (p.status === "expiring") return <span className="flex items-center gap-0.5 text-amber-400"><Clock size={10} strokeWidth={2} />Revisar pronto</span>;
+  return <span className="flex items-center gap-0.5 text-[#45b356]"><CircleCheck size={10} strokeWidth={2} />Disponible</span>;
 }
 
 function tilePrice(p: CatalogProduct): { prefix: string; cls: string } {
@@ -390,9 +401,12 @@ export function SalesWorkspace() {
 
         <div className="h-4 w-px shrink-0 bg-[#eaecf0]" />
 
-        <button className="shrink-0 rounded-lg p-1.5 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#6b7280]">
-          <ScanLine size={16} />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button title="Escanear código de barras" className="rounded-lg p-1.5 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#6b7280]">
+            <ScanLine size={16} />
+          </button>
+          <Helper text="Apunta el escáner al código de barras del producto para agregarlo automáticamente." />
+        </div>
 
         {view === "dense" && <ViewToggle current={visualMode} onChange={setVisualMode} />}
       </div>
@@ -415,7 +429,7 @@ export function SalesWorkspace() {
               <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
                 <Search size={26} className="text-[#dce3ea]" />
                 <p className="mt-1 text-[13px] font-semibold text-[#b0bac8]">
-                  Escriba nombre, código o referencia para localizar productos rápidamente.
+                  Busca por nombre, código o escanea para agregar.
                 </p>
                 {!cashSession.isOpen && (
                   <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold text-amber-400">

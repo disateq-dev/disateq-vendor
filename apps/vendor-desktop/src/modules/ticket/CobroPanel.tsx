@@ -27,6 +27,17 @@ type CustomerData = {
   email?:     string;
 };
 
+function Helper({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      className="inline-flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full bg-[#e4e9f0] text-[8px] font-bold text-[#9ca3af] transition hover:bg-[#d1d9e1] hover:text-[#6b7280]"
+    >
+      ?
+    </span>
+  );
+}
+
 let _dispatchCorrelative = 1;
 
 const DOC_SERIES: Record<DocType, { series: string; correlative: number }> = {
@@ -172,7 +183,7 @@ export function CobroPanel() {
       phone:      cPhone.trim()    || undefined,
       email:      cEmail.trim()    || undefined,
     });
-    if (persist) showNotice("Cliente guardado (próximamente sincronización)");
+    if (persist) showNotice("Cliente registrado");
     setCDoc(""); setCName(""); setCDept(""); setCProvince("");
     setCDistrict(""); setCAddress(""); setCPhone(""); setCEmail("");
     setCobroView("main");
@@ -192,7 +203,7 @@ export function CobroPanel() {
   }
 
   function confirmEmit() {
-    if (!cashSession.isOpen) { showNotice("Apertura de caja requerida para emitir"); return; }
+    if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
     if (!canConfirm) return;
     const now = new Date();
     const p2  = (n: number) => String(n).padStart(2, "0");
@@ -215,7 +226,7 @@ export function CobroPanel() {
   }
 
   async function handleImprimir() {
-    if (!cashSession.isOpen) { showNotice("Apertura de caja requerida para emitir"); return; }
+    if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
     if (!canConfirm) return;
     const now      = new Date();
     const p        = (n: number) => String(n).padStart(2, "0");
@@ -441,6 +452,7 @@ export function CobroPanel() {
             {/* AFECTACIÓN TRIBUTARIA */}
             <div className="flex items-center gap-2">
               <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Afect.</span>
+              <Helper text="Tipo tributario de la operación. Para ventas normales: Gravado · Op. onerosa." />
               <select
                 value={affectation}
                 onChange={e => setAffectation(e.target.value as Affectation)}

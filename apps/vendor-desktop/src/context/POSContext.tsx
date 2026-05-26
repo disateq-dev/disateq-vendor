@@ -818,7 +818,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const openCobro = useCallback(() => {
     if (!cashSessionRef.current.isOpen) {
-      showNotice("Apertura de caja requerida para cobrar");
+      showNotice("Abre el turno para poder cobrar");
       return;
     }
     setCobroOpen(true);
