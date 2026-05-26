@@ -194,7 +194,7 @@ function ViewMovimientos({
                 <span className={`w-4 text-center font-bold text-[13px] ${color}`}>{sign}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-semibold text-[#374151]">{items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId}</p>
-                  <p className="text-[10px] text-[#9ca3af]">{m.causa} · {new Date(m.timestamp).toLocaleTimeString()}</p>
+                  <p className="text-[10px] text-[#9ca3af]">{m.causa} · {formatTs(m.timestamp)}</p>
                 </div>
                 <span className={`tabular-nums text-[13px] font-bold ${color}`}>{sign}{Math.abs(m.cantidad)}</span>
               </div>
@@ -417,4 +417,14 @@ function Label({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9ca3af]">{children}</p>
   );
+}
+
+function formatTs(ts: string): string {
+  const d = new Date(ts);
+  const hoy = new Date();
+  const esHoy = d.toDateString() === hoy.toDateString();
+  const hora = d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+  if (esHoy) return hora;
+  const fecha = d.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit" });
+  return `${fecha} ${hora}`;
 }
