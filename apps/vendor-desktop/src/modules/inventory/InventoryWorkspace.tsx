@@ -72,22 +72,117 @@ function ViewDisponibilidad({
           const estado     = deriveEstado(existencia, umbral);
           const cfg        = ESTADO_CFG[estado];
           return (
-            <div key={item.itemId} className="flex items-center gap-3 rounded-xl border border-[#e9e4dc] bg-white px-4 py-2.5">
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
-                <p className="text-[10px] text-[#9ca3af]">{item.unidadBase}{umbral > 0 && ` · mín. ${umbral}`}</p>
-              </div>
-              <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
-                {cfg.label}
-              </span>
-              <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>
-                {existencia}
-              </span>
-              <span className="text-[10px] text-[#b0bac8]">{item.unidadBase}</span>
-            </div>
+            <DisponibilidadCard
+              key={item.itemId}
+              item={item}
+              existencia={existencia}
+              umbral={umbral}
+              estado={estado}
+              cfg={cfg}
+            />
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function DisponibilidadCard({
+  item,
+  existencia,
+  umbral,
+  cfg,
+}: {
+  item: ReturnType<typeof useInventoryStore>["items"][number];
+  existencia: number;
+  umbral: number;
+  estado: EstadoDisponibilidad;
+  cfg: typeof ESTADO_CFG[EstadoDisponibilidad];
+}) {
+  const [accion,   setAccion]   = useState<"entrada" | "salida" | null>(null);
+  const [cantidad, setCantidad] = useState("1");
+
+  function confirmar() {
+    const n = parseFloat(cantidad);
+    if (isNaN(n) || n <= 0) { cancelar(); return; }
+    if (accion === "entrada") inventoryService.registrarEntrada(item.itemId, n, "movimiento-rápido");
+    else if (accion === "salida") inventoryService.registrarSalida(item.itemId, n, "movimiento-rápido");
+    cancelar();
+  }
+
+  function cancelar() {
+    setAccion(null);
+    setCantidad("1");
+  }
+
+  function activar(tipo: "entrada" | "salida") {
+    setAccion(tipo);
+    setCantidad("1");
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-[#e9e4dc] bg-white px-4 py-2.5">
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
+        <p className="text-[10px] text-[#9ca3af]">{item.unidadBase}{umbral > 0 && ` · mín. ${umbral}`}</p>
+      </div>
+
+      {accion ? (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={`text-[10px] font-bold ${accion === "entrada" ? "text-[#45b356]" : "text-red-500"}`}>
+            {accion === "entrada" ? "+" : "−"}
+          </span>
+          <input
+            autoFocus
+            type="number"
+            value={cantidad}
+            onChange={e => setCantidad(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter")  confirmar();
+              if (e.key === "Escape") cancelar();
+            }}
+            className="w-16 rounded border border-[#e9e4dc] px-2 py-0.5 text-[12px] tabular-nums text-center focus:outline-none focus:border-[#C4844A]/50"
+          />
+          <button
+            onClick={confirmar}
+            className="rounded px-2 py-0.5 text-[11px] font-bold bg-[#C4844A] text-white hover:bg-[#a86d38] transition active:scale-95"
+          >
+            OK
+          </button>
+          <button
+            onClick={cancelar}
+            className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <>
+          <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
+            {cfg.label}
+          </span>
+          <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>
+            {existencia}
+          </span>
+          <span className="text-[10px] text-[#b0bac8]">{item.unidadBase}</span>
+          <div className="flex gap-1 shrink-0">
+            <button
+              onClick={() => activar("entrada")}
+              className="rounded px-2 py-1 text-[11px] font-bold text-[#45b356] border border-[#45b356]/30 hover:bg-[#45b356]/8 transition active:scale-95"
+              title="Registrar entrada"
+            >
+              +
+            </button>
+            <button
+              onClick={() => activar("salida")}
+              className="rounded px-2 py-1 text-[11px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition active:scale-95"
+              title="Registrar salida"
+            >
+              −
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
