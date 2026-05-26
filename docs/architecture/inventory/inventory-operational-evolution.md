@@ -35,6 +35,7 @@ Complementa:
 | [8. Protocolo de decisión de capas](#8-protocolo-de-decisión-de-capas) | Fases 1–5, árbol de decisión, anti-patrones | Ejecutar el proceso de activación de forma controlada |
 | [9. Tensiones arquitectónicas entre capas](#9-tensiones-arquitectónicas-entre-capas) | T-01 a T-07 + tensiones cruzadas, criterios de navegación | Reconocer y navegar conflictos entre principios de capas distintas |
 | [10. Glosario operacional del dominio](#10-glosario-operacional-del-dominio) | 26 términos con definición operacional propia | Resolver ambigüedad semántica en escenarios, decisiones y diseño |
+| [11. Semántica operacional CAPA 1 — consolidación mínima](#11-semántica-operacional-capa-1--consolidación-mínima) | Qué significa DISPONIBLE · qué altera existencia · límites · anti-patrones · tensiones de CAPA 1 implementada | Referencia semántica precisa antes de agregar cualquier funcionalidad sobre CAPA 1 |
 
 ---
 
@@ -1975,5 +1976,614 @@ Una función concreta que el sistema puede ofrecer al operador para resolver un 
 Las capacidades se clasifican en núcleo (presentes desde CAPA 0, siempre disponibles) y opcionales (activables con capas superiores cuando el problema las justifica).
 
 Ver: `CAPA EVOLUTIVA`, `DISPONIBILIDAD OPERACIONAL`
+
+---
+
+# 11. SEMÁNTICA OPERACIONAL CAPA 1 — CONSOLIDACIÓN MÍNIMA
+
+## PROPÓSITO
+
+Esta sección documenta la semántica precisa de CAPA 1 **tal como está implementada actualmente** en DISATEQ VENDOR™.
+
+No describe la totalidad conceptual de CAPA 1 (ver Sección 2).
+
+Describe lo que CAPA 1 mínima **significa operacionalmente ahora mismo**: sus invariantes reales, sus límites explícitos, sus tensiones activas y sus anti-patrones específicos.
+
+El objetivo es consolidar la semántica antes de agregar cualquier funcionalidad sobre esta capa.
+
+---
+
+## ALCANCE DE CAPA 1 MÍNIMA IMPLEMENTADA
+
+CAPA 1 mínima activa en el runtime actual comprende exactamente:
+
+* `ContextoItem` — registro de `umbralMinimo` por ítem
+* `deriveEstado()` — proyección de estado a partir de existencia + umbral
+* Tres estados operacionales: `DISPONIBLE` · `BAJO_STOCK` · `AGOTADO`
+* Badge contextual en runtime (SubContextBar) con conteo de alertas activas
+
+No están activos en esta implementación mínima:
+
+* Contexto de ubicación o punto operacional
+* Estados de disponibilidad comprometida / reservada / bloqueada
+* Variantes de ítem con disponibilidad independiente
+
+---
+
+## QUÉ SIGNIFICA "DISPONIBLE" EN CAPA 1
+
+El estado `DISPONIBLE` tiene semántica precisa que depende del contexto operacional del ítem.
+
+### Cuando umbralMinimo = 0
+
+```text
+DISPONIBLE ≡ existencia > 0
+```
+
+El umbral no está configurado para este ítem.
+
+El sistema solo distingue si hay o no hay existencia.
+
+`umbralMinimo = 0` significa "sin umbral de alerta configurado", no "umbral en cero".
+
+### Cuando umbralMinimo > 0
+
+```text
+DISPONIBLE ≡ existencia > umbralMinimo
+```
+
+La existencia supera el mínimo operacional configurado para este ítem en este contexto.
+
+La misma existencia física puede generar estados distintos en ítems con umbrales distintos.
+
+### Implicación semántica crítica
+
+`DISPONIBLE` en CAPA 1 no significa:
+
+```text
+"hay unidades físicas presentes"
+```
+
+Significa:
+
+```text
+"la existencia actual supera el contexto operacional mínimo configurado"
+```
+
+Un ítem con existencia = 5 y umbralMinimo = 10 está en `BAJO_STOCK`, no `DISPONIBLE`, aunque físicamente existan unidades.
+
+---
+
+## QUÉ SIGNIFICA "BAJO_STOCK"
+
+```text
+BAJO_STOCK ≡ existencia > 0 AND existencia ≤ umbralMinimo AND umbralMinimo > 0
+```
+
+`BAJO_STOCK` solo es posible cuando el umbral está configurado.
+
+Sin umbral configurado, el sistema no puede derivar `BAJO_STOCK`.
+
+`BAJO_STOCK` es una señal contextual operacional, no un bloqueo.
+
+El operador puede seguir vendiendo ítems en `BAJO_STOCK`.
+
+El sistema informa; no detiene.
+
+---
+
+## QUÉ SIGNIFICA "AGOTADO"
+
+```text
+AGOTADO ≡ existencia ≤ 0
+```
+
+`AGOTADO` es el único estado que no depende del contexto de umbral.
+
+Es el único estado que deriva exclusivamente de la proyección sobre el log de movimientos.
+
+### Nota sobre existencia negativa
+
+Si se registran salidas sobre disponibilidad ya en cero, `deriveDisponibilidad()` produce un resultado negativo.
+
+El sistema acepta esto como operación causal válida (un ajuste puede ser negativo, una salida puede superar el disponible si el operador así lo registra).
+
+`existencia < 0` también produce `AGOTADO`.
+
+Esto no es un error del modelo: es continuidad operacional bajo override implícito.
+
+La existencia negativa es una señal de divergencia entre lo registrado y la realidad física que requiere reconciliación.
+
+---
+
+## QUÉ PUEDE ALTERAR LA DISPONIBILIDAD OPERACIONAL
+
+En CAPA 1 mínima, la disponibilidad operacional puede cambiar por dos vías:
+
+### 1. Movimientos (heredado de CAPA 0)
+
+* `entrada` → incrementa existencia
+* `salida` → decrementa existencia
+* `ajuste` → aplica delta firmado sobre existencia
+
+Todo movimiento es causal, inmutable, y forma parte del log permanente.
+
+La disponibilidad operacional es siempre la proyección de estos movimientos.
+
+### 2. Cambio de umbralMinimo (CAPA 1)
+
+Cambiar `umbralMinimo` no altera la existencia.
+
+Pero puede cambiar el estado operacional derivado inmediatamente.
+
+Un ítem con existencia = 8 y umbralMinimo = 5 está `DISPONIBLE`.
+
+Si se cambia umbralMinimo a 10, el mismo ítem pasa a `BAJO_STOCK` sin que ocurra ningún movimiento físico.
+
+**Esta es la característica semántica más importante de CAPA 1:**
+
+```text
+el estado operacional puede cambiar
+sin que cambie la existencia física
+```
+
+---
+
+## QUÉ NO ALTERA LA EXISTENCIA FÍSICA
+
+Las siguientes operaciones no generan movimientos y no modifican la existencia:
+
+* Cambio de `umbralMinimo`
+* Cambio de nombre del ítem (`nombre`)
+* Cambio de unidad base (`unidadBase`)
+* Baja lógica (`eliminado = true`)
+* Consulta de disponibilidad
+* Proyección de estado (`deriveEstado()`)
+* Carga o reconstrucción desde persistencia
+
+La baja lógica merece atención particular:
+
+Cuando un ítem se da de baja (`eliminado = true`), sus movimientos permanecen en el log.
+
+La existencia derivada de ese ítem, calculada sobre su log, no cambia.
+
+Lo que cambia es que el ítem deja de aparecer en las vistas activas del sistema.
+
+Los movimientos de ítems dados de baja son historia operacional válida e inmutable.
+
+---
+
+## CONTEXTO OPERACIONAL TEMPORAL
+
+El `umbralMinimo` es el único elemento de contexto operacional en CAPA 1 mínima.
+
+Tiene las siguientes características temporales:
+
+### Mutabilidad
+
+El operador puede cambiar `umbralMinimo` en cualquier momento.
+
+No hay restricciones de flujo para este cambio.
+
+### Sin trazabilidad propia en implementación actual
+
+En la implementación actual, los cambios de `umbralMinimo` **no generan eventos**.
+
+El `ContextoItem` es un estado mutable que refleja el valor actual, no el historial de cambios.
+
+Esto significa:
+
+* No es posible reconstruir cuándo se configuró el umbral que está activo ahora
+* No es posible saber si el umbral cambió entre dos movimientos
+* La reconciliación con este estado es más frágil que con los movimientos
+
+Esta es una **deuda semántica conocida** de CAPA 1 mínima.
+
+No bloquea la operación actual pero debe considerarse antes de activar CAPA 2.
+
+### Sin efecto retroactivo
+
+Cambiar `umbralMinimo` no reinterpreta movimientos pasados.
+
+El log de movimientos es inmutable. El umbral es contexto actual aplicado sobre la proyección actual.
+
+No existe "disponibilidad histórica bajo el umbral anterior".
+
+---
+
+## REVERSIBILIDAD
+
+### Movimientos
+
+Los movimientos no son reversibles en el sentido de "deshacer".
+
+Son compensables: una salida incorrecta se compensa con una entrada con causa explícita.
+
+La historia permanece. La corrección es un nuevo evento.
+
+### umbralMinimo
+
+Es completamente reversible: se puede cambiar en cualquier momento sin restricción.
+
+### Baja lógica
+
+En la implementación actual, `eliminado = true` es teóricamente reversible a nivel de datos.
+
+No está expuesta en UI una operación de "reactivar ítem".
+
+Consideración antes de exponer reactivación: ¿el operador necesita entender que el ítem tiene movimientos históricos acumulados antes de reactivarlo?
+
+---
+
+## DEGRADACIÓN OFFLINE
+
+CAPA 1 mínima no agrega dependencias de conectividad sobre CAPA 0.
+
+### Qué funciona offline en CAPA 1
+
+* Consulta de disponibilidad con estados (proyección sobre log local)
+* Registro de movimientos con impacto inmediato en estado derivado
+* Badge de alertas (proyección local)
+* Cambio de umbralMinimo (persistido en localStorage)
+
+### Qué CAPA 0 puede hacer si CAPA 1 no está disponible
+
+Si el `ContextoItem` no pudiera cargarse (localStorage corrupto o ausente):
+
+* Los movimientos siguen siendo válidos
+* La disponibilidad numérica sigue siendo proyectable
+* Solo se perdería la señalización de estado contextual
+* El operador vería números sin estados de alerta
+
+Esta degradación parcial es operacionalmente aceptable: el negocio continúa, la información de alerta se recupera cuando el contexto esté disponible.
+
+---
+
+## LÍMITES EXPLÍCITOS DEL DOMINIO
+
+CAPA 1 mínima implementada **no modela** los siguientes conceptos aunque estén en el glosario del dominio:
+
+### No hay ubicación operacional
+
+Toda la disponibilidad de un ítem es un único número.
+
+No existe distinción entre disponibilidad en bodega y disponibilidad en mostrador.
+
+El operador gestiona mentalmente la ubicación física.
+
+### No hay estados de disponibilidad comprometida
+
+No existe disponibilidad `reservada`, `en tránsito`, `bloqueada`, o `comprometida`.
+
+El flujo operacional actual es:
+
+```text
+existencia disponible → salida directa al vender
+```
+
+Sin período de reserva previo a materialización.
+
+### No hay variantes de ítem
+
+Un ítem tiene una sola disponibilidad.
+
+Talla S y talla L de una prenda son dos ítems distintos en el sistema, no variantes de un mismo ítem.
+
+### No hay confianza operacional
+
+No existe concepto de cuánto hace que no se valida físicamente un ítem.
+
+La disponibilidad se presenta como proyección sobre el log sin indicador de nivel de certeza.
+
+### No hay señales de presión activas más allá del badge
+
+El badge en SubContextBar es el único mecanismo de presión operacional.
+
+No hay señalización progresiva, no hay umbrales de tiempo, no hay alertas de expiración.
+
+### El umbralMinimo no es un límite bloqueante
+
+El sistema nunca bloquea operaciones porque un ítem esté en `BAJO_STOCK` o `AGOTADO`.
+
+Los estados son señales contextuales, no guardas operacionales.
+
+Esta es la directriz de AP-03 aplicada específicamente al umbral mínimo.
+
+---
+
+## ANTI-PATRONES ESPECÍFICOS DE CAPA 1 MÍNIMA
+
+### AP-CAPA1-01 — TRATAR umbralMinimo COMO LÍMITE BLOQUEANTE
+
+**Cómo aparece:**
+
+Lógica que impide registrar salidas cuando `existencia ≤ umbralMinimo`.
+
+O UI que deshabilita acciones cuando el estado es `BAJO_STOCK` o `AGOTADO`.
+
+**Por qué parece razonable:**
+
+El umbral fue configurado para evitar que el stock baje demasiado. Tiene sentido no dejar vender más.
+
+**Problema real:**
+
+El operador pierde continuidad operacional en situaciones donde tiene información que el sistema no tiene.
+
+Un ítem en `BAJO_STOCK` puede estar a punto de ser repuesto.
+
+Un ítem en `AGOTADO` puede tener unidades físicas no registradas.
+
+El umbral es una señal, no una barrera.
+
+**Dirección correcta:**
+
+El sistema señaliza el estado con visibilidad contextual.
+
+El operador decide con esa información.
+
+El override es siempre posible, con causalidad registrada.
+
+---
+
+### AP-CAPA1-02 — ALMACENAR EL ESTADO EN LUGAR DE DERIVARLO
+
+**Cómo aparece:**
+
+Agregar un campo `estado: EstadoDisponibilidad` al `ItemOperacional` o al `ContextoItem` que se actualiza con cada movimiento o cambio de umbral.
+
+**Por qué parece razonable:**
+
+Parece más eficiente consultar el estado almacenado que recalcularlo.
+
+**Problema real:**
+
+El estado almacenado puede diverger del estado derivado cuando hay movimientos que no actualizaron el campo.
+
+Al reconciliar runtimes o reconstruir desde log, el estado almacenado queda inconsistente.
+
+Viola AP-01 (contador mutable) aplicado al estado.
+
+**Dirección correcta:**
+
+El estado es siempre una proyección:
+
+```text
+deriveEstado(deriveDisponibilidad(movimientos, itemId), umbralMinimo)
+```
+
+Nunca un campo almacenado directamente.
+
+---
+
+### AP-CAPA1-03 — CONFUNDIR umbralMinimo = 0 CON "ÍTEM SIEMPRE DISPONIBLE"
+
+**Cómo aparece:**
+
+Lógica que trata `umbralMinimo = 0` como "este ítem nunca puede estar en BAJO_STOCK".
+
+O UI que muestra ítems con `umbralMinimo = 0` de forma especial como si estuvieran exentos de alerta.
+
+**Por qué parece razonable:**
+
+Si el umbral es cero, parece que el operador dice "no me importa cuánto quede".
+
+**Problema real:**
+
+`umbralMinimo = 0` significa "umbral no configurado aún", no "acepto cualquier cantidad".
+
+La semántica es: el operador no ha establecido un umbral de alerta para este ítem todavía.
+
+Tratarlo como "exento de alerta permanentemente" puede silenciar señales importantes cuando el operador sí quiere configurar un umbral pero aún no lo hizo.
+
+**Dirección correcta:**
+
+`umbralMinimo = 0` → umbral no configurado → el sistema solo señaliza `AGOTADO` (existencia ≤ 0).
+
+No hay estado `BAJO_STOCK` posible sin umbral configurado.
+
+---
+
+### AP-CAPA1-04 — INCLUIR ÍTEMS DADOS DE BAJA EN ALERTAS Y DISPONIBILIDAD ACTIVA
+
+**Cómo aparece:**
+
+El badge de alertas en SubContextBar cuenta ítems con `eliminado = true`.
+
+O las vistas de disponibilidad muestran ítems dados de baja como si estuvieran activos.
+
+**Por qué parece razonable:**
+
+El ítem tiene movimientos en el log. Su disponibilidad derivada puede ser cero o negativa, generando estado `AGOTADO`. Parece una alerta válida.
+
+**Problema real:**
+
+El ítem fue dado de baja operacionalmente. Su estado ya no es relevante para la operación activa.
+
+Incluirlo en alertas genera ruido operacional y puede confundir al operador.
+
+**Dirección correcta:**
+
+Las vistas activas, el badge de alertas, y cualquier proyección de estado operacional filtran ítems con `eliminado = true`.
+
+Los movimientos de ítems dados de baja permanecen en el log para trazabilidad histórica.
+
+Son historia, no estado activo.
+
+---
+
+## TENSIONES SEMÁNTICAS ACTIVAS EN CAPA 1 MÍNIMA
+
+### T-CAPA1-01 — UMBRAL COMO SEÑAL vs UMBRAL COMO NÚMERO DE REORDEN
+
+**Tensión:**
+
+El operador puede interpretar `umbralMinimo` como "avísame cuando quede menos de N unidades" (señal contextual) o como "el mínimo exacto que debo mantener en stock" (número de reorden operacional).
+
+**Dónde aparece:**
+
+Cuando el operador configura un umbral y espera que el sistema le ayude a decidir cuándo reponer.
+
+**Consecuencia semántica:**
+
+Si el umbral es señal contextual: el sistema informa, el operador decide cuándo y cuánto reponer.
+
+Si el umbral es número de reorden: el operador espera que el sistema dispare acciones (pedidos, alertas avanzadas) cuando se alcanza. Esto requiere CAPA 2 o superior.
+
+**Criterio de navegación en CAPA 1 mínima:**
+
+El umbral es señal contextual.
+
+La UI debe comunicar esto explícitamente: "stock mínimo para alerta", no "punto de reorden".
+
+No hay acciones automáticas al alcanzar el umbral en CAPA 1 mínima.
+
+**Señal de desequilibrio:**
+
+El operador pregunta "¿por qué el sistema no me avisó cuando quedaron X unidades?" porque espera notificación activa, no solo badge pasivo.
+
+---
+
+### T-CAPA1-02 — BAJA LÓGICA vs VISIBILIDAD DEL HISTORIAL
+
+**Tensión:**
+
+Dar de baja un ítem elimina su presencia de las vistas activas (operacionalmente correcto) pero sus movimientos históricos permanecen en el log y pueden ser relevantes para la trazabilidad (semánticamente correcto).
+
+**Dónde aparece:**
+
+Cuando el operador da de baja un ítem que tuvo muchos movimientos, y luego necesita entender por qué la caja cerró con ciertos números.
+
+O cuando el mismo ítem se quiere "reactivar" más adelante con historia acumulada.
+
+**Consecuencia semántica:**
+
+La baja lógica es una decisión sobre visibilidad operacional activa, no sobre integridad del log.
+
+El log de movimientos no tiene concepto de "ítem activo" — tiene eventos con `itemId`.
+
+La baja solo afecta qué se muestra; no qué se conserva.
+
+**Criterio de navegación:**
+
+Los movimientos de ítems dados de baja son accesibles para auditoría y trazabilidad aunque no aparezcan en vistas activas.
+
+Si una vista de log de movimientos muestra todos los movimientos (histórico completo), debe incluir movimientos de ítems dados de baja, identificando el ítem como dado de baja.
+
+---
+
+### T-CAPA1-03 — MUTABILIDAD DE umbralMinimo vs TRAZABILIDAD DE CONTEXTO
+
+**Tensión:**
+
+El `umbralMinimo` es completamente mutable sin generar eventos (simplicidad operacional) versus la necesidad de saber qué umbral estaba activo en un momento pasado (trazabilidad de contexto).
+
+**Dónde aparece:**
+
+Cuando el operador revisa el log de movimientos de hace dos semanas y quiere entender por qué un ítem marcó `BAJO_STOCK` en ese momento.
+
+El log muestra los movimientos con sus cantidades.
+
+Pero el `umbralMinimo` actual puede haber cambiado desde entonces.
+
+No es posible recalcular el estado `BAJO_STOCK` histórico con el umbral histórico porque no hay registro del umbral histórico.
+
+**Consecuencia semántica:**
+
+CAPA 1 mínima tiene trazabilidad completa de existencia (log de movimientos) pero trazabilidad parcial de estado operacional (el umbral es un estado presente, no un historial de estados).
+
+Esto es aceptable en CAPA 1 mínima porque el valor operacional de los estados es presente, no histórico.
+
+**Señal de que la tensión se volvió problema real:**
+
+El operador necesita reconstruir qué estado tenía un ítem en una fecha pasada específica para resolver una discrepancia operacional.
+
+Si esto ocurre con frecuencia, es una señal de activación de capacidades de trazabilidad de contexto (CAPA 2+).
+
+**Criterio de navegación:**
+
+En CAPA 1 mínima: aceptar que el estado histórico no es exactamente reconstruible.
+
+Lo que sí es reconstruible: la existencia en cualquier momento pasado (proyección sobre log de movimientos hasta esa fecha).
+
+Lo que no es reconstruible: el estado operacional (`BAJO_STOCK` / `DISPONIBLE`) en un momento pasado, porque el umbral puede haber cambiado.
+
+---
+
+## INVARIANTES DE CAPA 1 MÍNIMA
+
+Invariantes que deben mantenerse mientras CAPA 1 mínima esté activa:
+
+```text
+I-C1-01  El estado operacional es siempre una proyección.
+         Nunca un campo almacenado ni calculado fuera de deriveEstado().
+
+I-C1-02  umbralMinimo = 0 significa "sin umbral configurado",
+         no "umbral de valor cero".
+         La UI debe reflejar esta semántica.
+
+I-C1-03  Los estados BAJO_STOCK y AGOTADO son señales.
+         No bloquean operaciones.
+         No deshabilitan acciones del operador.
+
+I-C1-04  Los ítems con eliminado = true no participan
+         en ningún cálculo de estado activo ni en alertas.
+         Sus movimientos permanecen en el log sin modificación.
+
+I-C1-05  CAPA 0 opera íntegramente si ContextoItem no está disponible.
+         La proyección de existencia no depende del umbral.
+
+I-C1-06  El estado AGOTADO (existencia ≤ 0) es independiente del umbral.
+         Es el único estado derivable sin contexto de CAPA 1.
+```
+
+---
+
+## LO QUE CAPA 1 MÍNIMA NO ES
+
+Para evitar expansión semántica no planificada, se define explícitamente lo que CAPA 1 mínima no es ni debe ser tratada como:
+
+**No es un sistema de alertas activas.**
+
+El badge es pasivo: el operador debe mirarlo.
+
+No hay notificaciones push, no hay interrupciones, no hay flujos disparados por umbral.
+
+**No es un sistema de reorden automático.**
+
+El umbral no genera órdenes de compra, no genera pedidos, no automatiza ningún flujo externo.
+
+**No es un sistema de ubicaciones.**
+
+No hay distinción entre bodega, mostrador, tránsito ni ningún otro punto operacional.
+
+**No es un sistema de reservas.**
+
+No hay disponibilidad comprometida, reservada ni apartada.
+
+La existencia disponible para vender es la existencia total proyectada.
+
+**No es un sistema de variantes.**
+
+Cada ítem es una unidad operacional indivisible.
+
+Las variantes son ítems distintos, no dimensiones del mismo ítem.
+
+**No es CAPA 2.**
+
+No tiene confianza operacional, no tiene señales de presión avanzadas, no tiene arbitraje bajo escasez, no tiene modo degradado formalizado.
+
+---
+
+## CRITERIOS PARA EXPANDIR CAPA 1
+
+Antes de agregar cualquier funcionalidad sobre CAPA 1 mínima, verificar:
+
+1. ¿El dolor operacional que justifica la expansión ya existe en producción real?
+2. ¿La expansión respeta los invariantes I-C1-01 a I-C1-06?
+3. ¿La expansión cabe en CAPA 1 (contexto operacional) o corresponde a CAPA 2 (presión operacional)?
+4. ¿La implementación actual de CAPA 0 sigue funcionando íntegramente después de la expansión?
+5. ¿La nueva funcionalidad es reversible sin pérdida del log de movimientos?
+
+Si alguna respuesta es negativa o incierta, consolidar la capa actual antes de expandir.
 
 ---
