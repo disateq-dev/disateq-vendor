@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Shield, LogIn, HelpCircle, Lock, CheckCircle2, X } from "lucide-react";
+import { Shield, LogIn, HelpCircle, Lock, CheckCircle2, X, Check } from "lucide-react";
 import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../../context/POSContext";
@@ -472,11 +472,12 @@ export function LoginScreen() {
                     <button
                       onClick={handlePinChange}
                       disabled={!pcCanSave}
-                      className={`w-full h-12 rounded-xl text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
+                      className={`w-full h-12 rounded-xl flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
                         pcCanSave
                           ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_2px_14px_rgba(69,179,86,0.35)]"
                           : "bg-[#45b356]/[0.15] border border-[#45b356]/20 text-[#45b356]/50 cursor-not-allowed"
                       }`}>
+                      <Check size={14} strokeWidth={2.5} />
                       Guardar
                     </button>
                   </div>
