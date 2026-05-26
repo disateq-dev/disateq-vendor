@@ -275,7 +275,7 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full min-h-0 overflow-y-auto">
 
           {/* CAMPO 1: USUARIO / OPERADOR — sin label, placeholder interno */}
           <div className="mb-2">
@@ -468,7 +468,7 @@ export function LoginScreen() {
                   )}
 
                   {/* Botones */}
-                  <div className="mt-1 mb-4">
+                  <div className="mt-4">
                     <button
                       onClick={handlePinChange}
                       disabled={!pcCanSave}
