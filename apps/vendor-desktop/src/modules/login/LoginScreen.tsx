@@ -212,19 +212,19 @@ export function LoginScreen() {
     <div className="flex h-screen" style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.18s ease" }}>
 
       {/* ══ SHEET IZQUIERDA — 45% ══ */}
-      <div className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8" style={{ borderRight: "1px solid #edf2f8" }}>
-        <div className="px-5 pb-2 flex justify-center">
+      <div className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8 pb-5 px-5" style={{ borderRight: "1px solid #edf2f8" }}>
+        <div className="pb-2 flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "90%", height: "auto", display: "block" }} />
         </div>
         <div className="[flex-grow:5]" />
         {/* Acceso Operativo */}
-        <div className="px-5 mb-5 text-right">
+        <div className="mb-5 text-right">
           <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5 whitespace-nowrap">Acceso Operativo</h2>
           <p className="text-[11px] text-[#6b7a99] leading-snug">Ingrese su usuario y PIN<br />para acceder al sistema.</p>
         </div>
         <div className="[flex-grow:2]" />
         {/* Acceso seguro */}
-        <div className="px-5 mb-5 flex items-center justify-end gap-3">
+        <div className="mb-5 flex items-center justify-end gap-3">
           <Shield size={22} className="shrink-0 text-[#45b356]" />
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#45b356] leading-none">Acceso seguro</p>
@@ -233,7 +233,7 @@ export function LoginScreen() {
         </div>
         <div className="[flex-grow:3]" />
         {/* Turno card (helper) */}
-        <div className="px-5 mb-1">
+        <div className="mb-1">
           {hasTurn && cashSession.cashBox ? (
             <div className="rounded-xl bg-[#45b356]/[0.07] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
@@ -253,7 +253,7 @@ export function LoginScreen() {
           )}
         </div>
         {/* Copyright */}
-        <div className="px-5 mb-5">
+        <div>
           <p className="text-[10px] text-[#b0bec8] leading-[1.5] text-justify">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
