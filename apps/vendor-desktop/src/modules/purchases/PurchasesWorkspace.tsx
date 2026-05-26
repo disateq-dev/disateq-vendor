@@ -40,6 +40,7 @@ export function PurchasesWorkspace({ subView }: Props) {
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
         {subView === "nueva"     && <ViewNuevaCompra />}
         {subView === "historial" && <ViewHistorial />}
+        {subView === "reset"     && <ViewReset />}
       </div>
 
     </section>
@@ -419,6 +420,46 @@ function IngresoRow({ compra }: { compra: CompraOperacional }) {
           <p className="mt-3 font-mono text-[9px] text-[#e5e7eb]">{compra.purchaseId}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── DEV · RESET ──────────────────────────────────────────────────────────────
+
+function ViewReset() {
+  function resetDatos() {
+    localStorage.removeItem("purch_v0_compras");
+    window.location.reload();
+  }
+
+  function resetTotal() {
+    localStorage.removeItem("purch_v0_compras");
+    localStorage.removeItem("purch_v0_runtime_id");
+    window.location.reload();
+  }
+
+  return (
+    <div className="max-w-md space-y-4">
+      <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 flex flex-col gap-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Herramientas de testing — COMPRAS</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={resetDatos}
+            className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100 transition"
+          >
+            RESET INGRESOS
+          </button>
+          <button
+            onClick={resetTotal}
+            className="rounded-xl border border-red-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-red-600 hover:bg-red-50 transition"
+          >
+            RESET TOTAL
+          </button>
+        </div>
+        <p className="text-[9px] text-amber-500 leading-snug">
+          RESET INGRESOS elimina el historial · RESET TOTAL elimina historial + runtimeId.
+        </p>
+      </div>
     </div>
   );
 }

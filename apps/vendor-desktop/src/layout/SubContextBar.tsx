@@ -52,6 +52,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
   const { cashSession, sessionStats } = usePOS();
   const { items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const { compras } = usePurchasesStore();
+  const comprasPendientes = compras.filter(c => c.estado === "registrada").length;
   const alertasInventario = todosItems.filter(i => !i.eliminado).filter(i => {
     const existencia = deriveDisponibilidad(movimientos, i.itemId);
     const reservado  = deriveReservado(reservas, i.itemId);
@@ -162,7 +163,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
           <div className="flex items-center gap-1">
             {PURCHASES_TABS.map(({ key, label }) => {
               const isActive = activeModule === "purchases" && purchasesSubView === key;
-              const showBadge = key === "historial" && compras.length > 0;
+              const showBadge = key === "historial" && comprasPendientes > 0;
               return (
                 <button
                   key={key}
@@ -176,14 +177,29 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                   {label}
                   {showBadge && (
                     <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
-                      isActive ? "bg-white/25 text-white" : "bg-[#6670A8] text-white"
+                      isActive ? "bg-white/25 text-white" : "bg-amber-500 text-white"
                     }`}>
-                      {compras.length}
+                      {comprasPendientes}
                     </span>
                   )}
                 </button>
               );
             })}
+            {import.meta.env.DEV && (
+              <>
+                <div className="h-4 w-px bg-[#6670A8]/20 mx-1" />
+                <button
+                  onClick={() => { if (activeModule === "purchases") onPurchasesSubViewChange("reset"); }}
+                  className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                    activeModule === "purchases" && purchasesSubView === "reset"
+                      ? "bg-amber-400 text-white shadow-sm"
+                      : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
+                  }`}
+                >
+                  DEV·RESET
+                </button>
+              </>
+            )}
           </div>
         )}
 
