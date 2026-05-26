@@ -13,12 +13,12 @@ const OFF  = `${BASE} border-transparent hover:bg-white/60`;
 const PH   = `${BASE} border-transparent opacity-40 cursor-default select-none`;
 
 const ON: Record<ActiveModule, string> = {
-  cash:         `${BASE} border-[#78C487]  bg-[rgba(120,196,135,0.18)]`,
-  sales:        `${BASE} border-[#4F7396]  bg-[rgba(79,115,150,0.12)]`,
-  comprobantes: `${BASE} border-[#73C7D4]  bg-[rgba(115,199,212,0.18)]`,
-  config:       `${BASE} border-[#9B8BFF]  bg-[rgba(155,139,255,0.15)]`,
+  cash:         `${BASE} border-[#2A7CA8]  bg-[rgba(42,124,168,0.12)]`,
+  sales:        `${BASE} border-[#45b356]  bg-[rgba(69,179,86,0.10)]`,
+  comprobantes: `${BASE} border-[#C05050]  bg-[rgba(192,80,80,0.10)]`,
+  config:       `${BASE} border-[#697387]  bg-[rgba(105,115,135,0.10)]`,
   inventory:    `${BASE} border-[#C4844A]  bg-[rgba(196,132,74,0.12)]`,
-  purchases:    `${BASE} border-[#3B7A55]  bg-[rgba(59,122,85,0.10)]`,
+  purchases:    `${BASE} border-[#6670A8]  bg-[rgba(102,112,168,0.10)]`,
 };
 
 function cls(m: ActiveModule, display: ActiveModule): string {

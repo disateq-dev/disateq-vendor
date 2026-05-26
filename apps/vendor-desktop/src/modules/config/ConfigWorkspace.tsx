@@ -31,10 +31,10 @@ export function ConfigWorkspace() {
   const rubroConfig = RUBROS[rubro];
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#9B8BFF]/50 bg-[#FDFCF9]">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/50 bg-[#FDFCF9]">
 
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#9B8BFF]/15 bg-[#F4F3FE] px-4">
-        <Settings2 size={13} strokeWidth={2} className="text-[#9B8BFF]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
+        <Settings2 size={13} strokeWidth={2} className="text-[#697387]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">AJUSTES</span>
       </div>
 

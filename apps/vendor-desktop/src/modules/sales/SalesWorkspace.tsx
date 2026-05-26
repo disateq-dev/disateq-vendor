@@ -347,7 +347,7 @@ export function SalesWorkspace() {
   }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4F7396]/50 bg-[#FDFCF9]">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
@@ -359,7 +359,7 @@ export function SalesWorkspace() {
                 onClick={() => setVisualCategory(cat.id)}
                 className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition ${
                   visualCategory === cat.id
-                    ? "bg-[#4F7396] text-white shadow-[0_2px_8px_rgba(79,115,150,0.20)]"
+                    ? "bg-[#45b356] text-white shadow-[0_2px_8px_rgba(69,179,86,0.20)]"
                     : "border border-[#e4e7ec] text-[#475467] hover:border-[#d0d5dd] hover:text-[#111827]"
                 }`}
               >
@@ -464,8 +464,8 @@ export function SalesWorkspace() {
                       onClick={() => addProductToTicket(product)}
                       className={`flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition ${
                         isSelected
-                          ? "bg-[#EEF3F8] ring-1 ring-[#4F7396]/25"
-                          : "hover:bg-[#f4f7fb]"
+                          ? "bg-[#F0FAF1] ring-1 ring-[#45b356]/20"
+                          : "hover:bg-[#f3faf4]"
                       }`}
                       style={isOut ? { opacity: 0.56 } : undefined}
                     >
@@ -551,7 +551,7 @@ export function SalesWorkspace() {
                         className={`overflow-hidden rounded-2xl bg-white text-left transition active:scale-[0.96] ${
                           isOut
                             ? "border border-[#fef2f2] opacity-50 cursor-not-allowed shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
-                            : "border border-[#eef2f8] shadow-[0_1px_4px_rgba(15,23,42,0.07)] hover:border-[#c7d7f4] hover:shadow-[0_4px_14px_rgba(33,84,216,0.10)] cursor-pointer"
+                            : "border border-[#eef2f8] shadow-[0_1px_4px_rgba(15,23,42,0.07)] hover:border-[#a8d9ac] hover:shadow-[0_4px_14px_rgba(69,179,86,0.10)] cursor-pointer"
                         }`}
                       >
                         <div

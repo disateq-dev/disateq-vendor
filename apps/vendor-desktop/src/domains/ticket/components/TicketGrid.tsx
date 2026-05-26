@@ -65,12 +65,12 @@ export function TicketGrid() {
   const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#4F7396]/50 bg-[#FDFCF9]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <header className="shrink-0 flex h-[42px] items-center justify-between px-4 bg-[#F2F6FA] border-b border-[#4F7396]/20">
+      <header className="shrink-0 flex h-[42px] items-center justify-between px-4 bg-[#F2F7F3] border-b border-[#45b356]/20">
         <div className="flex items-center gap-2">
-          <ClipboardList size={14} className="shrink-0 text-[#4F7396]" strokeWidth={2} />
+          <ClipboardList size={14} className="shrink-0 text-[#45b356]" strokeWidth={2} />
           <span className="text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none">PRE-VENTA</span>
         </div>
         <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ export function TicketGrid() {
                   onClick={() => setActiveLineIdx(isSelected ? -1 : idx)}
                   className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 transition-colors ${
                     isSelected
-                      ? "bg-[#EEF3F8] ring-1 ring-[#4F7396]/25"
+                      ? "bg-[#F0FAF1] ring-1 ring-[#45b356]/20"
                       : isLastLine
                       ? "bg-white ring-1 ring-[#e4e9f0]"
                       : "hover:bg-white"
@@ -202,8 +202,8 @@ export function TicketGrid() {
                       }}
                       className={`flex items-center justify-center rounded-lg p-1.5 transition ${
                         line.note
-                          ? "text-[#4F7396] hover:bg-[#EEF3F8] hover:text-[#3d5c7a]"
-                          : "text-[#8aabca] hover:bg-[#EEF3F8] hover:text-[#4F7396]"
+                          ? "text-[#45b356] hover:bg-[#F0FAF1] hover:text-[#3a9348]"
+                          : "text-[#8ab8a0] hover:bg-[#F0FAF1] hover:text-[#45b356]"
                       }`}
                     >
                       <Pin size={12} />

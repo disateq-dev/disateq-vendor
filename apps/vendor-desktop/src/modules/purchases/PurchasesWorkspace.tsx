@@ -26,14 +26,14 @@ export function PurchasesWorkspace({ subView }: Props) {
   const { runtimeId } = usePurchasesStore();
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#3B7A55]/30 bg-[#F8FBF9]">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#6670A8]/30 bg-[#F8FBF9]">
 
       {/* SheetHeader — h-[42px] fijo, una línea */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#3B7A55]/15 bg-[#F2F8F4] px-4">
-        <ShoppingBag size={13} strokeWidth={2} className="text-[#3B7A55]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#6670A8]/15 bg-[#F3F4FB] px-4">
+        <ShoppingBag size={13} strokeWidth={2} className="text-[#6670A8]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">COMPRAS</span>
-        <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#3B7A55]/10 text-[#3B7A55]">CAPA 0</span>
-        <span className="ml-auto font-mono text-[9px] text-[#9cafa0]">{runtimeId.slice(0, 8)}…</span>
+        <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#6670A8]/10 text-[#6670A8]">CAPA 0</span>
+        <span className="ml-auto font-mono text-[9px] text-[#9ca3af]">{runtimeId.slice(0, 8)}…</span>
       </div>
 
       {/* SheetBody */}
@@ -132,14 +132,14 @@ function ViewNuevaCompra() {
     setTimeout(() => setFeedback(null), 4000);
   }
 
-  const inputCls = "w-full rounded-lg border border-[#d1d5db] bg-white px-3 py-1.5 text-[12px] text-[#121416] placeholder:text-[#9ca3af] focus:outline-none focus:ring-1 focus:ring-[#3B7A55]/40";
+  const inputCls = "w-full rounded-lg border border-[#d1d5db] bg-white px-3 py-1.5 text-[12px] text-[#121416] placeholder:text-[#9ca3af] focus:outline-none focus:ring-1 focus:ring-[#6670A8]/40";
   const labelCls = "flex items-center gap-1 mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7280]";
 
   return (
     <div className="max-w-2xl space-y-4">
 
       {/* Contexto operacional — helper discreto */}
-      <p className="text-[11px] text-[#9cafa0]">
+      <p className="text-[11px] text-[#9ca3af]">
         Registra los productos que acaban de llegar al negocio.
       </p>
 
@@ -206,7 +206,7 @@ function ViewNuevaCompra() {
           <button
             onClick={addLinea}
             disabled={items.length === 0}
-            className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold bg-[#3B7A55]/10 text-[#3B7A55] hover:bg-[#3B7A55]/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold bg-[#6670A8]/10 text-[#6670A8] hover:bg-[#6670A8]/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             <Plus size={11} strokeWidth={2.5} />
             Agregar producto
@@ -241,7 +241,7 @@ function ViewNuevaCompra() {
               <select
                 value={l.itemId}
                 onChange={e => updateLinea(idx, { itemId: e.target.value })}
-                className="flex-1 rounded border border-[#d1d5db] bg-white px-2 py-1 text-[12px] text-[#121416] focus:outline-none focus:ring-1 focus:ring-[#3B7A55]/40"
+                className="flex-1 rounded border border-[#d1d5db] bg-white px-2 py-1 text-[12px] text-[#121416] focus:outline-none focus:ring-1 focus:ring-[#6670A8]/40"
               >
                 {items.map(it => (
                   <option key={it.itemId} value={it.itemId}>{it.nombre}</option>
@@ -254,7 +254,7 @@ function ViewNuevaCompra() {
                 step={1}
                 value={l.cantidad}
                 onChange={e => updateLinea(idx, { cantidad: Math.max(0.001, parseFloat(e.target.value) || 0) })}
-                className="w-20 rounded border border-[#d1d5db] bg-white px-2 py-1 text-[12px] text-right text-[#121416] focus:outline-none focus:ring-1 focus:ring-[#3B7A55]/40"
+                className="w-20 rounded border border-[#d1d5db] bg-white px-2 py-1 text-[12px] text-right text-[#121416] focus:outline-none focus:ring-1 focus:ring-[#6670A8]/40"
               />
               <input
                 type="number"
@@ -263,7 +263,7 @@ function ViewNuevaCompra() {
                 placeholder="S/ —"
                 value={l.costoUnitario}
                 onChange={e => updateLinea(idx, { costoUnitario: e.target.value })}
-                className="w-24 rounded border border-[#d1d5db] bg-white px-2 py-1 text-[12px] text-right text-[#121416] placeholder:text-[#d1d5db] focus:outline-none focus:ring-1 focus:ring-[#3B7A55]/40"
+                className="w-24 rounded border border-[#d1d5db] bg-white px-2 py-1 text-[12px] text-right text-[#121416] placeholder:text-[#d1d5db] focus:outline-none focus:ring-1 focus:ring-[#6670A8]/40"
               />
               <button onClick={() => removeLinea(idx)} className="text-[#dc2626]/50 hover:text-[#dc2626] transition">
                 <Trash2 size={13} strokeWidth={2} />
@@ -279,7 +279,7 @@ function ViewNuevaCompra() {
           type="checkbox"
           checked={recibirYa}
           onChange={e => setRecibirYa(e.target.checked)}
-          className="accent-[#3B7A55]"
+          className="accent-[#6670A8]"
         />
         <span className="text-[12px] font-semibold text-[#374151]">Actualizar stock al guardar</span>
         <Helper text="Activa esto si ya tienes los productos en el local. El stock se actualiza de inmediato." />
@@ -289,7 +289,7 @@ function ViewNuevaCompra() {
       {feedback && (
         <div className={`rounded-lg px-3 py-2 text-[11px] font-semibold ${
           feedback.ok
-            ? "bg-[#3B7A55]/10 text-[#3B7A55]"
+            ? "bg-[#6670A8]/10 text-[#6670A8]"
             : "bg-red-50 text-red-600"
         }`}>
           {feedback.msg}
@@ -301,7 +301,7 @@ function ViewNuevaCompra() {
         <button
           onClick={handleRegistrar}
           disabled={!causa.trim() || lineas.length === 0}
-          className="flex items-center gap-1.5 rounded-xl bg-[#3B7A55] px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:bg-[#2d5e40] disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="flex items-center gap-1.5 rounded-xl bg-[#6670A8] px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:bg-[#5560a0] disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           <CheckCircle size={14} strokeWidth={2.5} />
           {recibirYa ? "Guardar y actualizar stock" : "Guardar ingreso"}
@@ -317,7 +317,7 @@ function ViewNuevaCompra() {
 const ESTADO_VISIBLE: Record<EstadoCompra, { label: string; cls: string }> = {
   registrada:       { label: "PENDIENTE",       cls: "bg-[#e5e7eb] text-[#6b7280]"    },
   recibida_parcial: { label: "LLEGÓ PARCIAL",   cls: "bg-amber-50 text-amber-600"      },
-  recibida:         { label: "RECIBIDO",         cls: "bg-[#3B7A55]/10 text-[#3B7A55]" },
+  recibida:         { label: "RECIBIDO",         cls: "bg-[#6670A8]/10 text-[#6670A8]" },
 };
 
 function formatTs(ts: number): string {
@@ -407,7 +407,7 @@ function IngresoRow({ compra }: { compra: CompraOperacional }) {
             <div className="mt-3 flex items-center gap-3">
               <button
                 onClick={() => purchasesService.recibirLineas(compra.purchaseId, compra.lineas)}
-                className="flex items-center gap-1.5 rounded-lg bg-[#3B7A55] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#2d5e40] transition"
+                className="flex items-center gap-1.5 rounded-lg bg-[#6670A8] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5560a0] transition"
               >
                 <PackageCheck size={12} strokeWidth={2.5} />
                 Confirmar llegada — actualizar stock

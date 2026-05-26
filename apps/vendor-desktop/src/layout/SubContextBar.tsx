@@ -40,12 +40,12 @@ const INVENTORY_TABS: { key: InventorySubView; label: string }[] = [
 
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
 const SHELL: Record<ActiveModule, string> = {
-  cash:         "border-t border-[#85C49C]/20 bg-[rgba(183,231,190,0.22)]",
-  sales:        "border-t border-[#4F7396]/20 bg-[rgba(79,115,150,0.10)]",
-  comprobantes: "border-t border-[#73C7D4]/20 bg-[rgba(200,238,244,0.30)]",
-  config:       "border-t border-[#9B8BFF]/20 bg-[rgba(221,217,255,0.22)]",
+  cash:         "border-t border-[#2A7CA8]/20 bg-[rgba(42,124,168,0.10)]",
+  sales:        "border-t border-[#45b356]/20 bg-[rgba(69,179,86,0.08)]",
+  comprobantes: "border-t border-[#C05050]/20 bg-[rgba(192,80,80,0.08)]",
+  config:       "border-t border-[#697387]/20 bg-[rgba(105,115,135,0.08)]",
   inventory:    "border-t border-[#C4844A]/20 bg-[rgba(196,132,74,0.10)]",
-  purchases:    "border-t border-[#3B7A55]/20 bg-[rgba(59,122,85,0.08)]",
+  purchases:    "border-t border-[#6670A8]/20 bg-[rgba(102,112,168,0.08)]",
 };
 
 export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, inventorySubView, onInventorySubViewChange, purchasesSubView, onPurchasesSubViewChange }: SubContextBarProps) {
@@ -80,14 +80,14 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
           <>
             <button className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
               sessionActive
-                ? "bg-[#4F7396] text-white shadow-[0_2px_8px_rgba(79,115,150,0.28)] hover:bg-[#3d5c7a]"
-                : "bg-[rgba(79,115,150,0.15)] text-[#2d4f6b]/50 cursor-default"
+                ? "bg-[#45b356] text-white shadow-[0_2px_8px_rgba(69,179,86,0.22)] hover:bg-[#3a9348]"
+                : "bg-[rgba(69,179,86,0.12)] text-[#2d5c33]/50 cursor-default"
             }`}>
               <Plus size={13} strokeWidth={2.5} />
               <span>Nueva venta</span>
             </button>
 
-            <div className="mx-1 h-5 w-px bg-[#4F7396]/20" />
+            <div className="mx-1 h-5 w-px bg-[#45b356]/20" />
 
             <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <Percent size={13} strokeWidth={2} />
@@ -106,10 +106,10 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
 
             {sessionActive && (
               <div className="ml-auto flex items-center gap-3">
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.06em] text-[#2d4f6b]">
+                <span className="text-[9.5px] font-bold uppercase tracking-[0.06em] text-[#2d5c33]">
                   CAJA {cashSession.cashBox?.code}
                 </span>
-                <span className="text-[#4F7396]/40">·</span>
+                <span className="text-[#45b356]/40">·</span>
                 <span className="select-none text-[9.5px] font-semibold tabular-nums text-[#9ca3af]">
                   EFE {efe} · YAP {yap} · TAR {tar} · MIX {mix}
                 </span>
@@ -121,13 +121,13 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
         {/* COMPROBANTES */}
         {displayModule === "comprobantes" && (
           <>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#155866]">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7a2020]">
               Comprobantes emitidos
             </span>
             {sessionActive && cashSession.cashBox && (
               <>
-                <span className="text-[#73C7D4]/50">·</span>
-                <span className="text-[11px] text-[#155866]/60">
+                <span className="text-[#C05050]/50">·</span>
+                <span className="text-[11px] text-[#7a2020]/60">
                   Sesión CAJA {cashSession.cashBox.code}
                 </span>
               </>
@@ -146,8 +146,8 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                   onClick={() => { if (activeModule === "cash") onCashSubViewChange(key); }}
                   className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
                     isActive
-                      ? "bg-[#85C49C] text-white shadow-sm"
-                      : "text-[#4a7a55]/70 hover:bg-[#85C49C]/10 hover:text-[#2d6640]"
+                      ? "bg-[#2A7CA8] text-white shadow-sm"
+                      : "text-[#1a5f7a]/70 hover:bg-[#2A7CA8]/10 hover:text-[#143d54]"
                   }`}
                 >
                   {label}
@@ -169,14 +169,14 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                   onClick={() => { if (activeModule === "purchases") onPurchasesSubViewChange(key); }}
                   className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
                     isActive
-                      ? "bg-[#3B7A55] text-white shadow-sm"
-                      : "text-[#2d5e40]/70 hover:bg-[#3B7A55]/10 hover:text-[#1e3d28]"
+                      ? "bg-[#6670A8] text-white shadow-sm"
+                      : "text-[#404787]/70 hover:bg-[#6670A8]/10 hover:text-[#2a2e6a]"
                   }`}
                 >
                   {label}
                   {showBadge && (
                     <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
-                      isActive ? "bg-white/25 text-white" : "bg-[#3B7A55] text-white"
+                      isActive ? "bg-white/25 text-white" : "bg-[#6670A8] text-white"
                     }`}>
                       {compras.length}
                     </span>

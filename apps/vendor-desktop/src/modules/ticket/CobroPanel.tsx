@@ -379,10 +379,10 @@ export function CobroPanel() {
   const { text: rowLabel, warn: rowWarn } = getRowLabel();
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#4F7396]/50 bg-[#FDFCF9]">
+    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4F7396]/20 bg-[#F2F6FA] px-4">
+      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#45b356]/20 bg-[#F2F7F3] px-4">
         <button
           title="Tecla [Escape]"
           onClick={cobroView === "client" ? resetForm : closeCobro}
@@ -522,8 +522,8 @@ export function CobroPanel() {
                   onClick={() => setPayMethod(id)}
                   className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition ${
                     payMethod === id
-                      ? "bg-[#4F7396] text-white shadow-[0_2px_8px_rgba(79,115,150,0.25)]"
-                      : "border border-[#e4e9f0] text-[#374151] hover:border-[#4F7396]/40 hover:bg-[#EEF3F8] hover:text-[#2d4f6b]"
+                      ? "bg-[#45b356] text-white shadow-[0_2px_8px_rgba(69,179,86,0.20)]"
+                      : "border border-[#e4e9f0] text-[#374151] hover:border-[#45b356]/30 hover:bg-[#F0FAF1] hover:text-[#2d5c33]"
                   }`}
                 >
                   <Icon size={12} strokeWidth={2} />
