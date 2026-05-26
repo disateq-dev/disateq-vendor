@@ -19,8 +19,8 @@ interface SubContextBarProps {
 const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "inventory", "purchases"]);
 
 const PURCHASES_TABS: { key: PurchasesSubView; label: string }[] = [
-  { key: "nueva",    label: "NUEVA COMPRA" },
-  { key: "historial", label: "HISTORIAL"   },
+  { key: "nueva",    label: "REGISTRAR INGRESO" },
+  { key: "historial", label: "HISTORIAL"        },
 ];
 
 const CASH_TABS: { key: CashSubView; label: string }[] = [
