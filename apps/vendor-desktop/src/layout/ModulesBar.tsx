@@ -44,6 +44,10 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
         <Package size={16} />
         <span>VENTAS</span>
       </button>
+      <button onClick={() => onChange("purchases")} onMouseEnter={() => onHover("purchases")} className={cls("purchases", display)}>
+        <ShoppingBag size={16} />
+        <span>COMPRAS</span>
+      </button>
 
       <Sep />
 
@@ -51,10 +55,6 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
       <button onClick={() => onChange("inventory")} onMouseEnter={() => onHover("inventory")} className={cls("inventory", display)}>
         <Package size={16} />
         <span>INVENTARIOS</span>
-      </button>
-      <button onClick={() => onChange("purchases")} onMouseEnter={() => onHover("purchases")} className={cls("purchases", display)}>
-        <ShoppingBag size={16} />
-        <span>COMPRAS</span>
       </button>
       <button type="button" title="Próximamente" tabIndex={-1} className={PH}>
         <Truck size={16} />
