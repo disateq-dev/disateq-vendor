@@ -8,18 +8,21 @@ import { CashWorkspace } from "./modules/cash/CashWorkspace";
 import { ConfigWorkspace } from "./modules/config/ConfigWorkspace";
 import { ComprobantesWorkspace } from "./modules/comprobantes/ComprobantesWorkspace";
 import { InventoryWorkspace } from "./modules/inventory/InventoryWorkspace";
+import { PurchasesWorkspace } from "./modules/purchases/PurchasesWorkspace";
 import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
-export type ActiveModule      = "sales" | "cash" | "config" | "comprobantes" | "inventory";
+export type ActiveModule       = "sales" | "cash" | "config" | "comprobantes" | "inventory" | "purchases";
 export type CashSubView       = "turno" | "roles" | "cajas" | "operadores";
 export type InventorySubView  = "disponibilidad" | "movimientos" | "items" | "reservas" | "reconciliacion" | "reset";
+export type PurchasesSubView  = "nueva" | "historial";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
   const [activeModule,      setActiveModule]      = useState<ActiveModule>("cash");
   const [cashSubView,       setCashSubView]       = useState<CashSubView>("turno");
   const [inventorySubView,  setInventorySubView]  = useState<InventorySubView>("items");
+  const [purchasesSubView,  setPurchasesSubView]  = useState<PurchasesSubView>("nueva");
   const prevOpId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -58,6 +61,8 @@ function AppRoot() {
       onCashSubViewChange={setCashSubView}
       inventorySubView={inventorySubView}
       onInventorySubViewChange={setInventorySubView}
+      purchasesSubView={purchasesSubView}
+      onPurchasesSubViewChange={setPurchasesSubView}
     >
       {activeModule === "sales" && (
         <>
@@ -69,6 +74,7 @@ function AppRoot() {
       {activeModule === "comprobantes" && <ComprobantesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace />}
       {activeModule === "inventory"    && <InventoryWorkspace subView={inventorySubView} />}
+      {activeModule === "purchases"    && <PurchasesWorkspace subView={purchasesSubView} />}
     </AppShell>
   );
 }

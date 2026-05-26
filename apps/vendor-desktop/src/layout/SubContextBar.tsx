@@ -1,7 +1,8 @@
 import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../domains/inventory/store";
-import { type ActiveModule, type CashSubView, type InventorySubView } from "../App";
+import { usePurchasesStore } from "../domains/purchases/store";
+import { type ActiveModule, type CashSubView, type InventorySubView, type PurchasesSubView } from "../App";
 
 interface SubContextBarProps {
   activeModule: ActiveModule;
@@ -11,9 +12,16 @@ interface SubContextBarProps {
   onCashSubViewChange: (sv: CashSubView) => void;
   inventorySubView: InventorySubView;
   onInventorySubViewChange: (sv: InventorySubView) => void;
+  purchasesSubView: PurchasesSubView;
+  onPurchasesSubViewChange: (sv: PurchasesSubView) => void;
 }
 
-const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "inventory"]);
+const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "inventory", "purchases"]);
+
+const PURCHASES_TABS: { key: PurchasesSubView; label: string }[] = [
+  { key: "nueva",    label: "NUEVA COMPRA" },
+  { key: "historial", label: "HISTORIAL"   },
+];
 
 const CASH_TABS: { key: CashSubView; label: string }[] = [
   { key: "turno",      label: "GESTIÓN TURNO" },
@@ -37,11 +45,13 @@ const SHELL: Record<ActiveModule, string> = {
   comprobantes: "border-t border-[#73C7D4]/20 bg-[rgba(200,238,244,0.30)]",
   config:       "border-t border-[#9B8BFF]/20 bg-[rgba(221,217,255,0.22)]",
   inventory:    "border-t border-[#C4844A]/20 bg-[rgba(196,132,74,0.10)]",
+  purchases:    "border-t border-[#3B7A55]/20 bg-[rgba(59,122,85,0.08)]",
 };
 
-export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, inventorySubView, onInventorySubViewChange }: SubContextBarProps) {
+export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, inventorySubView, onInventorySubViewChange, purchasesSubView, onPurchasesSubViewChange }: SubContextBarProps) {
   const { cashSession, sessionStats } = usePOS();
   const { items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
+  const { compras } = usePurchasesStore();
   const alertasInventario = todosItems.filter(i => !i.eliminado).filter(i => {
     const existencia = deriveDisponibilidad(movimientos, i.itemId);
     const reservado  = deriveReservado(reservas, i.itemId);
@@ -141,6 +151,36 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                   }`}
                 >
                   {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* COMPRAS — sub-view tabs */}
+        {displayModule === "purchases" && (
+          <div className="flex items-center gap-1">
+            {PURCHASES_TABS.map(({ key, label }) => {
+              const isActive = activeModule === "purchases" && purchasesSubView === key;
+              const showBadge = key === "historial" && compras.length > 0;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { if (activeModule === "purchases") onPurchasesSubViewChange(key); }}
+                  className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                    isActive
+                      ? "bg-[#3B7A55] text-white shadow-sm"
+                      : "text-[#2d5e40]/70 hover:bg-[#3B7A55]/10 hover:text-[#1e3d28]"
+                  }`}
+                >
+                  {label}
+                  {showBadge && (
+                    <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
+                      isActive ? "bg-white/25 text-white" : "bg-[#3B7A55] text-white"
+                    }`}>
+                      {compras.length}
+                    </span>
+                  )}
                 </button>
               );
             })}

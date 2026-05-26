@@ -18,6 +18,7 @@ const ON: Record<ActiveModule, string> = {
   comprobantes: `${BASE} border-[#73C7D4]  bg-[rgba(115,199,212,0.18)]`,
   config:       `${BASE} border-[#9B8BFF]  bg-[rgba(155,139,255,0.15)]`,
   inventory:    `${BASE} border-[#C4844A]  bg-[rgba(196,132,74,0.12)]`,
+  purchases:    `${BASE} border-[#3B7A55]  bg-[rgba(59,122,85,0.10)]`,
 };
 
 function cls(m: ActiveModule, display: ActiveModule): string {
@@ -51,7 +52,7 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
         <Package size={16} />
         <span>INVENTARIOS</span>
       </button>
-      <button type="button" title="Próximamente" tabIndex={-1} className={PH}>
+      <button onClick={() => onChange("purchases")} onMouseEnter={() => onHover("purchases")} className={cls("purchases", display)}>
         <ShoppingBag size={16} />
         <span>COMPRAS</span>
       </button>
