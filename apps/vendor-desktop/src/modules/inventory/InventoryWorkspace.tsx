@@ -196,11 +196,13 @@ function ViewMovimientos({
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
 }) {
-  const [itemId,   setItemId]   = useState(items[0]?.itemId ?? "");
-  const [tipo,     setTipo]     = useState<TipoMovimiento>("entrada");
-  const [cantidad, setCantidad] = useState("");
-  const [causa,    setCausa]    = useState("");
-  const [error,    setError]    = useState("");
+  const [itemId,      setItemId]      = useState(items[0]?.itemId ?? "");
+  const [tipo,        setTipo]        = useState<TipoMovimiento>("entrada");
+  const [cantidad,    setCantidad]    = useState("");
+  const [causa,       setCausa]       = useState("");
+  const [error,       setError]       = useState("");
+  const [busqueda,    setBusqueda]    = useState("");
+  const [filtroTipo,  setFiltroTipo]  = useState<TipoMovimiento | "todos">("todos");
 
   function handleRegistrar() {
     const n = parseFloat(cantidad);
@@ -218,7 +220,16 @@ function ViewMovimientos({
     setCausa("");
   }
 
-  const recent = [...movimientos].reverse().slice(0, 20);
+  const hayFiltro = busqueda.trim() !== "" || filtroTipo !== "todos";
+
+  const filtrados = [...movimientos].reverse().filter(m => {
+    if (filtroTipo !== "todos" && m.tipo !== filtroTipo) return false;
+    if (busqueda.trim()) {
+      const nombre = items.find(i => i.itemId === m.itemId)?.nombre ?? "";
+      if (!nombre.toLowerCase().includes(busqueda.toLowerCase())) return false;
+    }
+    return true;
+  }).slice(0, 20);
 
   return (
     <div className="flex flex-col gap-3">
@@ -277,24 +288,67 @@ function ViewMovimientos({
         )}
       </div>
 
-      {/* Log reciente */}
-      {recent.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <Label>Últimos {recent.length} movimientos</Label>
-          {recent.map(m => {
-            const sign = m.tipo === "entrada" ? "+" : m.tipo === "salida" ? "−" : "±";
-            const color = m.tipo === "entrada" ? "text-[#45b356]" : m.tipo === "salida" ? "text-red-500" : "text-[#005BE3]";
-            return (
-              <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-3 py-2">
-                <span className={`w-4 text-center font-bold text-[13px] ${color}`}>{sign}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold text-[#374151]">{items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId}</p>
-                  <p className="text-[10px] text-[#9ca3af]">{m.causa} · {formatTs(m.timestamp)}</p>
-                </div>
-                <span className={`tabular-nums text-[13px] font-bold ${color}`}>{sign}{Math.abs(m.cantidad)}</span>
-              </div>
-            );
-          })}
+      {/* Filtros + Log */}
+      {movimientos.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              placeholder="buscar ítem…"
+              className="flex-1 min-w-[120px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            />
+            {(["todos", "entrada", "salida", "ajuste"] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setFiltroTipo(t)}
+                className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
+                  filtroTipo === t
+                    ? t === "todos"    ? "bg-[#1f2937] text-white"
+                    : t === "entrada"  ? "bg-[#45b356] text-white"
+                    : t === "salida"   ? "bg-red-500 text-white"
+                    : "bg-[#005BE3] text-white"
+                    : "border border-[#e9e4dc] text-[#6b7280] hover:border-[#C4844A]/40"
+                }`}
+              >
+                {t === "todos" ? "TODOS" : t === "entrada" ? "+" : t === "salida" ? "−" : "±"}
+              </button>
+            ))}
+            {hayFiltro && (
+              <button
+                onClick={() => { setBusqueda(""); setFiltroTipo("todos"); }}
+                className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {filtrados.length > 0 ? (
+            <>
+              <Label>
+                {hayFiltro
+                  ? `${filtrados.length} resultado${filtrados.length !== 1 ? "s" : ""} · ${movimientos.length} total`
+                  : `Últimos ${filtrados.length} movimientos`}
+              </Label>
+              {filtrados.map(m => {
+                const sign  = m.tipo === "entrada" ? "+" : m.tipo === "salida" ? "−" : "±";
+                const color = m.tipo === "entrada" ? "text-[#45b356]" : m.tipo === "salida" ? "text-red-500" : "text-[#005BE3]";
+                return (
+                  <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-3 py-2">
+                    <span className={`w-4 text-center font-bold text-[13px] ${color}`}>{sign}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold text-[#374151]">{items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId}</p>
+                      <p className="text-[10px] text-[#9ca3af]">{m.causa} · {formatTs(m.timestamp)}</p>
+                    </div>
+                    <span className={`tabular-nums text-[13px] font-bold ${color}`}>{sign}{Math.abs(m.cantidad)}</span>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin resultados para el filtro activo.</p>
+          )}
         </div>
       )}
 
