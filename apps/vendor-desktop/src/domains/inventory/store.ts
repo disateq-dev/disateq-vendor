@@ -15,6 +15,7 @@ interface InventoryState {
   registrarItem: (item: ItemOperacional) => void;
   registrarMovimiento: (itemId: string, tipo: TipoMovimiento, cantidad: number, causa: string) => void;
   setUmbral: (itemId: string, umbral: number) => void;
+  eliminarItem: (itemId: string) => void;
   reconstruir: () => void;
 }
 
@@ -56,6 +57,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       : [...contexto, { itemId, umbralMinimo: umbral }];
     saveContexto(next);
     set({ contexto: next });
+  },
+
+  eliminarItem(itemId) {
+    const { items } = get();
+    const next = items.map(i => i.itemId === itemId ? { ...i, eliminado: true } : i);
+    saveItems(next);
+    set({ items: next });
   },
 
   reconstruir() {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive } from "lucide-react";
+import { Archive, Trash2 } from "lucide-react";
 import { type InventorySubView } from "../../App";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado } from "../../domains/inventory/store";
 import { inventoryService } from "../../domains/inventory/service";
@@ -10,7 +10,8 @@ interface Props {
 }
 
 export function InventoryWorkspace({ subView }: Props) {
-  const { runtimeId, items, movimientos, contexto } = useInventoryStore();
+  const { runtimeId, items: todosItems, movimientos, contexto } = useInventoryStore();
+  const items = todosItems.filter(i => !i.eliminado);
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C4844A]/30 bg-[#FDFCF9]">
@@ -473,13 +474,37 @@ function ItemRow({ item, umbralMinimo }: {
   item: ReturnType<typeof useInventoryStore>["items"][number];
   umbralMinimo: number;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [val,     setVal]     = useState(String(umbralMinimo > 0 ? umbralMinimo : ""));
+  const [editing,     setEditing]     = useState(false);
+  const [val,         setVal]         = useState(String(umbralMinimo > 0 ? umbralMinimo : ""));
+  const [confirmBaja, setConfirmBaja] = useState(false);
 
   function handleSave() {
     const u = parseFloat(val);
     inventoryService.setUmbral(item.itemId, isNaN(u) || u < 0 ? 0 : u);
     setEditing(false);
+  }
+
+  if (confirmBaja) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
+          <p className="text-[10px] text-red-400">¿Confirmar baja? Los movimientos se conservan.</p>
+        </div>
+        <button
+          onClick={() => inventoryService.darDeBaja(item.itemId)}
+          className="rounded px-2.5 py-1 text-[11px] font-bold bg-red-500 text-white hover:bg-red-600 transition active:scale-95"
+        >
+          DAR DE BAJA
+        </button>
+        <button
+          onClick={() => setConfirmBaja(false)}
+          className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
+        >
+          ✕
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -512,6 +537,13 @@ function ItemRow({ item, umbralMinimo }: {
           </button>
         )}
       </div>
+      <button
+        onClick={() => setConfirmBaja(true)}
+        className="shrink-0 rounded p-1 text-[#d1d5db] hover:text-red-400 hover:bg-red-50 transition"
+        title="Dar de baja"
+      >
+        <Trash2 size={12} strokeWidth={2} />
+      </button>
     </div>
   );
 }

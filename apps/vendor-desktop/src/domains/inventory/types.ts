@@ -5,6 +5,7 @@ export interface ItemOperacional {
   itemId: string;
   nombre: string;
   unidadBase: string;
+  eliminado?: boolean;
 }
 
 // 0.2 — Movimiento operacional con causalidad mínima

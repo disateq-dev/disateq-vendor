@@ -41,6 +41,11 @@ export const inventoryService = {
     return deriveEstado(existencia, ctx?.umbralMinimo ?? 0);
   },
 
+  // 0.4 — baja lógica (soft delete — preserva historial de movimientos)
+  darDeBaja(itemId: string): void {
+    store().eliminarItem(itemId);
+  },
+
   // 0.6 — reconstrucción desde log (valida continuidad operacional)
   reconstruirDesdeLog(): void {
     store().reconstruir();
