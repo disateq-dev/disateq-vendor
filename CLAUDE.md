@@ -18,6 +18,60 @@ The operation must never stop.
 
 ---
 
+## Operational Doctrine
+
+DISATEQ Vendor follows a consolidated operational doctrine formalized in:
+
+docs/philosophy/*
+
+These documents are the doctrinal single source of truth for:
+
+- operational continuity
+- contextual control
+- operational reconciliation
+- operational UX/UI
+- domain language
+- anti-pattern detection
+- operational evolution
+- human operational modeling
+
+Core doctrinal principles:
+
+- operational continuity first
+- visible operational simplicity
+- encapsulated complexity
+- auditable flexibility
+- contextual control
+- operational reconciliation
+- progressive sophistication
+- runtime-first validation
+- real human operation modeling
+
+Core anti-patterns:
+
+- accidental ERPization
+- warehouse-centric architecture
+- speculative architecture
+- premature complexity
+- dashboard-heavy UX
+- obstructive validation
+- enterprise inflation
+- operational bureaucracy
+
+AI assistants must:
+
+- preserve doctrinal coherence
+- avoid semantic drift
+- detect accidental ERP patterns
+- protect operational UX consistency
+- prioritize operational continuity
+- avoid speculative abstractions
+
+The architecture may be sophisticated.
+
+Visible operational language must remain:
+human, contextual, operational, and clear.
+
 ## Environment
 
 Primary environment:
