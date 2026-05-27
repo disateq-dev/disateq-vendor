@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { Power, Store, LogOut } from "lucide-react";
+import { Power, LogOut } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../context/POSContext";
 import { loadBusinessConfig } from "../config/business";
+import logoImg from "../assets/branding/disateq-vendor-login2.png";
 
 
 function formatApertura(d: Date): string {
@@ -21,18 +22,13 @@ export function Topbar() {
       <section className="flex min-w-0 items-center">
 
         {/* BRAND */}
-        <div className="flex items-center gap-3.5 pr-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[14px] bg-[#2154d8] text-white shadow-[0_4px_14px_rgba(33,84,216,0.4)]">
-            <Store size={17} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[17px] font-semibold text-white leading-none tracking-[0.01em]">
-              DisateQ VENDOR™
-            </span>
-            <span className="mt-0.5 text-[11px] font-medium text-[#8090b0]">
-              Ventas y Gestión Administrativa
-            </span>
-          </div>
+        <div className="flex items-center pr-5">
+          <img
+            src={logoImg}
+            alt="DisateQ VENDOR™"
+            draggable={false}
+            className="h-[39px] w-auto object-contain"
+          />
         </div>
 
         <div className="h-8 w-px bg-white/10" />
