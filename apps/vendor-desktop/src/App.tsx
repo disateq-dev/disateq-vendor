@@ -12,17 +12,19 @@ import { PurchasesWorkspace } from "./modules/purchases/PurchasesWorkspace";
 import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
-export type ActiveModule       = "sales" | "cash" | "config" | "comprobantes" | "inventory" | "purchases";
-export type CashSubView       = "turno" | "roles" | "cajas" | "operadores";
-export type InventorySubView  = "disponibilidad" | "movimientos" | "items" | "reservas" | "reconciliacion" | "reset";
-export type PurchasesSubView  = "nueva" | "historial" | "reset";
+export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento";
+export type CashSubView             = "turno" | "roles" | "cajas" | "operadores";
+export type InventorySubView        = "disponibilidad" | "movimientos" | "items" | "reservas" | "reconciliacion" | "reset";
+export type PurchasesSubView        = "nueva" | "historial" | "reset";
+export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
-  const [activeModule,      setActiveModule]      = useState<ActiveModule>("cash");
-  const [cashSubView,       setCashSubView]       = useState<CashSubView>("turno");
-  const [inventorySubView,  setInventorySubView]  = useState<InventorySubView>("items");
-  const [purchasesSubView,  setPurchasesSubView]  = useState<PurchasesSubView>("nueva");
+  const [activeModule,             setActiveModule]             = useState<ActiveModule>("cash");
+  const [cashSubView,              setCashSubView]              = useState<CashSubView>("turno");
+  const [abastecimientoSubModule,  setAbastecimientoSubModule]  = useState<AbastecimientoSubModule>("compras");
+  const [inventorySubView,         setInventorySubView]         = useState<InventorySubView>("items");
+  const [purchasesSubView,         setPurchasesSubView]         = useState<PurchasesSubView>("nueva");
   const prevOpId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -59,6 +61,8 @@ function AppRoot() {
       onModuleChange={setActiveModule}
       cashSubView={cashSubView}
       onCashSubViewChange={setCashSubView}
+      abastecimientoSubModule={abastecimientoSubModule}
+      onAbastecimientoSubModuleChange={setAbastecimientoSubModule}
       inventorySubView={inventorySubView}
       onInventorySubViewChange={setInventorySubView}
       purchasesSubView={purchasesSubView}
@@ -73,8 +77,17 @@ function AppRoot() {
       {activeModule === "cash"         && <CashWorkspace onOpened={() => setActiveModule("sales")} cashSubView={cashSubView} />}
       {activeModule === "comprobantes" && <ComprobantesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace />}
-      {activeModule === "inventory"    && <InventoryWorkspace subView={inventorySubView} />}
-      {activeModule === "purchases"    && <PurchasesWorkspace subView={purchasesSubView} />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && (
+        <InventoryWorkspace subView={inventorySubView} />
+      )}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "compras" && (
+        <PurchasesWorkspace subView={purchasesSubView} />
+      )}
+      {activeModule === "abastecimiento" && (abastecimientoSubModule === "proveedores" || abastecimientoSubModule === "traslados") && (
+        <div className="flex flex-1 items-center justify-center">
+          <span className="text-[12px] font-semibold uppercase tracking-wider text-[#9ca3af]">Próximamente</span>
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -2,7 +2,7 @@ import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../domains/inventory/store";
 import { usePurchasesStore } from "../domains/purchases/store";
-import { type ActiveModule, type CashSubView, type InventorySubView, type PurchasesSubView } from "../App";
+import { type ActiveModule, type CashSubView, type InventorySubView, type PurchasesSubView, type AbastecimientoSubModule } from "../App";
 
 interface SubContextBarProps {
   activeModule: ActiveModule;
@@ -10,13 +10,15 @@ interface SubContextBarProps {
   visible: boolean;
   cashSubView: CashSubView;
   onCashSubViewChange: (sv: CashSubView) => void;
+  abastecimientoSubModule: AbastecimientoSubModule;
+  onAbastecimientoSubModuleChange: (sm: AbastecimientoSubModule) => void;
   inventorySubView: InventorySubView;
   onInventorySubViewChange: (sv: InventorySubView) => void;
   purchasesSubView: PurchasesSubView;
   onPurchasesSubViewChange: (sv: PurchasesSubView) => void;
 }
 
-const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "inventory", "purchases"]);
+const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "abastecimiento"]);
 
 const PURCHASES_TABS: { key: PurchasesSubView; label: string }[] = [
   { key: "nueva",    label: "REGISTRAR INGRESO" },
@@ -38,17 +40,23 @@ const INVENTORY_TABS: { key: InventorySubView; label: string }[] = [
   { key: "reconciliacion", label: "CORREGIR"    },
 ];
 
+const ABASTECIMIENTO_MODULES: { key: AbastecimientoSubModule; label: string; isPlaceholder?: boolean }[] = [
+  { key: "compras",     label: "COMPRAS"     },
+  { key: "inventarios", label: "INVENTARIOS" },
+  { key: "proveedores", label: "PROVEEDORES", isPlaceholder: true },
+  { key: "traslados",   label: "TRASLADOS",   isPlaceholder: true },
+];
+
 // Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
 const SHELL: Record<ActiveModule, string> = {
-  cash:         "border-t border-[#2A7CA8]/20 bg-[rgba(42,124,168,0.10)]",
-  sales:        "border-t border-[#45b356]/20 bg-[rgba(69,179,86,0.08)]",
-  comprobantes: "border-t border-[#C05050]/20 bg-[rgba(192,80,80,0.08)]",
-  config:       "border-t border-[#697387]/20 bg-[rgba(105,115,135,0.08)]",
-  inventory:    "border-t border-[#C4844A]/20 bg-[rgba(196,132,74,0.10)]",
-  purchases:    "border-t border-[#6670A8]/20 bg-[rgba(102,112,168,0.08)]",
+  cash:           "border-t border-[#2A7CA8]/20 bg-[rgba(42,124,168,0.10)]",
+  sales:          "border-t border-[#45b356]/20 bg-[rgba(69,179,86,0.08)]",
+  comprobantes:   "border-t border-[#C05050]/20 bg-[rgba(192,80,80,0.08)]",
+  config:         "border-t border-[#697387]/20 bg-[rgba(105,115,135,0.08)]",
+  abastecimiento: "border-t border-[#3D8A8A]/20 bg-[rgba(61,138,138,0.08)]",
 };
 
-export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, inventorySubView, onInventorySubViewChange, purchasesSubView, onPurchasesSubViewChange }: SubContextBarProps) {
+export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, inventorySubView, onInventorySubViewChange, purchasesSubView, onPurchasesSubViewChange }: SubContextBarProps) {
   const { cashSession, sessionStats } = usePOS();
   const { items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const { compras } = usePurchasesStore();
@@ -158,93 +166,129 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
           </div>
         )}
 
-        {/* COMPRAS — sub-view tabs */}
-        {displayModule === "purchases" && (
+        {/* ABASTECIMIENTO — sub-módulo + sub-view tabs */}
+        {displayModule === "abastecimiento" && (
           <div className="flex items-center gap-1">
-            {PURCHASES_TABS.map(({ key, label }) => {
-              const isActive = activeModule === "purchases" && purchasesSubView === key;
-              const showBadge = key === "historial" && comprasPendientes > 0;
+
+            {/* Nivel 1 — sub-módulos */}
+            {ABASTECIMIENTO_MODULES.map(({ key, label, isPlaceholder }) => {
+              const isActive = activeModule === "abastecimiento" && abastecimientoSubModule === key;
+              const badge = key === "compras" ? comprasPendientes : key === "inventarios" ? alertasInventario : 0;
+              if (isPlaceholder) {
+                return (
+                  <button key={key} type="button" title="Próximamente" tabIndex={-1}
+                    className="rounded-lg px-3 py-1 text-[11px] font-bold uppercase tracking-wider opacity-35 cursor-default select-none text-[#276565]">
+                    {label}
+                  </button>
+                );
+              }
               return (
                 <button
                   key={key}
-                  onClick={() => { if (activeModule === "purchases") onPurchasesSubViewChange(key); }}
-                  className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                  onClick={() => { if (activeModule === "abastecimiento") onAbastecimientoSubModuleChange(key); }}
+                  className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition ${
                     isActive
-                      ? "bg-[#6670A8] text-white shadow-sm"
-                      : "text-[#404787]/70 hover:bg-[#6670A8]/10 hover:text-[#2a2e6a]"
+                      ? "bg-[#3D8A8A] text-white shadow-sm"
+                      : "text-[#276565]/70 hover:bg-[#3D8A8A]/10 hover:text-[#1a4545]"
                   }`}
                 >
                   {label}
-                  {showBadge && (
+                  {badge > 0 && (
                     <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
                       isActive ? "bg-white/25 text-white" : "bg-amber-500 text-white"
-                    }`}>
-                      {comprasPendientes}
-                    </span>
+                    }`}>{badge}</span>
                   )}
                 </button>
               );
             })}
-            {import.meta.env.DEV && (
-              <>
-                <div className="h-4 w-px bg-[#6670A8]/20 mx-1" />
-                <button
-                  onClick={() => { if (activeModule === "purchases") onPurchasesSubViewChange("reset"); }}
-                  className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                    activeModule === "purchases" && purchasesSubView === "reset"
-                      ? "bg-amber-400 text-white shadow-sm"
-                      : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
-                  }`}
-                >
-                  DEV·RESET
-                </button>
-              </>
-            )}
-          </div>
-        )}
 
-        {/* INVENTARIO — sub-view tabs */}
-        {displayModule === "inventory" && (
-          <div className="flex items-center gap-1">
-            {INVENTORY_TABS.map(({ key, label }) => {
-              const isActive = activeModule === "inventory" && inventorySubView === key;
-              const showBadge = key === "disponibilidad" && alertasInventario > 0;
-              return (
-                <button
-                  key={key}
-                  onClick={() => { if (activeModule === "inventory") onInventorySubViewChange(key); }}
-                  className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                    isActive
-                      ? "bg-[#C4844A] text-white shadow-sm"
-                      : "text-[#7a4f2d]/70 hover:bg-[#C4844A]/10 hover:text-[#5c3318]"
-                  }`}
-                >
-                  {label}
-                  {showBadge && (
-                    <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
-                      isActive ? "bg-white/25 text-white" : "bg-red-500 text-white"
-                    }`}>
-                      {alertasInventario}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-            {import.meta.env.DEV && (
+            {/* Nivel 2 — sub-views del sub-módulo activo */}
+            {activeModule === "abastecimiento" && abastecimientoSubModule === "compras" && (
               <>
-                <div className="h-4 w-px bg-[#C4844A]/20 mx-1" />
-                <button
-                  onClick={() => { if (activeModule === "inventory") onInventorySubViewChange("reset"); }}
-                  className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                    activeModule === "inventory" && inventorySubView === "reset"
-                      ? "bg-amber-400 text-white shadow-sm"
-                      : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
-                  }`}
-                >
-                  DEV·RESET
-                </button>
+                <div className="h-4 w-px bg-[#3D8A8A]/25 mx-1" />
+                {PURCHASES_TABS.map(({ key, label }) => {
+                  const isActive = purchasesSubView === key;
+                  const showBadge = key === "historial" && comprasPendientes > 0;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => onPurchasesSubViewChange(key)}
+                      className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                        isActive
+                          ? "bg-[#3D8A8A]/20 text-[#276565] shadow-sm"
+                          : "text-[#276565]/60 hover:bg-[#3D8A8A]/10 hover:text-[#1a4545]"
+                      }`}
+                    >
+                      {label}
+                      {showBadge && (
+                        <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
+                          isActive ? "bg-[#3D8A8A]/30 text-[#276565]" : "bg-amber-500 text-white"
+                        }`}>{comprasPendientes}</span>
+                      )}
+                    </button>
+                  );
+                })}
+                {import.meta.env.DEV && (
+                  <>
+                    <div className="h-4 w-px bg-[#3D8A8A]/20 mx-1" />
+                    <button
+                      onClick={() => onPurchasesSubViewChange("reset")}
+                      className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                        purchasesSubView === "reset"
+                          ? "bg-amber-400 text-white shadow-sm"
+                          : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
+                      }`}
+                    >
+                      DEV·RESET
+                    </button>
+                  </>
+                )}
               </>
             )}
+
+            {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && (
+              <>
+                <div className="h-4 w-px bg-[#3D8A8A]/25 mx-1" />
+                {INVENTORY_TABS.map(({ key, label }) => {
+                  const isActive = inventorySubView === key;
+                  const showBadge = key === "disponibilidad" && alertasInventario > 0;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => onInventorySubViewChange(key)}
+                      className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                        isActive
+                          ? "bg-[#3D8A8A]/20 text-[#276565] shadow-sm"
+                          : "text-[#276565]/60 hover:bg-[#3D8A8A]/10 hover:text-[#1a4545]"
+                      }`}
+                    >
+                      {label}
+                      {showBadge && (
+                        <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
+                          isActive ? "bg-[#3D8A8A]/30 text-[#276565]" : "bg-red-500 text-white"
+                        }`}>{alertasInventario}</span>
+                      )}
+                    </button>
+                  );
+                })}
+                {import.meta.env.DEV && (
+                  <>
+                    <div className="h-4 w-px bg-[#3D8A8A]/20 mx-1" />
+                    <button
+                      onClick={() => onInventorySubViewChange("reset")}
+                      className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                        inventorySubView === "reset"
+                          ? "bg-amber-400 text-white shadow-sm"
+                          : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
+                      }`}
+                    >
+                      DEV·RESET
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+
           </div>
         )}
 
