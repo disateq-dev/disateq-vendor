@@ -4,6 +4,8 @@ import { type InventorySubView } from "../../App";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../../domains/inventory/store";
 import { inventoryService } from "../../domains/inventory/service";
 import type { TipoMovimiento, EstadoDisponibilidad, Reserva } from "../../domains/inventory/types";
+import { usePurchasesStore } from "../../domains/purchases/store";
+import type { CompraOperacional } from "../../domains/purchases/types";
 
 interface Props {
   subView: InventorySubView;
@@ -23,6 +25,7 @@ function Helper({ text }: { text: string }) {
 
 export function InventoryWorkspace({ subView }: Props) {
   const { runtimeId, items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
+  const { compras } = usePurchasesStore();
   const items = todosItems.filter(i => !i.eliminado);
 
   return (
@@ -38,7 +41,7 @@ export function InventoryWorkspace({ subView }: Props) {
 
       {/* SheetBody */}
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
-        {subView === "disponibilidad"  && <ViewDisponibilidad  items={items} movimientos={movimientos} contexto={contexto} reservas={reservas} />}
+        {subView === "disponibilidad"  && <ViewDisponibilidad  items={items} movimientos={movimientos} contexto={contexto} reservas={reservas} compras={compras} />}
         {subView === "movimientos"     && <ViewMovimientos     items={items} movimientos={movimientos} />}
         {subView === "items"           && <ViewItems           items={items} contexto={contexto} />}
         {subView === "reservas"        && <ViewReservas        items={items} movimientos={movimientos} reservas={reservas} />}
@@ -59,16 +62,29 @@ const ESTADO_CFG: Record<EstadoDisponibilidad, { label: string; badge: string; q
   agotado:    { label: "SIN STOCK",  badge: "bg-red-50 text-red-500",            qty: "text-red-400"    },
 };
 
+const MS_48H = 48 * 60 * 60 * 1000;
+
+// Derivación cross-domain (UI layer) — cuántas unidades están pendientes de ingreso desde COMPRAS
+function derivePendienteIngreso(compras: CompraOperacional[], itemId: string): number {
+  return compras
+    .filter(c => c.estado !== 'recibida')
+    .flatMap(c => c.lineas)
+    .filter(l => l.itemId === itemId)
+    .reduce((acc, l) => acc + Math.max(0, l.cantidad - (l.cantidadRecibida ?? 0)), 0);
+}
+
 function ViewDisponibilidad({
   items,
   movimientos,
   contexto,
   reservas,
+  compras,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
   contexto: ReturnType<typeof useInventoryStore>["contexto"];
   reservas: ReturnType<typeof useInventoryStore>["reservas"];
+  compras: CompraOperacional[];
 }) {
   if (items.length === 0) {
     return (
@@ -87,12 +103,19 @@ function ViewDisponibilidad({
       </Label>
       <div className="flex flex-col gap-1.5">
         {items.map(item => {
-          const existencia  = deriveDisponibilidad(movimientos, item.itemId);
-          const reservado   = deriveReservado(reservas, item.itemId);
-          const paraOperar  = existencia - reservado;
-          const umbral      = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
-          const estado      = deriveEstado(paraOperar, umbral);
-          const cfg         = ESTADO_CFG[estado];
+          const existencia        = deriveDisponibilidad(movimientos, item.itemId);
+          const reservado         = deriveReservado(reservas, item.itemId);
+          const paraOperar        = existencia - reservado;
+          const umbral            = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
+          const estado            = deriveEstado(paraOperar, umbral);
+          const cfg               = ESTADO_CFG[estado];
+          const pendienteIngreso  = derivePendienteIngreso(compras, item.itemId);
+          const ingresoReciente   = movimientos.some(
+            m => m.itemId === item.itemId
+              && m.tipo === 'entrada'
+              && m.causa.startsWith('compra:')
+              && Date.now() - m.timestamp < MS_48H,
+          );
           return (
             <DisponibilidadCard
               key={item.itemId}
@@ -103,6 +126,8 @@ function ViewDisponibilidad({
               umbral={umbral}
               estado={estado}
               cfg={cfg}
+              pendienteIngreso={pendienteIngreso}
+              ingresoReciente={ingresoReciente}
             />
           );
         })}
@@ -118,6 +143,8 @@ function DisponibilidadCard({
   paraOperar,
   umbral,
   cfg,
+  pendienteIngreso,
+  ingresoReciente,
 }: {
   item: ReturnType<typeof useInventoryStore>["items"][number];
   existencia: number;
@@ -126,6 +153,8 @@ function DisponibilidadCard({
   umbral: number;
   estado: EstadoDisponibilidad;
   cfg: typeof ESTADO_CFG[EstadoDisponibilidad];
+  pendienteIngreso: number;
+  ingresoReciente: boolean;
 }) {
   const [accion,   setAccion]   = useState<"entrada" | "salida" | null>(null);
   const [cantidad, setCantidad] = useState("1");
@@ -156,6 +185,8 @@ function DisponibilidadCard({
           {item.unidadBase}
           {umbral > 0 && ` · alerta desde ${umbral}`}
           {reservado > 0 && <span className="text-amber-500"> · {reservado} separado{reservado !== 1 ? "s" : ""}</span>}
+          {pendienteIngreso > 0 && <span className="font-semibold text-amber-600"> · Llegan {pendienteIngreso}</span>}
+          {ingresoReciente && !pendienteIngreso && <span className="text-[#2A7CA8]"> · Ingreso reciente</span>}
         </p>
       </div>
 
