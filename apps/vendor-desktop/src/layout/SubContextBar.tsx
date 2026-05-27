@@ -17,17 +17,17 @@ interface SubContextBarProps {
 const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "abastecimiento"]);
 
 const CASH_TABS: { key: CashSubView; label: string }[] = [
-  { key: "turno",      label: "GESTIÓN TURNO" },
-  { key: "roles",      label: "ROLES"         },
-  { key: "cajas",      label: "CAJAS"         },
-  { key: "operadores", label: "OPERADORES"    },
+  { key: "turno",      label: "Gestión Turno" },
+  { key: "roles",      label: "Roles"         },
+  { key: "cajas",      label: "Cajas"         },
+  { key: "operadores", label: "Operadores"    },
 ];
 
 const ABASTECIMIENTO_MODULES: { key: AbastecimientoSubModule; label: string; isPlaceholder?: boolean }[] = [
-  { key: "compras",     label: "COMPRAS"     },
-  { key: "inventarios", label: "INVENTARIOS" },
-  { key: "proveedores", label: "PROVEEDORES", isPlaceholder: true },
-  { key: "traslados",   label: "TRASLADOS",   isPlaceholder: true },
+  { key: "compras",     label: "Compras"     },
+  { key: "inventarios", label: "Inventarios" },
+  { key: "proveedores", label: "Proveedores", isPlaceholder: true },
+  { key: "traslados",   label: "Traslados",   isPlaceholder: true },
 ];
 
 const SHELL: Record<ActiveModule, string> = {
@@ -70,7 +70,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
         {/* VENTAS */}
         {displayModule === "sales" && (
           <>
-            <button className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
+            <button className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[14px] font-semibold transition ${
               sessionActive
                 ? "bg-[#45b356] text-white shadow-[0_2px_8px_rgba(69,179,86,0.22)] hover:bg-[#3a9348]"
                 : "bg-[rgba(69,179,86,0.12)] text-[#2d5c33]/50 cursor-default"
@@ -81,15 +81,15 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
 
             <div className="mx-1 h-5 w-px bg-[#45b356]/20" />
 
-            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
+            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[14px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <Percent size={13} strokeWidth={2} />
               <span>Descuento</span>
             </button>
-            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
+            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[14px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <FileText size={13} strokeWidth={2} />
               <span>Observación</span>
             </button>
-            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
+            <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[14px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <BarChart2 size={13} strokeWidth={2} />
               <span>Reportes</span>
             </button>
@@ -111,8 +111,8 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
         {/* COMPROBANTES */}
         {displayModule === "comprobantes" && (
           <>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7a2020]">
-              Comprobantes emitidos
+            <span className="text-[14px] font-semibold text-[#7a2020]">
+              Comprobantes Emitidos
             </span>
             {sessionActive && cashSession.cashBox && (
               <>
@@ -132,7 +132,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                 <button
                   key={key}
                   onClick={() => { if (activeModule === "cash") onCashSubViewChange(key); }}
-                  className={`rounded-lg px-3 py-1 text-[10.5px] font-semibold uppercase tracking-wider transition ${
+                  className={`rounded-lg px-3 py-1 text-[14px] font-semibold transition ${
                     isActive
                       ? "bg-[#2A7CA8] text-white shadow-sm"
                       : "text-[#1a5f7a]/70 hover:bg-[#2A7CA8]/10 hover:text-[#143d54]"
@@ -155,7 +155,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
               if (isPlaceholder) {
                 return (
                   <button key={key} type="button" title="Próximamente" tabIndex={-1}
-                    className="rounded-lg px-3 py-1 text-[11px] font-bold uppercase tracking-wider opacity-35 cursor-default select-none text-[#276565]">
+                    className="rounded-lg px-3 py-1 text-[14px] font-bold opacity-35 cursor-default select-none text-[#276565]">
                     {label}
                   </button>
                 );
@@ -165,7 +165,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                 <button
                   key={key}
                   onClick={() => { if (activeModule === "abastecimiento") onAbastecimientoSubModuleChange(key); }}
-                  className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition ${
+                  className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[14px] font-bold transition ${
                     isActive
                       ? "bg-[#3D8A8A] text-white shadow-sm"
                       : "text-[#276565]/70 hover:bg-[#3D8A8A]/10 hover:text-[#1a4545]"
