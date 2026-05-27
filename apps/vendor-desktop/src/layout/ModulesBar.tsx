@@ -8,7 +8,7 @@ interface ModulesBarProps {
   onHover: (m: ActiveModule | null) => void;
 }
 
-const BASE = "flex h-11 items-center gap-2 rounded-xl border-b-2 px-4 text-[15px] font-bold text-[#121416] transition-colors";
+const BASE = "flex h-11 items-center gap-2 rounded-xl border-b-2 px-4 text-[14.5px] font-bold text-[#121416] transition-colors";
 const OFF  = `${BASE} border-transparent hover:bg-white/60`;
 const PH   = `${BASE} border-transparent opacity-40 cursor-default select-none`;
 
