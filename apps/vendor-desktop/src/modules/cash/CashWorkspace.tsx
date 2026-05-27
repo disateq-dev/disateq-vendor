@@ -169,7 +169,7 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
 
         <span className={`text-[9.5px] font-bold uppercase tracking-wide ${
           estado === "en_uso"    ? "text-[#2154d8]/70"  :
-          estado === "disponible" ? (isContg ? "text-amber-600" : "text-[#4a7a55]") :
+          estado === "disponible" ? (isContg ? "text-amber-600" : "text-[#1a5f7a]") :
           estado === "cerrada"   ? "text-[#c0cad4]"     :
           "text-[#d1d9e1]"
         }`}>{typeLabel}</span>
@@ -669,14 +669,14 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         {/* Status / pre-open card */}
         {isOpen ? (
           <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
-            closingStage > 0 ? "border-red-200" : "border-[#85C49C]/50"
+            closingStage > 0 ? "border-red-200" : "border-[#2A7CA8]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
-              closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F3F8F4] border-[#85C49C]/15"
+              closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F2F7FA] border-[#2A7CA8]/15"
             }`}>
               {closingStage > 0
                 ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-red-400" />
-                : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+                : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               }
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 {closingStage > 0 ? "CIERRE DE TURNO" : "RESUMEN DEL TURNO"}
@@ -755,16 +755,16 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         ) : (
           /* Pre-open: operator + apertura card */
           <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
-            openingMode === "exceptional" ? "border-amber-300/60" : "border-[#85C49C]/50"
+            openingMode === "exceptional" ? "border-amber-300/60" : "border-[#2A7CA8]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
               openingMode === "exceptional"
                 ? "bg-amber-50 border-amber-200/60"
-                : "bg-[#F3F8F4] border-[#85C49C]/15"
+                : "bg-[#F2F7FA] border-[#2A7CA8]/15"
             }`}>
               {openingMode === "exceptional"
                 ? <AlertTriangle size={13} strokeWidth={2} className="shrink-0 text-amber-500" />
-                : <LogIn         size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+                : <LogIn         size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               }
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 {openingMode === "exceptional" ? "APERTURA ESPECIAL" : "APERTURA DE TURNO"}
@@ -1088,11 +1088,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       {!isOpen ? (
 
         /* BOX SELECTOR — bloque completo del operador */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
-            <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+          <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
+            <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
             <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS DISPONIBLES</span>
-            <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#85C49C]">
+            <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#2A7CA8]">
               BLOQUE {operatorBlockPrefix}00
             </span>
           </div>
@@ -1672,11 +1672,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         <div className="flex min-h-0 flex-1 gap-2">
 
           {/* ─── MOVEMENTS PANEL ─── */}
-          <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
 
             {/* SheetHeader */}
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
-              <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
+              <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
               {cashMoves.length > 0 && (
                 <div className="ml-auto flex items-center gap-2.5">
@@ -1944,10 +1944,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
           </div>
 
           {/* ─── HISTORY PANEL ─── */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#85C49C]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F3F8F4] border-b border-[#85C49C]/15">
-              <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4a7a55]" />
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
+              <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS DEL TURNO</span>
               <div className="ml-auto flex items-center gap-2.5">
                 {moneyGt(totalPending, 0) && (

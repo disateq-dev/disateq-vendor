@@ -4,7 +4,7 @@ import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { usePOS } from "../context/POSContext";
-import { type ActiveModule, type CashSubView, type InventorySubView, type PurchasesSubView, type AbastecimientoSubModule } from "../App";
+import { type ActiveModule, type CashSubView, type AbastecimientoSubModule } from "../App";
 
 interface AppShellProps {
   children: ReactNode;
@@ -14,10 +14,6 @@ interface AppShellProps {
   onCashSubViewChange: (sv: CashSubView) => void;
   abastecimientoSubModule: AbastecimientoSubModule;
   onAbastecimientoSubModuleChange: (sm: AbastecimientoSubModule) => void;
-  inventorySubView: InventorySubView;
-  onInventorySubViewChange: (sv: InventorySubView) => void;
-  purchasesSubView: PurchasesSubView;
-  onPurchasesSubViewChange: (sv: PurchasesSubView) => void;
 }
 
 function OperationalNotice() {
@@ -33,7 +29,7 @@ function OperationalNotice() {
   );
 }
 
-export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, inventorySubView, onInventorySubViewChange, purchasesSubView, onPurchasesSubViewChange }: AppShellProps) {
+export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange }: AppShellProps) {
   const { closeCobro, logoutOperator, cobroOpen } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
 
@@ -80,10 +76,6 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
             onCashSubViewChange={onCashSubViewChange}
             abastecimientoSubModule={abastecimientoSubModule}
             onAbastecimientoSubModuleChange={onAbastecimientoSubModuleChange}
-            inventorySubView={inventorySubView}
-            onInventorySubViewChange={onInventorySubViewChange}
-            purchasesSubView={purchasesSubView}
-            onPurchasesSubViewChange={onPurchasesSubViewChange}
           />
         </header>
 

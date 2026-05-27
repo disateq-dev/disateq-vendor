@@ -1,65 +1,155 @@
 import { useState } from "react";
 import { Archive, Trash2 } from "lucide-react";
-import { type InventorySubView } from "../../App";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../../domains/inventory/store";
 import { inventoryService } from "../../domains/inventory/service";
 import type { TipoMovimiento, EstadoDisponibilidad, Reserva } from "../../domains/inventory/types";
 import { usePurchasesStore } from "../../domains/purchases/store";
 import type { CompraOperacional } from "../../domains/purchases/types";
 
-interface Props {
-  subView: InventorySubView;
-}
+type InventoryTab = "stock" | "productos" | "movimientos" | "separados" | "corregir" | "reset";
 
-// Ayuda contextual inline — discreta, no invasiva
-function Helper({ text }: { text: string }) {
-  return (
-    <span
-      title={text}
-      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#9ca3af]/20 text-[#9ca3af] text-[8px] font-bold cursor-help select-none leading-none"
-    >
-      ?
-    </span>
-  );
-}
+const TABS: { key: InventoryTab; label: string; devOnly?: boolean }[] = [
+  { key: "stock",       label: "STOCK"         },
+  { key: "productos",   label: "PRODUCTOS"     },
+  { key: "movimientos", label: "ENTRADAS/SAL."  },
+  { key: "separados",   label: "SEPARADOS"     },
+  { key: "corregir",    label: "CORREGIR"      },
+  { key: "reset",       label: "DEV·RESET",    devOnly: true },
+];
 
-export function InventoryWorkspace({ subView }: Props) {
+export function InventoryWorkspace() {
   const { runtimeId, items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const { compras } = usePurchasesStore();
   const items = todosItems.filter(i => !i.eliminado);
 
+  const [activeTab,      setActiveTab]      = useState<InventoryTab>("stock");
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  const visibleTabs = TABS.filter(t => !t.devOnly || import.meta.env.DEV);
+
+  const selectedItem = selectedItemId ? items.find(i => i.itemId === selectedItemId) : null;
+
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C4844A]/30 bg-[#FDFCF9]">
+    <div className="flex min-h-0 flex-1 gap-3">
 
-      {/* SheetHeader — h-[42px] fijo, una línea */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#C4844A]/15 bg-[#FBF7F3] px-4">
-        <Archive size={13} strokeWidth={2} className="text-[#C4844A]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INVENTARIO</span>
-        <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#C4844A]/10 text-[#C4844A]">CAPA 1</span>
-        <span className="ml-auto font-mono text-[9px] text-[#b0a898]">{runtimeId.slice(0, 8)}…</span>
+      {/* ── Left SheetWork — lista de productos ───────────────────── */}
+      <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#3D8A8A]/30 bg-white">
+
+        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#3D8A8A]/15 bg-[#EDF7F6] px-4">
+          <Archive size={13} strokeWidth={2} className="text-[#3D8A8A]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">PRODUCTOS</span>
+          {items.length > 0 && (
+            <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold tabular-nums bg-[#3D8A8A]/10 text-[#3D8A8A]">
+              {items.length}
+            </span>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-1">
+          {items.length === 0 ? (
+            <p className="px-4 py-8 text-center text-[11px] text-[#b0bac8]">Sin productos registrados</p>
+          ) : (
+            items.map(item => {
+              const existencia = deriveDisponibilidad(movimientos, item.itemId);
+              const reservado  = deriveReservado(reservas, item.itemId);
+              const paraOperar = existencia - reservado;
+              const umbral     = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
+              const estado     = deriveEstado(paraOperar, umbral);
+              const isSelected = selectedItemId === item.itemId;
+
+              const dotColor = estado === "disponible"
+                ? "bg-[#45b356]"
+                : estado === "bajo_stock"
+                ? "bg-amber-400"
+                : "bg-red-400";
+              const qtyColor = estado === "disponible"
+                ? "text-[#45b356]"
+                : estado === "bajo_stock"
+                ? "text-amber-500"
+                : "text-red-500";
+
+              return (
+                <button
+                  key={item.itemId}
+                  onClick={() => setSelectedItemId(isSelected ? null : item.itemId)}
+                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition ${
+                    isSelected
+                      ? "bg-[#3D8A8A]/10 ring-inset ring-1 ring-[#3D8A8A]/25"
+                      : "hover:bg-[#3D8A8A]/5"
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColor}`} />
+                  <span className="flex-1 min-w-0 truncate text-[12px] font-semibold text-[#1f2937]">
+                    {item.nombre}
+                  </span>
+                  <span className={`shrink-0 tabular-nums text-[13px] font-bold ${qtyColor}`}>
+                    {paraOperar}
+                  </span>
+                  <span className="shrink-0 text-[9px] text-[#b0bac8]">{item.unidadBase}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {import.meta.env.DEV && (
+          <div className="shrink-0 border-t border-[#3D8A8A]/10 px-3 py-1.5">
+            <span className="font-mono text-[9px] text-[#b0bac8]">{runtimeId.slice(0, 8)}…</span>
+          </div>
+        )}
       </div>
 
-      {/* SheetBody */}
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
-        {subView === "disponibilidad"  && <ViewDisponibilidad  items={items} movimientos={movimientos} contexto={contexto} reservas={reservas} compras={compras} />}
-        {subView === "movimientos"     && <ViewMovimientos     items={items} movimientos={movimientos} />}
-        {subView === "items"           && <ViewItems           items={items} contexto={contexto} />}
-        {subView === "reservas"        && <ViewReservas        items={items} movimientos={movimientos} reservas={reservas} />}
-        {subView === "reconciliacion"  && <ViewReconciliacion  items={items} movimientos={movimientos} />}
-        {subView === "reset"           && <ViewReset />}
-      </div>
+      {/* ── Right SheetWork — contenido tabulado ──────────────────── */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#3D8A8A]/30 bg-white">
 
-    </section>
+        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#3D8A8A]/15 bg-[#EDF7F6] px-4">
+          <Archive size={13} strokeWidth={2} className="text-[#3D8A8A]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INVENTARIO</span>
+          {selectedItem && (
+            <>
+              <span className="text-[#3D8A8A]/40 mx-0.5">·</span>
+              <span className="truncate max-w-[200px] text-[12px] text-[#3D8A8A]/70">{selectedItem.nombre}</span>
+            </>
+          )}
+        </div>
+
+        {/* SheetNav */}
+        <div className="shrink-0 flex h-[34px] items-center gap-0.5 border-b border-[#3D8A8A]/10 bg-[#EDF7F6]/50 px-3">
+          {visibleTabs.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+                activeTab === key
+                  ? "bg-[#3D8A8A] text-white shadow-sm"
+                  : "text-[#276565]/70 hover:bg-[#3D8A8A]/10 hover:text-[#1a4545]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
+          {activeTab === "stock"       && <ViewDisponibilidad items={items} movimientos={movimientos} contexto={contexto} reservas={reservas} compras={compras} />}
+          {activeTab === "productos"   && <ViewItems items={items} contexto={contexto} />}
+          {activeTab === "movimientos" && <ViewMovimientos key={selectedItemId ?? "__none"} items={items} movimientos={movimientos} defaultItemId={selectedItemId} />}
+          {activeTab === "separados"   && <ViewReservas key={selectedItemId ?? "__none"} items={items} movimientos={movimientos} reservas={reservas} defaultItemId={selectedItemId} />}
+          {activeTab === "corregir"    && <ViewReconciliacion key={selectedItemId ?? "__none"} items={items} movimientos={movimientos} defaultItemId={selectedItemId} />}
+          {activeTab === "reset"       && <ViewReset />}
+        </div>
+
+      </div>
+    </div>
   );
 }
 
 // ── STOCK ACTUAL ─────────────────────────────────────────────────────────────
 
-// Lenguaje interno (tipos) ≠ lenguaje visible (UI)
 const ESTADO_CFG: Record<EstadoDisponibilidad, { label: string; badge: string; qty: string }> = {
-  disponible: { label: "DISPONIBLE", badge: "bg-[#45b356]/12 text-[#45b356]",   qty: "text-[#45b356]"  },
-  bajo_stock: { label: "QUEDA POCO", badge: "bg-[#C4844A]/12 text-[#C4844A]",   qty: "text-[#C4844A]"  },
-  agotado:    { label: "SIN STOCK",  badge: "bg-red-50 text-red-500",            qty: "text-red-400"    },
+  disponible: { label: "DISPONIBLE", badge: "bg-[#45b356]/12 text-[#45b356]", qty: "text-[#45b356]"  },
+  bajo_stock: { label: "QUEDA POCO", badge: "bg-amber-100 text-amber-600",    qty: "text-amber-500"  },
+  agotado:    { label: "SIN STOCK",  badge: "bg-red-50 text-red-500",         qty: "text-red-400"    },
 };
 
 const MS_48H = 48 * 60 * 60 * 1000;
@@ -79,21 +169,16 @@ function formatRelativo(ts: number): string {
 
 const ORDEN_ESTADO: Record<EstadoDisponibilidad, number> = { agotado: 0, bajo_stock: 1, disponible: 2 };
 
-// Derivación cross-domain (UI layer) — cuántas unidades están pendientes de ingreso desde COMPRAS
 function derivePendienteIngreso(compras: CompraOperacional[], itemId: string): number {
   return compras
-    .filter(c => c.estado !== 'recibida')
+    .filter(c => c.estado !== "recibida")
     .flatMap(c => c.lineas)
     .filter(l => l.itemId === itemId)
     .reduce((acc, l) => acc + Math.max(0, l.cantidad - (l.cantidadRecibida ?? 0)), 0);
 }
 
 function ViewDisponibilidad({
-  items,
-  movimientos,
-  contexto,
-  reservas,
-  compras,
+  items, movimientos, contexto, reservas, compras,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
@@ -104,14 +189,13 @@ function ViewDisponibilidad({
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-        <Archive size={28} strokeWidth={1.2} className="text-[#C4844A]/30" />
+        <Archive size={28} strokeWidth={1.2} className="text-[#3D8A8A]/30" />
         <p className="text-[12px] font-semibold text-[#9ca3af]">Sin productos registrados</p>
-        <p className="text-[11px] text-[#b0bac8]">Registra el primer producto en la pestaña PRODUCTOS.</p>
+        <p className="text-[11px] text-[#b0bac8]">Registra el primer producto en PRODUCTOS.</p>
       </div>
     );
   }
 
-  // Enriquecer + ordenar: agotado → poco stock → disponible; dentro de cada grupo: pendiente desc → nombre
   const enriched = items.map(item => {
     const existencia       = deriveDisponibilidad(movimientos, item.itemId);
     const reservado        = deriveReservado(reservas, item.itemId);
@@ -121,12 +205,12 @@ function ViewDisponibilidad({
     const cfg              = ESTADO_CFG[estado];
     const pendienteIngreso = derivePendienteIngreso(compras, item.itemId);
     const ingresoReciente  = movimientos.some(
-      m => m.itemId === item.itemId && m.tipo === 'entrada' && m.causa.startsWith('compra:') && Date.now() - m.timestamp < MS_48H,
+      m => m.itemId === item.itemId && m.tipo === "entrada" && m.causa.startsWith("compra:") && Date.now() - m.timestamp < MS_48H,
     );
-    const ultimoMov        = movimientos
+    const ultimoMov       = movimientos
       .filter(m => m.itemId === item.itemId)
       .reduce<typeof movimientos[0] | null>((best, m) => (!best || m.timestamp > best.timestamp) ? m : best, null);
-    const ultimaActividad  = ultimoMov ? formatRelativo(ultimoMov.timestamp) : null;
+    const ultimaActividad = ultimoMov ? formatRelativo(ultimoMov.timestamp) : null;
     return { item, existencia, reservado, paraOperar, umbral, estado, cfg, pendienteIngreso, ingresoReciente, ultimaActividad };
   });
 
@@ -150,26 +234,14 @@ function ViewDisponibilidad({
         {(sinStock > 0 || pocoStock > 0 || conIngreso > 0) && (
           <div className="flex items-center gap-3">
             {sinStock  > 0 && <span className="text-[10px] font-semibold text-red-500">{sinStock} sin stock</span>}
-            {pocoStock > 0 && <span className="text-[10px] font-semibold text-[#C4844A]">{pocoStock} con poco</span>}
+            {pocoStock > 0 && <span className="text-[10px] font-semibold text-amber-500">{pocoStock} con poco</span>}
             {conIngreso > 0 && <span className="text-[10px] text-amber-600">{conIngreso} en camino</span>}
           </div>
         )}
       </div>
       <div className="flex flex-col gap-1.5">
-        {enriched.map(({ item, existencia, reservado, paraOperar, umbral, estado, cfg, pendienteIngreso, ingresoReciente, ultimaActividad }) => (
-          <DisponibilidadCard
-            key={item.itemId}
-            item={item}
-            existencia={existencia}
-            reservado={reservado}
-            paraOperar={paraOperar}
-            umbral={umbral}
-            estado={estado}
-            cfg={cfg}
-            pendienteIngreso={pendienteIngreso}
-            ingresoReciente={ingresoReciente}
-            ultimaActividad={ultimaActividad}
-          />
+        {enriched.map(e => (
+          <DisponibilidadCard key={e.item.itemId} {...e} />
         ))}
       </div>
     </div>
@@ -177,15 +249,7 @@ function ViewDisponibilidad({
 }
 
 function DisponibilidadCard({
-  item,
-  existencia,
-  reservado,
-  paraOperar,
-  umbral,
-  cfg,
-  pendienteIngreso,
-  ingresoReciente,
-  ultimaActividad,
+  item, existencia, reservado, paraOperar, umbral, cfg, pendienteIngreso, ingresoReciente, ultimaActividad,
 }: {
   item: ReturnType<typeof useInventoryStore>["items"][number];
   existencia: number;
@@ -209,18 +273,11 @@ function DisponibilidadCard({
     cancelar();
   }
 
-  function cancelar() {
-    setAccion(null);
-    setCantidad("1");
-  }
-
-  function activar(tipo: "entrada" | "salida") {
-    setAccion(tipo);
-    setCantidad("1");
-  }
+  function cancelar() { setAccion(null); setCantidad("1"); }
+  function activar(tipo: "entrada" | "salida") { setAccion(tipo); setCantidad("1"); }
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#e9e4dc] bg-white px-4 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-[#e4eaea] bg-white px-4 py-2.5">
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
         <p className="text-[10px] text-[#9ca3af]">
@@ -244,40 +301,18 @@ function DisponibilidadCard({
             type="number"
             value={cantidad}
             onChange={e => setCantidad(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter")  confirmar();
-              if (e.key === "Escape") cancelar();
-            }}
-            className="w-16 rounded border border-[#e9e4dc] px-2 py-0.5 text-[12px] tabular-nums text-center focus:outline-none focus:border-[#C4844A]/50"
+            onKeyDown={e => { if (e.key === "Enter") confirmar(); if (e.key === "Escape") cancelar(); }}
+            className="w-16 rounded border border-[#e4eaea] px-2 py-0.5 text-[12px] tabular-nums text-center focus:outline-none focus:border-[#3D8A8A]/50"
           />
-          <button
-            onClick={confirmar}
-            className="rounded px-2 py-0.5 text-[11px] font-bold bg-[#C4844A] text-white hover:bg-[#a86d38] transition active:scale-95"
-          >
-            OK
-          </button>
-          <button
-            onClick={cancelar}
-            className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
-          >
-            ✕
-          </button>
+          <button onClick={confirmar} className="rounded px-2 py-0.5 text-[11px] font-bold bg-[#3D8A8A] text-white hover:bg-[#2d6b6b] transition active:scale-95">OK</button>
+          <button onClick={cancelar} className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition">✕</button>
         </div>
       ) : (
         <>
-          <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>
-            {cfg.label}
-          </span>
-          {/* disponible para vender prominente; total secundario si hay separados */}
+          <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${cfg.badge}`}>{cfg.label}</span>
           <div className="flex flex-col items-end shrink-0">
-            <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>
-              {paraOperar}
-            </span>
-            {reservado > 0 && (
-              <span className="text-[9px] text-[#b0bac8] tabular-nums leading-none">
-                {existencia} total
-              </span>
-            )}
+            <span className={`tabular-nums text-[20px] font-bold leading-none ${cfg.qty}`}>{paraOperar}</span>
+            {reservado > 0 && <span className="text-[9px] text-[#b0bac8] tabular-nums leading-none">{existencia} total</span>}
           </div>
           <span className="text-[10px] text-[#b0bac8]">{item.unidadBase}</span>
           <div className="flex gap-1 shrink-0">
@@ -285,16 +320,12 @@ function DisponibilidadCard({
               onClick={() => activar("entrada")}
               className="rounded px-2 py-1 text-[11px] font-bold text-[#45b356] border border-[#45b356]/30 hover:bg-[#45b356]/8 transition active:scale-95"
               title="Llegó producto"
-            >
-              +
-            </button>
+            >+</button>
             <button
               onClick={() => activar("salida")}
               className="rounded px-2 py-1 text-[11px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition active:scale-95"
               title="Salió producto"
-            >
-              −
-            </button>
+            >−</button>
           </div>
         </>
       )}
@@ -305,20 +336,20 @@ function DisponibilidadCard({
 // ── ENTRADAS Y SALIDAS ───────────────────────────────────────────────────────
 
 function ViewMovimientos({
-  items,
-  movimientos,
+  items, movimientos, defaultItemId,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
+  defaultItemId?: string | null;
 }) {
-  const [itemId,      setItemId]      = useState(items[0]?.itemId ?? "");
-  const [tipo,        setTipo]        = useState<TipoMovimiento>("entrada");
-  const [cantidad,    setCantidad]    = useState("");
-  const [causa,       setCausa]       = useState("");
-  const [error,       setError]       = useState("");
-  const [busqueda,    setBusqueda]    = useState("");
-  const [filtroTipo,  setFiltroTipo]  = useState<TipoMovimiento | "todos">("todos");
-  const [copiado,     setCopiado]     = useState(false);
+  const [itemId,     setItemId]     = useState(defaultItemId ?? items[0]?.itemId ?? "");
+  const [tipo,       setTipo]       = useState<TipoMovimiento>("entrada");
+  const [cantidad,   setCantidad]   = useState("");
+  const [causa,      setCausa]      = useState("");
+  const [error,      setError]      = useState("");
+  const [busqueda,   setBusqueda]   = useState("");
+  const [filtroTipo, setFiltroTipo] = useState<TipoMovimiento | "todos">("todos");
+  const [copiado,    setCopiado]    = useState(false);
 
   function handleRegistrar() {
     const n = parseFloat(cantidad);
@@ -347,10 +378,7 @@ function ViewMovimientos({
       return [fecha, `"${nombre}"`, m.tipo, signo, `"${m.causa}"`].join(",");
     });
     const csv = [header, ...filas].join("\n");
-    navigator.clipboard.writeText(csv).then(() => {
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    });
+    navigator.clipboard.writeText(csv).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2000); });
   }
 
   const filtrados = [...movimientos].reverse().filter(m => {
@@ -365,64 +393,54 @@ function ViewMovimientos({
   return (
     <div className="flex flex-col gap-3">
 
-      {/* Formulario */}
-      <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#3D8A8A]/20 bg-[#EDF7F6] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Registrar entrada o salida</Label>
           <Helper text="Usa esto para registrar mercadería que llegó o salió manualmente. El historial queda guardado." />
         </div>
-
         <div className="flex gap-2 flex-wrap">
           <select
             value={itemId}
             onChange={e => setItemId(e.target.value)}
-            className="flex-1 min-w-[140px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="flex-1 min-w-[140px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           >
             {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => <option key={i.itemId} value={i.itemId}>{i.nombre}</option>)}
           </select>
-
           <select
             value={tipo}
             onChange={e => setTipo(e.target.value as TipoMovimiento)}
-            className="rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           >
             <option value="entrada">+ Llegó producto</option>
             <option value="salida">− Salió producto</option>
             <option value="ajuste">± Ajuste de cantidad</option>
           </select>
-
           <input
             type="number"
             value={cantidad}
             onChange={e => setCantidad(e.target.value)}
             placeholder="cantidad"
-            className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3D8A8A]/50"
           />
-
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
             placeholder="motivo (opcional)"
-            className="flex-1 min-w-[100px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="flex-1 min-w-[100px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           />
-
           <button
             onClick={handleRegistrar}
             disabled={items.length === 0}
-            className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg bg-[#3D8A8A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2d6b6b] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Guardar
           </button>
         </div>
-
         {error && <p className="text-[11px] text-red-500">{error}</p>}
-        {items.length === 0 && (
-          <p className="text-[11px] text-[#9ca3af]">Registra productos en la pestaña PRODUCTOS primero.</p>
-        )}
+        {items.length === 0 && <p className="text-[11px] text-[#9ca3af]">Registra productos en PRODUCTOS primero.</p>}
       </div>
 
-      {/* Filtros + Log */}
       {movimientos.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 flex-wrap">
@@ -430,7 +448,7 @@ function ViewMovimientos({
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
               placeholder="buscar producto…"
-              className="flex-1 min-w-[120px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+              className="flex-1 min-w-[120px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
             />
             {(["todos", "entrada", "salida", "ajuste"] as const).map(t => (
               <button
@@ -438,23 +456,18 @@ function ViewMovimientos({
                 onClick={() => setFiltroTipo(t)}
                 className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
                   filtroTipo === t
-                    ? t === "todos"    ? "bg-[#1f2937] text-white"
-                    : t === "entrada"  ? "bg-[#45b356] text-white"
-                    : t === "salida"   ? "bg-red-500 text-white"
+                    ? t === "todos"   ? "bg-[#1f2937] text-white"
+                    : t === "entrada" ? "bg-[#45b356] text-white"
+                    : t === "salida"  ? "bg-red-500 text-white"
                     : "bg-[#005BE3] text-white"
-                    : "border border-[#e9e4dc] text-[#6b7280] hover:border-[#C4844A]/40"
+                    : "border border-[#e4eaea] text-[#6b7280] hover:border-[#3D8A8A]/40"
                 }`}
               >
                 {t === "todos" ? "TODOS" : t === "entrada" ? "+" : t === "salida" ? "−" : "±"}
               </button>
             ))}
             {hayFiltro && (
-              <button
-                onClick={() => { setBusqueda(""); setFiltroTipo("todos"); }}
-                className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
-              >
-                ✕
-              </button>
+              <button onClick={() => { setBusqueda(""); setFiltroTipo("todos"); }} className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition">✕</button>
             )}
             <div className="ml-auto">
               <button
@@ -462,7 +475,7 @@ function ViewMovimientos({
                 className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
                   copiado
                     ? "bg-[#45b356] text-white"
-                    : "border border-[#e9e4dc] text-[#6b7280] hover:border-[#C4844A]/40 hover:text-[#C4844A]"
+                    : "border border-[#e4eaea] text-[#6b7280] hover:border-[#3D8A8A]/40 hover:text-[#3D8A8A]"
                 }`}
               >
                 {copiado ? "¡Copiado!" : "CSV"}
@@ -481,7 +494,7 @@ function ViewMovimientos({
                 const sign  = m.tipo === "entrada" ? "+" : m.tipo === "salida" ? "−" : "±";
                 const color = m.tipo === "entrada" ? "text-[#45b356]" : m.tipo === "salida" ? "text-red-500" : "text-[#005BE3]";
                 return (
-                  <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-3 py-2">
+                  <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#eef2f2] bg-white px-3 py-2">
                     <span className={`w-4 text-center font-bold text-[13px] ${color}`}>{sign}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-semibold text-[#374151]">{items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId}</p>
@@ -508,8 +521,7 @@ function ViewMovimientos({
 // ── PRODUCTOS ────────────────────────────────────────────────────────────────
 
 function ViewItems({
-  items,
-  contexto,
+  items, contexto,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   contexto: ReturnType<typeof useInventoryStore>["contexto"];
@@ -535,8 +547,7 @@ function ViewItems({
   return (
     <div className="flex flex-col gap-3">
 
-      {/* Formulario */}
-      <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#3D8A8A]/20 bg-[#EDF7F6] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Agregar producto</Label>
           <Helper text="Registra los productos que manejas en tu negocio. Después podrás registrar entradas y salidas." />
@@ -547,25 +558,25 @@ function ViewItems({
             onChange={e => setNombre(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") handleRegistrar(); }}
             placeholder="nombre del producto"
-            className="flex-1 min-w-[160px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="flex-1 min-w-[160px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           />
           <input
             value={unidadBase}
             onChange={e => setUnidadBase(e.target.value)}
             placeholder="kg, botella…"
-            className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           />
           <input
             type="number"
             value={umbral}
             onChange={e => setUmbral(e.target.value)}
             placeholder="alerta desde"
-            title="¿Desde cuántas unidades mostrar alerta de stock bajo? Deja vacío si no quieres alerta."
-            className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+            title="¿Desde cuántas unidades mostrar alerta de stock bajo?"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3D8A8A]/50"
           />
           <button
             onClick={handleRegistrar}
-            className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95"
+            className="rounded-lg bg-[#3D8A8A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2d6b6b] active:scale-95"
           >
             Agregar
           </button>
@@ -576,7 +587,6 @@ function ViewItems({
         </p>
       </div>
 
-      {/* Lista */}
       {items.length > 0 ? (
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -584,15 +594,10 @@ function ViewItems({
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
               placeholder="buscar producto…"
-              className="flex-1 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+              className="flex-1 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
             />
             {busqueda && (
-              <button
-                onClick={() => setBusqueda("")}
-                className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
-              >
-                ✕
-              </button>
+              <button onClick={() => setBusqueda("")} className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition">✕</button>
             )}
           </div>
           {(() => {
@@ -641,24 +646,14 @@ function ItemRow({ item, umbralMinimo }: {
           <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
           <p className="text-[10px] text-red-400">¿Quitar este producto? El historial se conserva.</p>
         </div>
-        <button
-          onClick={() => inventoryService.darDeBaja(item.itemId)}
-          className="rounded px-2.5 py-1 text-[11px] font-bold bg-red-500 text-white hover:bg-red-600 transition active:scale-95"
-        >
-          QUITAR
-        </button>
-        <button
-          onClick={() => setConfirmBaja(false)}
-          className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition"
-        >
-          ✕
-        </button>
+        <button onClick={() => inventoryService.darDeBaja(item.itemId)} className="rounded px-2.5 py-1 text-[11px] font-bold bg-red-500 text-white hover:bg-red-600 transition active:scale-95">QUITAR</button>
+        <button onClick={() => setConfirmBaja(false)} className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition">✕</button>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-4 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-[#eef2f2] bg-white px-4 py-2.5">
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-semibold text-[#1f2937]">{item.nombre}</p>
         <p className="text-[10px] text-[#9ca3af] font-mono">{item.itemId} · {item.unidadBase}</p>
@@ -676,22 +671,18 @@ function ItemRow({ item, umbralMinimo }: {
               if (e.key === "Enter") handleSave();
               if (e.key === "Escape") { setVal(String(umbralMinimo > 0 ? umbralMinimo : "")); setEditing(false); }
             }}
-            className="w-14 rounded border border-[#C4844A]/40 px-1.5 py-0.5 text-[11px] tabular-nums text-center focus:outline-none"
+            className="w-14 rounded border border-[#3D8A8A]/40 px-1.5 py-0.5 text-[11px] tabular-nums text-center focus:outline-none"
           />
         ) : (
           <button
             onClick={() => { setVal(String(umbralMinimo > 0 ? umbralMinimo : "")); setEditing(true); }}
-            className="min-w-[28px] rounded border border-[#e9e4dc] px-2 py-0.5 text-[11px] tabular-nums text-[#6b7280] hover:border-[#C4844A]/40 transition"
+            className="min-w-[28px] rounded border border-[#e4eaea] px-2 py-0.5 text-[11px] tabular-nums text-[#6b7280] hover:border-[#3D8A8A]/40 transition"
           >
             {umbralMinimo > 0 ? umbralMinimo : "—"}
           </button>
         )}
       </div>
-      <button
-        onClick={() => setConfirmBaja(true)}
-        className="shrink-0 rounded p-1 text-[#d1d5db] hover:text-red-400 hover:bg-red-50 transition"
-        title="Quitar producto"
-      >
+      <button onClick={() => setConfirmBaja(true)} className="shrink-0 rounded p-1 text-[#d1d5db] hover:text-red-400 hover:bg-red-50 transition" title="Quitar producto">
         <Trash2 size={12} strokeWidth={2} />
       </button>
     </div>
@@ -701,15 +692,14 @@ function ItemRow({ item, umbralMinimo }: {
 // ── PRODUCTOS SEPARADOS ──────────────────────────────────────────────────────
 
 function ViewReservas({
-  items,
-  movimientos,
-  reservas,
+  items, movimientos, reservas, defaultItemId,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
   reservas: Reserva[];
+  defaultItemId?: string | null;
 }) {
-  const [itemId,   setItemId]   = useState(items[0]?.itemId ?? "");
+  const [itemId,   setItemId]   = useState(defaultItemId ?? items[0]?.itemId ?? "");
   const [cantidad, setCantidad] = useState("");
   const [causa,    setCausa]    = useState("");
   const [error,    setError]    = useState("");
@@ -718,8 +708,7 @@ function ViewReservas({
     const n = parseFloat(cantidad);
     if (!itemId)            { setError("Selecciona un producto."); return; }
     if (isNaN(n) || n <= 0) { setError("La cantidad debe ser positiva."); return; }
-    const causaFinal = causa.trim() || "separación";
-    inventoryService.reservar(itemId, n, causaFinal);
+    inventoryService.reservar(itemId, n, causa.trim() || "separación");
     setCantidad("");
     setCausa("");
     setError("");
@@ -731,8 +720,7 @@ function ViewReservas({
   return (
     <div className="flex flex-col gap-3">
 
-      {/* Formulario separar producto */}
-      <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#3D8A8A]/20 bg-[#EDF7F6] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Separar producto</Label>
           <Helper text="Separa unidades para un cliente o pedido. No descuenta el stock todavía — solo las marca como reservadas." />
@@ -741,7 +729,7 @@ function ViewReservas({
           <select
             value={itemId}
             onChange={e => setItemId(e.target.value)}
-            className="flex-1 min-w-[140px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="flex-1 min-w-[140px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           >
             {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => {
@@ -754,18 +742,18 @@ function ViewReservas({
             value={cantidad}
             onChange={e => setCantidad(e.target.value)}
             placeholder="cantidad"
-            className="w-24 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3D8A8A]/50"
           />
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
             placeholder="para quién o qué (opcional)"
-            className="flex-1 min-w-[100px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="flex-1 min-w-[100px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           />
           <button
             onClick={handleReservar}
             disabled={items.length === 0}
-            className="rounded-lg bg-[#C4844A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#a86d38] active:scale-95 disabled:opacity-40"
+            className="rounded-lg bg-[#3D8A8A] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2d6b6b] active:scale-95 disabled:opacity-40"
           >
             Separar
           </button>
@@ -773,7 +761,6 @@ function ViewReservas({
         {error && <p className="text-[11px] text-red-500">{error}</p>}
       </div>
 
-      {/* Separados activos */}
       {activas.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           <Label>{activas.length} producto{activas.length !== 1 ? "s" : ""} separado{activas.length !== 1 ? "s" : ""}</Label>
@@ -785,24 +772,18 @@ function ViewReservas({
                   <p className="text-[12px] font-semibold text-[#1f2937]">{nombreItem}</p>
                   <p className="text-[10px] text-[#9ca3af]">{r.causa} · {formatTs(r.timestamp)}</p>
                 </div>
-                <span className="tabular-nums text-[16px] font-bold text-amber-600 shrink-0">
-                  {r.cantidad}
-                </span>
+                <span className="tabular-nums text-[16px] font-bold text-amber-600 shrink-0">{r.cantidad}</span>
                 <div className="flex gap-1 shrink-0">
                   <button
                     onClick={() => inventoryService.materializarReserva(r.reservaId)}
                     className="rounded px-2 py-1 text-[10px] font-bold text-[#45b356] border border-[#45b356]/30 hover:bg-[#45b356]/8 transition active:scale-95"
                     title="Confirmar entrega al cliente — descuenta el stock"
-                  >
-                    ✓ Entregar
-                  </button>
+                  >✓ Entregar</button>
                   <button
                     onClick={() => inventoryService.liberarReserva(r.reservaId, "cancelada-operador")}
-                    className="rounded px-2 py-1 text-[10px] font-bold text-[#6b7280] border border-[#e9e4dc] hover:border-red-200 hover:text-red-400 transition active:scale-95"
+                    className="rounded px-2 py-1 text-[10px] font-bold text-[#6b7280] border border-[#e4eaea] hover:border-red-200 hover:text-red-400 transition active:scale-95"
                     title="Cancelar separación — vuelve a estar disponible"
-                  >
-                    ✕
-                  </button>
+                  >✕</button>
                 </div>
               </div>
             );
@@ -812,7 +793,6 @@ function ViewReservas({
         <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin productos separados.</p>
       )}
 
-      {/* Historial reciente */}
       {historial.length > 0 && (
         <div className="flex flex-col gap-1">
           <Label>Historial reciente</Label>
@@ -820,13 +800,13 @@ function ViewReservas({
             const nombreItem = items.find(i => i.itemId === r.itemId)?.nombre ?? r.itemId;
             const entregado  = r.estado === "materializada";
             return (
-              <div key={r.reservaId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-4 py-2 opacity-70">
+              <div key={r.reservaId} className="flex items-center gap-3 rounded-xl border border-[#eef2f2] bg-white px-4 py-2 opacity-70">
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-semibold text-[#374151]">{nombreItem}</p>
                   <p className="text-[10px] text-[#9ca3af]">{r.causa} · {formatTs(r.timestamp)}</p>
                 </div>
                 <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                  entregado ? "bg-[#45b356]/10 text-[#45b356]" : "bg-[#e9e4dc] text-[#9ca3af]"
+                  entregado ? "bg-[#45b356]/10 text-[#45b356]" : "bg-[#e4eaea] text-[#9ca3af]"
                 }`}>
                   {entregado ? "entregado" : "cancelado"}
                 </span>
@@ -843,13 +823,13 @@ function ViewReservas({
 // ── CORREGIR DIFERENCIA ──────────────────────────────────────────────────────
 
 function ViewReconciliacion({
-  items,
-  movimientos,
+  items, movimientos, defaultItemId,
 }: {
   items: ReturnType<typeof useInventoryStore>["items"];
   movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
+  defaultItemId?: string | null;
 }) {
-  const [itemId,    setItemId]    = useState(items[0]?.itemId ?? "");
+  const [itemId,    setItemId]    = useState(defaultItemId ?? items[0]?.itemId ?? "");
   const [conteo,    setConteo]    = useState("");
   const [causa,     setCausa]     = useState("conteo físico");
   const [error,     setError]     = useState("");
@@ -859,10 +839,9 @@ function ViewReconciliacion({
 
   function handleReconciliar() {
     const n = parseFloat(conteo);
-    if (!itemId)        { setError("Selecciona un producto."); return; }
+    if (!itemId)            { setError("Selecciona un producto."); return; }
     if (isNaN(n) || n < 0) { setError("El número debe ser 0 o mayor."); return; }
-    const causaFinal = causa.trim() || "conteo físico";
-    const res = inventoryService.reconciliar(itemId, n, causaFinal);
+    const res = inventoryService.reconciliar(itemId, n, causa.trim() || "conteo físico");
     setResultado(res);
     setConteo("");
     setError("");
@@ -879,18 +858,16 @@ function ViewReconciliacion({
   return (
     <div className="flex flex-col gap-3">
 
-      {/* Formulario conteo físico */}
-      <div className="rounded-2xl border border-[#C4844A]/20 bg-[#FBF7F3] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#3D8A8A]/20 bg-[#EDF7F6] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Corregir diferencia de stock</Label>
           <Helper text="Cuenta los productos físicamente y compara con lo que dice el sistema. Si hay diferencia, se corrige automáticamente." />
         </div>
-
         <div className="flex gap-2 flex-wrap">
           <select
             value={itemId}
             onChange={e => { setItemId(e.target.value); setResultado(null); }}
-            className="flex-1 min-w-[160px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="flex-1 min-w-[160px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           >
             {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => {
@@ -904,13 +881,13 @@ function ViewReconciliacion({
             onChange={e => { setConteo(e.target.value); setResultado(null); }}
             placeholder="¿cuántos tienes?"
             min="0"
-            className="w-32 rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#C4844A]/50"
+            className="w-32 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3D8A8A]/50"
           />
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
             placeholder="motivo del ajuste"
-            className="flex-1 min-w-[120px] rounded-lg border border-[#e9e4dc] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#C4844A]/50"
+            className="flex-1 min-w-[120px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3D8A8A]/50"
           />
           <button
             onClick={handleReconciliar}
@@ -920,17 +897,12 @@ function ViewReconciliacion({
             Aplicar
           </button>
         </div>
-
         {error && <p className="text-[11px] text-red-500">{error}</p>}
-
-        {/* Existencia actual del ítem seleccionado */}
         {itemSeleccionado && existenciaActual !== null && !resultado && (
           <p className="text-[10px] text-[#9ca3af]">
             El sistema dice: <span className="font-bold tabular-nums text-[#374151]">{existenciaActual}</span> {itemSeleccionado.unidadBase}
           </p>
         )}
-
-        {/* Resultado */}
         {resultado && (
           <div className={`rounded-xl px-3 py-2 flex flex-col gap-0.5 ${
             resultado.delta === 0
@@ -954,7 +926,6 @@ function ViewReconciliacion({
         )}
       </div>
 
-      {/* Historial de correcciones */}
       {correcciones.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <Label>Correcciones recientes</Label>
@@ -962,26 +933,19 @@ function ViewReconciliacion({
             const nombre = items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId;
             const pos    = m.cantidad >= 0;
             return (
-              <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#f0ece6] bg-white px-3 py-2">
-                <span className={`w-5 text-center font-bold text-[13px] ${pos ? "text-[#45b356]" : "text-red-500"}`}>
-                  {pos ? "+" : ""}
-                </span>
+              <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#eef2f2] bg-white px-3 py-2">
+                <span className={`w-5 text-center font-bold text-[13px] ${pos ? "text-[#45b356]" : "text-red-500"}`}>{pos ? "+" : ""}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-semibold text-[#374151]">{nombre}</p>
                   <p className="text-[10px] text-[#9ca3af]">{m.causa} · {formatTs(m.timestamp)}</p>
                 </div>
-                <span className={`tabular-nums text-[13px] font-bold ${pos ? "text-[#45b356]" : "text-red-500"}`}>
-                  {pos ? "+" : ""}{m.cantidad}
-                </span>
+                <span className={`tabular-nums text-[13px] font-bold ${pos ? "text-[#45b356]" : "text-red-500"}`}>{pos ? "+" : ""}{m.cantidad}</span>
               </div>
             );
           })}
         </div>
       )}
-
-      {correcciones.length === 0 && (
-        <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin correcciones registradas.</p>
-      )}
+      {correcciones.length === 0 && <p className="text-center text-[11px] text-[#b0bac8] py-6">Sin correcciones registradas.</p>}
     </div>
   );
 }
@@ -989,7 +953,6 @@ function ViewReconciliacion({
 // ── RESET (DEV) ──────────────────────────────────────────────────────────────
 
 const MUESTRA_BODEGA = [
-  // Abarrotes
   { nombre: "Arroz Superior Extra",            unidad: "kg",       umbral: 20, stock: 45 },
   { nombre: "Azúcar Rubia",                    unidad: "kg",       umbral: 15, stock: 8  },
   { nombre: "Aceite Primor 1L",                unidad: "botella",  umbral: 12, stock: 0  },
@@ -998,39 +961,31 @@ const MUESTRA_BODEGA = [
   { nombre: "Harina Preparada Blanca Flor",    unidad: "bolsa",    umbral: 6,  stock: 3  },
   { nombre: "Avena Quaker 180g",               unidad: "bolsa",    umbral: 10, stock: 17 },
   { nombre: "Leche Evaporada Gloria",          unidad: "lata",     umbral: 48, stock: 60 },
-  // Bebidas
   { nombre: "Agua Cielo 625ml",                unidad: "botella",  umbral: 24, stock: 72 },
   { nombre: "Inca Kola 1.5L",                  unidad: "botella",  umbral: 12, stock: 5  },
   { nombre: "Coca-Cola 500ml",                 unidad: "botella",  umbral: 24, stock: 48 },
   { nombre: "Chicha Morada Negrita 500ml",     unidad: "caja",     umbral: 12, stock: 0  },
   { nombre: "Jugo Pulp Naranja 1L",            unidad: "caja",     umbral: 6,  stock: 14 },
   { nombre: "Cerveza Cristal 650ml",           unidad: "botella",  umbral: 24, stock: 36 },
-  // Limpieza
   { nombre: "Detergente Ariel 360g",           unidad: "bolsa",    umbral: 12, stock: 9  },
   { nombre: "Lejía Clorox 1L",                 unidad: "botella",  umbral: 6,  stock: 18 },
   { nombre: "Jabón Bolivar 200g",              unidad: "barra",    umbral: 24, stock: 48 },
   { nombre: "Papel Higiénico Elite x4",        unidad: "paquete",  umbral: 8,  stock: 4  },
   { nombre: "Lavavajilla Sapolio 180g",        unidad: "tarro",    umbral: 6,  stock: 12 },
-  // Snacks
   { nombre: "Galletas Oreo 117g",              unidad: "paquete",  umbral: 12, stock: 30 },
   { nombre: "Chifle Frito Lay 80g",            unidad: "bolsa",    umbral: 12, stock: 2  },
   { nombre: "Papas Fritas Pringles 40g",       unidad: "lata",     umbral: 8,  stock: 0  },
   { nombre: "Caramelos Halls Menta",           unidad: "bolsa",    umbral: 6,  stock: 15 },
-  // Cuidado personal
   { nombre: "Shampoo Head & Shoulders 200ml",  unidad: "frasco",   umbral: 6,  stock: 8  },
   { nombre: "Pasta Dental Colgate Triple",     unidad: "tubo",     umbral: 6,  stock: 24 },
   { nombre: "Jabón de Tocador Lux",            unidad: "barra",    umbral: 12, stock: 5  },
-  // Lácteos
   { nombre: "Yogurt Gloria Fresa 1kg",         unidad: "pote",     umbral: 6,  stock: 12 },
   { nombre: "Queso Fresco La Florida 250g",    unidad: "unidad",   umbral: 4,  stock: 0  },
-  // Desayuno
   { nombre: "Pan de Molde Bimbo Grande",       unidad: "bolsa",    umbral: 4,  stock: 7  },
   { nombre: "Mermelada Fanny Fresa 300g",      unidad: "frasco",   umbral: 4,  stock: 9  },
   { nombre: "Margarina Manty 100g",            unidad: "tarro",    umbral: 6,  stock: 3  },
-  // Conservas
   { nombre: "Atún Florida en Agua",            unidad: "lata",     umbral: 12, stock: 28 },
   { nombre: "Sardina Campomar Tomate",         unidad: "lata",     umbral: 12, stock: 16 },
-  // Otros
   { nombre: "Vela Familiar 7cm",               unidad: "unidad",   umbral: 10, stock: 0  },
   { nombre: "Fósforos Llama",                  unidad: "caja",     umbral: 6,  stock: 24 },
 ] as const;
@@ -1059,8 +1014,8 @@ function ViewReset() {
     const runtimeId = localStorage.getItem("inv_v0_runtime_id") ?? crypto.randomUUID();
 
     const items = MUESTRA_BODEGA.map((p, i) => ({
-      itemId:     `IT-SEED-${String(i + 1).padStart(3, "0")}`,
-      nombre:     p.nombre,
+      itemId: `IT-SEED-${String(i + 1).padStart(3, "0")}`,
+      nombre: p.nombre,
       unidadBase: p.unidad,
     }));
 
@@ -1078,14 +1033,12 @@ function ViewReset() {
     MUESTRA_BODEGA.forEach((p, i) => {
       const itemId = `IT-SEED-${String(i + 1).padStart(3, "0")}`;
       const entradaInicial = p.stock + Math.floor(Math.random() * 15) + 12;
-
       movimientos.push({
         movementId: `MOV-SEED-${String(++seq).padStart(4, "0")}`,
         itemId, tipo: "entrada", cantidad: entradaInicial,
         timestamp: now - 7 * day - Math.floor(Math.random() * day),
         runtimeId, causa: "stock inicial",
       });
-
       let restante = entradaInicial - p.stock;
       const nSalidas = Math.min(restante, 4);
       for (let s = 0; s < nSalidas && restante > 0; s++) {
@@ -1103,7 +1056,6 @@ function ViewReset() {
     });
 
     movimientos.sort((a, b) => a.timestamp - b.timestamp);
-
     localStorage.setItem("inv_v0_items",       JSON.stringify(items));
     localStorage.setItem("inv_v0_movimientos", JSON.stringify(movimientos));
     localStorage.setItem("inv_v0_contexto",    JSON.stringify(contexto));
@@ -1112,21 +1064,21 @@ function ViewReset() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-2xl border border-dashed border-[#C4844A]/40 bg-[#FBF7F3] px-4 py-4 flex flex-col gap-3">
-        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#C4844A]">DEV · Datos de muestra</p>
+      <div className="rounded-2xl border border-dashed border-[#3D8A8A]/40 bg-[#EDF7F6] px-4 py-4 flex flex-col gap-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#3D8A8A]">DEV · Datos de muestra</p>
         <button
           onClick={cargarMuestra}
-          className="self-start rounded-xl border border-[#C4844A]/40 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[#C4844A] hover:bg-[#C4844A]/8 transition active:scale-95"
+          className="self-start rounded-xl border border-[#3D8A8A]/40 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[#3D8A8A] hover:bg-[#3D8A8A]/8 transition active:scale-95"
         >
           CARGAR MUESTRA — 35 productos
         </button>
-        <p className="text-[9px] text-[#b0a898] leading-snug">
+        <p className="text-[9px] text-[#7aacac] leading-snug">
           Bodega peruana — abarrotes, bebidas, limpieza, snacks, lácteos · estados mixtos · historial 7 días
         </p>
       </div>
 
       <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-4 flex flex-col gap-3">
-        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Reset temporal — Inventario CAPA 0</p>
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Reset — Inventario CAPA 0</p>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={resetDatos}
@@ -1151,18 +1103,23 @@ function ViewReset() {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function Label({ children }: { children: React.ReactNode }) {
+function Helper({ text }: { text: string }) {
   return (
-    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9ca3af]">{children}</p>
+    <span
+      title={text}
+      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#9ca3af]/20 text-[#9ca3af] text-[8px] font-bold cursor-help select-none leading-none"
+    >?</span>
   );
 }
 
+function Label({ children }: { children: React.ReactNode }) {
+  return <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9ca3af]">{children}</p>;
+}
+
 function formatTs(ts: number): string {
-  const d = new Date(ts);
+  const d   = new Date(ts);
   const hoy = new Date();
-  const esHoy = d.toDateString() === hoy.toDateString();
   const hora = d.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
-  if (esHoy) return hora;
-  const fecha = d.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit" });
-  return `${fecha} ${hora}`;
+  if (d.toDateString() === hoy.toDateString()) return hora;
+  return `${d.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit" })} ${hora}`;
 }

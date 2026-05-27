@@ -2,7 +2,7 @@ import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../domains/inventory/store";
 import { usePurchasesStore } from "../domains/purchases/store";
-import { type ActiveModule, type CashSubView, type InventorySubView, type PurchasesSubView, type AbastecimientoSubModule } from "../App";
+import { type ActiveModule, type CashSubView, type AbastecimientoSubModule } from "../App";
 
 interface SubContextBarProps {
   activeModule: ActiveModule;
@@ -12,32 +12,15 @@ interface SubContextBarProps {
   onCashSubViewChange: (sv: CashSubView) => void;
   abastecimientoSubModule: AbastecimientoSubModule;
   onAbastecimientoSubModuleChange: (sm: AbastecimientoSubModule) => void;
-  inventorySubView: InventorySubView;
-  onInventorySubViewChange: (sv: InventorySubView) => void;
-  purchasesSubView: PurchasesSubView;
-  onPurchasesSubViewChange: (sv: PurchasesSubView) => void;
 }
 
 const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "abastecimiento"]);
-
-const PURCHASES_TABS: { key: PurchasesSubView; label: string }[] = [
-  { key: "nueva",    label: "REGISTRAR INGRESO" },
-  { key: "historial", label: "HISTORIAL"        },
-];
 
 const CASH_TABS: { key: CashSubView; label: string }[] = [
   { key: "turno",      label: "GESTIÓN TURNO" },
   { key: "roles",      label: "ROLES"         },
   { key: "cajas",      label: "CAJAS"         },
   { key: "operadores", label: "OPERADORES"    },
-];
-
-const INVENTORY_TABS: { key: InventorySubView; label: string }[] = [
-  { key: "items",          label: "PRODUCTOS"   },
-  { key: "movimientos",    label: "MOVIMIENTOS" },
-  { key: "disponibilidad", label: "STOCK"       },
-  { key: "reservas",       label: "SEPARADOS"   },
-  { key: "reconciliacion", label: "CORREGIR"    },
 ];
 
 const ABASTECIMIENTO_MODULES: { key: AbastecimientoSubModule; label: string; isPlaceholder?: boolean }[] = [
@@ -47,7 +30,6 @@ const ABASTECIMIENTO_MODULES: { key: AbastecimientoSubModule; label: string; isP
   { key: "traslados",   label: "TRASLADOS",   isPlaceholder: true },
 ];
 
-// Fondo atenuado oficial por módulo — paleta DISATEQ base a baja opacidad
 const SHELL: Record<ActiveModule, string> = {
   cash:           "border-t border-[#2A7CA8]/20 bg-[rgba(42,124,168,0.10)]",
   sales:          "border-t border-[#45b356]/20 bg-[rgba(69,179,86,0.08)]",
@@ -56,10 +38,11 @@ const SHELL: Record<ActiveModule, string> = {
   abastecimiento: "border-t border-[#3D8A8A]/20 bg-[rgba(61,138,138,0.08)]",
 };
 
-export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, inventorySubView, onInventorySubViewChange, purchasesSubView, onPurchasesSubViewChange }: SubContextBarProps) {
+export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange }: SubContextBarProps) {
   const { cashSession, sessionStats } = usePOS();
   const { items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const { compras } = usePurchasesStore();
+
   const comprasPendientes = compras.filter(c => c.estado === "registrada").length;
   const alertasInventario = todosItems.filter(i => !i.eliminado).filter(i => {
     const existencia = deriveDisponibilidad(movimientos, i.itemId);
@@ -69,9 +52,9 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
     const estado     = deriveEstado(paraOperar, umbral);
     return estado === "bajo_stock" || estado === "agotado";
   }).length;
+
   const sessionActive = cashSession.isOpen;
   const { efe, yap, tar, mix } = sessionStats.byMethod;
-
   const show = visible && WITH_SUBOPTIONS.has(displayModule);
 
   return (
@@ -102,12 +85,10 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
               <Percent size={13} strokeWidth={2} />
               <span>Descuento</span>
             </button>
-
             <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <FileText size={13} strokeWidth={2} />
               <span>Observación</span>
             </button>
-
             <button title="Próximamente" disabled className="flex items-center gap-1.5 rounded-xl border border-[#e4e7ec] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#374151] opacity-40 cursor-not-allowed">
               <BarChart2 size={13} strokeWidth={2} />
               <span>Reportes</span>
@@ -136,9 +117,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
             {sessionActive && cashSession.cashBox && (
               <>
                 <span className="text-[#C05050]/50">·</span>
-                <span className="text-[11px] text-[#7a2020]/60">
-                  Sesión CAJA {cashSession.cashBox.code}
-                </span>
+                <span className="text-[11px] text-[#7a2020]/60">Sesión CAJA {cashSession.cashBox.code}</span>
               </>
             )}
           </>
@@ -166,14 +145,13 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
           </div>
         )}
 
-        {/* ABASTECIMIENTO — sub-módulo + sub-view tabs */}
+        {/* ABASTECIMIENTO — solo tabs de dominio */}
         {displayModule === "abastecimiento" && (
           <div className="flex items-center gap-1">
-
-            {/* Nivel 1 — sub-módulos */}
             {ABASTECIMIENTO_MODULES.map(({ key, label, isPlaceholder }) => {
               const isActive = activeModule === "abastecimiento" && abastecimientoSubModule === key;
               const badge = key === "compras" ? comprasPendientes : key === "inventarios" ? alertasInventario : 0;
+
               if (isPlaceholder) {
                 return (
                   <button key={key} type="button" title="Próximamente" tabIndex={-1}
@@ -182,6 +160,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                   </button>
                 );
               }
+
               return (
                 <button
                   key={key}
@@ -201,94 +180,6 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                 </button>
               );
             })}
-
-            {/* Nivel 2 — sub-views del sub-módulo activo */}
-            {activeModule === "abastecimiento" && abastecimientoSubModule === "compras" && (
-              <>
-                <div className="h-4 w-px bg-[#3D8A8A]/25 mx-1" />
-                {PURCHASES_TABS.map(({ key, label }) => {
-                  const isActive = purchasesSubView === key;
-                  const showBadge = key === "historial" && comprasPendientes > 0;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => onPurchasesSubViewChange(key)}
-                      className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                        isActive
-                          ? "bg-[#3D8A8A]/20 text-[#276565] shadow-sm"
-                          : "text-[#276565]/60 hover:bg-[#3D8A8A]/10 hover:text-[#1a4545]"
-                      }`}
-                    >
-                      {label}
-                      {showBadge && (
-                        <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
-                          isActive ? "bg-[#3D8A8A]/30 text-[#276565]" : "bg-amber-500 text-white"
-                        }`}>{comprasPendientes}</span>
-                      )}
-                    </button>
-                  );
-                })}
-                {import.meta.env.DEV && (
-                  <>
-                    <div className="h-4 w-px bg-[#3D8A8A]/20 mx-1" />
-                    <button
-                      onClick={() => onPurchasesSubViewChange("reset")}
-                      className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                        purchasesSubView === "reset"
-                          ? "bg-amber-400 text-white shadow-sm"
-                          : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
-                      }`}
-                    >
-                      DEV·RESET
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-
-            {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && (
-              <>
-                <div className="h-4 w-px bg-[#3D8A8A]/25 mx-1" />
-                {INVENTORY_TABS.map(({ key, label }) => {
-                  const isActive = inventorySubView === key;
-                  const showBadge = key === "disponibilidad" && alertasInventario > 0;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => onInventorySubViewChange(key)}
-                      className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                        isActive
-                          ? "bg-[#3D8A8A]/20 text-[#276565] shadow-sm"
-                          : "text-[#276565]/60 hover:bg-[#3D8A8A]/10 hover:text-[#1a4545]"
-                      }`}
-                    >
-                      {label}
-                      {showBadge && (
-                        <span className={`rounded-full px-1.5 py-px text-[9px] font-bold leading-none tabular-nums ${
-                          isActive ? "bg-[#3D8A8A]/30 text-[#276565]" : "bg-red-500 text-white"
-                        }`}>{alertasInventario}</span>
-                      )}
-                    </button>
-                  );
-                })}
-                {import.meta.env.DEV && (
-                  <>
-                    <div className="h-4 w-px bg-[#3D8A8A]/20 mx-1" />
-                    <button
-                      onClick={() => onInventorySubViewChange("reset")}
-                      className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
-                        inventorySubView === "reset"
-                          ? "bg-amber-400 text-white shadow-sm"
-                          : "text-amber-600/70 hover:bg-amber-50 hover:text-amber-700"
-                      }`}
-                    >
-                      DEV·RESET
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-
           </div>
         )}
 

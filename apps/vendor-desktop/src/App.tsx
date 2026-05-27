@@ -14,17 +14,13 @@ import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento";
 export type CashSubView             = "turno" | "roles" | "cajas" | "operadores";
-export type InventorySubView        = "disponibilidad" | "movimientos" | "items" | "reservas" | "reconciliacion" | "reset";
-export type PurchasesSubView        = "nueva" | "historial" | "reset";
 export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
-  const [activeModule,             setActiveModule]             = useState<ActiveModule>("cash");
-  const [cashSubView,              setCashSubView]              = useState<CashSubView>("turno");
-  const [abastecimientoSubModule,  setAbastecimientoSubModule]  = useState<AbastecimientoSubModule>("compras");
-  const [inventorySubView,         setInventorySubView]         = useState<InventorySubView>("items");
-  const [purchasesSubView,         setPurchasesSubView]         = useState<PurchasesSubView>("nueva");
+  const [activeModule,            setActiveModule]            = useState<ActiveModule>("cash");
+  const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
+  const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("compras");
   const prevOpId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -63,10 +59,6 @@ function AppRoot() {
       onCashSubViewChange={setCashSubView}
       abastecimientoSubModule={abastecimientoSubModule}
       onAbastecimientoSubModuleChange={setAbastecimientoSubModule}
-      inventorySubView={inventorySubView}
-      onInventorySubViewChange={setInventorySubView}
-      purchasesSubView={purchasesSubView}
-      onPurchasesSubViewChange={setPurchasesSubView}
     >
       {activeModule === "sales" && (
         <>
@@ -77,12 +69,8 @@ function AppRoot() {
       {activeModule === "cash"         && <CashWorkspace onOpened={() => setActiveModule("sales")} cashSubView={cashSubView} />}
       {activeModule === "comprobantes" && <ComprobantesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && (
-        <InventoryWorkspace subView={inventorySubView} />
-      )}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "compras" && (
-        <PurchasesWorkspace subView={purchasesSubView} />
-      )}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
       {activeModule === "abastecimiento" && (abastecimientoSubModule === "proveedores" || abastecimientoSubModule === "traslados") && (
         <div className="flex flex-1 items-center justify-center">
           <span className="text-[12px] font-semibold uppercase tracking-wider text-[#9ca3af]">Próximamente</span>
