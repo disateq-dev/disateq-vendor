@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Power, LogOut } from "lucide-react";
+import { Power } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePOS } from "../context/POSContext";
 import { loadBusinessConfig } from "../config/business";
@@ -11,7 +11,7 @@ function formatApertura(d: Date): string {
 }
 
 export function Topbar() {
-  const { cashSession, activeOperator, logoutOperator } = usePOS();
+  const { cashSession } = usePOS();
   const { isOpen, cashBox, operator, openedAt } = cashSession;
   const biz = useMemo(() => loadBusinessConfig(), []);
 
@@ -21,33 +21,21 @@ export function Topbar() {
       {/* LEFT */}
       <section className="flex min-w-0 items-center">
 
-        {/* BRAND */}
-        <div className="flex items-center pr-5">
-          <img
-            src={logoImg}
-            alt="DisateQ VENDOR™"
-            draggable={false}
-            className="h-[37px] w-auto object-contain"
-          />
-        </div>
-
-        <div className="h-8 w-px bg-white/10" />
-
         {/* BUSINESS */}
-        <div className="min-w-0 px-5">
+        <div className="min-w-0">
           <div className="flex items-baseline gap-2">
-            <span className="truncate text-[15px] font-semibold text-white leading-tight">
+            <span className="truncate text-[16px] font-semibold text-white leading-tight">
               {biz.nombreComercial}
             </span>
             <span className="text-[#5a6a88]">·</span>
-            <span className="shrink-0 text-[11px] font-medium text-[#8090b0]">
+            <span className="shrink-0 text-[13px] font-medium text-[#8090b0]">
               {biz.alias}
             </span>
           </div>
           <div className="mt-[-3px] flex items-center gap-2">
-            <span className="text-[11px] text-[#8090b0]">R.U.C. {biz.ruc}</span>
+            <span className="text-[12px] text-[#8090b0]">R.U.C. {biz.ruc}</span>
             <span className="text-[#5a6a88]">·</span>
-            <span className="truncate text-[11px] text-[#8090b0]">{biz.razonSocial}</span>
+            <span className="truncate text-[12px] text-[#8090b0]">{biz.razonSocial}</span>
           </div>
         </div>
 
@@ -57,43 +45,33 @@ export function Topbar() {
       <section className="flex items-center gap-3 pl-5">
 
         {/* CONTEXTO OPERACIONAL */}
-        <div className="rounded-xl border border-white/[0.13] bg-white/[0.10] px-4 py-1.5 shadow-[0_0_16px_rgba(255,255,255,0.04)]">
-          {isOpen && cashBox ? (
-            <>
-              <div className="flex items-center gap-2 text-[15px]">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4ade80]" />
-                <span className="font-semibold tracking-[0.02em] text-[#4ade80]">TURNO ABIERTO</span>
-                {openedAt && (
-                  <span className="text-[12px] tabular-nums text-[#6b7fa0]">{formatApertura(openedAt)}</span>
-                )}
-                <span className="text-[12px] text-[#3d5280]">│</span>
-                <span className="text-[12px] font-semibold text-[#7c8db8]">CAJA {cashBox.code}</span>
-              </div>
-              <div className="pl-[14px] text-[12px] text-[#a0b0cc]">
-                <span className="font-semibold tracking-[0.06em]">OPERADOR: </span>{operator}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-[15px] font-semibold text-[#8090b0]">Sin turno operativo</div>
-              <div className="text-[11px] text-[#4d5e7c]">Abrir caja para operar</div>
-            </>
-          )}
-        </div>
-
-        {/* SESIÓN ACTIVA */}
-        {activeOperator && (
-          <div className="flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.06] px-3 py-1.5">
-            <span className="rounded-md bg-white/[0.1] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#8090b0]">
-              {activeOperator.code}
-            </span>
-            <span className="text-[11px] font-semibold text-[#8090b0]">{activeOperator.name}</span>
-            <button onClick={logoutOperator} title="Cerrar sesión (Ctrl+Shift+L)"
-              className="flex items-center justify-center text-[#4d5e7c] transition hover:text-[#dc2626]">
-              <LogOut size={13} strokeWidth={2} />
-            </button>
+        {isOpen && cashBox && (
+          <div className="rounded-xl border border-white/[0.13] bg-white/[0.10] px-4 py-1.5 shadow-[0_0_16px_rgba(255,255,255,0.04)]">
+            <div className="flex items-center gap-2 text-[15px]">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#4ade80]" />
+              <span className="font-semibold tracking-[0.02em] text-[#4ade80]">TURNO ABIERTO</span>
+              {openedAt && (
+                <span className="text-[12px] tabular-nums text-[#6b7fa0]">{formatApertura(openedAt)}</span>
+              )}
+              <span className="text-[12px] text-[#3d5280]">│</span>
+              <span className="text-[12px] font-semibold text-[#7c8db8]">CAJA {cashBox.code}</span>
+            </div>
+            <div className="pl-[14px] text-[12px] text-[#a0b0cc]">
+              <span className="font-semibold tracking-[0.06em]">OPERADOR: </span>{operator}
+            </div>
           </div>
         )}
+
+
+        {/* BRAND */}
+        <img
+          src={logoImg}
+          alt="DisateQ VENDOR™"
+          draggable={false}
+          className="h-[37px] w-auto object-contain"
+        />
+
+        <div className="h-8 w-px bg-white/10" />
 
         {/* POWER — app.exit(0) vía Rust: cierre limpio, localStorage ya sincronizado */}
         <button
