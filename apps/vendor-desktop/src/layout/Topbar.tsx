@@ -27,7 +27,7 @@ export function Topbar() {
             src={logoImg}
             alt="DisateQ VENDOR™"
             draggable={false}
-            className="h-[39px] w-auto object-contain"
+            className="h-[37px] w-auto object-contain"
           />
         </div>
 
