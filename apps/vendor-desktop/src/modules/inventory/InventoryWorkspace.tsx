@@ -64,6 +64,21 @@ const ESTADO_CFG: Record<EstadoDisponibilidad, { label: string; badge: string; q
 
 const MS_48H = 48 * 60 * 60 * 1000;
 
+function formatRelativo(ts: number): string {
+  const diff = Date.now() - ts;
+  const min  = Math.floor(diff / 60_000);
+  const h    = Math.floor(diff / 3_600_000);
+  const d    = Math.floor(diff / 86_400_000);
+  if (min < 2)  return "ahora mismo";
+  if (min < 60) return `hace ${min}m`;
+  if (h < 24)   return `hace ${h}h`;
+  if (d === 1)  return "ayer";
+  if (d < 7)    return `hace ${d} días`;
+  return new Date(ts).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit" });
+}
+
+const ORDEN_ESTADO: Record<EstadoDisponibilidad, number> = { agotado: 0, bajo_stock: 1, disponible: 2 };
+
 // Derivación cross-domain (UI layer) — cuántas unidades están pendientes de ingreso desde COMPRAS
 function derivePendienteIngreso(compras: CompraOperacional[], itemId: string): number {
   return compras
@@ -96,41 +111,66 @@ function ViewDisponibilidad({
     );
   }
 
+  // Enriquecer + ordenar: agotado → poco stock → disponible; dentro de cada grupo: pendiente desc → nombre
+  const enriched = items.map(item => {
+    const existencia       = deriveDisponibilidad(movimientos, item.itemId);
+    const reservado        = deriveReservado(reservas, item.itemId);
+    const paraOperar       = existencia - reservado;
+    const umbral           = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
+    const estado           = deriveEstado(paraOperar, umbral);
+    const cfg              = ESTADO_CFG[estado];
+    const pendienteIngreso = derivePendienteIngreso(compras, item.itemId);
+    const ingresoReciente  = movimientos.some(
+      m => m.itemId === item.itemId && m.tipo === 'entrada' && m.causa.startsWith('compra:') && Date.now() - m.timestamp < MS_48H,
+    );
+    const ultimoMov        = movimientos
+      .filter(m => m.itemId === item.itemId)
+      .reduce<typeof movimientos[0] | null>((best, m) => (!best || m.timestamp > best.timestamp) ? m : best, null);
+    const ultimaActividad  = ultimoMov ? formatRelativo(ultimoMov.timestamp) : null;
+    return { item, existencia, reservado, paraOperar, umbral, estado, cfg, pendienteIngreso, ingresoReciente, ultimaActividad };
+  });
+
+  enriched.sort((a, b) => {
+    const oa = ORDEN_ESTADO[a.estado], ob = ORDEN_ESTADO[b.estado];
+    if (oa !== ob) return oa - ob;
+    if (b.pendienteIngreso !== a.pendienteIngreso) return b.pendienteIngreso - a.pendienteIngreso;
+    return a.item.nombre.localeCompare(b.item.nombre);
+  });
+
+  const sinStock   = enriched.filter(e => e.estado === "agotado").length;
+  const pocoStock  = enriched.filter(e => e.estado === "bajo_stock").length;
+  const conIngreso = enriched.filter(e => e.pendienteIngreso > 0).length;
+
   return (
     <div className="flex flex-col gap-2">
-      <Label>
-        Stock actual — {items.length} producto{items.length !== 1 ? "s" : ""} · {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""}
-      </Label>
+      <div className="flex items-center justify-between">
+        <Label>
+          {items.length} producto{items.length !== 1 ? "s" : ""} · {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""}
+        </Label>
+        {(sinStock > 0 || pocoStock > 0 || conIngreso > 0) && (
+          <div className="flex items-center gap-3">
+            {sinStock  > 0 && <span className="text-[10px] font-semibold text-red-500">{sinStock} sin stock</span>}
+            {pocoStock > 0 && <span className="text-[10px] font-semibold text-[#C4844A]">{pocoStock} con poco</span>}
+            {conIngreso > 0 && <span className="text-[10px] text-amber-600">{conIngreso} en camino</span>}
+          </div>
+        )}
+      </div>
       <div className="flex flex-col gap-1.5">
-        {items.map(item => {
-          const existencia        = deriveDisponibilidad(movimientos, item.itemId);
-          const reservado         = deriveReservado(reservas, item.itemId);
-          const paraOperar        = existencia - reservado;
-          const umbral            = contexto.find(c => c.itemId === item.itemId)?.umbralMinimo ?? 0;
-          const estado            = deriveEstado(paraOperar, umbral);
-          const cfg               = ESTADO_CFG[estado];
-          const pendienteIngreso  = derivePendienteIngreso(compras, item.itemId);
-          const ingresoReciente   = movimientos.some(
-            m => m.itemId === item.itemId
-              && m.tipo === 'entrada'
-              && m.causa.startsWith('compra:')
-              && Date.now() - m.timestamp < MS_48H,
-          );
-          return (
-            <DisponibilidadCard
-              key={item.itemId}
-              item={item}
-              existencia={existencia}
-              reservado={reservado}
-              paraOperar={paraOperar}
-              umbral={umbral}
-              estado={estado}
-              cfg={cfg}
-              pendienteIngreso={pendienteIngreso}
-              ingresoReciente={ingresoReciente}
-            />
-          );
-        })}
+        {enriched.map(({ item, existencia, reservado, paraOperar, umbral, estado, cfg, pendienteIngreso, ingresoReciente, ultimaActividad }) => (
+          <DisponibilidadCard
+            key={item.itemId}
+            item={item}
+            existencia={existencia}
+            reservado={reservado}
+            paraOperar={paraOperar}
+            umbral={umbral}
+            estado={estado}
+            cfg={cfg}
+            pendienteIngreso={pendienteIngreso}
+            ingresoReciente={ingresoReciente}
+            ultimaActividad={ultimaActividad}
+          />
+        ))}
       </div>
     </div>
   );
@@ -145,6 +185,7 @@ function DisponibilidadCard({
   cfg,
   pendienteIngreso,
   ingresoReciente,
+  ultimaActividad,
 }: {
   item: ReturnType<typeof useInventoryStore>["items"][number];
   existencia: number;
@@ -155,6 +196,7 @@ function DisponibilidadCard({
   cfg: typeof ESTADO_CFG[EstadoDisponibilidad];
   pendienteIngreso: number;
   ingresoReciente: boolean;
+  ultimaActividad: string | null;
 }) {
   const [accion,   setAccion]   = useState<"entrada" | "salida" | null>(null);
   const [cantidad, setCantidad] = useState("1");
@@ -187,6 +229,8 @@ function DisponibilidadCard({
           {reservado > 0 && <span className="text-amber-500"> · {reservado} separado{reservado !== 1 ? "s" : ""}</span>}
           {pendienteIngreso > 0 && <span className="font-semibold text-amber-600"> · Llegan {pendienteIngreso}</span>}
           {ingresoReciente && !pendienteIngreso && <span className="text-[#2A7CA8]"> · Ingreso reciente</span>}
+          {!pendienteIngreso && !ingresoReciente && ultimaActividad && <span> · {ultimaActividad}</span>}
+          {!pendienteIngreso && !ingresoReciente && !ultimaActividad && <span className="text-[#c4bfb7]"> · sin movimientos</span>}
         </p>
       </div>
 
@@ -441,7 +485,7 @@ function ViewMovimientos({
                     <span className={`w-4 text-center font-bold text-[13px] ${color}`}>{sign}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-semibold text-[#374151]">{items.find(i => i.itemId === m.itemId)?.nombre ?? m.itemId}</p>
-                      <p className="text-[10px] text-[#9ca3af]">{m.causa} · {formatTs(m.timestamp)}</p>
+                      <p className="text-[10px] text-[#9ca3af]">{m.causa} · {formatRelativo(m.timestamp)}</p>
                     </div>
                     <span className={`tabular-nums text-[13px] font-bold ${color}`}>{sign}{Math.abs(m.cantidad)}</span>
                   </div>
