@@ -328,6 +328,19 @@ function formatTs(ts: number): string {
   });
 }
 
+function formatRelativo(ts: number): string {
+  const diff = Date.now() - ts;
+  const min  = Math.floor(diff / 60_000);
+  const h    = Math.floor(diff / 3_600_000);
+  const d    = Math.floor(diff / 86_400_000);
+  if (min < 2)  return "ahora mismo";
+  if (min < 60) return `hace ${min}m`;
+  if (h < 24)   return `hace ${h}h`;
+  if (d === 1)  return "ayer";
+  if (d < 7)    return `hace ${d} días`;
+  return formatTs(ts);
+}
+
 function ViewHistorial() {
   const { compras } = usePurchasesStore();
   const sorted = [...compras].sort((a, b) => b.timestamp - a.timestamp);
@@ -341,8 +354,33 @@ function ViewHistorial() {
     );
   }
 
+  const pendientes  = sorted.filter(c => c.estado === "registrada").length;
+  const enProceso   = sorted.filter(c => c.estado === "recibida_parcial").length;
+  const completados = sorted.filter(c => c.estado === "recibida").length;
+
   return (
     <div className="space-y-2">
+      {(pendientes > 0 || enProceso > 0) && (
+        <div className="flex items-center gap-3 px-1 pb-0.5">
+          {pendientes > 0 && (
+            <span className="text-[10px] text-[#6b7280]">
+              <span className="font-semibold text-amber-600">{pendientes}</span>{" "}
+              pendiente{pendientes !== 1 ? "s" : ""}
+            </span>
+          )}
+          {enProceso > 0 && (
+            <span className="text-[10px] text-[#6b7280]">
+              <span className="font-semibold text-[#6670A8]">{enProceso}</span>{" "}
+              en proceso
+            </span>
+          )}
+          {completados > 0 && (
+            <span className="text-[10px] text-[#9ca3af]">
+              {completados} completado{completados !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
       {sorted.map(c => <IngresoRow key={c.purchaseId} compra={c} />)}
     </div>
   );
@@ -353,9 +391,12 @@ function IngresoRow({ compra }: { compra: CompraOperacional }) {
   const [deltaMap, setDeltaMap] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(null);
 
-  const cfg           = ESTADO_VISIBLE[compra.estado];
-  const totalProductos = compra.lineas.reduce((s, l) => s + l.cantidad, 0);
-  const puedeRecibir  = compra.estado !== "recibida";
+  const cfg              = ESTADO_VISIBLE[compra.estado];
+  const puedeRecibir     = compra.estado !== "recibida";
+  const totalSolicitado  = compra.lineas.reduce((acc, l) => acc + l.cantidad, 0);
+  const totalRecibido    = compra.lineas.reduce((acc, l) => acc + (l.cantidadRecibida ?? 0), 0);
+  const pctRecibido      = totalSolicitado > 0 ? Math.round((totalRecibido / totalSolicitado) * 100) : 0;
+  const lineasPendientes = compra.lineas.filter(l => (l.cantidadRecibida ?? 0) < l.cantidad).length;
 
   function handleRecibirParcial() {
     const recepciones = compra.lineas
@@ -392,14 +433,27 @@ function IngresoRow({ compra }: { compra: CompraOperacional }) {
           {compra.causa}{compra.proveedor ? ` · ${compra.proveedor}` : ""}
         </span>
         <span className="shrink-0 text-[10px] text-[#9ca3af]">
-          {compra.lineas.length} {compra.lineas.length === 1 ? "producto" : "productos"} · {totalProductos} unid.
+          {compra.lineas.length} {compra.lineas.length === 1 ? "producto" : "productos"}
+          {compra.estado === "registrada" && (
+            <span className="font-semibold text-amber-600"> · pendiente de recepción</span>
+          )}
+          {compra.estado === "recibida_parcial" && (
+            <span className="font-semibold text-[#6670A8]"> · {pctRecibido}% recibido{lineasPendientes > 0 ? `, falta ${lineasPendientes}` : ""}</span>
+          )}
         </span>
         {compra.referencia && (
           <span className="shrink-0 text-[10px] text-[#9ca3af]">{compra.referencia}</span>
         )}
-        <span className="shrink-0 text-[10px] text-[#9ca3af]">{formatTs(compra.timestamp)}</span>
+        <span className="shrink-0 text-[10px] text-[#9ca3af]">{formatRelativo(compra.timestamp)}</span>
         <span className={`shrink-0 text-[11px] text-[#9ca3af] transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
       </button>
+
+      {/* Progreso discreto — solo parciales */}
+      {compra.estado === "recibida_parcial" && (
+        <div className="h-[2px] bg-[#e9e4dc]">
+          <div className="h-full bg-[#6670A8]/50 transition-all duration-300" style={{ width: `${pctRecibido}%` }} />
+        </div>
+      )}
 
       {/* Panel expandido */}
       {open && (
