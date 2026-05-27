@@ -132,7 +132,7 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                 <button
                   key={key}
                   onClick={() => { if (activeModule === "cash") onCashSubViewChange(key); }}
-                  className={`rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+                  className={`rounded-lg px-3 py-1 text-[10.5px] font-semibold uppercase tracking-wider transition ${
                     isActive
                       ? "bg-[#2A7CA8] text-white shadow-sm"
                       : "text-[#1a5f7a]/70 hover:bg-[#2A7CA8]/10 hover:text-[#143d54]"

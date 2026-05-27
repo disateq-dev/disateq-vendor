@@ -36,11 +36,11 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
     >
       {/* ── Grupo 1 — Operación nuclear ─────────────────────── */}
       <button onClick={() => onChange("cash")} onMouseEnter={() => onHover("cash")} className={cls("cash", display)}>
-        <ShoppingCart size={16} />
+        <ShoppingCart size={17} />
         <span>TURNO</span>
       </button>
       <button onClick={() => onChange("sales")} onMouseEnter={() => onHover("sales")} className={cls("sales", display)}>
-        <Package size={16} />
+        <Package size={17} />
         <span>VENTAS</span>
       </button>
 
@@ -48,7 +48,7 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
 
       {/* ── ABASTECIMIENTO ───────────────────────────────────── */}
       <button onClick={() => onChange("abastecimiento")} onMouseEnter={() => onHover("abastecimiento")} className={cls("abastecimiento", display)}>
-        <Boxes size={16} />
+        <Boxes size={17} />
         <span>ABASTECIMIENTO</span>
       </button>
 
@@ -56,11 +56,11 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
 
       {/* ── Grupo 3 — Relaciones ─────────────────────────────── */}
       <button type="button" title="Próximamente" tabIndex={-1} className={PH}>
-        <Users size={16} />
+        <Users size={17} />
         <span>CLIENTES</span>
       </button>
       <button type="button" title="Próximamente" tabIndex={-1} className={PH}>
-        <BarChart2 size={16} />
+        <BarChart2 size={17} />
         <span>REPORTES</span>
       </button>
 
@@ -68,7 +68,7 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
 
       {/* ── Grupo 4 — Capa normativa ─────────────────────────── */}
       <button onClick={() => onChange("comprobantes")} onMouseEnter={() => onHover("comprobantes")} className={cls("comprobantes", display)}>
-        <FileText size={16} />
+        <FileText size={17} />
         <span>COMPROBANTES</span>
       </button>
 
@@ -76,7 +76,7 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
 
       {/* ── Grupo 5 — Sistema ────────────────────────────────── */}
       <button onClick={() => onChange("config")} onMouseEnter={() => onHover("config")} className={cls("config", display)}>
-        <Settings size={16} />
+        <Settings size={17} />
         <span>CONFIG</span>
       </button>
     </section>
