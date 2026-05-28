@@ -211,8 +211,8 @@ export function LoginScreen() {
   return (
     <div className="flex h-screen" style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.18s ease" }}>
 
-      {/* ══ SHEET IZQUIERDA — 45% ══ */}
-      <div className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8 pb-5 px-5" style={{ borderRight: "1px solid #edf2f8" }}>
+      {/* ══ SHEET IZQUIERDA — 45% · drag region ══ */}
+      <div data-tauri-drag-region className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8 pb-5 px-5 cursor-grab active:cursor-grabbing select-none" style={{ borderRight: "1px solid #edf2f8" }}>
         <div className="flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
