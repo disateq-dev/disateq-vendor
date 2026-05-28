@@ -1,18 +1,6 @@
 import type { CashBox } from "../../../context/POSContext";
 import { moneyGt } from "../../../lib/money";
 
-// ── block operator assignment ───────────────────────────────────
-
-const BLOCK_OPERATORS: Record<string, string> = {
-  "1": "Ricardo Aguinaga",
-  "2": "Lucía Rebaza",
-  "3": "Administrador",
-};
-
-export function operatorFromCode(code: string): string {
-  return BLOCK_OPERATORS[code[0]] ?? "Operador";
-}
-
 // ── contingency prerequisites ───────────────────────────────────
 
 export function prereqCode(box: CashBox): string {

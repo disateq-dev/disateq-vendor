@@ -226,6 +226,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   } = cashSession;
 
   // ── pre-open state ────────────────────────────────────────────
+  const [lastArqueo, setLastArqueo] = useState<ArqueoData | null>(() => {
+    try {
+      const raw = localStorage.getItem("disateq.pos.lastArqueo");
+      return raw ? (JSON.parse(raw) as ArqueoData) : null;
+    } catch { return null; }
+  });
   const [selectedCode,    setSelectedCode]    = useState<string>(() => suggestedCashBox?.code ?? "100");
   const [aperturaInput,   setAperturaInput]   = useState("");
   const [aperturaMotivo,  setAperturaMotivo]  = useState("");
@@ -598,6 +604,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       observations:     observations.trim() || undefined,
       zeroMotive:       (moneyIsZero(contadoTotal) && zeroMotive) ? zeroMotive : undefined,
     };
+    // Persistir snapshot del arqueo antes de destruir la sesión — permite reimprimir si el print falla
+    try { localStorage.setItem("disateq.pos.lastArqueo", JSON.stringify(arqueo)); } catch { /* quota */ }
+    setLastArqueo(arqueo);
     closeCashSession();
     setClosingStage(0);
     setContadoEfe(""); setContadoYape(""); setContadoTar("");
@@ -955,6 +964,16 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <LogIn size={14} strokeWidth={2} />
               {openingMode === "exceptional" ? "Aperturar excepcionalmente" : "Aperturar"}
             </button>
+
+            {lastArqueo && (
+              <button
+                onClick={() => printArqueoThermal("TIQUE", lastArqueo).catch(() => printArqueo(lastArqueo!))}
+                className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[#e4e9f0] bg-white px-3 text-[11px] font-semibold text-[#9ca3af] transition hover:border-[#c0cad4] hover:text-[#374151]"
+              >
+                <Printer size={12} strokeWidth={2} />
+                Reimprimir arqueo anterior · CAJA {lastArqueo.cashBoxCode}
+              </button>
+            )}
 
           ) : closingStage === 0 ? (
             <>
