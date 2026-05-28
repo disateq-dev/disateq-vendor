@@ -4,7 +4,7 @@
 main
 
 ## Microfase actual
-TURNO — ACTIVIDAD RECIENTE ✅ VALIDADA Y CONSOLIDADA
+TURNO — CORREGIR ARQUEO ✅ VALIDADA Y CONSOLIDADA
 
 ## Estado validado
 
@@ -79,6 +79,19 @@ TURNO — ACTIVIDAD RECIENTE ✅ VALIDADA Y CONSOLIDADA
 ## Branching
 - `main` es la rama canónica desde 2026-05-28
 - `recovery/context-restoration` archivada en remote como referencia histórica
+
+### CORREGIR ARQUEO
+- subopción operacional bajo TURNO ✅ VALIDADA
+- `src/modules/cash/CorregirArqueoWorkspace.tsx` (nuevo)
+- `src/modules/cash/services/session-history.service.ts` — `CorrectionRecord` + `recordSessionCorrection`
+- `CashSubView` extendido: `"corregir-arqueo"`
+- `SubContextBar` — tab "Corregir arqueo" añadido
+- Casos soportados: cierre pendiente (null) → regularizar · diferencia (warn) → documentar
+- Presets operacionales de motivo por tipo de acción
+- Selección de señal: "Sin diferencias" / "Había diferencias" (solo en regularizar_cierre)
+- Trazabilidad: `correctedBy` · `correctedAt` · `motivo` · `accion` · `prevSignal` · `newSignal`
+- Refresco automático de ACTIVIDAD RECIENTE al volver a Gestión Turno
+- UX: excepcional · contextual · no ERPificado · lenguaje humano operacional
 
 ## Próximo foco posible
 - VENTAS CAPA 1 (si hay dolor operacional identificado)
