@@ -27,24 +27,23 @@ function AppRoot() {
   const isInitialMount  = useRef(true);
 
   useEffect(() => {
-    const win = getCurrentWindow();
-    if (activeOperator) {
-      // Login → Main app: resize + center + show
-      win.setAlwaysOnTop(false);
-      win.setDecorations(true);
-      win.setResizable(true);
-      win.setSize(new LogicalSize(1366, 768))
-        .then(() => win.center())
-        .then(() => win.show())
-        .catch(() => {});
-    } else if (!isInitialMount.current) {
-      // Main app → Login (logout): LoginScreen.tsx llama win.show() tras su render
-      win.setResizable(false);
-      win.setDecorations(false);
-      win.setAlwaysOnTop(true);
-      win.setSize(new LogicalSize(740, 520)).then(() => win.center()).catch(() => {});
-    }
-    // Inicial: ventana oculta desde tauri.conf — LoginScreen.tsx la muestra tras primer paint
+    try {
+      const win = getCurrentWindow();
+      if (activeOperator) {
+        win.setAlwaysOnTop(false);
+        win.setDecorations(true);
+        win.setResizable(true);
+        win.setSize(new LogicalSize(1366, 768))
+          .then(() => win.center())
+          .then(() => win.show())
+          .catch(() => {});
+      } else if (!isInitialMount.current) {
+        win.setResizable(false);
+        win.setDecorations(false);
+        win.setAlwaysOnTop(true);
+        win.setSize(new LogicalSize(740, 520)).then(() => win.center()).catch(() => {});
+      }
+    } catch { /* no-tauri env */ }
     isInitialMount.current = false;
   }, [activeOperator]);
 

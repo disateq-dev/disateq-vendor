@@ -78,7 +78,7 @@ export function LoginScreen() {
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
 
   // Muestra la ventana tras el primer paint — evita flash de reposicionamiento
-  useEffect(() => { getCurrentWindow().show().catch(() => {}); }, []);
+  useEffect(() => { try { getCurrentWindow().show().catch(() => {}); } catch { /* no-tauri env */ } }, []);
 
   // Autofocus alias en mount y al entrar a pin-change
   useEffect(() => { aliasSelectRef.current?.focus(); }, []);
