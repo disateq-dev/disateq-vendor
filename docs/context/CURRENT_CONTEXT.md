@@ -4,7 +4,7 @@
 recovery/context-restoration
 
 ## Microfase actual
-AJUSTES CAPA 1 — NEGOCIO + OPERACIÓN ✅ VALIDADA
+AJUSTES CAPA 1 — UX sub-navegación contextual ✅ VALIDADA
 
 ## Estado validado
 
@@ -36,13 +36,17 @@ AJUSTES CAPA 1 — NEGOCIO + OPERACIÓN ✅ VALIDADA
 
 ### AJUSTES
 - CAPA 1 NEGOCIO + OPERACIÓN ✅ VALIDADA
+- UX sub-navegación contextual ✅ VALIDADA
 - `src/config/business.ts` — BusinessConfig persistida en `disateq.config.business`
-- `src/config/ops.ts` (nuevo) — OpsConfig persistida en `disateq.config.ops`
-- `ConfigWorkspace.tsx` — secciones NEGOCIO y OPERACIÓN con edición inline
+- `src/config/ops.ts` — OpsConfig persistida en `disateq.config.ops`
 - hardcode `businessName` eliminado de CashWorkspace y CobroPanel
 - hardcode `CTG_PIN = "1234"` eliminado de cash-rules.service
 - `canOpenSession` recibe `expectedCtgPin` como parámetro runtime
-- defaults operacionales: nombreComercial desde `business.ts`, ctgPin desde `ops.ts`
+- `ModulesBar` — "CONFIG" → "AJUSTES"
+- `ConfigSubView` — 4 sub-vistas: Negocio · Operación · Rubro · Experiencia
+- Sub-navegación en SubContextBar (mismo patrón TURNO/ABASTECIMIENTO)
+- Cada sub-vista es enfocada y no contiene dominios ajenos
+- Botón "Aplicar" (operacional) en lugar de "Guardar" (CRUD)
 
 ## Próximo foco posible
 - consolidación documental (docs/philosophy/* actualización si hay deriva)
