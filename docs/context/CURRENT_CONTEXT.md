@@ -4,7 +4,7 @@
 main
 
 ## Microfase actual
-TURNO — CORREGIR ARQUEO ✅ VALIDADA Y CONSOLIDADA
+LOGIN — RUNTIME UX ✅ VALIDADA Y CONSOLIDADA
 
 ## Estado validado
 
@@ -92,6 +92,15 @@ TURNO — CORREGIR ARQUEO ✅ VALIDADA Y CONSOLIDADA
 - Trazabilidad: `correctedBy` · `correctedAt` · `motivo` · `accion` · `prevSignal` · `newSignal`
 - Refresco automático de ACTIVIDAD RECIENTE al volver a Gestión Turno
 - UX: excepcional · contextual · no ERPificado · lenguaje humano operacional
+
+### LOGIN — RUNTIME UX
+- distinción doctrinal LOGIN vs RUNTIME PRINCIPAL formalizada en memoria
+- drag funcional: `startDragging()` en `onMouseDown` del panel izquierdo ✅ VALIDADO
+- flash inicial eliminado: `visible: false` en `tauri.conf.json` + `win.show()` tras primer paint en LoginScreen ✅ VALIDADO
+- `capabilities/default.json` — `core:window:allow-show` + `core:window:allow-start-dragging`
+- `App.tsx` — `isInitialMount` ref: saltear JS window config en mount inicial (lo cubre tauri.conf)
+- login → app: `setSize → center → show` en cadena
+- logout → login: LoginScreen llama `show()` tras su propio render
 
 ## Próximo foco posible
 - VENTAS CAPA 1 (si hay dolor operacional identificado)
