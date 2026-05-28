@@ -4,7 +4,7 @@
 recovery/context-restoration
 
 ## Microfase actual
-CAPA 1 OPERACIONAL — COMPRAS ✅ VALIDADA
+AJUSTES CAPA 1 — NEGOCIO + OPERACIÓN ✅ VALIDADA
 
 ## Estado validado
 
@@ -27,10 +27,27 @@ CAPA 1 OPERACIONAL — COMPRAS ✅ VALIDADA
 - identidad visual contextual aplicada
 - DEV·RESET + badge pendientes SubContextBar
 
+### TURNO
+- auditoría operacional completa ✅
+- fix prereq contingencia en recovery (Guard 4)
+- fix nombre operador en pre-open card (real vs hardcoded)
+- eliminado código muerto (BLOCK_OPERATORS, operatorFromCode, validateCtgAuth)
+- persistencia arqueo previo → botón reimprimir en pre-open ✅
+
+### AJUSTES
+- CAPA 1 NEGOCIO + OPERACIÓN ✅ VALIDADA
+- `src/config/business.ts` — BusinessConfig persistida en `disateq.config.business`
+- `src/config/ops.ts` (nuevo) — OpsConfig persistida en `disateq.config.ops`
+- `ConfigWorkspace.tsx` — secciones NEGOCIO y OPERACIÓN con edición inline
+- hardcode `businessName` eliminado de CashWorkspace y CobroPanel
+- hardcode `CTG_PIN = "1234"` eliminado de cash-rules.service
+- `canOpenSession` recibe `expectedCtgPin` como parámetro runtime
+- defaults operacionales: nombreComercial desde `business.ts`, ctgPin desde `ops.ts`
+
 ## Próximo foco posible
-- consolidación documental (CURRENT_CONTEXT + docs)
+- consolidación documental (docs/philosophy/* actualización si hay deriva)
 - VENTAS CAPA 1 (si hay dolor operacional identificado)
-- COMPROBANTES integración real
+- COMPROBANTES integración real (businessRuc, businessAddr, businessPhone desde config)
 - push / merge a main
 
 ## Flujo operacional objetivo
