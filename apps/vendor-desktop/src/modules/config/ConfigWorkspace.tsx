@@ -64,20 +64,20 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   const SUB_ICONS: Record<ConfigSubView, React.ReactNode> = {
     negocio:     <Store       size={13} strokeWidth={2} className="text-[#697387]" />,
     operacion:   <ShieldCheck size={13} strokeWidth={2} className="text-[#697387]" />,
-    rubro:       <Layers      size={13} strokeWidth={2} className="text-[#697387]" />,
-    experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#697387]" />,
-    operadores:  <UserCog     size={13} strokeWidth={2} className="text-[#697387]" />,
     roles:       <Users       size={13} strokeWidth={2} className="text-[#697387]" />,
+    operadores:  <UserCog     size={13} strokeWidth={2} className="text-[#697387]" />,
     capacidades: <Sliders     size={13} strokeWidth={2} className="text-[#697387]" />,
+    experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#697387]" />,
+    rubro:       <Layers      size={13} strokeWidth={2} className="text-[#697387]" />,
   };
   const SUB_LABELS: Record<ConfigSubView, string> = {
     negocio:     "Negocio",
     operacion:   "Operación",
-    rubro:       "Rubro",
-    experiencia: "Experiencia",
-    operadores:  "Operadores",
     roles:       "Roles operacionales",
+    operadores:  "Operadores",
     capacidades: "Capacidades operacionales",
+    experiencia: "Experiencia",
+    rubro:       "Rubro",
   };
 
   if (configSubView === "operadores")  return <OperadoresWorkspace />;
