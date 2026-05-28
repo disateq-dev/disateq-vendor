@@ -990,15 +990,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 {openingMode === "exceptional" ? "Aperturar excepcionalmente" : "Aperturar"}
               </button>
 
-              {lastArqueo && (
-                <button
-                  onClick={() => printArqueoThermal("TIQUE", lastArqueo).catch(() => printArqueo(lastArqueo!))}
-                  className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[#e4e9f0] bg-white px-3 text-[11px] font-semibold text-[#9ca3af] transition hover:border-[#c0cad4] hover:text-[#374151]"
-                >
-                  <Printer size={12} strokeWidth={2} />
-                  Reimprimir arqueo anterior · CAJA {lastArqueo.cashBoxCode}
-                </button>
-              )}
+
 
             </>
 
