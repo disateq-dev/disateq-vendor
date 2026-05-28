@@ -357,7 +357,9 @@ function recoverOperationalState(): RecoveredState {
   let recoveryLog: string | null = null;
   if (session.isOpen && session.cashBox && session.cashBox.type !== "normal") {
     const box    = session.cashBox;
-    const prereq = box.code.slice(0, 2) + (box.type === "contingency-1" ? "0" : "1");
+    const prereq = box.type === "contingency-1" ? box.code.slice(0, 2) + "0"   // 101 → 100
+                 : box.type === "contingency-2" ? box.code.slice(0, 2) + "1"   // 102 → 101
+                 : box.code[0] + "00";                                          // 150/250/350/550 → 100/200/300/500
     if (!codes.has(prereq)) {
       const next = new Set(codes);
       next.add(prereq);

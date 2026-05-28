@@ -11,7 +11,7 @@ import {
 } from "../../print/printTicket";
 import { calcConciliation } from "./services/cash-conciliation.service";
 import {
-  prereqCode, operatorFromCode, isContingencyBox,
+  prereqCode,
   canOpenSession, validateCanAddMove,
   CTG_PIN, MIN_MOTIVO_LEN,
   detectOpeningMode, type OpeningMode,
@@ -781,7 +781,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <div className="min-w-0">
                 <span className="text-[10.5px] font-bold uppercase tracking-widest text-[#9ca3af]">SIN TURNO OPERATIVO</span>
                 <p className="mt-0.5 truncate text-[12px] font-semibold text-[#374151]">
-                  {selectedBox ? `CAJA ${selectedBox.code} · ${operatorFromCode(selectedBox.code)}` : "Sin caja seleccionada"}
+                  {selectedBox ? `CAJA ${selectedBox.code} · ${operatorName}` : "Sin caja seleccionada"}
                 </p>
               </div>
             </div>
@@ -847,7 +847,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   <span className="text-[10px] font-bold uppercase tracking-widest text-red-600">APERTURA EXCEPCIONAL</span>
                 </div>
                 <p className="text-[10px] text-red-600/80 -mt-1">
-                  La caja principal ({selectedBox.code.slice(0, 2) + "0"}) no fue usada hoy.
+                  La caja principal (CAJA {prereqCode(selectedBox)}) no fue usada hoy.
                   Se omitirá del ciclo diario. Requiere PIN + motivo.
                 </p>
                 <input
