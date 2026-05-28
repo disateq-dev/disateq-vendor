@@ -77,3 +77,12 @@ backups/
 # =========================
 
 .cache/
+
+# =========================
+# Verification / QA temporal
+# =========================
+
+_playwright-verify/
+verify-*.mjs
+verify-*.png
+verify-*.txt
