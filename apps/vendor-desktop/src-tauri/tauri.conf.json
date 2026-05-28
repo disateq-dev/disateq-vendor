@@ -21,7 +21,8 @@
         "maximized": false,
         "center": true,
         "closable": false,
-        "alwaysOnTop": true
+        "alwaysOnTop": true,
+        "visible": false
       }
     ],
     "security": {

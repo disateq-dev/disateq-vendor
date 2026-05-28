@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Shield, LogIn, HelpCircle, Lock, CheckCircle2, X, Check } from "lucide-react";
 import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { usePOS } from "../../context/POSContext";
 
 type LoginStep = "alias" | "pin";
@@ -75,6 +76,9 @@ export function LoginScreen() {
 
   // Clock
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
+
+  // Muestra la ventana tras el primer paint — evita flash de reposicionamiento
+  useEffect(() => { getCurrentWindow().show().catch(() => {}); }, []);
 
   // Autofocus alias en mount y al entrar a pin-change
   useEffect(() => { aliasSelectRef.current?.focus(); }, []);
@@ -211,8 +215,17 @@ export function LoginScreen() {
   return (
     <div className="flex h-screen" style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.18s ease" }}>
 
-      {/* ══ SHEET IZQUIERDA — 45% · drag region ══ */}
-      <div data-tauri-drag-region className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8 pb-5 px-5 cursor-grab active:cursor-grabbing select-none" style={{ borderRight: "1px solid #edf2f8" }}>
+      {/* ══ SHEET IZQUIERDA — 45% · arrastrable ══ */}
+      <div
+        className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8 pb-5 px-5 cursor-grab active:cursor-grabbing select-none"
+        style={{ borderRight: "1px solid #edf2f8" }}
+        onMouseDown={(e) => {
+          if (e.button === 0) {
+            e.preventDefault();
+            getCurrentWindow().startDragging().catch(() => {});
+          }
+        }}
+      >
         <div className="flex justify-center">
           <img src={logoImg} alt="DISATEQ Vendor" draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
