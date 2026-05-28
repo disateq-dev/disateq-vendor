@@ -1968,11 +1968,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               }`}>
                 <div className="flex flex-col gap-2.5 px-4 py-4">
 
-                  {/* Mini-selector: RETIRO / DEPÓSITO */}
+                  {/* Mini-selector: RETIRO / REINTEGRO */}
                   <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                     {([
                       { tab: "retiro"   as const, label: "RETIRO" },
-                      { tab: "deposito" as const, label: "DEPÓSITO" },
+                      { tab: "deposito" as const, label: "REINTEGRO" },
                     ]).map(({ tab, label }) => (
                       <button key={tab}
                         onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
@@ -1995,7 +1995,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </p>
                   ) : (
                     <p className="text-[10px] text-[#2154d8] font-semibold px-1">
-                      ↑ Depósito al fondo de cambio · pendiente devolver o integrar
+                      ↑ Reintegro al fondo de cambio · pendiente devolver o integrar
                     </p>
                   )}
 
@@ -2070,7 +2070,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         : "bg-[#2154d8]/[0.15] text-[#2154d8]/50 cursor-not-allowed"
                     }`}
                   >
-                    {fondoSubTab === "retiro" ? "REGISTRAR RETIRO" : "REGISTRAR DEPÓSITO"}
+                    {fondoSubTab === "retiro" ? "REGISTRAR RETIRO" : "REGISTRAR REINTEGRO"}
                   </button>
 
                   {lastFondoMove && (
@@ -2140,7 +2140,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
                       const dd = `${String(ts.getDate()).padStart(2, "0")}/${String(ts.getMonth() + 1).padStart(2, "0")}`;
-                      const srcLabel = m.sourceType === "apertura" ? "retiro · fondo cambio" : m.sourceType === "externo" ? "depósito al fondo" : "caja del día";
+                      const srcLabel = m.sourceType === "apertura" ? "retiro · fondo cambio" : m.sourceType === "externo" ? "reintegro al fondo" : "caja del día";
                       const linkedRepos: CashMove[] = m.type === "egreso" ? (reposByEgresoId[m.id] ?? []) : [];
                       const isRepoing          = reposingMoveId === m.id;
                       const isEditing          = editingMoveId === m.id;
