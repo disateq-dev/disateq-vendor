@@ -27,10 +27,11 @@ const CASH_TABS: { key: CashSubView; label: string }[] = [
 ];
 
 const CONFIG_TABS: { key: ConfigSubView; label: string }[] = [
-  { key: "negocio",    label: "Negocio"      },
-  { key: "operacion",  label: "Operación"    },
-  { key: "rubro",      label: "Rubro"        },
-  { key: "experiencia",label: "Experiencia"  },
+  { key: "negocio",     label: "Negocio"                  },
+  { key: "operacion",   label: "Operación"                },
+  { key: "rubro",       label: "Rubro"                    },
+  { key: "experiencia", label: "Experiencia"              },
+  { key: "capacidades", label: "Capacidades operacionales"},
 ];
 
 const ABASTECIMIENTO_MODULES: { key: AbastecimientoSubModule; label: string; isPlaceholder?: boolean }[] = [

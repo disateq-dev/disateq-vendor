@@ -3,7 +3,7 @@ import { useTicketStore } from "../domains/ticket/state/ticket.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
-import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock } from "../domains/operator/operator.store";
+import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities } from "../domains/operator/operator.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -422,6 +422,7 @@ interface POSContextValue {
   setOperatorStatus: (id: string, status: OperatorStatus, reason?: string) => boolean;
   assignOperatorBlock: (id: string, blockBase: number) => boolean;
   releaseOperatorBlock: (id: string) => void;
+  updateOperatorCapabilities: (id: string, capabilities: string[]) => void;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
   visualMode: VisualMode;
@@ -643,6 +644,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setOperators(updated);
     addOpLog(`[OPERADOR] ${op.name} liberó BLQ ${blk}`);
   }, [addOpLog]);
+
+  const updateOperatorCapabilities = useCallback((id: string, capabilities: string[]): void => {
+    const updated = setCapabilities(operatorsRef.current, id, capabilities);
+    saveOperators(updated);
+    setOperators(updated);
+  }, []);
 
   const addComprobante = useCallback((data: {
     docType: string; docSeries: string; docCorrelative: number; dateTime: string;
@@ -917,7 +924,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
       operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin, changeOperatorPinById, resetOperatorPin,
-      createOperator, updateOperatorData, setOperatorStatus, assignOperatorBlock, releaseOperatorBlock,
+      createOperator, updateOperatorData, setOperatorStatus, assignOperatorBlock, releaseOperatorBlock, updateOperatorCapabilities,
       rubro, setRubro,
       visualMode, setVisualMode,
       printFlow, setPrintFlow,

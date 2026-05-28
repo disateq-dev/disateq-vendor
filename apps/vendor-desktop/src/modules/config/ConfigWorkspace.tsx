@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings2, Check, Store, ShieldCheck, Layers, Monitor } from "lucide-react";
+import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders } from "lucide-react";
+import { CapacidadesWorkspace } from "./CapacidadesWorkspace";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
 import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
@@ -59,17 +60,21 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   }
 
   const SUB_ICONS: Record<ConfigSubView, React.ReactNode> = {
-    negocio:    <Store      size={13} strokeWidth={2} className="text-[#697387]" />,
-    operacion:  <ShieldCheck size={13} strokeWidth={2} className="text-[#697387]" />,
-    rubro:      <Layers     size={13} strokeWidth={2} className="text-[#697387]" />,
-    experiencia:<Monitor    size={13} strokeWidth={2} className="text-[#697387]" />,
+    negocio:     <Store       size={13} strokeWidth={2} className="text-[#697387]" />,
+    operacion:   <ShieldCheck size={13} strokeWidth={2} className="text-[#697387]" />,
+    rubro:       <Layers      size={13} strokeWidth={2} className="text-[#697387]" />,
+    experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#697387]" />,
+    capacidades: <Sliders     size={13} strokeWidth={2} className="text-[#697387]" />,
   };
   const SUB_LABELS: Record<ConfigSubView, string> = {
-    negocio:    "Negocio",
-    operacion:  "Operación",
-    rubro:      "Rubro",
-    experiencia:"Experiencia",
+    negocio:     "Negocio",
+    operacion:   "Operación",
+    rubro:       "Rubro",
+    experiencia: "Experiencia",
+    capacidades: "Capacidades operacionales",
   };
+
+  if (configSubView === "capacidades") return <CapacidadesWorkspace />;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/50 bg-[#FDFCF9]">

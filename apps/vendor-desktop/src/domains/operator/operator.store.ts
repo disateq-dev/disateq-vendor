@@ -14,9 +14,10 @@ export type OperatorRecord = {
   blockBase: number | null;
   blockAssignment?: BlockAssignment;
   status: OperatorStatus;
-  statusReason?: string;   // motivo del último cambio de estado (suspensión/baja)
-  statusAt?: string;       // ISO timestamp del último cambio de estado
+  statusReason?: string;
+  statusAt?: string;
   pin: string;
+  capabilities?: string[];
 };
 
 const LS_KEY = "disateq.pos.operators";
@@ -52,6 +53,7 @@ export function loadOperators(): OperatorRecord[] {
       statusReason:    typeof o.statusReason === "string" ? o.statusReason : undefined,
       statusAt:        typeof o.statusAt     === "string" ? o.statusAt     : undefined,
       pin:             typeof o.pin === "string" ? o.pin : "",
+      capabilities:    Array.isArray(o.capabilities) ? o.capabilities as string[] : [],
     }));
   } catch { return SEED; }
 }
@@ -75,6 +77,10 @@ export function setOperatorPin(ops: OperatorRecord[], id: string, newPin: string
   const op = ops.find(o => o.id === id);
   if (!op || op.status === "INACTIVO") return null;
   return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
+}
+
+export function setCapabilities(ops: OperatorRecord[], id: string, capabilities: string[]): OperatorRecord[] {
+  return ops.map(o => o.id === id ? { ...o, capabilities } : o);
 }
 
 // Returns true if blockBase is already assigned to another active/suspended operator (excludeId = self)

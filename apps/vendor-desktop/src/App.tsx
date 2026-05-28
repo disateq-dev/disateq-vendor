@@ -15,7 +15,7 @@ import { LoginScreen } from "./modules/login/LoginScreen";
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento";
 export type CashSubView             = "turno" | "roles" | "cajas" | "operadores" | "corregir-arqueo";
 export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
-export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia";
+export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "capacidades";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
