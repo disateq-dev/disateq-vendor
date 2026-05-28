@@ -23,23 +23,25 @@ function AppRoot() {
   const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
   const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("compras");
   const [configSubView,           setConfigSubView]           = useState<ConfigSubView>("negocio");
-  const prevOpId = useRef<string | null>(null);
+  const prevOpId        = useRef<string | null>(null);
+  const isInitialMount  = useRef(true);
 
   useEffect(() => {
     const win = getCurrentWindow();
     if (activeOperator) {
-      // Main app — ventana operacional completa
+      // Login → Main app
       win.setAlwaysOnTop(false);
       win.setDecorations(true);
       win.setResizable(true);
       win.setSize(new LogicalSize(1366, 768)).then(() => win.center());
-    } else {
-      // Login — ventana flotante exclusiva
+    } else if (!isInitialMount.current) {
+      // Main app → Login (logout) — tauri.conf.json ya cubre el estado inicial
       win.setResizable(false);
       win.setDecorations(false);
       win.setAlwaysOnTop(true);
       win.setSize(new LogicalSize(740, 520)).then(() => win.center());
     }
+    isInitialMount.current = false;
   }, [activeOperator]);
 
   // Al hacer login (transición null → operador), ir a TURNO
