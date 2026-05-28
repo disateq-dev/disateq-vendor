@@ -1,6 +1,9 @@
-import { Settings2 } from "lucide-react";
+import { useState } from "react";
+import { Settings2, Check } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
+import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
+import { loadOpsConfig, saveOpsConfig } from "../../config/ops";
 
 const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia"];
 
@@ -30,6 +33,30 @@ export function ConfigWorkspace() {
   const { rubro, setRubro, visualMode, setVisualMode, printFlow, setPrintFlow } = usePOS();
   const rubroConfig = RUBROS[rubro];
 
+  // ── NEGOCIO ───────────────────────────────────────────────────
+  const [nombreComercial, setNombreComercial] = useState(() => loadBusinessConfig().nombreComercial);
+  const [bizSaved,        setBizSaved]        = useState(false);
+
+  function handleSaveNegocio() {
+    if (!nombreComercial.trim()) return;
+    saveBusinessConfig({ ...loadBusinessConfig(), nombreComercial: nombreComercial.trim() });
+    setBizSaved(true);
+    setTimeout(() => setBizSaved(false), 2000);
+  }
+
+  // ── OPERACIÓN ─────────────────────────────────────────────────
+  const [ctgPin,    setCtgPin]    = useState(() => loadOpsConfig().ctgPin);
+  const [pinError,  setPinError]  = useState<string | null>(null);
+  const [opsSaved,  setOpsSaved]  = useState(false);
+
+  function handleSaveOps() {
+    if (!/^\d{4,8}$/.test(ctgPin)) { setPinError("4 a 8 dígitos numéricos"); return; }
+    setPinError(null);
+    saveOpsConfig({ ctgPin });
+    setOpsSaved(true);
+    setTimeout(() => setOpsSaved(false), 2000);
+  }
+
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/50 bg-[#FDFCF9]">
 
@@ -39,6 +66,73 @@ export function ConfigWorkspace() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-7">
+
+        {/* ── NEGOCIO ── */}
+        <div>
+          <SectionLabel>Negocio</SectionLabel>
+          <p className="mt-1 mb-3 text-[11px] text-[#b0bac8]">
+            Nombre que aparece en impresiones y arqueos.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={nombreComercial}
+              onChange={e => setNombreComercial(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
+              maxLength={60}
+              className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2 text-[12px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#2154d8]/40 focus:outline-none focus:ring-1 focus:ring-[#2154d8]/20"
+              placeholder="Nombre comercial"
+            />
+            <button
+              onClick={handleSaveNegocio}
+              disabled={!nombreComercial.trim()}
+              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-[11px] font-bold uppercase tracking-wide transition ${
+                bizSaved
+                  ? "bg-[#45b356]/15 text-[#45b356]"
+                  : "bg-[#2154d8]/10 text-[#2154d8] hover:bg-[#2154d8]/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              }`}
+            >
+              {bizSaved ? <><Check size={12} strokeWidth={2.5} /> Guardado</> : "Guardar"}
+            </button>
+          </div>
+        </div>
+
+        {/* ── OPERACIÓN ── */}
+        <div>
+          <SectionLabel>Operación</SectionLabel>
+          <p className="mt-1 mb-3 text-[11px] text-[#b0bac8]">
+            PIN de autorización para apertura de cajas de contingencia.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={ctgPin}
+              onChange={e => { setCtgPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setPinError(null); }}
+              onKeyDown={e => e.key === "Enter" && handleSaveOps()}
+              maxLength={8}
+              placeholder="PIN (4–8 dígitos)"
+              className={`w-36 rounded-xl border bg-white px-3 py-2 text-[12px] text-[#374151] placeholder:text-[#c4cdd8] focus:outline-none focus:ring-1 tracking-widest ${
+                pinError
+                  ? "border-[#dc2626]/50 focus:border-[#dc2626]/50 focus:ring-[#dc2626]/20"
+                  : "border-[#E9E4DC] focus:border-[#2154d8]/40 focus:ring-[#2154d8]/20"
+              }`}
+            />
+            <button
+              onClick={handleSaveOps}
+              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-[11px] font-bold uppercase tracking-wide transition ${
+                opsSaved
+                  ? "bg-[#45b356]/15 text-[#45b356]"
+                  : "bg-[#2154d8]/10 text-[#2154d8] hover:bg-[#2154d8]/20"
+              }`}
+            >
+              {opsSaved ? <><Check size={12} strokeWidth={2.5} /> Guardado</> : "Guardar"}
+            </button>
+          </div>
+          {pinError && <p className="mt-1.5 text-[10.5px] text-[#dc2626]">{pinError}</p>}
+          <p className="mt-2 text-[10px] text-[#b0bac8]">
+            Aplica al reiniciar · el turno activo mantiene el PIN con el que abrió.
+          </p>
+        </div>
 
         {/* ── RUBRO OPERACIONAL ── */}
         <div>

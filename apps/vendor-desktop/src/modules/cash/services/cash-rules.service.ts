@@ -32,12 +32,7 @@ export function detectOpeningMode(box: CashBox | null): OpeningMode {
 
 // ── authorization constants ─────────────────────────────────────
 
-export const CTG_PIN = "1234";
 export const MIN_MOTIVO_LEN = 5;
-
-export function validateCtgAuth(pin: string, motivo: string): boolean {
-  return pin === CTG_PIN && motivo.trim().length >= MIN_MOTIVO_LEN;
-}
 
 // ── apertura validation ─────────────────────────────────────────
 
@@ -48,6 +43,7 @@ export function canOpenSession(
   mode: OpeningMode,
   ctgPin: string,
   ctgJustif: string,
+  expectedCtgPin: string,
 ): boolean {
   if (isOpen) return false;
   if (!box) return false;
@@ -62,7 +58,7 @@ export function canOpenSession(
   const amt = parseFloat(aperturaInput);
   if (isNaN(amt) || amt < 0) return false;
   if (mode === "contingency") return ctgJustif.trim().length >= MIN_MOTIVO_LEN;
-  if (mode === "exceptional") return ctgPin === CTG_PIN && ctgJustif.trim().length >= MIN_MOTIVO_LEN;
+  if (mode === "exceptional") return ctgPin === expectedCtgPin && ctgJustif.trim().length >= MIN_MOTIVO_LEN;
   return true;
 }
 

@@ -13,9 +13,11 @@ import { calcConciliation } from "./services/cash-conciliation.service";
 import {
   prereqCode,
   canOpenSession, validateCanAddMove,
-  CTG_PIN, MIN_MOTIVO_LEN,
+  MIN_MOTIVO_LEN,
   detectOpeningMode, type OpeningMode,
 } from "./services/cash-rules.service";
+import { loadBusinessConfig } from "../../config/business";
+import { loadOpsConfig } from "../../config/ops";
 import { moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 
 // ── helpers ────────────────────────────────────────────────────
@@ -378,11 +380,14 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     }
   }, [closingStage]);
 
+  // ── config — loaded once at mount; changes take effect on remount ─
+  const configuredCtgPin = useMemo(() => loadOpsConfig().ctgPin, []);
+
   // ── derived ───────────────────────────────────────────────────
   const activeMoves = useMemo(() => cashMoves.filter(m => m.regularizationStatus !== "anulado"), [cashMoves]);
   const selectedBox        = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
   const openingMode: OpeningMode = isOpen ? "normal" : detectOpeningMode(selectedBox);
-  const canOpen            = canOpenSession(isOpen, selectedBox, aperturaInput, openingMode, ctgPin, ctgJustif);
+  const canOpen            = canOpenSession(isOpen, selectedBox, aperturaInput, openingMode, ctgPin, ctgJustif, configuredCtgPin);
   const canCorrectApertura = isOpen && cashMoves.length === 0 && sessionStats.count === 0 && closingStage === 0;
 
   // Bloque del operador activo — usa operador autenticado real
@@ -462,7 +467,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     if (isNaN(amt) || amt < 0) return;
 
     if (openingMode === "exceptional") {
-      if (ctgPin !== CTG_PIN) { setCtgPinError(true); return; }
+      if (ctgPin !== configuredCtgPin) { setCtgPinError(true); return; }
       if (!ctgJustif.trim()) return;
       // Marcar caja principal como omitida + abrir contingente excepcionalmente
       const primaryCode = selectedBox.type === "contingencia"
@@ -563,7 +568,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     const ts = new Date(move.timestamp);
     const p  = (n: number) => String(n).padStart(2, "0");
     const data: VoucherMoveData = {
-      businessName: "DISATEQ TIENDA",
+      businessName: loadBusinessConfig().nombreComercial,
       moveType:     move.type,
       sourceLabel:  move.refId ? "REPOSICIÓN" : undefined,
       amount:       move.amount,
@@ -585,7 +590,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     const now = new Date();
     const p   = (n: number) => String(n).padStart(2, "0");
     const arqueo: ArqueoData = {
-      businessName:     "DISATEQ TIENDA",
+      businessName:     loadBusinessConfig().nombreComercial,
       cashBoxCode:      activeBox?.code ?? "?",
       operator,
       terminal,

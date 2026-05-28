@@ -9,6 +9,7 @@ import { usePOS } from "../../context/POSContext";
 import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatch, printDispatchTicket, type DispatchData } from "../../print/printTicket";
 
 import { toCents, moneySum, moneySub, moneyRound, moneyGt, moneyGte, moneyEq } from "../../lib/money";
+import { loadBusinessConfig } from "../../config/business";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
@@ -232,7 +233,7 @@ export function CobroPanel() {
     const p        = (n: number) => String(n).padStart(2, "0");
     const dateTime = `${p(now.getDate())}/${p(now.getMonth() + 1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`;
     const receiptData = {
-      businessName:   "DISATEQ TIENDA",
+      businessName:   loadBusinessConfig().nombreComercial,
       businessRuc:    "20123456789",
       businessAddr:   "Jr. Comercio 456, Lima",
       businessPhone:  "01-234-5678",
