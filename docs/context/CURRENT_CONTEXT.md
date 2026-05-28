@@ -4,7 +4,7 @@
 recovery/context-restoration
 
 ## Microfase actual
-AJUSTES CAPA 1 — UX sub-navegación contextual ✅ VALIDADA
+TURNO — ACTIVIDAD RECIENTE (continuidad operacional) ✅ VALIDADA
 
 ## Estado validado
 
@@ -33,6 +33,20 @@ AJUSTES CAPA 1 — UX sub-navegación contextual ✅ VALIDADA
 - fix nombre operador en pre-open card (real vs hardcoded)
 - eliminado código muerto (BLOCK_OPERATORS, operatorFromCode, validateCtgAuth)
 - persistencia arqueo previo → botón reimprimir en pre-open ✅
+- **ACTIVIDAD RECIENTE** ✅ VALIDADA
+  - `src/modules/cash/services/session-history.service.ts` — nuevo service
+  - `disateq.pos.sessionHistory` — hasta 50 entradas, persistencia localStorage
+  - `disateq.pos.currentSessionId` — pareo apertura/cierre entre renders
+  - `recordSessionOpen` llamado en `handleOpen` post-`openCashSession`
+  - `recordSessionClose` llamado en `handleConfirmClose` pre-`closeCashSession`
+  - señal derivada de `moneyIsZero(diferencia)` → `ok` / `warn`
+  - `~ pendiente` si sesión sin cierre registrado (crash/reload)
+  - filtro por bloque del operador (`boxCode[0] === operatorBlockPrefix`)
+  - worksheet completa en columna derecha pre-apertura
+  - layout 3 columnas alineado con turno abierto (320 / 360 / flex-1)
+  - empty state: "Sin actividad registrada en este bloque"
+  - tabla: CAJA · OPERADOR · APERTURA · CIERRE · ESTADO
+  - hasta 20 entradas visibles, scroll si hay más
 
 ### AJUSTES
 - CAPA 1 NEGOCIO + OPERACIÓN ✅ VALIDADA
@@ -47,6 +61,22 @@ AJUSTES CAPA 1 — UX sub-navegación contextual ✅ VALIDADA
 - Sub-navegación en SubContextBar (mismo patrón TURNO/ABASTECIMIENTO)
 - Cada sub-vista es enfocada y no contiene dominios ajenos
 - Botón "Aplicar" (operacional) en lugar de "Guardar" (CRUD)
+
+## Layout validado — Gestión Turno
+
+### Pre-apertura (`!isOpen`)
+| Worksheet | Ancho |
+|---|---|
+| APERTURA DE TURNO | 320px fijo |
+| CAJAS DISPONIBLES | 360px fijo |
+| ACTIVIDAD RECIENTE | flex-1 |
+
+### Turno abierto (`isOpen && closingStage === 0`)
+| Worksheet | Ancho |
+|---|---|
+| RESUMEN DEL TURNO | 320px fijo |
+| MOVIMIENTOS | 360px fijo |
+| MOVIMIENTOS DEL TURNO | flex-1 |
 
 ## Próximo foco posible
 - consolidación documental (docs/philosophy/* actualización si hay deriva)
