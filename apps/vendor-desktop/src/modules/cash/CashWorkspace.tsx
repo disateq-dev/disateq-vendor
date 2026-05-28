@@ -947,33 +947,35 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         {/* Actions */}
         <div className="flex flex-col gap-2">
           {!isOpen ? (
-            <button
-              onClick={handleOpen}
-              disabled={!canOpen}
-              title="Tecla [Enter]"
-              className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 ${
-                openingMode === "exceptional"
-                  ? canOpen
-                    ? "bg-amber-600 text-white hover:bg-amber-700 active:scale-[0.98] focus:outline-amber-500/60"
-                    : "cursor-not-allowed bg-amber-600/40 text-white/60"
-                  : canOpen
-                    ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98] focus:outline-[#45b356]/60"
-                    : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
-              }`}
-            >
-              <LogIn size={14} strokeWidth={2} />
-              {openingMode === "exceptional" ? "Aperturar excepcionalmente" : "Aperturar"}
-            </button>
-
-            {lastArqueo && (
+            <>
               <button
-                onClick={() => printArqueoThermal("TIQUE", lastArqueo).catch(() => printArqueo(lastArqueo!))}
-                className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[#e4e9f0] bg-white px-3 text-[11px] font-semibold text-[#9ca3af] transition hover:border-[#c0cad4] hover:text-[#374151]"
+                onClick={handleOpen}
+                disabled={!canOpen}
+                title="Tecla [Enter]"
+                className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 ${
+                  openingMode === "exceptional"
+                    ? canOpen
+                      ? "bg-amber-600 text-white hover:bg-amber-700 active:scale-[0.98] focus:outline-amber-500/60"
+                      : "cursor-not-allowed bg-amber-600/40 text-white/60"
+                    : canOpen
+                      ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98] focus:outline-[#45b356]/60"
+                      : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
+                }`}
               >
-                <Printer size={12} strokeWidth={2} />
-                Reimprimir arqueo anterior · CAJA {lastArqueo.cashBoxCode}
+                <LogIn size={14} strokeWidth={2} />
+                {openingMode === "exceptional" ? "Aperturar excepcionalmente" : "Aperturar"}
               </button>
-            )}
+
+              {lastArqueo && (
+                <button
+                  onClick={() => printArqueoThermal("TIQUE", lastArqueo).catch(() => printArqueo(lastArqueo!))}
+                  className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[#e4e9f0] bg-white px-3 text-[11px] font-semibold text-[#9ca3af] transition hover:border-[#c0cad4] hover:text-[#374151]"
+                >
+                  <Printer size={12} strokeWidth={2} />
+                  Reimprimir arqueo anterior · CAJA {lastArqueo.cashBoxCode}
+                </button>
+              )}
+            </>
 
           ) : closingStage === 0 ? (
             <>
