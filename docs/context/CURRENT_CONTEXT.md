@@ -1,10 +1,10 @@
 # CURRENT CONTEXT — DISATEQ VENDOR™
 
 ## Branch activa
-recovery/context-restoration
+main
 
 ## Microfase actual
-TURNO — ACTIVIDAD RECIENTE (continuidad operacional) ✅ VALIDADA
+TURNO — ACTIVIDAD RECIENTE ✅ VALIDADA Y CONSOLIDADA
 
 ## Estado validado
 
@@ -32,21 +32,20 @@ TURNO — ACTIVIDAD RECIENTE (continuidad operacional) ✅ VALIDADA
 - fix prereq contingencia en recovery (Guard 4)
 - fix nombre operador en pre-open card (real vs hardcoded)
 - eliminado código muerto (BLOCK_OPERATORS, operatorFromCode, validateCtgAuth)
-- persistencia arqueo previo → botón reimprimir en pre-open ✅
-- **ACTIVIDAD RECIENTE** ✅ VALIDADA
-  - `src/modules/cash/services/session-history.service.ts` — nuevo service
-  - `disateq.pos.sessionHistory` — hasta 50 entradas, persistencia localStorage
-  - `disateq.pos.currentSessionId` — pareo apertura/cierre entre renders
-  - `recordSessionOpen` llamado en `handleOpen` post-`openCashSession`
-  - `recordSessionClose` llamado en `handleConfirmClose` pre-`closeCashSession`
-  - señal derivada de `moneyIsZero(diferencia)` → `ok` / `warn`
-  - `~ pendiente` si sesión sin cierre registrado (crash/reload)
+- **ACTIVIDAD RECIENTE** ✅ CONSOLIDADA
+  - `src/modules/cash/services/session-history.service.ts`
+  - `disateq.pos.sessionHistory` — hasta 50 entradas, localStorage
+  - `disateq.pos.currentSessionId` — pareo apertura/cierre
+  - señal: `ok` (diferencia cero) · `warn` (diferencia) · `~ pendiente` (crash)
   - filtro por bloque del operador (`boxCode[0] === operatorBlockPrefix`)
-  - worksheet completa en columna derecha pre-apertura
-  - layout 3 columnas alineado con turno abierto (320 / 360 / flex-1)
+  - columnas: CAJA · FUNCIÓN · APERTURA · CIERRE · ESTADO · (reimpresión)
+  - FUNCIÓN = "PRINCIPAL" / "SECUNDARIA 01" / "SECUNDARIA 02" / "CONTINGENCIA"
+  - botón reimpresión por fila — usa `e.arqueo` con fallback a `lastArqueo`
+  - `arqueo: ArqueoData` guardado en entry al cerrar sesión
+  - headers sin indicador de bloque numérico
+  - botón "Reimprimir arqueo anterior" eliminado del panel izquierdo
+  - layout 3 columnas pre-apertura alineado con turno abierto (320/360/flex-1)
   - empty state: "Sin actividad registrada en este bloque"
-  - tabla: CAJA · OPERADOR · APERTURA · CIERRE · ESTADO
-  - hasta 20 entradas visibles, scroll si hay más
 
 ### AJUSTES
 - CAPA 1 NEGOCIO + OPERACIÓN ✅ VALIDADA
@@ -59,7 +58,6 @@ TURNO — ACTIVIDAD RECIENTE (continuidad operacional) ✅ VALIDADA
 - `ModulesBar` — "CONFIG" → "AJUSTES"
 - `ConfigSubView` — 4 sub-vistas: Negocio · Operación · Rubro · Experiencia
 - Sub-navegación en SubContextBar (mismo patrón TURNO/ABASTECIMIENTO)
-- Cada sub-vista es enfocada y no contiene dominios ajenos
 - Botón "Aplicar" (operacional) en lugar de "Guardar" (CRUD)
 
 ## Layout validado — Gestión Turno
@@ -78,18 +76,20 @@ TURNO — ACTIVIDAD RECIENTE (continuidad operacional) ✅ VALIDADA
 | MOVIMIENTOS | 360px fijo |
 | MOVIMIENTOS DEL TURNO | flex-1 |
 
+## Branching
+- `main` es la rama canónica desde 2026-05-28
+- `recovery/context-restoration` archivada en remote como referencia histórica
+
 ## Próximo foco posible
-- consolidación documental (docs/philosophy/* actualización si hay deriva)
 - VENTAS CAPA 1 (si hay dolor operacional identificado)
 - COMPROBANTES integración real (businessRuc, businessAddr, businessPhone desde config)
-- push / merge a main
+- consolidación documental (docs/philosophy/* si hay deriva)
 
 ## Flujo operacional objetivo
 VENTAS → COMPRAS → INVENTARIOS
 
 ## Validaciones obligatorias
-- runtime real
-- npm run tauri dev
+- runtime real (npm run tauri dev)
 - git status limpio
 - commits pequeños y frecuentes
 
