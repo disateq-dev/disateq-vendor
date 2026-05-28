@@ -15,12 +15,14 @@ import { LoginScreen } from "./modules/login/LoginScreen";
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento";
 export type CashSubView             = "turno" | "roles" | "cajas" | "operadores";
 export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
+export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
   const [activeModule,            setActiveModule]            = useState<ActiveModule>("cash");
   const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
   const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("compras");
+  const [configSubView,           setConfigSubView]           = useState<ConfigSubView>("negocio");
   const prevOpId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -59,6 +61,8 @@ function AppRoot() {
       onCashSubViewChange={setCashSubView}
       abastecimientoSubModule={abastecimientoSubModule}
       onAbastecimientoSubModuleChange={setAbastecimientoSubModule}
+      configSubView={configSubView}
+      onConfigSubViewChange={setConfigSubView}
     >
       {activeModule === "sales" && (
         <>
@@ -68,7 +72,7 @@ function AppRoot() {
       )}
       {activeModule === "cash"         && <CashWorkspace onOpened={() => setActiveModule("sales")} cashSubView={cashSubView} />}
       {activeModule === "comprobantes" && <ComprobantesWorkspace />}
-      {activeModule === "config"       && <ConfigWorkspace />}
+      {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
       {activeModule === "abastecimiento" && (abastecimientoSubModule === "proveedores" || abastecimientoSubModule === "traslados") && (

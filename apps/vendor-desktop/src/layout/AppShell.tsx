@@ -4,7 +4,7 @@ import { ModulesBar } from "./ModulesBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { usePOS } from "../context/POSContext";
-import { type ActiveModule, type CashSubView, type AbastecimientoSubModule } from "../App";
+import { type ActiveModule, type CashSubView, type AbastecimientoSubModule, type ConfigSubView } from "../App";
 
 interface AppShellProps {
   children: ReactNode;
@@ -14,6 +14,8 @@ interface AppShellProps {
   onCashSubViewChange: (sv: CashSubView) => void;
   abastecimientoSubModule: AbastecimientoSubModule;
   onAbastecimientoSubModuleChange: (sm: AbastecimientoSubModule) => void;
+  configSubView: ConfigSubView;
+  onConfigSubViewChange: (sv: ConfigSubView) => void;
 }
 
 function OperationalNotice() {
@@ -29,7 +31,7 @@ function OperationalNotice() {
   );
 }
 
-export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange }: AppShellProps) {
+export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, configSubView, onConfigSubViewChange }: AppShellProps) {
   const { closeCobro, logoutOperator, cobroOpen } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
 
@@ -76,6 +78,8 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
             onCashSubViewChange={onCashSubViewChange}
             abastecimientoSubModule={abastecimientoSubModule}
             onAbastecimientoSubModuleChange={onAbastecimientoSubModuleChange}
+            configSubView={configSubView}
+            onConfigSubViewChange={onConfigSubViewChange}
           />
         </header>
 

@@ -77,7 +77,7 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
       {/* ── Grupo 5 — Sistema ────────────────────────────────── */}
       <button onClick={() => onChange("config")} onMouseEnter={() => onHover("config")} className={cls("config", display)}>
         <Settings size={17} />
-        <span>CONFIG</span>
+        <span>AJUSTES</span>
       </button>
     </section>
   );

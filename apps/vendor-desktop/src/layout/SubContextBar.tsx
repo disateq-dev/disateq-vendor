@@ -2,7 +2,7 @@ import { BarChart2, FileText, Percent, Plus } from "lucide-react";
 import { usePOS } from "../context/POSContext";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../domains/inventory/store";
 import { usePurchasesStore } from "../domains/purchases/store";
-import { type ActiveModule, type CashSubView, type AbastecimientoSubModule } from "../App";
+import { type ActiveModule, type CashSubView, type AbastecimientoSubModule, type ConfigSubView } from "../App";
 
 interface SubContextBarProps {
   activeModule: ActiveModule;
@@ -12,15 +12,24 @@ interface SubContextBarProps {
   onCashSubViewChange: (sv: CashSubView) => void;
   abastecimientoSubModule: AbastecimientoSubModule;
   onAbastecimientoSubModuleChange: (sm: AbastecimientoSubModule) => void;
+  configSubView: ConfigSubView;
+  onConfigSubViewChange: (sv: ConfigSubView) => void;
 }
 
-const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "abastecimiento"]);
+const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "abastecimiento", "config"]);
 
 const CASH_TABS: { key: CashSubView; label: string }[] = [
   { key: "turno",      label: "Gestión Turno" },
   { key: "roles",      label: "Roles"         },
   { key: "cajas",      label: "Cajas"         },
   { key: "operadores", label: "Operadores"    },
+];
+
+const CONFIG_TABS: { key: ConfigSubView; label: string }[] = [
+  { key: "negocio",    label: "Negocio"      },
+  { key: "operacion",  label: "Operación"    },
+  { key: "rubro",      label: "Rubro"        },
+  { key: "experiencia",label: "Experiencia"  },
 ];
 
 const ABASTECIMIENTO_MODULES: { key: AbastecimientoSubModule; label: string; isPlaceholder?: boolean }[] = [
@@ -38,7 +47,7 @@ const SHELL: Record<ActiveModule, string> = {
   abastecimiento: "border-t border-[#3D8A8A]/20 bg-[rgba(61,138,138,0.08)]",
 };
 
-export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange }: SubContextBarProps) {
+export function SubContextBar({ activeModule, displayModule, visible, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, configSubView, onConfigSubViewChange }: SubContextBarProps) {
   const { cashSession, sessionStats } = usePOS();
   const { items: todosItems, movimientos, contexto, reservas } = useInventoryStore();
   const { compras } = usePurchasesStore();
@@ -136,6 +145,28 @@ export function SubContextBar({ activeModule, displayModule, visible, cashSubVie
                     isActive
                       ? "bg-[#2A7CA8] text-white shadow-sm"
                       : "text-[#1a5f7a]/70 hover:bg-[#2A7CA8]/10 hover:text-[#143d54]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* AJUSTES — sub-vistas operacionales */}
+        {displayModule === "config" && (
+          <div className="flex items-center gap-1">
+            {CONFIG_TABS.map(({ key, label }) => {
+              const isActive = activeModule === "config" && configSubView === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { if (activeModule === "config") onConfigSubViewChange(key); }}
+                  className={`rounded-lg px-3 py-1 text-[13.5px] font-semibold transition ${
+                    isActive
+                      ? "bg-[#697387] text-white shadow-sm"
+                      : "text-[#697387]/70 hover:bg-[#697387]/10 hover:text-[#3d4554]"
                   }`}
                 >
                   {label}

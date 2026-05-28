@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Settings2, Check } from "lucide-react";
+import { Settings2, Check, Store, ShieldCheck, Layers, Monitor } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
 import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
 import { loadOpsConfig, saveOpsConfig } from "../../config/ops";
+import { type ConfigSubView } from "../../App";
 
 const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia"];
 
@@ -29,7 +30,7 @@ const PRINT_FLOWS: { id: PrintFlow; label: string; desc: string; ready: boolean 
   { id: "comprobante-embarque", label: "Comprobante + Embarque",  desc: "Ticket venta + etiqueta de despacho físico", ready: false },
 ];
 
-export function ConfigWorkspace() {
+export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubView }) {
   const { rubro, setRubro, visualMode, setVisualMode, printFlow, setPrintFlow } = usePOS();
   const rubroConfig = RUBROS[rubro];
 
@@ -57,251 +58,276 @@ export function ConfigWorkspace() {
     setTimeout(() => setOpsSaved(false), 2000);
   }
 
+  const SUB_ICONS: Record<ConfigSubView, React.ReactNode> = {
+    negocio:    <Store      size={13} strokeWidth={2} className="text-[#697387]" />,
+    operacion:  <ShieldCheck size={13} strokeWidth={2} className="text-[#697387]" />,
+    rubro:      <Layers     size={13} strokeWidth={2} className="text-[#697387]" />,
+    experiencia:<Monitor    size={13} strokeWidth={2} className="text-[#697387]" />,
+  };
+  const SUB_LABELS: Record<ConfigSubView, string> = {
+    negocio:    "Negocio",
+    operacion:  "Operación",
+    rubro:      "Rubro",
+    experiencia:"Experiencia",
+  };
+
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/50 bg-[#FDFCF9]">
 
+      {/* ── SheetHeader ── */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
         <Settings2 size={13} strokeWidth={2} className="text-[#697387]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">AJUSTES</span>
+        <span className="text-[#697387]/30 mx-0.5">·</span>
+        {SUB_ICONS[configSubView]}
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#697387] leading-none">
+          {SUB_LABELS[configSubView]}
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-7">
+      <div className="flex-1 overflow-y-auto px-5 pt-5 pb-5">
 
         {/* ── NEGOCIO ── */}
-        <div>
-          <SectionLabel>Negocio</SectionLabel>
-          <p className="mt-1 mb-3 text-[11px] text-[#b0bac8]">
-            Nombre que aparece en impresiones y arqueos.
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={nombreComercial}
-              onChange={e => setNombreComercial(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
-              maxLength={60}
-              className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2 text-[12px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#2154d8]/40 focus:outline-none focus:ring-1 focus:ring-[#2154d8]/20"
-              placeholder="Nombre comercial"
-            />
-            <button
-              onClick={handleSaveNegocio}
-              disabled={!nombreComercial.trim()}
-              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-[11px] font-bold uppercase tracking-wide transition ${
-                bizSaved
-                  ? "bg-[#45b356]/15 text-[#45b356]"
-                  : "bg-[#2154d8]/10 text-[#2154d8] hover:bg-[#2154d8]/20 disabled:opacity-40 disabled:cursor-not-allowed"
-              }`}
-            >
-              {bizSaved ? <><Check size={12} strokeWidth={2.5} /> Guardado</> : "Guardar"}
-            </button>
-          </div>
-        </div>
-
-        {/* ── OPERACIÓN ── */}
-        <div>
-          <SectionLabel>Operación</SectionLabel>
-          <p className="mt-1 mb-3 text-[11px] text-[#b0bac8]">
-            PIN de autorización para apertura de cajas de contingencia.
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={ctgPin}
-              onChange={e => { setCtgPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setPinError(null); }}
-              onKeyDown={e => e.key === "Enter" && handleSaveOps()}
-              maxLength={8}
-              placeholder="PIN (4–8 dígitos)"
-              className={`w-36 rounded-xl border bg-white px-3 py-2 text-[12px] text-[#374151] placeholder:text-[#c4cdd8] focus:outline-none focus:ring-1 tracking-widest ${
-                pinError
-                  ? "border-[#dc2626]/50 focus:border-[#dc2626]/50 focus:ring-[#dc2626]/20"
-                  : "border-[#E9E4DC] focus:border-[#2154d8]/40 focus:ring-[#2154d8]/20"
-              }`}
-            />
-            <button
-              onClick={handleSaveOps}
-              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-[11px] font-bold uppercase tracking-wide transition ${
-                opsSaved
-                  ? "bg-[#45b356]/15 text-[#45b356]"
-                  : "bg-[#2154d8]/10 text-[#2154d8] hover:bg-[#2154d8]/20"
-              }`}
-            >
-              {opsSaved ? <><Check size={12} strokeWidth={2.5} /> Guardado</> : "Guardar"}
-            </button>
-          </div>
-          {pinError && <p className="mt-1.5 text-[10.5px] text-[#dc2626]">{pinError}</p>}
-          <p className="mt-2 text-[10px] text-[#b0bac8]">
-            Aplica al reiniciar · el turno activo mantiene el PIN con el que abrió.
-          </p>
-        </div>
-
-        {/* ── RUBRO OPERACIONAL ── */}
-        <div>
-          <SectionLabel>Rubro operacional</SectionLabel>
-          <p className="mt-1 mb-3 text-[11px] text-[#b0bac8]">
-            Define el catálogo activo y los defaults operacionales.
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {RUBRO_ORDER.map(r => {
-              const cfg      = RUBROS[r];
-              const isActive = rubro === r;
-              return (
-                <button
-                  key={r}
-                  onClick={() => setRubro(r)}
-                  className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
-                    isActive
-                      ? "border-[#2154d8]/30 bg-[#EDF4FF] shadow-[0_2px_6px_rgba(33,84,216,0.10)]"
-                      : "border-[#E9E4DC] bg-white hover:border-[#c7d7f4] hover:bg-[#f7f9ff]"
-                  }`}
-                >
-                  <span className="mt-0.5 shrink-0 text-[20px] leading-none">{RUBRO_ICONS[r]}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-[12px] font-bold ${isActive ? "text-[#2154d8]" : "text-[#2F3E46]"}`}>
-                      {cfg.label}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-[#9ca3af] leading-snug">{cfg.description}</p>
-                    <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#c4a87c]">
-                      default: {cfg.defaultVisualMode} · {cfg.defaultPrintFlow.replace("comprobante-", "c+")}
-                    </p>
-                  </div>
-                  {isActive && <div className="ml-auto shrink-0 mt-1 h-2 w-2 rounded-full bg-[#2154d8]" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── MODO VISUAL ── */}
-        <div>
-          <SectionLabel>Modo visual operacional</SectionLabel>
-          <p className="mt-1 mb-3 text-[11px] text-[#b0bac8]">
-            Independiente del rubro. Puede cambiarse también desde el panel de ventas.
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {VISUAL_MODES.map(m => {
-              const isActive = visualMode === m.id;
-              const isDefault = rubroConfig.defaultVisualMode === m.id;
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => setVisualMode(m.id)}
-                  className={`flex items-center gap-3 rounded-2xl border px-4 py-2.5 text-left transition active:scale-[0.98] ${
-                    isActive
-                      ? "border-[#2154d8]/30 bg-[#EDF4FF]"
-                      : "border-[#E9E4DC] bg-white hover:border-[#c7d7f4] hover:bg-[#f7f9ff]"
-                  }`}
-                >
-                  <div className={`h-2 w-2 shrink-0 rounded-full ${isActive ? "bg-[#2154d8]" : "bg-[#e4e9f0]"}`} />
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-[12px] font-semibold ${isActive ? "text-[#2154d8]" : "text-[#374151]"}`}>
-                      {m.label}
-                    </span>
-                    <span className="ml-2 text-[10.5px] text-[#9ca3af]">{m.desc}</span>
-                  </div>
-                  {isDefault && (
-                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-[#c4a87c]">
-                      default {rubroConfig.label}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── FLUJO IMPRESIÓN ── */}
-        <div>
-          <SectionLabel>Flujo de impresión</SectionLabel>
-          <p className="mt-1 mb-3 text-[11px] text-[#b0bac8]">
-            Presets operacionales. Independiente del rubro. La impresión RAW validada es source of truth.
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {PRINT_FLOWS.map(f => {
-              const isActive  = printFlow === f.id;
-              const isDefault = rubroConfig.defaultPrintFlow === f.id;
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => f.ready && setPrintFlow(f.id)}
-                  className={`flex items-center gap-3 rounded-2xl border px-4 py-2.5 text-left transition ${
-                    !f.ready
-                      ? "border-[#f1f4f7] bg-[#f8fafc] cursor-not-allowed opacity-50"
-                      : isActive
-                        ? "border-[#2154d8]/30 bg-[#EDF4FF] active:scale-[0.98]"
-                        : "border-[#E9E4DC] bg-white hover:border-[#c7d7f4] hover:bg-[#f7f9ff] active:scale-[0.98]"
-                  }`}
-                >
-                  <div className={`h-2 w-2 shrink-0 rounded-full ${isActive && f.ready ? "bg-[#2154d8]" : "bg-[#e4e9f0]"}`} />
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-[12px] font-semibold ${isActive && f.ready ? "text-[#2154d8]" : "text-[#374151]"}`}>
-                      {f.label}
-                    </span>
-                    <span className="ml-2 text-[10.5px] text-[#9ca3af]">{f.desc}</span>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-1.5">
-                    {isDefault && (
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-[#c4a87c]">
-                        default {rubroConfig.label}
-                      </span>
-                    )}
-                    {!f.ready && (
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-[#9ca3af]">pronto</span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── STATUS STRIP ── */}
-        <div className="rounded-2xl border border-[#E9E4DC] bg-[#f8fafc] px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Contexto activo</p>
-          <p className="mt-1 text-[11px] text-[#6b7280]">
-            {rubroConfig.label} · {rubroConfig.catalog.length}p · {visualMode} · {printFlow}
-          </p>
-        </div>
-
-        {/* ── DEV ONLY — nunca en producción ── */}
-        {import.meta.env.DEV && (
-          <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 flex flex-col gap-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Herramientas de testing</p>
-            <div className="flex flex-wrap gap-2">
+        {configSubView === "negocio" && (
+          <div className="flex flex-col gap-4 max-w-lg">
+            <p className="text-[11px] text-[#9ca3af]">
+              Nombre que aparece en impresiones, arqueos y comprobantes.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={nombreComercial}
+                onChange={e => setNombreComercial(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
+                maxLength={60}
+                autoFocus
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                placeholder="Nombre comercial"
+              />
               <button
-                onClick={() => {
-                  localStorage.removeItem("disateq.pos.usedCodes");
-                  localStorage.removeItem("disateq.pos.usedDate");
-                  window.location.reload();
-                }}
-                className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100 transition"
+                onClick={handleSaveNegocio}
+                disabled={!nombreComercial.trim()}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                  bizSaved
+                    ? "bg-[#45b356]/15 text-[#45b356]"
+                    : "bg-[#697387]/10 text-[#697387] hover:bg-[#697387]/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                }`}
               >
-                RESET CAJAS DÍA
-              </button>
-              <button
-                onClick={() => {
-                  const keys = [
-                    "disateq.pos.cashSession",
-                    "disateq.pos.usedCodes",
-                    "disateq.pos.usedDate",
-                    "disateq.pos.sessionStats",
-                    "disateq.pos.cashMoves",
-                    "disateq.pos.opLogs",
-                    "disateq.pos.correlatives",
-                    "disateq.pos.comprobantes",
-                    "disateq.pos.ui.closingStage",
-                    "disateq.pos.ui.contado",
-                  ];
-                  keys.forEach(k => localStorage.removeItem(k));
-                  window.location.reload();
-                }}
-                className="rounded-xl border border-red-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-red-600 hover:bg-red-50 transition"
-              >
-                RESET OPERACIONAL COMPLETO
+                {bizSaved ? <><Check size={12} strokeWidth={2.5} /> Aplicado</> : "Aplicar"}
               </button>
             </div>
-            <p className="text-[9px] text-amber-500 leading-snug">
-              Solo visible en modo DEV · RESET COMPLETO limpia sesión, caja, stats y stages.
+          </div>
+        )}
+
+        {/* ── OPERACIÓN ── */}
+        {configSubView === "operacion" && (
+          <div className="flex flex-col gap-4 max-w-sm">
+            <p className="text-[11px] text-[#9ca3af]">
+              PIN de autorización para apertura de cajas de contingencia.
             </p>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={ctgPin}
+                onChange={e => { setCtgPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setPinError(null); }}
+                onKeyDown={e => e.key === "Enter" && handleSaveOps()}
+                maxLength={8}
+                autoFocus
+                placeholder="4–8 dígitos"
+                className={`w-36 rounded-xl border bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:outline-none focus:ring-1 tracking-[0.3em] ${
+                  pinError
+                    ? "border-[#dc2626]/50 focus:border-[#dc2626]/50 focus:ring-[#dc2626]/20"
+                    : "border-[#E9E4DC] focus:border-[#697387]/40 focus:ring-[#697387]/20"
+                }`}
+              />
+              <button
+                onClick={handleSaveOps}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                  opsSaved
+                    ? "bg-[#45b356]/15 text-[#45b356]"
+                    : "bg-[#697387]/10 text-[#697387] hover:bg-[#697387]/20"
+                }`}
+              >
+                {opsSaved ? <><Check size={12} strokeWidth={2.5} /> Aplicado</> : "Aplicar"}
+              </button>
+            </div>
+            {pinError && <p className="text-[10.5px] text-[#dc2626]">{pinError}</p>}
+            <p className="text-[10px] text-[#b0bac8]">
+              Aplica al reiniciar · el turno activo mantiene el PIN con el que abrió.
+            </p>
+          </div>
+        )}
+
+        {/* ── RUBRO ── */}
+        {configSubView === "rubro" && (
+          <div className="flex flex-col gap-3 max-w-xl">
+            <p className="text-[11px] text-[#9ca3af]">
+              Define el catálogo activo y los defaults operacionales del turno.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {RUBRO_ORDER.map(r => {
+                const cfg      = RUBROS[r];
+                const isActive = rubro === r;
+                return (
+                  <button
+                    key={r}
+                    onClick={() => setRubro(r)}
+                    className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
+                      isActive
+                        ? "border-[#697387]/30 bg-[#697387]/8 shadow-[0_2px_6px_rgba(105,115,135,0.10)]"
+                        : "border-[#E9E4DC] bg-white hover:border-[#697387]/30 hover:bg-[#697387]/5"
+                    }`}
+                  >
+                    <span className="mt-0.5 shrink-0 text-[20px] leading-none">{RUBRO_ICONS[r]}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-[12px] font-bold ${isActive ? "text-[#3d4554]" : "text-[#2F3E46]"}`}>
+                        {cfg.label}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-[#9ca3af] leading-snug">{cfg.description}</p>
+                      <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-wide text-[#c4a87c]">
+                        default: {cfg.defaultVisualMode} · {cfg.defaultPrintFlow.replace("comprobante-", "c+")}
+                      </p>
+                    </div>
+                    {isActive && <div className="ml-auto shrink-0 mt-1 h-2 w-2 rounded-full bg-[#697387]" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── EXPERIENCIA ── */}
+        {configSubView === "experiencia" && (
+          <div className="flex flex-col gap-6 max-w-xl">
+
+            {/* modo visual */}
+            <div className="flex flex-col gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9ca3af]">Modo visual</p>
+              <div className="flex flex-col gap-1.5">
+                {VISUAL_MODES.map(m => {
+                  const isActive  = visualMode === m.id;
+                  const isDefault = rubroConfig.defaultVisualMode === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setVisualMode(m.id)}
+                      className={`flex items-center gap-3 rounded-2xl border px-4 py-2.5 text-left transition active:scale-[0.98] ${
+                        isActive
+                          ? "border-[#697387]/30 bg-[#697387]/8"
+                          : "border-[#E9E4DC] bg-white hover:border-[#697387]/30 hover:bg-[#697387]/5"
+                      }`}
+                    >
+                      <div className={`h-2 w-2 shrink-0 rounded-full ${isActive ? "bg-[#697387]" : "bg-[#e4e9f0]"}`} />
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[12px] font-semibold ${isActive ? "text-[#3d4554]" : "text-[#374151]"}`}>
+                          {m.label}
+                        </span>
+                        <span className="ml-2 text-[10.5px] text-[#9ca3af]">{m.desc}</span>
+                      </div>
+                      {isDefault && (
+                        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-[#c4a87c]">
+                          default {rubroConfig.label}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* flujo impresión */}
+            <div className="flex flex-col gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9ca3af]">Flujo de impresión</p>
+              <div className="flex flex-col gap-1.5">
+                {PRINT_FLOWS.map(f => {
+                  const isActive  = printFlow === f.id;
+                  const isDefault = rubroConfig.defaultPrintFlow === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => f.ready && setPrintFlow(f.id)}
+                      className={`flex items-center gap-3 rounded-2xl border px-4 py-2.5 text-left transition ${
+                        !f.ready
+                          ? "border-[#f1f4f7] bg-[#f8fafc] cursor-not-allowed opacity-50"
+                          : isActive
+                            ? "border-[#697387]/30 bg-[#697387]/8 active:scale-[0.98]"
+                            : "border-[#E9E4DC] bg-white hover:border-[#697387]/30 hover:bg-[#697387]/5 active:scale-[0.98]"
+                      }`}
+                    >
+                      <div className={`h-2 w-2 shrink-0 rounded-full ${isActive && f.ready ? "bg-[#697387]" : "bg-[#e4e9f0]"}`} />
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[12px] font-semibold ${isActive && f.ready ? "text-[#3d4554]" : "text-[#374151]"}`}>
+                          {f.label}
+                        </span>
+                        <span className="ml-2 text-[10.5px] text-[#9ca3af]">{f.desc}</span>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        {isDefault && (
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-[#c4a87c]">
+                            default {rubroConfig.label}
+                          </span>
+                        )}
+                        {!f.ready && (
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-[#9ca3af]">pronto</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* status strip */}
+            <div className="rounded-2xl border border-[#E9E4DC] bg-[#f8fafc] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Contexto activo</p>
+              <p className="mt-1 text-[11px] text-[#6b7280]">
+                {rubroConfig.label} · {rubroConfig.catalog.length}p · {visualMode} · {printFlow}
+              </p>
+            </div>
+
+            {/* DEV tools */}
+            {import.meta.env.DEV && (
+              <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 flex flex-col gap-2">
+                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600">DEV · Herramientas de testing</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("disateq.pos.usedCodes");
+                      localStorage.removeItem("disateq.pos.usedDate");
+                      window.location.reload();
+                    }}
+                    className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100 transition"
+                  >
+                    RESET CAJAS DÍA
+                  </button>
+                  <button
+                    onClick={() => {
+                      const keys = [
+                        "disateq.pos.cashSession",
+                        "disateq.pos.usedCodes",
+                        "disateq.pos.usedDate",
+                        "disateq.pos.sessionStats",
+                        "disateq.pos.cashMoves",
+                        "disateq.pos.opLogs",
+                        "disateq.pos.correlatives",
+                        "disateq.pos.comprobantes",
+                        "disateq.pos.ui.closingStage",
+                        "disateq.pos.ui.contado",
+                      ];
+                      keys.forEach(k => localStorage.removeItem(k));
+                      window.location.reload();
+                    }}
+                    className="rounded-xl border border-red-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-red-600 hover:bg-red-50 transition"
+                  >
+                    RESET OPERACIONAL COMPLETO
+                  </button>
+                </div>
+                <p className="text-[9px] text-amber-500 leading-snug">
+                  Solo visible en modo DEV · RESET COMPLETO limpia sesión, caja, stats y stages.
+                </p>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -309,11 +335,4 @@ export function ConfigWorkspace() {
     </section>
   );
 }
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9ca3af]">{children}</p>
-  );
-}
-
 
