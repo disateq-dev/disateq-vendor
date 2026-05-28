@@ -18,6 +18,10 @@ import {
 } from "./services/cash-rules.service";
 import { loadBusinessConfig } from "../../config/business";
 import { loadOpsConfig } from "../../config/ops";
+import {
+  recordSessionOpen, recordSessionClose, getCurrentSessionId,
+  loadSessionHistory, type SessionEntry,
+} from "./services/session-history.service";
 import { moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 
 // ── helpers ────────────────────────────────────────────────────
@@ -234,6 +238,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       return raw ? (JSON.parse(raw) as ArqueoData) : null;
     } catch { return null; }
   });
+  const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>(() => loadSessionHistory());
   const [selectedCode,    setSelectedCode]    = useState<string>(() => suggestedCashBox?.code ?? "100");
   const [aperturaInput,   setAperturaInput]   = useState("");
   const [aperturaMotivo,  setAperturaMotivo]  = useState("");
@@ -482,6 +487,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       if (!selectedBox.available) return;
       openCashSession(selectedBox.code, amt, aperturaMotivo.trim() || undefined, aperturaRefOp.trim() || undefined);
     }
+    const sid = Date.now().toString();
+    recordSessionOpen(sid, selectedBox.code, operatorName, new Date().toISOString());
+    setSessionHistory(loadSessionHistory());
     onOpened?.();
   }
 
@@ -612,6 +620,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     // Persistir snapshot del arqueo antes de destruir la sesión — permite reimprimir si el print falla
     try { localStorage.setItem("disateq.pos.lastArqueo", JSON.stringify(arqueo)); } catch { /* quota */ }
     setLastArqueo(arqueo);
+    const closeSid = getCurrentSessionId();
+    if (closeSid) {
+      const closeSignal = moneyIsZero(diferencia) ? "ok" as const : "warn" as const;
+      recordSessionClose(closeSid, new Date().toISOString(), closeSignal);
+      setSessionHistory(loadSessionHistory());
+    }
     closeCashSession();
     setClosingStage(0);
     setContadoEfe(""); setContadoYape(""); setContadoTar("");
@@ -980,6 +994,43 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   Reimprimir arqueo anterior · CAJA {lastArqueo.cashBoxCode}
                 </button>
               )}
+
+              {/* Continuidad operacional — historial reciente del bloque */}
+              {(() => {
+                const blockEntries = sessionHistory
+                  .filter(e => e.boxCode[0] === operatorBlockPrefix)
+                  .slice(0, 5);
+                if (blockEntries.length === 0) return null;
+                const fmtTime = (iso: string) =>
+                  new Date(iso).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+                const fmtDay = (iso: string) => {
+                  const d = new Date(iso);
+                  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+                };
+                return (
+                  <div className="flex flex-col gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#f8fafc] px-3 py-2.5">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Actividad reciente</span>
+                    {blockEntries.map(e => (
+                      <div key={e.id} className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                          <span className="text-[9.5px] font-bold text-[#374151] shrink-0">C{e.boxCode}</span>
+                          <span className="text-[#d1d5db] shrink-0">·</span>
+                          <span className="text-[9px] tabular-nums text-[#6b7280] shrink-0">{fmtDay(e.openedAt)} {fmtTime(e.openedAt)}</span>
+                          {e.closedAt && (
+                            <>
+                              <span className="text-[#d1d5db] shrink-0">→</span>
+                              <span className="text-[9px] tabular-nums text-[#6b7280] shrink-0">{fmtTime(e.closedAt)}</span>
+                            </>
+                          )}
+                        </div>
+                        {e.closeSignal === "ok"   && <span className="text-[9px] font-bold text-emerald-600 shrink-0">✓ correcto</span>}
+                        {e.closeSignal === "warn"  && <span className="text-[9px] font-bold text-amber-500  shrink-0">⚠ revisar</span>}
+                        {e.closeSignal === null    && <span className="text-[9px] font-semibold text-[#9ca3af] shrink-0">~ pendiente</span>}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </>
 
           ) : closingStage === 0 ? (
