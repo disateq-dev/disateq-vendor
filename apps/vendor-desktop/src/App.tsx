@@ -13,9 +13,9 @@ import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento";
-export type CashSubView             = "turno" | "cajas" | "operadores" | "corregir-arqueo";
+export type CashSubView             = "turno" | "cajas" | "corregir-arqueo";
 export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
-export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "roles" | "capacidades";
+export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "roles" | "capacidades";
 
 function AppRoot() {
   const { activeOperator } = usePOS();

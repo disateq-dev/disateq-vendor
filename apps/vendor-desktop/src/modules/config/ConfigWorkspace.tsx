@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users } from "lucide-react";
+import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users, UserCog } from "lucide-react";
 import { CapacidadesWorkspace } from "./CapacidadesWorkspace";
 import { RolesOperacionalesWorkspace } from "./RolesOperacionalesWorkspace";
+import { OperadoresWorkspace } from "../cash/OperadoresWorkspace";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
 import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
@@ -65,6 +66,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     operacion:   <ShieldCheck size={13} strokeWidth={2} className="text-[#697387]" />,
     rubro:       <Layers      size={13} strokeWidth={2} className="text-[#697387]" />,
     experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#697387]" />,
+    operadores:  <UserCog     size={13} strokeWidth={2} className="text-[#697387]" />,
     roles:       <Users       size={13} strokeWidth={2} className="text-[#697387]" />,
     capacidades: <Sliders     size={13} strokeWidth={2} className="text-[#697387]" />,
   };
@@ -73,10 +75,12 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     operacion:   "Operación",
     rubro:       "Rubro",
     experiencia: "Experiencia",
+    operadores:  "Operadores",
     roles:       "Roles operacionales",
     capacidades: "Capacidades operacionales",
   };
 
+  if (configSubView === "operadores")  return <OperadoresWorkspace />;
   if (configSubView === "roles")       return <RolesOperacionalesWorkspace />;
   if (configSubView === "capacidades") return <CapacidadesWorkspace />;
 

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks, HandCoins } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { CajasWorkspace } from "./CajasWorkspace";
-import { OperadoresWorkspace } from "./OperadoresWorkspace";
 import { CorregirArqueoWorkspace } from "./CorregirArqueoWorkspace";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
 import {
@@ -346,7 +345,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const vendidoAmountRef = useRef<HTMLInputElement>(null);
   const vendidoMotivoRef = useRef<HTMLInputElement>(null);
   // ── movements state ── Área 2: FONDO DE CAMBIO ───────────────
-  const [fondoSubTab,   setFondoSubTab]   = useState<"apertura" | "externo">("apertura");
+  const [fondoSubTab,   setFondoSubTab]   = useState<"retiro" | "deposito">("retiro");
   const [fondoAmount,   setFondoAmount]   = useState("");
   const [fondoMotivo,   setFondoMotivo]   = useState("");
   const [fondoObs,      setFondoObs]      = useState("");
@@ -372,7 +371,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   useEffect(() => {
     setMovPanel("vendido");
     setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null);
-    setFondoSubTab("apertura"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
+    setFondoSubTab("retiro"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
     setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
     setResolvingExternoId(null);
@@ -536,11 +535,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   function handleAddFondo() {
     if (!canAddFondo) return;
-    const amt    = fondoTotalAmt;
-    const mType  = fondoSubTab === "externo" ? "ingreso" as const : "egreso" as const;
-    const fa     = fondoSubTab === "apertura" ? amt : 0;
-    const obs    = fondoObs.trim() || undefined;
-    const move = addCashMove(mType, amt, fondoMotivo.trim(), fondoSubTab, fa, 0, obs, undefined, "por_regularizar");
+    const amt        = fondoTotalAmt;
+    const sourceType = fondoSubTab === "deposito" ? "externo" as const : "apertura" as const;
+    const mType      = fondoSubTab === "deposito" ? "ingreso" as const : "egreso" as const;
+    const fa         = fondoSubTab === "retiro" ? amt : 0;
+    const obs        = fondoObs.trim() || undefined;
+    const move = addCashMove(mType, amt, fondoMotivo.trim(), sourceType, fa, 0, obs, undefined, "por_regularizar");
     setLastFondoMove(move);
     setFondoAmount(""); setFondoMotivo(""); setFondoObs("");
     showNotice(`Movimiento fondo registrado · S/ ${amt.toFixed(2)}`);
@@ -693,7 +693,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // ── sub-view routing ─────────────────────────────────────────
 
   if (cashSubView === "cajas")           return <CajasWorkspace />;
-  if (cashSubView === "operadores")      return <OperadoresWorkspace />;
   if (cashSubView === "corregir-arqueo") return <CorregirArqueoWorkspace />;
 
   // ── render ────────────────────────────────────────────────────
@@ -1969,17 +1968,17 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               }`}>
                 <div className="flex flex-col gap-2.5 px-4 py-4">
 
-                  {/* Mini-selector: SALIDA / PRÉSTAMO */}
+                  {/* Mini-selector: RETIRO / DEPÓSITO */}
                   <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                     {([
-                      { tab: "apertura" as const, label: "SALIDA DEL FONDO" },
-                      { tab: "externo"  as const, label: "PRÉSTAMO AL FONDO" },
+                      { tab: "retiro"   as const, label: "RETIRO" },
+                      { tab: "deposito" as const, label: "DEPÓSITO" },
                     ]).map(({ tab, label }) => (
                       <button key={tab}
                         onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
                         className={`flex-1 rounded-[9px] py-1.5 text-[10px] font-bold uppercase tracking-wide transition ${
                           fondoSubTab === tab
-                            ? tab === "apertura"
+                            ? tab === "retiro"
                               ? "bg-amber-500 text-white shadow-sm"
                               : "bg-[#2154d8] text-white shadow-sm"
                             : "text-[#9ca3af] hover:text-[#374151]"
@@ -1990,18 +1989,39 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     ))}
                   </div>
 
-                  {fondoSubTab === "apertura" ? (
+                  {fondoSubTab === "retiro" ? (
                     <p className="text-[10px] text-amber-600 font-semibold px-1">
-                      ↓ Salida del fondo de cambio · quedará pendiente devolver
+                      ↓ Retiro del fondo de cambio · quedará pendiente devolver
                     </p>
                   ) : (
                     <p className="text-[10px] text-[#2154d8] font-semibold px-1">
-                      ↑ Dinero que ingresó al fondo de cambio · pendiente devolver o integrar al fondo
+                      ↑ Depósito al fondo de cambio · pendiente devolver o integrar
                     </p>
                   )}
 
+                  {/* Chips de motivo rápido */}
+                  <div className="flex flex-wrap gap-1">
+                    {(fondoSubTab === "retiro"
+                      ? ["Préstamo temporal","Cambio para otra caja","Compra operacional menor","Contingencia","Retiro autorizado"]
+                      : ["Devolución préstamo","Reintegro operacional","Ingreso de cambio","Regularización","Devolución contingencia"]
+                    ).map(chip => (
+                      <button key={chip}
+                        onClick={() => setFondoMotivo(chip)}
+                        className={`rounded-full border px-2 py-0.5 text-[9.5px] font-semibold transition ${
+                          fondoMotivo === chip
+                            ? fondoSubTab === "retiro"
+                              ? "border-amber-400 bg-amber-50 text-amber-700"
+                              : "border-[#2154d8]/40 bg-[#eff4ff] text-[#2154d8]"
+                            : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#c0cad4] hover:text-[#374151]"
+                        }`}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="flex items-center gap-1.5">
-                    <span className={`shrink-0 text-[13px] font-bold ${fondoSubTab === "externo" ? "text-emerald-500" : "text-amber-500"}`}>S/</span>
+                    <span className={`shrink-0 text-[13px] font-bold ${fondoSubTab === "deposito" ? "text-emerald-500" : "text-amber-500"}`}>S/</span>
                     <input
                       ref={fondoAmountRef}
                       type="number"
@@ -2012,7 +2032,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       min="0.01"
                       step="0.01"
                       className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
-                        fondoSubTab === "externo"
+                        fondoSubTab === "deposito"
                           ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
                           : "border-amber-300 focus:border-amber-500 focus:ring-amber-400/15"
                       }`}
@@ -2025,7 +2045,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     value={fondoMotivo}
                     onChange={e => setFondoMotivo(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
-                    placeholder={fondoSubTab === "apertura" ? "Ej: Saqué para buscar cambio, sencillo apartado..." : "Ej: Monedas prestadas por [nombre]..."}
+                    placeholder={fondoSubTab === "retiro" ? "Ej: Préstamo temporal, sencillo para cambio..." : "Ej: Devolución préstamo, reintegro operacional..."}
                     maxLength={120}
                     className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                   />
@@ -2044,13 +2064,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     disabled={!canAddFondo}
                     className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                       canAddFondo
-                        ? fondoSubTab === "apertura"
+                        ? fondoSubTab === "retiro"
                           ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
                           : "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
                         : "bg-[#2154d8]/[0.15] text-[#2154d8]/50 cursor-not-allowed"
                     }`}
                   >
-                    {fondoSubTab === "apertura" ? "REGISTRAR SALIDA" : "REGISTRAR PRÉSTAMO"}
+                    {fondoSubTab === "retiro" ? "REGISTRAR RETIRO" : "REGISTRAR DEPÓSITO"}
                   </button>
 
                   {lastFondoMove && (
@@ -2120,7 +2140,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
                       const dd = `${String(ts.getDate()).padStart(2, "0")}/${String(ts.getMonth() + 1).padStart(2, "0")}`;
-                      const srcLabel = m.sourceType === "apertura" ? "fondo de cambio" : m.sourceType === "externo" ? "préstamo al fondo" : "caja del día";
+                      const srcLabel = m.sourceType === "apertura" ? "retiro · fondo cambio" : m.sourceType === "externo" ? "depósito al fondo" : "caja del día";
                       const linkedRepos: CashMove[] = m.type === "egreso" ? (reposByEgresoId[m.id] ?? []) : [];
                       const isRepoing          = reposingMoveId === m.id;
                       const isEditing          = editingMoveId === m.id;

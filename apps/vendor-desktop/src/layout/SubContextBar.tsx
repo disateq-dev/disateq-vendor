@@ -21,7 +21,6 @@ const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", 
 const CASH_TABS: { key: CashSubView; label: string }[] = [
   { key: "turno",           label: "Gestión Turno"  },
   { key: "cajas",           label: "Cajas"           },
-  { key: "operadores",      label: "Operadores"      },
   { key: "corregir-arqueo", label: "Corregir arqueo" },
 ];
 
@@ -30,6 +29,7 @@ const CONFIG_TABS: { key: ConfigSubView; label: string }[] = [
   { key: "operacion",   label: "Operación"                },
   { key: "rubro",       label: "Rubro"                    },
   { key: "experiencia", label: "Experiencia"              },
+  { key: "operadores",  label: "Operadores"               },
   { key: "roles",       label: "Roles operacionales"      },
   { key: "capacidades", label: "Capacidades operacionales"},
 ];
