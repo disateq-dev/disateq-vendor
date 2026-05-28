@@ -4,6 +4,7 @@ import { type CashSubView } from "../../App";
 import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
 import { OperadoresWorkspace } from "./OperadoresWorkspace";
+import { CorregirArqueoWorkspace } from "./CorregirArqueoWorkspace";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
 import {
   printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
@@ -685,11 +686,17 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, closingStage, contadoValid]);
 
+  // Refresca historial al volver a Gestión Turno desde Corregir arqueo
+  useEffect(() => {
+    if (cashSubView === "turno") setSessionHistory(loadSessionHistory());
+  }, [cashSubView]);
+
   // ── sub-view routing ─────────────────────────────────────────
 
-  if (cashSubView === "roles")      return <RolesWorkspace />;
-  if (cashSubView === "cajas")      return <CajasWorkspace />;
-  if (cashSubView === "operadores") return <OperadoresWorkspace />;
+  if (cashSubView === "roles")           return <RolesWorkspace />;
+  if (cashSubView === "cajas")           return <CajasWorkspace />;
+  if (cashSubView === "operadores")      return <OperadoresWorkspace />;
+  if (cashSubView === "corregir-arqueo") return <CorregirArqueoWorkspace />;
 
   // ── render ────────────────────────────────────────────────────
 

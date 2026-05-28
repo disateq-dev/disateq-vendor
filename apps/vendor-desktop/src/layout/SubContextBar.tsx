@@ -19,10 +19,11 @@ interface SubContextBarProps {
 const WITH_SUBOPTIONS = new Set<ActiveModule>(["sales", "comprobantes", "cash", "abastecimiento", "config"]);
 
 const CASH_TABS: { key: CashSubView; label: string }[] = [
-  { key: "turno",      label: "Gestión Turno" },
-  { key: "roles",      label: "Roles"         },
-  { key: "cajas",      label: "Cajas"         },
-  { key: "operadores", label: "Operadores"    },
+  { key: "turno",           label: "Gestión Turno"  },
+  { key: "roles",           label: "Roles"           },
+  { key: "cajas",           label: "Cajas"           },
+  { key: "operadores",      label: "Operadores"      },
+  { key: "corregir-arqueo", label: "Corregir arqueo" },
 ];
 
 const CONFIG_TABS: { key: ConfigSubView; label: string }[] = [

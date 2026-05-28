@@ -6,6 +6,15 @@ const MAX_RECORDS    = 50;
 
 export type CloseSignal = "ok" | "warn";
 
+export type CorrectionRecord = {
+  correctedBy: string;
+  correctedAt: string;           // ISO
+  motivo:      string;
+  accion:      "regularizar_cierre" | "documentar_diferencia";
+  prevSignal:  CloseSignal | null;
+  newSignal:   CloseSignal;
+};
+
 export type SessionEntry = {
   id:          string;
   boxCode:     string;
@@ -15,6 +24,7 @@ export type SessionEntry = {
   closedAt:    string | null;
   closeSignal: CloseSignal | null;
   arqueo:      ArqueoData | null; // snapshot para reimpresión
+  correction?: CorrectionRecord; // regularización excepcional
 };
 
 export function loadSessionHistory(): SessionEntry[] {
@@ -31,6 +41,7 @@ export function loadSessionHistory(): SessionEntry[] {
       closedAt:    e.closedAt    ?? null,
       closeSignal: e.closeSignal ?? null,
       arqueo:      e.arqueo      ?? null,
+      ...(e.correction ? { correction: e.correction } : {}),
     }));
   } catch { return []; }
 }
@@ -62,4 +73,18 @@ export function recordSessionClose(
 
 export function getCurrentSessionId(): string | null {
   return localStorage.getItem(LS_CURRENT_SID);
+}
+
+export function recordSessionCorrection(
+  sid: string,
+  correction: CorrectionRecord,
+  newSignal: CloseSignal,
+): void {
+  try {
+    const hist = loadSessionHistory();
+    const updated = hist.map(e =>
+      e.id === sid ? { ...e, closeSignal: newSignal, correction } : e,
+    );
+    localStorage.setItem(LS_HISTORY, JSON.stringify(updated));
+  } catch { /* quota */ }
 }
