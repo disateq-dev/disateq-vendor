@@ -1130,7 +1130,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
         <>
 
           {/* CENTER: CAJAS DISPONIBLES — ancho fijo */}
-          <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+          <div className="flex w-[360px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
               <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS DISPONIBLES</span>
