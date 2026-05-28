@@ -7,16 +7,6 @@ import {
 import { usePOS } from "../../context/POSContext";
 import type { OperatorRecord } from "../../domains/operator/operator.store";
 
-// ── constantes ─────────────────────────────────────────────────────────────
-
-const ROLES_REF = [
-  { code: "VEN", name: "Vendedor"      },
-  { code: "ADM", name: "Administrador" },
-  { code: "GST", name: "Gestor"        },
-  { code: "CNT", name: "Contador"      },
-  { code: "SPT", name: "Soporte"       },
-];
-
 const BLOCKS_REF = [100, 200, 300, 400, 500];
 
 const BAJA_REASONS = [
@@ -222,6 +212,7 @@ function PanelGestion({ selectedId, onSelect }: {
   const {
     operators, isOpen, cashBox, cashSession, resetOperatorPin,
     createOperator, updateOperatorData, setOperatorStatus, releaseOperatorBlock,
+    roles,
   } = usePOS();
 
   const [panel,       setPanel]       = useState<GestionPanel>("view");
@@ -282,7 +273,7 @@ function PanelGestion({ selectedId, onSelect }: {
           code:      editCode.trim().toUpperCase(),
           name:      editName.trim().toUpperCase(),
           roleCode:  editRole,
-          roleName:  ROLES_REF.find(r => r.code === editRole)?.name ?? editRole,
+          roleName:  roles.find(r => r.code === editRole)?.name ?? editRole,
           blockBase: editBlock,
         });
         onSelect(op.id); setPanel("view");
@@ -294,7 +285,7 @@ function PanelGestion({ selectedId, onSelect }: {
         code:      editCode.trim().toUpperCase(),
         name:      editName.trim().toUpperCase(),
         roleCode:  editRole,
-        roleName:  ROLES_REF.find(r => r.code === editRole)?.name ?? editRole,
+        roleName:  roles.find(r => r.code === editRole)?.name ?? editRole,
         blockBase: editBlock,
       });
       if (!ok) { setBlockError(`Bloque ${editBlock} ya asignado a otro operador activo`); return; }
@@ -420,7 +411,7 @@ function PanelGestion({ selectedId, onSelect }: {
                 <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">ROL</span>
                 <p className="text-[11px] font-semibold text-[#374151]">
                   <span className="mr-1 rounded bg-[#EBF4FA] px-1 py-0.5 text-[9px] font-bold text-[#1a5f7a]">{selected.roleCode}</span>
-                  {ROLES_REF.find(r => r.code === selected.roleCode)?.name ?? selected.roleCode}
+                  {roles.find(r => r.code === selected.roleCode)?.name ?? selected.roleCode}
                 </p>
               </div>
               <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
@@ -573,7 +564,7 @@ function PanelGestion({ selectedId, onSelect }: {
                 <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Rol</span>
                 <select value={editRole} onChange={e => setEditRole(e.target.value)}
                   className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#2154d8]">
-                  {ROLES_REF.map(r => <option key={r.code} value={r.code}>{r.code} — {r.name}</option>)}
+                  {roles.filter(r => r.active).map(r => <option key={r.code} value={r.code}>{r.code} — {r.name}</option>)}
                 </select>
               </div>
               <div className="flex flex-1 flex-col gap-0.5">

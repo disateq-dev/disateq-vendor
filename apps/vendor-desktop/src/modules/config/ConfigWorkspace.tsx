@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders } from "lucide-react";
+import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users } from "lucide-react";
 import { CapacidadesWorkspace } from "./CapacidadesWorkspace";
+import { RolesOperacionalesWorkspace } from "./RolesOperacionalesWorkspace";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
 import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
@@ -64,6 +65,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     operacion:   <ShieldCheck size={13} strokeWidth={2} className="text-[#697387]" />,
     rubro:       <Layers      size={13} strokeWidth={2} className="text-[#697387]" />,
     experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#697387]" />,
+    roles:       <Users       size={13} strokeWidth={2} className="text-[#697387]" />,
     capacidades: <Sliders     size={13} strokeWidth={2} className="text-[#697387]" />,
   };
   const SUB_LABELS: Record<ConfigSubView, string> = {
@@ -71,9 +73,11 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     operacion:   "Operación",
     rubro:       "Rubro",
     experiencia: "Experiencia",
+    roles:       "Roles operacionales",
     capacidades: "Capacidades operacionales",
   };
 
+  if (configSubView === "roles")       return <RolesOperacionalesWorkspace />;
   if (configSubView === "capacidades") return <CapacidadesWorkspace />;
 
   return (

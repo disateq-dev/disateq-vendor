@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks, HandCoins } from "lucide-react";
 import { type CashSubView } from "../../App";
-import { RolesWorkspace } from "./RolesWorkspace";
 import { CajasWorkspace } from "./CajasWorkspace";
 import { OperadoresWorkspace } from "./OperadoresWorkspace";
 import { CorregirArqueoWorkspace } from "./CorregirArqueoWorkspace";
@@ -693,7 +692,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // ── sub-view routing ─────────────────────────────────────────
 
-  if (cashSubView === "roles")           return <RolesWorkspace />;
   if (cashSubView === "cajas")           return <CajasWorkspace />;
   if (cashSubView === "operadores")      return <OperadoresWorkspace />;
   if (cashSubView === "corregir-arqueo") return <CorregirArqueoWorkspace />;

@@ -4,6 +4,7 @@ import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
 import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities } from "../domains/operator/operator.store";
+import { type RoleRecord, loadRoles, saveRoles, setRoleCapabilities, isRoleCodeTaken } from "../domains/operator/roles.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -423,6 +424,11 @@ interface POSContextValue {
   assignOperatorBlock: (id: string, blockBase: number) => boolean;
   releaseOperatorBlock: (id: string) => void;
   updateOperatorCapabilities: (id: string, capabilities: string[]) => void;
+  roles: RoleRecord[];
+  createRole: (data: { code: string; name: string; description: string }) => RoleRecord;
+  updateRoleData: (id: string, data: { code: string; name: string; description: string }) => boolean;
+  setRoleActive: (id: string, active: boolean) => void;
+  updateRoleCapabilities: (id: string, capabilities: string[]) => void;
   rubro: Rubro;
   setRubro: (r: Rubro) => void;
   visualMode: VisualMode;
@@ -649,6 +655,53 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const updated = setCapabilities(operatorsRef.current, id, capabilities);
     saveOperators(updated);
     setOperators(updated);
+  }, []);
+
+  const [roles, setRoles] = useState<RoleRecord[]>(loadRoles);
+  const rolesRef = useRef(roles);
+  rolesRef.current = roles;
+
+  const createRole = useCallback((data: { code: string; name: string; description: string }): RoleRecord => {
+    const code = data.code.trim().toUpperCase();
+    if (isRoleCodeTaken(rolesRef.current, code)) throw new Error(`Código ${code} ya existe`);
+    const role: RoleRecord = {
+      id: `role-${Date.now()}`,
+      code,
+      name: data.name.trim(),
+      description: data.description.trim(),
+      capabilities: [],
+      active: true,
+      createdAt: new Date().toISOString(),
+      createdBy: activeOperatorRef.current?.name ?? "SISTEMA",
+    };
+    const updated = [...rolesRef.current, role];
+    saveRoles(updated);
+    setRoles(updated);
+    return role;
+  }, []);
+
+  const updateRoleData = useCallback((id: string, data: { code: string; name: string; description: string }): boolean => {
+    const code = data.code.trim().toUpperCase();
+    if (isRoleCodeTaken(rolesRef.current, code, id)) return false;
+    const updated = rolesRef.current.map(r => r.id === id
+      ? { ...r, code, name: data.name.trim(), description: data.description.trim() }
+      : r
+    );
+    saveRoles(updated);
+    setRoles(updated);
+    return true;
+  }, []);
+
+  const setRoleActive = useCallback((id: string, active: boolean): void => {
+    const updated = rolesRef.current.map(r => r.id === id ? { ...r, active } : r);
+    saveRoles(updated);
+    setRoles(updated);
+  }, []);
+
+  const updateRoleCapabilities = useCallback((id: string, capabilities: string[]): void => {
+    const updated = setRoleCapabilities(rolesRef.current, id, capabilities);
+    saveRoles(updated);
+    setRoles(updated);
   }, []);
 
   const addComprobante = useCallback((data: {
@@ -925,6 +978,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       sessionNotice, showNotice,
       operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin, changeOperatorPinById, resetOperatorPin,
       createOperator, updateOperatorData, setOperatorStatus, assignOperatorBlock, releaseOperatorBlock, updateOperatorCapabilities,
+      roles, createRole, updateRoleData, setRoleActive, updateRoleCapabilities,
       rubro, setRubro,
       visualMode, setVisualMode,
       printFlow, setPrintFlow,
