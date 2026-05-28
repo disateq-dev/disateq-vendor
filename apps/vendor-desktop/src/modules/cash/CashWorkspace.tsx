@@ -488,7 +488,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
       openCashSession(selectedBox.code, amt, aperturaMotivo.trim() || undefined, aperturaRefOp.trim() || undefined);
     }
     const sid = Date.now().toString();
-    recordSessionOpen(sid, selectedBox.code, operatorName, new Date().toISOString());
+    const boxLabel =
+      selectedBox.type === "normal"        ? "PRINCIPAL"     :
+      selectedBox.type === "contingency-1" ? "SECUNDARIA 01" :
+      selectedBox.type === "contingency-2" ? "SECUNDARIA 02" :
+      "CONTINGENCIA";
+    recordSessionOpen(sid, selectedBox.code, boxLabel, operatorName, new Date().toISOString());
     setSessionHistory(loadSessionHistory());
     onOpened?.();
   }
@@ -623,7 +628,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     const closeSid = getCurrentSessionId();
     if (closeSid) {
       const closeSignal = moneyIsZero(diferencia) ? "ok" as const : "warn" as const;
-      recordSessionClose(closeSid, new Date().toISOString(), closeSignal);
+      recordSessionClose(closeSid, new Date().toISOString(), closeSignal, arqueo);
       setSessionHistory(loadSessionHistory());
     }
     closeCashSession();
@@ -1198,12 +1203,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   <div className="min-h-0 flex-1 overflow-y-auto">
 
                     {/* Cabecera de columnas */}
-                    <div className="sticky top-0 z-10 grid grid-cols-[56px_1fr_110px_80px_80px] gap-x-3 border-b border-[#f0f4f8] bg-[#F8FAFB] px-4 py-2">
+                    <div className="sticky top-0 z-10 grid grid-cols-[52px_1fr_110px_72px_82px_32px] gap-x-3 border-b border-[#f0f4f8] bg-[#F8FAFB] px-4 py-2">
                       <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Caja</span>
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Operador</span>
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Función</span>
                       <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Apertura</span>
                       <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Cierre</span>
-                      <span className="text-right text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Estado</span>
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Estado</span>
+                      <span />
                     </div>
 
                     {/* Filas */}
@@ -1211,17 +1217,17 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       {blockEntries.map(e => (
                         <div
                           key={e.id}
-                          className="grid grid-cols-[56px_1fr_110px_80px_80px] gap-x-3 px-4 py-2.5 hover:bg-[#f8fafc] transition-colors"
+                          className="grid grid-cols-[52px_1fr_110px_72px_82px_32px] items-center gap-x-3 px-4 py-2.5 hover:bg-[#f8fafc] transition-colors"
                         >
                           <span className="text-[11px] font-bold tabular-nums text-[#1a5f7a]">C{e.boxCode}</span>
-                          <span className="truncate text-[11px] font-semibold text-[#374151]">{e.operator}</span>
+                          <span className="truncate text-[10.5px] font-semibold text-[#374151]">{e.boxLabel}</span>
                           <span className="text-[10.5px] tabular-nums text-[#6b7280]">
                             {fmtDay(e.openedAt)} {fmtTime(e.openedAt)}
                           </span>
                           <span className="text-[10.5px] tabular-nums text-[#6b7280]">
                             {e.closedAt ? `→ ${fmtTime(e.closedAt)}` : <span className="text-[#d1d5db]">—</span>}
                           </span>
-                          <div className="flex justify-end">
+                          <div className="flex justify-start">
                             {e.closeSignal === "ok"  && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
                                 ✓ correcto
@@ -1236,6 +1242,17 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                               <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f6f9] px-2 py-0.5 text-[9px] font-semibold text-[#9ca3af]">
                                 ~ pendiente
                               </span>
+                            )}
+                          </div>
+                          <div className="flex justify-end">
+                            {e.arqueo && (
+                              <button
+                                onClick={() => printArqueoThermal("TIQUE", e.arqueo!).catch(() => printArqueo(e.arqueo!))}
+                                title="Reimprimir arqueo"
+                                className="flex h-6 w-6 items-center justify-center rounded-md text-[#c0cad4] transition hover:bg-[#f0f4f8] hover:text-[#374151]"
+                              >
+                                <Printer size={12} strokeWidth={2} />
+                              </button>
                             )}
                           </div>
                         </div>
