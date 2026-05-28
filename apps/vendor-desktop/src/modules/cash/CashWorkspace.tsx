@@ -1131,9 +1131,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
               <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS DISPONIBLES</span>
-              <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#2A7CA8]">
-                {operatorBlockPrefix}00
-              </span>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3">
               <div className="mb-1.5 px-1">
@@ -1169,6 +1166,9 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             const blockEntries = sessionHistory
               .filter(e => e.boxCode[0] === operatorBlockPrefix)
               .slice(0, 20);
+            // Para entradas antiguas sin arqueo guardado, usar lastArqueo si coincide la caja
+            const resolveArqueo = (e: (typeof blockEntries)[number]) =>
+              e.arqueo ?? (lastArqueo && lastArqueo.cashBoxCode === e.boxCode && e.closedAt ? lastArqueo : null);
             return (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/30 bg-[#FDFCF9]">
 
@@ -1176,9 +1176,6 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
                   <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
                   <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ACTIVIDAD RECIENTE</span>
-                  <span className="ml-auto text-[10px] font-semibold uppercase tracking-widest text-[#2A7CA8]">
-                    BLOQUE {operatorBlockPrefix}00
-                  </span>
                 </div>
 
                 {blockEntries.length === 0 ? (
@@ -1237,15 +1234,18 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                             )}
                           </div>
                           <div className="flex justify-end">
-                            {e.arqueo && (
-                              <button
-                                onClick={() => printArqueoThermal("TIQUE", e.arqueo!).catch(() => printArqueo(e.arqueo!))}
-                                title="Reimprimir arqueo"
-                                className="flex h-6 w-6 items-center justify-center rounded-md text-[#c0cad4] transition hover:bg-[#f0f4f8] hover:text-[#374151]"
-                              >
-                                <Printer size={12} strokeWidth={2} />
-                              </button>
-                            )}
+                            {(() => {
+                              const arq = resolveArqueo(e);
+                              return arq ? (
+                                <button
+                                  onClick={() => printArqueoThermal("TIQUE", arq).catch(() => printArqueo(arq))}
+                                  title="Reimprimir arqueo"
+                                  className="flex h-6 w-6 items-center justify-center rounded-md text-[#c0cad4] transition hover:bg-[#f0f4f8] hover:text-[#374151]"
+                                >
+                                  <Printer size={12} strokeWidth={2} />
+                                </button>
+                              ) : null;
+                            })()}
                           </div>
                         </div>
                       ))}
