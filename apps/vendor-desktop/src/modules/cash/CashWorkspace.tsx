@@ -352,6 +352,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [lastFondoMove, setLastFondoMove] = useState<CashMove | null>(null);
   const fondoAmountRef = useRef<HTMLInputElement>(null);
   const fondoMotivoRef = useRef<HTMLInputElement>(null);
+  // ── reintegro state (ciclo RETIRO → REINTEGRO) ────────────────
+  const [reintegroTargetId, setReintegroTargetId] = useState<string | null>(null);
+  const [reintegroAmount,   setReintegroAmount]   = useState("");
+  const [reintegroMotivo,   setReintegroMotivo]   = useState("");
+  const reintegroAmountRef = useRef<HTMLInputElement>(null);
 
   // ── reposición state ──────────────────────────────────────────
   const [reposingMoveId,  setReposingMoveId]  = useState<string | null>(null);
@@ -372,6 +377,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     setMovPanel("vendido");
     setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null);
     setFondoSubTab("retiro"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
+    setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
     setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
     setResolvingExternoId(null);
@@ -534,17 +540,27 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   }
 
   function handleAddFondo() {
-    if (!canAddFondo) return;
-    const amt        = fondoTotalAmt;
-    const sourceType = fondoSubTab === "deposito" ? "externo" as const : "apertura" as const;
-    const mType      = fondoSubTab === "deposito" ? "ingreso" as const : "egreso" as const;
-    const fa         = fondoSubTab === "retiro" ? amt : 0;
-    const obs        = fondoObs.trim() || undefined;
-    const move = addCashMove(mType, amt, fondoMotivo.trim(), sourceType, fa, 0, obs, undefined, "por_regularizar");
+    if (!canAddFondo || fondoSubTab !== "retiro") return;
+    const amt = fondoTotalAmt;
+    const obs = fondoObs.trim() || undefined;
+    const move = addCashMove("egreso", amt, fondoMotivo.trim(), "apertura", amt, 0, obs, undefined, "por_regularizar");
     setLastFondoMove(move);
     setFondoAmount(""); setFondoMotivo(""); setFondoObs("");
-    showNotice(`Movimiento fondo registrado · S/ ${amt.toFixed(2)}`);
+    showNotice(`Retiro del fondo registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => fondoAmountRef.current?.focus(), 10);
+  }
+
+  function handleReintegro() {
+    const original = cashMoves.find(m => m.id === reintegroTargetId);
+    if (!original) return;
+    const amt = parseFloat(reintegroAmount) || 0;
+    if (amt <= 0 || reintegroMotivo.trim().length < MIN_MOTIVO_LEN) return;
+    const move = addCashMove("ingreso", amt, reintegroMotivo.trim(), "apertura", amt, 0, undefined, original.id);
+    if (moneyGte(amt, original.amount)) updateCashMove(original.id, "regularizado", "reposicion");
+    handlePrintVoucher(move);
+    setLastFondoMove(move);
+    setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
+    showNotice(`Reintegro registrado · S/ ${amt.toFixed(2)}`);
   }
 
   function closeRepo() {
@@ -1989,99 +2005,159 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     ))}
                   </div>
 
-                  {fondoSubTab === "retiro" ? (
-                    <p className="text-[10px] text-amber-600 font-semibold px-1">
-                      ↓ Retiro del fondo de cambio · quedará pendiente devolver
-                    </p>
-                  ) : (
-                    <p className="text-[10px] text-[#2154d8] font-semibold px-1">
-                      ↑ Reintegro al fondo de cambio · pendiente devolver o integrar
-                    </p>
-                  )}
+                  {/* ── RETIRO form ── */}
+                  {fondoSubTab === "retiro" && (
+                    <>
+                      <p className="text-[10px] text-amber-600 font-semibold px-1">
+                        ↓ Retiro del fondo de cambio · quedará pendiente de reintegro
+                      </p>
 
-                  {/* Chips de motivo rápido */}
-                  <div className="flex flex-wrap gap-1">
-                    {(fondoSubTab === "retiro"
-                      ? ["Préstamo temporal","Cambio para otra caja","Compra operacional menor","Contingencia","Retiro autorizado"]
-                      : ["Devolución préstamo","Reintegro operacional","Ingreso de cambio","Regularización","Devolución contingencia"]
-                    ).map(chip => (
-                      <button key={chip}
-                        onClick={() => setFondoMotivo(chip)}
-                        className={`rounded-full border px-2 py-0.5 text-[9.5px] font-semibold transition ${
-                          fondoMotivo === chip
-                            ? fondoSubTab === "retiro"
-                              ? "border-amber-400 bg-amber-50 text-amber-700"
-                              : "border-[#2154d8]/40 bg-[#eff4ff] text-[#2154d8]"
-                            : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#c0cad4] hover:text-[#374151]"
+                      <div className="flex flex-wrap gap-1">
+                        {["Préstamo temporal","Cambio para otra caja","Compra operacional menor","Contingencia","Retiro autorizado"].map(chip => (
+                          <button key={chip} onClick={() => setFondoMotivo(chip)}
+                            className={`rounded-full border px-2 py-0.5 text-[9.5px] font-semibold transition ${
+                              fondoMotivo === chip
+                                ? "border-amber-400 bg-amber-50 text-amber-700"
+                                : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#c0cad4] hover:text-[#374151]"
+                            }`}
+                          >{chip}</button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="shrink-0 text-[13px] font-bold text-amber-500">S/</span>
+                        <input ref={fondoAmountRef} type="number" value={fondoAmount}
+                          onChange={e => setFondoAmount(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); fondoMotivoRef.current?.focus(); } }}
+                          placeholder="0.00" min="0.01" step="0.01"
+                          className="w-full rounded-xl border border-amber-300 px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-amber-500 focus:ring-2 focus:ring-amber-400/15 transition"
+                        />
+                      </div>
+
+                      <input ref={fondoMotivoRef} type="text" value={fondoMotivo}
+                        onChange={e => setFondoMotivo(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
+                        placeholder="Ej: Préstamo temporal, sencillo para cambio..."
+                        maxLength={120}
+                        className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                      />
+
+                      <input type="text" value={fondoObs}
+                        onChange={e => setFondoObs(e.target.value)}
+                        placeholder="Anotación (opcional)" maxLength={200}
+                        className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                      />
+
+                      <button onClick={handleAddFondo} disabled={!canAddFondo}
+                        className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                          canAddFondo
+                            ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
+                            : "bg-amber-500/15 text-amber-500/50 cursor-not-allowed"
                         }`}
                       >
-                        {chip}
+                        REGISTRAR RETIRO
                       </button>
-                    ))}
-                  </div>
+                    </>
+                  )}
 
-                  <div className="flex items-center gap-1.5">
-                    <span className={`shrink-0 text-[13px] font-bold ${fondoSubTab === "deposito" ? "text-emerald-500" : "text-amber-500"}`}>S/</span>
-                    <input
-                      ref={fondoAmountRef}
-                      type="number"
-                      value={fondoAmount}
-                      onChange={e => setFondoAmount(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); fondoMotivoRef.current?.focus(); } }}
-                      placeholder="0.00"
-                      min="0.01"
-                      step="0.01"
-                      className={`w-full rounded-xl border px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
-                        fondoSubTab === "deposito"
-                          ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-400/15"
-                          : "border-amber-300 focus:border-amber-500 focus:ring-amber-400/15"
-                      }`}
-                    />
-                  </div>
+                  {/* ── REINTEGRO: lista retiros pendientes → formulario ── */}
+                  {fondoSubTab === "deposito" && (
+                    <>
+                      <p className="text-[10px] text-[#2154d8] font-semibold px-1">
+                        ↑ Reintegrar un retiro pendiente del fondo
+                      </p>
 
-                  <input
-                    ref={fondoMotivoRef}
-                    type="text"
-                    value={fondoMotivo}
-                    onChange={e => setFondoMotivo(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
-                    placeholder={fondoSubTab === "retiro" ? "Ej: Préstamo temporal, sencillo para cambio..." : "Ej: Devolución préstamo, reintegro operacional..."}
-                    maxLength={120}
-                    className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                  />
+                      {pendientesApertura.length === 0 ? (
+                        <div className="flex flex-col items-center gap-1.5 py-6 text-center">
+                          <CheckCircle size={20} strokeWidth={1.5} className="text-emerald-400" />
+                          <p className="text-[10.5px] font-semibold text-emerald-600">Sin retiros pendientes</p>
+                          <p className="text-[9.5px] text-[#9ca3af]">Todos los retiros han sido reintegrados</p>
+                        </div>
+                      ) : reintegroTargetId === null ? (
+                        <div className="flex flex-col gap-px rounded-xl border border-amber-200 overflow-hidden">
+                          {pendientesApertura.filter(m => m.type === "egreso").map(m => {
+                            const ts = new Date(m.timestamp);
+                            const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
+                            return (
+                              <button key={m.id}
+                                onClick={() => {
+                                  setReintegroTargetId(m.id);
+                                  setReintegroAmount(m.amount.toFixed(2));
+                                  setReintegroMotivo(`Reintegro: ${m.motivo}`);
+                                  setTimeout(() => reintegroAmountRef.current?.focus(), 50);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2.5 text-left bg-amber-50/50 hover:bg-amber-100/60 transition border-b border-amber-100 last:border-0"
+                              >
+                                <span className="shrink-0 text-[9.5px] tabular-nums text-amber-600 font-bold">{hm}</span>
+                                <span className="flex-1 text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</span>
+                                <span className="shrink-0 text-[11px] font-bold tabular-nums text-amber-700">S/ {m.amount.toFixed(2)}</span>
+                                <span className="shrink-0 rounded-lg bg-[#2154d8] px-2 py-0.5 text-[8.5px] font-bold uppercase text-white">REINTEGRAR →</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (() => {
+                        const original = cashMoves.find(m => m.id === reintegroTargetId);
+                        const canConfirm = (parseFloat(reintegroAmount) || 0) > 0 && reintegroMotivo.trim().length >= MIN_MOTIVO_LEN;
+                        return (
+                          <>
+                            <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                              <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                <span className="text-[8.5px] font-bold uppercase tracking-[0.12em] text-amber-600">Reintegrando retiro</span>
+                                <span className="text-[11px] font-semibold text-[#374151] truncate">{original?.motivo}</span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0 ml-2">
+                                <span className="text-[11px] font-bold tabular-nums text-amber-700">S/ {original?.amount.toFixed(2)}</span>
+                                <button onClick={() => { setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo(""); }}
+                                  className="text-[#c0cad4] hover:text-[#374151] transition"
+                                >
+                                  <X size={12} strokeWidth={2} />
+                                </button>
+                              </div>
+                            </div>
 
-                  <input
-                    type="text"
-                    value={fondoObs}
-                    onChange={e => setFondoObs(e.target.value)}
-                    placeholder="Anotación (opcional)"
-                    maxLength={200}
-                    className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                  />
+                            <div className="flex items-center gap-1.5">
+                              <span className="shrink-0 text-[13px] font-bold text-emerald-500">S/</span>
+                              <input ref={reintegroAmountRef} type="number" value={reintegroAmount}
+                                onChange={e => setReintegroAmount(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter") e.preventDefault(); }}
+                                placeholder="0.00" min="0.01" step="0.01"
+                                className="w-full rounded-xl border border-emerald-300 px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-500 focus:ring-2 focus:ring-emerald-400/15 transition"
+                              />
+                            </div>
 
-                  <button
-                    onClick={handleAddFondo}
-                    disabled={!canAddFondo}
-                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
-                      canAddFondo
-                        ? fondoSubTab === "retiro"
-                          ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
-                          : "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
-                        : "bg-[#2154d8]/[0.15] text-[#2154d8]/50 cursor-not-allowed"
-                    }`}
-                  >
-                    {fondoSubTab === "retiro" ? "REGISTRAR RETIRO" : "REGISTRAR REINTEGRO"}
-                  </button>
+                            <input type="text" value={reintegroMotivo}
+                              onChange={e => setReintegroMotivo(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter" && canConfirm) handleReintegro(); }}
+                              placeholder="Motivo del reintegro"
+                              maxLength={120}
+                              className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                            />
+
+                            <button onClick={handleReintegro} disabled={!canConfirm}
+                              className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                                canConfirm
+                                  ? "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
+                                  : "bg-[#2154d8]/15 text-[#2154d8]/50 cursor-not-allowed"
+                              }`}
+                            >
+                              CONFIRMAR REINTEGRO
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
 
                   {lastFondoMove && (
                     <div className={`flex flex-col gap-1.5 rounded-xl border px-3 py-2.5 ${
-                      lastFondoMove.sourceType === "apertura" ? "border-amber-200 bg-white" : "border-[#c7d7f4] bg-white"
+                      lastFondoMove.type === "egreso" ? "border-amber-200 bg-white" : "border-emerald-200 bg-white"
                     }`}>
                       <div className="flex items-center gap-2">
-                        <CheckCircle size={11} className={`shrink-0 ${lastFondoMove.sourceType === "apertura" ? "text-amber-500" : "text-[#2154d8]"}`} />
+                        <CheckCircle size={11} className={`shrink-0 ${lastFondoMove.type === "egreso" ? "text-amber-500" : "text-emerald-500"}`} />
                         <div className="min-w-0 flex-1">
-                          <p className={`text-[10px] font-bold uppercase tracking-wide ${lastFondoMove.sourceType === "apertura" ? "text-amber-700" : "text-[#2154d8]"}`}>
-                            Registrado · pendiente devolver
+                          <p className={`text-[10px] font-bold uppercase tracking-wide ${lastFondoMove.type === "egreso" ? "text-amber-700" : "text-emerald-700"}`}>
+                            {lastFondoMove.type === "egreso" ? "Retiro registrado · pendiente de reintegro" : "Reintegro registrado · retiro regularizado"}
                           </p>
                           <p className="truncate text-[10px] text-[#9ca3af]">
                             {lastFondoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastFondoMove.amount.toFixed(2)} · {lastFondoMove.motivo}
