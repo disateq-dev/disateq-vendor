@@ -2304,6 +2304,22 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                             >
                               CONFIRMAR DEVOLUCIÓN
                             </button>
+
+                            {canConfirm && (
+                              <button
+                                onClick={() => {
+                                  const orig = cashMoves.find(m => m.id === devolverTargetId);
+                                  if (!orig) return;
+                                  updateCashMove(orig.id, "regularizado", "integracion_fondo");
+                                  setLastFondoMove(orig);
+                                  setDevolverTargetId(null); setDevolverMotivo("");
+                                  showNotice(`Préstamo integrado al fondo · S/ ${orig.amount.toFixed(2)}`);
+                                }}
+                                className="w-full py-1 text-[10px] text-[#697387] hover:text-[#2154d8] transition text-center"
+                              >
+                                o integrar permanentemente al fondo →
+                              </button>
+                            )}
                           </>
                         );
                       })()}
@@ -2322,9 +2338,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                             ? "Devolución registrada · préstamo regularizado"
                             : lastFondoMove.type === "egreso"
                               ? "Retiro registrado · pendiente de reintegro"
-                              : lastFondoMove.sourceType === "externo"
-                                ? "Préstamo recibido · pendiente de devolución"
-                                : "Reintegro registrado · retiro regularizado"
+                              : lastFondoMove.sourceType === "externo" && lastFondoMove.regularizationMode === "integracion_fondo"
+                                ? "Préstamo integrado al fondo · suma permanente"
+                                : lastFondoMove.sourceType === "externo"
+                                  ? "Préstamo recibido · pendiente de devolución"
+                                  : "Reintegro registrado · retiro regularizado"
                           }
                           </p>
                           <p className="truncate text-[10px] text-[#9ca3af]">
