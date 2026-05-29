@@ -345,7 +345,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const vendidoAmountRef = useRef<HTMLInputElement>(null);
   const vendidoMotivoRef = useRef<HTMLInputElement>(null);
   // ── movements state ── Área 2: FONDO DE CAMBIO ───────────────
-  const [fondoSubTab,   setFondoSubTab]   = useState<"retiro" | "deposito">("retiro");
+  const [fondoSubTab,   setFondoSubTab]   = useState<"retiro" | "deposito" | "prestado" | "devolver">("retiro");
   const [fondoAmount,   setFondoAmount]   = useState("");
   const [fondoMotivo,   setFondoMotivo]   = useState("");
   const [fondoObs,      setFondoObs]      = useState("");
@@ -357,6 +357,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const [reintegroAmount,   setReintegroAmount]   = useState("");
   const [reintegroMotivo,   setReintegroMotivo]   = useState("");
   const reintegroAmountRef = useRef<HTMLInputElement>(null);
+  // ── prestado/devolver state (ciclo PRÉSTAMO RECIBIDO → DEVOLUCIÓN) ──
+  const [prestadoAmount,    setPrestadoAmount]    = useState("");
+  const [prestadoMotivo,    setPrestadoMotivo]    = useState("");
+  const [devolverTargetId,  setDevolverTargetId]  = useState<string | null>(null);
+  const [devolverMotivo,    setDevolverMotivo]    = useState("");
+  const prestadoAmountRef = useRef<HTMLInputElement>(null);
+  const prestadoMotivoRef = useRef<HTMLInputElement>(null);
 
   // ── reposición state ──────────────────────────────────────────
   const [reposingMoveId,  setReposingMoveId]  = useState<string | null>(null);
@@ -378,6 +385,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null);
     setFondoSubTab("retiro"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
     setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
+    setPrestadoAmount(""); setPrestadoMotivo(""); setDevolverTargetId(null); setDevolverMotivo("");
     setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
     setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
     setResolvingExternoId(null);
@@ -413,8 +421,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // move form derived
   const vendidoTotalAmt = parseFloat(vendidoAmount) || 0;
   const fondoTotalAmt   = parseFloat(fondoAmount)   || 0;
-  const canAddVendido   = validateCanAddMove(vendidoTotalAmt, vendidoMotivo);
-  const canAddFondo     = validateCanAddMove(fondoTotalAmt,   fondoMotivo);
+  const canAddVendido    = validateCanAddMove(vendidoTotalAmt, vendidoMotivo);
+  const canAddFondo      = validateCanAddMove(fondoTotalAmt,   fondoMotivo);
+  const prestadoTotalAmt = parseFloat(prestadoAmount) || 0;
+  const canAddPrestado   = validateCanAddMove(prestadoTotalAmt, prestadoMotivo);
 
   // repos vinculadas por egreso (de activos, usando refId)
   const repoSumByEgresoId = useMemo(() => {
@@ -453,8 +463,8 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // préstamos integrados al fondo (su dinero permanece en el fondo)
   const externosIntegrados    = activeMoves.filter(m => m.sourceType === "externo" && m.regularizationMode === "integracion_fondo");
   const totalExternosIntegrados = moneySum(externosIntegrados.map(m => m.amount));
-  // fondoEsperado = (apertura + reintegros − retiros) + préstamos integrados permanentemente
-  const fondoEsperado = moneyAdd(fondoApertEsp, totalExternosIntegrados);
+  // fondoEsperado = (apertura + reintegros − retiros) + integrados + préstamos pendientes de devolver
+  const fondoEsperado = moneyAdd(moneyAdd(fondoApertEsp, totalExternosIntegrados), totalExternosPendientes);
   // salidas del fondo de cambio pendientes de devolver
   const pendientesApertura = activeMoves.filter(m => m.sourceType === "apertura" && m.regularizationStatus === "por_regularizar");
   const totalPendienteApertura = moneySum(pendientesApertura.map(m => m.amount));
@@ -561,6 +571,28 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     setLastFondoMove(move);
     setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
     showNotice(`Reintegro registrado · S/ ${amt.toFixed(2)}`);
+  }
+
+  function handleAddPrestado() {
+    if (!canAddPrestado) return;
+    const move = addCashMove("ingreso", prestadoTotalAmt, prestadoMotivo.trim(), "externo", 0, 0, undefined, undefined, "por_regularizar");
+    setLastFondoMove(move);
+    setPrestadoAmount(""); setPrestadoMotivo("");
+    showNotice(`Préstamo recibido registrado · S/ ${prestadoTotalAmt.toFixed(2)}`);
+    setTimeout(() => prestadoAmountRef.current?.focus(), 10);
+  }
+
+  function handleDevolver() {
+    const original = cashMoves.find(m => m.id === devolverTargetId);
+    if (!original) return;
+    if (devolverMotivo.trim().length < MIN_MOTIVO_LEN) return;
+    // Egreso de auditoría — fromApertura/fromVendido=0 para no afectar fondoApertEsp
+    const move = addCashMove("egreso", original.amount, devolverMotivo.trim(), "externo", 0, 0, undefined, original.id);
+    updateCashMove(original.id, "regularizado", "reposicion");
+    handlePrintVoucher(move);
+    setLastFondoMove(move);
+    setDevolverTargetId(null); setDevolverMotivo("");
+    showNotice(`Devolución registrada · S/ ${original.amount.toFixed(2)}`);
   }
 
   function closeRepo() {
@@ -1325,45 +1357,34 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         <span className="text-[12px] font-bold tabular-nums text-[#2154d8]">+S/ {totalExternosIntegrados.toFixed(2)}</span>
                       </div>
                     )}
+                    {moneyGt(totalExternosPendientes, 0) && (
+                      <div className="flex justify-between items-center px-3.5 py-2">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">PRÉSTAMOS RECIBIDOS · pdte. devolver</span>
+                        <span className="text-[12px] font-bold tabular-nums text-emerald-700">+S/ {totalExternosPendientes.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#f8fafd]">
                       <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">FONDO ESPERADO</span>
                       <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {fondoEsperado.toFixed(2)}</span>
                     </div>
                   </div>
 
-                  {/* Préstamos al fondo pendientes — resolver antes de contar */}
+                  {/* Préstamos recibidos pendientes — advertencia no bloqueante */}
                   {externosPendientes.length > 0 && (
-                    <div className="flex flex-col gap-px rounded-xl border border-[#2154d8]/20 bg-[#f0f4ff] overflow-hidden">
-                      <div className="flex items-center justify-between px-3.5 py-2 border-b border-[#2154d8]/10">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#2154d8]">→ Préstamos al fondo · resolver antes de contar</span>
-                        <span className="text-[11px] font-bold tabular-nums text-[#2154d8]">S/ {totalExternosPendientes.toFixed(2)}</span>
+                    <div className="flex flex-col gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle size={11} strokeWidth={2} className="shrink-0 text-emerald-700" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-700">Préstamos pendientes de devolver</span>
+                        <span className="ml-auto text-[10px] font-bold tabular-nums text-emerald-700">S/ {totalExternosPendientes.toFixed(2)}</span>
                       </div>
                       {externosPendientes.map(m => {
                         const ts = new Date(m.timestamp);
                         const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
                         return (
-                          <div key={m.id} className="flex flex-col gap-1.5 px-3.5 py-2 border-b border-[#2154d8]/10 last:border-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-[#374151] truncate mr-2">{hm} · {m.motivo}</span>
-                              <span className="text-[10px] font-bold tabular-nums text-[#2154d8] shrink-0">S/ {m.amount.toFixed(2)}</span>
-                            </div>
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={() => { updateCashMove(m.id, "regularizado", "reposicion"); }}
-                                className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-emerald-600 active:scale-[0.98]"
-                              >
-                                DEVOLVER
-                              </button>
-                              <button
-                                onClick={() => { updateCashMove(m.id, "regularizado", "integracion_fondo"); }}
-                                className="flex-1 rounded-lg bg-[#2154d8] py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a44be] active:scale-[0.98]"
-                              >
-                                INTEGRAR AL FONDO
-                              </button>
-                            </div>
-                          </div>
+                          <p key={m.id} className="text-[9.5px] text-emerald-800 pl-4">{hm} · {m.motivo} · S/ {m.amount.toFixed(2)}</p>
                         );
                       })}
+                      <p className="text-[9px] text-emerald-600/70 pl-4">Recordá devolver antes de entregar la caja</p>
                     </div>
                   )}
 
@@ -1984,25 +2005,39 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               }`}>
                 <div className="flex flex-col gap-2.5 px-4 py-4">
 
-                  {/* Mini-selector: RETIRO / REINTEGRO */}
+                  {/* Mini-selector: RETIRO / REINTEGRO / PRESTADO / DEVOLVER */}
                   <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                     {([
-                      { tab: "retiro"   as const, label: "RETIRO" },
+                      { tab: "retiro"   as const, label: "RETIRO"    },
                       { tab: "deposito" as const, label: "REINTEGRO" },
-                    ]).map(({ tab, label }) => (
-                      <button key={tab}
-                        onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
-                        className={`flex-1 rounded-[9px] py-1.5 text-[10px] font-bold uppercase tracking-wide transition ${
-                          fondoSubTab === tab
-                            ? tab === "retiro"
-                              ? "bg-amber-500 text-white shadow-sm"
-                              : "bg-[#2154d8] text-white shadow-sm"
-                            : "text-[#9ca3af] hover:text-[#374151]"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                      { tab: "prestado" as const, label: "PRESTADO"  },
+                      { tab: "devolver" as const, label: "DEVOLVER"  },
+                    ]).map(({ tab, label }) => {
+                      const active = fondoSubTab === tab;
+                      const color =
+                        tab === "retiro"   ? "bg-amber-500"   :
+                        tab === "deposito" ? "bg-[#2154d8]"   :
+                        tab === "prestado" ? "bg-emerald-600" :
+                                            "bg-rose-500";
+                      const badge =
+                        tab === "devolver" && externosPendientes.length > 0
+                          ? externosPendientes.length : 0;
+                      return (
+                        <button key={tab}
+                          onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
+                          className={`relative flex-1 rounded-[9px] py-1.5 text-[9.5px] font-bold uppercase tracking-wide transition ${
+                            active ? `${color} text-white shadow-sm` : "text-[#9ca3af] hover:text-[#374151]"
+                          }`}
+                        >
+                          {label}
+                          {badge > 0 && (
+                            <span className="absolute -top-1 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[7px] font-bold text-white">
+                              {badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* ── RETIRO form ── */}
@@ -2149,6 +2184,132 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </>
                   )}
 
+                  {/* ── PRESTADO: registrar préstamo recibido al fondo ── */}
+                  {fondoSubTab === "prestado" && (
+                    <>
+                      <p className="text-[10px] text-emerald-700 font-semibold px-1">
+                        ↑ Préstamo recibido al fondo · quedará pendiente de devolución
+                      </p>
+
+                      <div className="flex flex-wrap gap-1">
+                        {["Monedas operación","Fondo contingencia","Sencillo extra","Billete cambio"].map(chip => (
+                          <button key={chip} onClick={() => setPrestadoMotivo(chip)}
+                            className={`rounded-full border px-2 py-0.5 text-[9.5px] font-semibold transition ${
+                              prestadoMotivo === chip
+                                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                                : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#c0cad4] hover:text-[#374151]"
+                            }`}
+                          >{chip}</button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="shrink-0 text-[13px] font-bold text-emerald-600">S/</span>
+                        <input ref={prestadoAmountRef} type="number" value={prestadoAmount}
+                          onChange={e => setPrestadoAmount(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); prestadoMotivoRef.current?.focus(); } }}
+                          placeholder="0.00" min="0.01" step="0.01"
+                          className="w-full rounded-xl border border-emerald-300 px-3 py-1.5 text-[22px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-emerald-500 focus:ring-2 focus:ring-emerald-400/15 transition"
+                        />
+                      </div>
+
+                      <input ref={prestadoMotivoRef} type="text" value={prestadoMotivo}
+                        onChange={e => setPrestadoMotivo(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && canAddPrestado) handleAddPrestado(); }}
+                        placeholder="Ej: Monedas prestadas para dar vuelto..."
+                        maxLength={120}
+                        className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                      />
+
+                      <button onClick={handleAddPrestado} disabled={!canAddPrestado}
+                        className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                          canAddPrestado
+                            ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
+                            : "bg-emerald-600/15 text-emerald-600/50 cursor-not-allowed"
+                        }`}
+                      >
+                        REGISTRAR PRÉSTAMO
+                      </button>
+                    </>
+                  )}
+
+                  {/* ── DEVOLVER: lista de préstamos recibidos pendientes ── */}
+                  {fondoSubTab === "devolver" && (
+                    <>
+                      <p className="text-[10px] text-rose-600 font-semibold px-1">
+                        ↓ Devolver préstamo recibido al fondo
+                      </p>
+
+                      {externosPendientes.length === 0 ? (
+                        <div className="flex flex-col items-center gap-1.5 py-6 text-center">
+                          <CheckCircle size={20} strokeWidth={1.5} className="text-emerald-400" />
+                          <p className="text-[10.5px] font-semibold text-emerald-600">Sin préstamos pendientes</p>
+                          <p className="text-[9.5px] text-[#9ca3af]">Todos los préstamos han sido devueltos</p>
+                        </div>
+                      ) : devolverTargetId === null ? (
+                        <div className="flex flex-col gap-px rounded-xl border border-emerald-200 overflow-hidden">
+                          {externosPendientes.map(m => {
+                            const ts = new Date(m.timestamp);
+                            const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
+                            return (
+                              <button key={m.id}
+                                onClick={() => {
+                                  setDevolverTargetId(m.id);
+                                  setDevolverMotivo(`Devolución: ${m.motivo}`);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2.5 text-left bg-emerald-50/50 hover:bg-emerald-100/60 transition border-b border-emerald-100 last:border-0"
+                              >
+                                <span className="shrink-0 text-[9.5px] tabular-nums text-emerald-700 font-bold">{hm}</span>
+                                <span className="flex-1 text-[11px] font-semibold text-[#374151] truncate">{m.motivo}</span>
+                                <span className="shrink-0 text-[11px] font-bold tabular-nums text-emerald-700">S/ {m.amount.toFixed(2)}</span>
+                                <span className="shrink-0 rounded-lg bg-rose-500 px-2 py-0.5 text-[8.5px] font-bold uppercase text-white">DEVOLVER →</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (() => {
+                        const original = cashMoves.find(m => m.id === devolverTargetId);
+                        const canConfirm = devolverMotivo.trim().length >= MIN_MOTIVO_LEN;
+                        return (
+                          <>
+                            <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                              <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                <span className="text-[8.5px] font-bold uppercase tracking-[0.12em] text-emerald-700">Devolviendo préstamo</span>
+                                <span className="text-[11px] font-semibold text-[#374151] truncate">{original?.motivo}</span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0 ml-2">
+                                <span className="text-[12px] font-bold tabular-nums text-emerald-700">S/ {original?.amount.toFixed(2)}</span>
+                                <button onClick={() => { setDevolverTargetId(null); setDevolverMotivo(""); }}
+                                  className="text-[#c0cad4] hover:text-[#374151] transition"
+                                >
+                                  <X size={12} strokeWidth={2} />
+                                </button>
+                              </div>
+                            </div>
+
+                            <input type="text" value={devolverMotivo}
+                              onChange={e => setDevolverMotivo(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter" && canConfirm) handleDevolver(); }}
+                              placeholder="Motivo de la devolución"
+                              maxLength={120}
+                              className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                            />
+
+                            <button onClick={handleDevolver} disabled={!canConfirm}
+                              className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
+                                canConfirm
+                                  ? "bg-rose-500 text-white shadow-sm hover:bg-rose-600 active:scale-[0.98]"
+                                  : "bg-rose-500/15 text-rose-500/50 cursor-not-allowed"
+                              }`}
+                            >
+                              CONFIRMAR DEVOLUCIÓN
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+
                   {lastFondoMove && (
                     <div className={`flex flex-col gap-1.5 rounded-xl border px-3 py-2.5 ${
                       lastFondoMove.type === "egreso" ? "border-amber-200 bg-white" : "border-emerald-200 bg-white"
@@ -2157,7 +2318,14 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         <CheckCircle size={11} className={`shrink-0 ${lastFondoMove.type === "egreso" ? "text-amber-500" : "text-emerald-500"}`} />
                         <div className="min-w-0 flex-1">
                           <p className={`text-[10px] font-bold uppercase tracking-wide ${lastFondoMove.type === "egreso" ? "text-amber-700" : "text-emerald-700"}`}>
-                            {lastFondoMove.type === "egreso" ? "Retiro registrado · pendiente de reintegro" : "Reintegro registrado · retiro regularizado"}
+                            {lastFondoMove.type === "egreso" && lastFondoMove.sourceType === "externo"
+                            ? "Devolución registrada · préstamo regularizado"
+                            : lastFondoMove.type === "egreso"
+                              ? "Retiro registrado · pendiente de reintegro"
+                              : lastFondoMove.sourceType === "externo"
+                                ? "Préstamo recibido · pendiente de devolución"
+                                : "Reintegro registrado · retiro regularizado"
+                          }
                           </p>
                           <p className="truncate text-[10px] text-[#9ca3af]">
                             {lastFondoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastFondoMove.amount.toFixed(2)} · {lastFondoMove.motivo}
@@ -2216,7 +2384,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       const ts = new Date(m.timestamp);
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
                       const dd = `${String(ts.getDate()).padStart(2, "0")}/${String(ts.getMonth() + 1).padStart(2, "0")}`;
-                      const srcLabel = m.sourceType === "apertura" ? "retiro · fondo cambio" : m.sourceType === "externo" ? "reintegro al fondo" : "caja del día";
+                      const srcLabel = m.sourceType === "apertura" ? "retiro · fondo cambio" : m.sourceType === "externo" ? "préstamo al fondo" : "caja del día";
                       const linkedRepos: CashMove[] = m.type === "egreso" ? (reposByEgresoId[m.id] ?? []) : [];
                       const isRepoing          = reposingMoveId === m.id;
                       const isEditing          = editingMoveId === m.id;
