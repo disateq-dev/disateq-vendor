@@ -443,7 +443,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // fondo breakdown — excluye anulados
   const {
-    ingresosTotal, egresosTotal, arqueoOperacional, egApertura, egVendido,
+    ingresosTotal, egresosTotal, arqueoOperacional, egApertura, egVendido, fondoApertEsp,
   } = calcConciliation(activeMoves, sessionStats.cash, apertura);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
@@ -453,8 +453,8 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // préstamos integrados al fondo (su dinero permanece en el fondo)
   const externosIntegrados    = activeMoves.filter(m => m.sourceType === "externo" && m.regularizationMode === "integracion_fondo");
   const totalExternosIntegrados = moneySum(externosIntegrados.map(m => m.amount));
-  // fondoEsperado = fondo inicial − salidas + préstamos integrados permanentemente
-  const fondoEsperado = moneyAdd(moneySub(apertura, egApertura), totalExternosIntegrados);
+  // fondoEsperado = (apertura + reintegros − retiros) + préstamos integrados permanentemente
+  const fondoEsperado = moneyAdd(fondoApertEsp, totalExternosIntegrados);
   // salidas del fondo de cambio pendientes de devolver
   const pendientesApertura = activeMoves.filter(m => m.sourceType === "apertura" && m.regularizationStatus === "por_regularizar");
   const totalPendienteApertura = moneySum(pendientesApertura.map(m => m.amount));
