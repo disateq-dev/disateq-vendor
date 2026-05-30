@@ -184,3 +184,43 @@ VENTAS → COMPRAS → INVENTARIOS
 ## Regla UX consolidada
 > "La arquitectura puede ser sofisticada.
 > El lenguaje visible debe ser humano, operacional y contextual."
+
+## Estado Actual de Descubrimiento Operacional
+
+La fase inicial de auditorías operacionales se considera suficientemente madura para continuar con consolidación.
+
+Hallazgos con evidencia fuerte:
+
+- Producto
+- Turno
+- Disponibilidad
+
+Hallazgos con evidencia significativa:
+
+- Abastecimiento
+- Ventas
+
+Observaciones emergentes (no consolidadas):
+
+- Producción parece contextual al tipo de operación.
+- Comercialización parece orientada a optimizar la captura de valor.
+- Precio muestra señales de comportarse como instrumento de influencia comercial.
+- Cliente muestra señales de representar propósito operacional más que una entidad convencional.
+- Servicio continúa bajo observación.
+
+### Decisión
+
+No abrir nuevas auditorías salvo evidencia operacional relevante.
+
+La siguiente etapa se enfocará en contrastar Vendor contra los descubrimientos consolidados.
+
+Prioridades:
+
+1. Revisar Disponibilidad dentro del modelo actual.
+2. Revisar Abastecimiento contra continuidad operacional.
+3. Revisar Ventas contra captura de valor.
+4. Revisar Turno contra responsabilidad operacional.
+
+La operación real vuelve a ser la principal fuente de descubrimiento.
+
+Las auditorías futuras deberán surgir de evidencia observada durante implementación, validación o uso operacional.
