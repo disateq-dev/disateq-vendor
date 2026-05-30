@@ -3,62 +3,150 @@
 ## Branch activa
 main
 
-## Microfase actual
-LOGIN — RUNTIME UX ✅ VALIDADA Y CONSOLIDADA
+---
 
-## Estado validado
+## Situación general — Mayo 2026
+
+DISATEQ VENDOR está en estado de **madurez operacional parcial**.
+
+El runtime está vivo y operativo. El ciclo comercial completo (vender → descontar stock → reabastecer) aún no cierra.
+
+### Lo que está construido y validado
+
+- **Runtime operacional:** AppShell · ContextBar · SubContextBar · ModulesBar estabilizados. Modelo Workspace → SheetWorks como mutación contextual funcionando.
+- **TURNO / CAJA:** dominio más maduro. Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección de arqueos · recovery automático.
+- **FONDO DE CAMBIO:** ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados. fondoEsperado correcto.
+- **VENTAS / COBRO:** ticket con catálogo estático, cobro efectivo/Yape/tarjeta/mixto, comprobantes, correlativos persistentes.
+- **INVENTARIOS CAPA 0+1:** ítems · movimientos causales · disponibilidad derivada · reservas · alertas · CSV · baja lógica.
+- **COMPRAS CAPA 0+1:** recepción parcial incremental · causalidad compra:XXXXXXXX → INVENTARIOS · estados automáticos.
+- **OPERADORES + ROLES:** ciclo de vida completo · PIN · bloques · capacidades · roles configurables.
+- **AJUSTES:** BusinessConfig · OpsConfig · rubro · visualMode · printFlow. Hardcode eliminado.
+- **LOGIN:** distinción LOGIN vs Runtime Principal formalizada. Drag funcional. Flash eliminado.
+
+### Brecha estructural principal
+
+```
+VENTAS ──► catálogo estático (catalogs.ts)   ✗ sin conexión con INVENTARIOS
+COMPRAS ──► INVENTARIOS                       ✅ integrado
+VENTAS ──► INVENTARIOS                        ✗ no integrado
+```
+
+VENTAS consume precios y productos hardcodeados. Una venta no descuenta stock real.
+El puente CATÁLOGO vivo como entidad operacional no existe todavía.
+
+### Tensiones activas
+
+- `POSContext.tsx` (~1000 líneas) concentra sesión, operadores, roles, comprobantes, correlativos, movimientos, opLogs — boundary difuso.
+- Capacidades (capabilities[]) definidas en roles pero sin enforcement en módulos.
+- FONDO DE CAMBIO creciendo en complejidad dentro de CashWorkspace — presión de boundary futura.
+- Documentación operacional parcialmente desactualizada (`03_CURRENT_PHASE.md`, `02_ACTIVE_RUNTIME_CONTEXT.md`).
+
+### Posición en el ciclo evolutivo
+
+```
+operación real          ✅ TURNO · FONDO · COBRO · COMPRAS
+dolor operacional       ✅ VENTAS vs INVENTARIOS identificado
+solución mínima         ← siguiente paso
+validación runtime      ← metodología establecida
+reconciliación/control  ⚠ parcial (capacidades sin enforcement)
+sofisticación progresiva
+consolidación
+estabilización
+```
+
+---
+
+## Descubrimientos Consolidados — Mayo 2026
+
+- Principio de Persistencia Operacional validado.
+- Producto sobrevivió auditoría operacional.
+- Turno sobrevivió auditoría operacional.
+- Empresa observada como convergencia de identidades — no asumir como realidad operacional simple.
+- Identidad histórica validada como requisito de trazabilidad.
+- Áreas operacionales identificadas como contextuales al rubro — no universalizables.
+- Fenómenos operacionales muestran mayor universalidad que estructuras.
+- Método DISATEQ de Descubrimiento Operacional formalizado.
+
+---
+
+## Dominios por estado
+
+### Validados
+- TURNO / CAJA
+- FONDO DE CAMBIO
+- VENTAS / TICKET (catálogo estático)
+- COBRO / COMPROBANTES (sin integración fiscal)
+- INVENTARIOS CAPA 0+1
+- COMPRAS CAPA 0+1
+- OPERADORES + ROLES
+- AJUSTES / CONFIG
+- LOGIN
+
+### Parcialmente definidos
+- CATÁLOGO / PRODUCTOS — estático, sin conexión con INVENTARIOS
+- IMPRESIÓN — básica, sin colas ni feedback
+
+### Faltantes (esperan dolor operacional validado)
+- PROVEEDORES — campo libre en COMPRAS
+- CLIENTES — campo en comprobante
+- CUENTAS POR PAGAR — implícito en COMPRAS, no modelado
+- ENFORCEMENT DE CAPACIDADES — definidas, sin guardas en UI
+- SINCRONIZACIÓN / MULTI-CAJA — solo conceptual en docs
+
+---
+
+## Estado previo consolidado
 
 ### INVENTARIOS
 - CAPA 0+1 consolidadas y validadas
-- reservas operacionales
-- reconciliación mínima
-- temporalidad mínima
-- disponibilidad contextual
-- UX operacional humanizada
-- identidad visual contextual validada
+- reservas operacionales · reconciliación mínima · temporalidad mínima
+- disponibilidad contextual · UX operacional humanizada
 
 ### COMPRAS
-- CAPA 0 mínima operativa ✅
-- CAPA 1 recepción parcial incremental ✅ VALIDADA
-- integración COMPRAS ↔ INVENTARIOS operacional
+- CAPA 0+1 validadas
+- recepción parcial incremental por línea
 - causalidad explícita por línea (`compra:XXXXXXXX`)
 - estados automáticos: PENDIENTE → LLEGÓ PARCIAL → RECIBIDO
-- UX operacional humanizada
-- identidad visual contextual aplicada
 - DEV·RESET + badge pendientes SubContextBar
 
 ### TURNO
-- auditoría operacional completa ✅
+- auditoría operacional completa
 - fix prereq contingencia en recovery (Guard 4)
-- fix nombre operador en pre-open card (real vs hardcoded)
 - eliminado código muerto (BLOCK_OPERATORS, operatorFromCode, validateCtgAuth)
-- **ACTIVIDAD RECIENTE** ✅ CONSOLIDADA
-  - `src/modules/cash/services/session-history.service.ts`
-  - `disateq.pos.sessionHistory` — hasta 50 entradas, localStorage
-  - `disateq.pos.currentSessionId` — pareo apertura/cierre
-  - señal: `ok` (diferencia cero) · `warn` (diferencia) · `~ pendiente` (crash)
-  - filtro por bloque del operador (`boxCode[0] === operatorBlockPrefix`)
-  - columnas: CAJA · FUNCIÓN · APERTURA · CIERRE · ESTADO · (reimpresión)
-  - FUNCIÓN = "PRINCIPAL" / "SECUNDARIA 01" / "SECUNDARIA 02" / "CONTINGENCIA"
-  - botón reimpresión por fila — usa `e.arqueo` con fallback a `lastArqueo`
-  - `arqueo: ArqueoData` guardado en entry al cerrar sesión
-  - headers sin indicador de bloque numérico
-  - botón "Reimprimir arqueo anterior" eliminado del panel izquierdo
-  - layout 3 columnas pre-apertura alineado con turno abierto (320/360/flex-1)
-  - empty state: "Sin actividad registrada en este bloque"
+- ACTIVIDAD RECIENTE consolidada (`session-history.service.ts`)
+  - hasta 50 entradas · localStorage · señal ok/warn/pendiente
+  - filtro por bloque del operador
+  - columnas: CAJA · FUNCIÓN · APERTURA · CIERRE · ESTADO · reimpresión
+  - `arqueo: ArqueoData` guardado al cerrar
+- layout 3 columnas pre-apertura alineado con turno abierto (320/360/flex-1)
+
+### CORREGIR ARQUEO
+- `src/modules/cash/CorregirArqueoWorkspace.tsx`
+- `CorrectionRecord` + `recordSessionCorrection`
+- casos: cierre pendiente → regularizar · diferencia → documentar
+- presets operacionales por tipo de acción
+- trazabilidad: correctedBy · correctedAt · motivo · acción · señales
+
+### FONDO DE CAMBIO
+- ciclo RETIRO→REINTEGRO con `refId` y `regularizationStatus`
+- ciclo PRÉSTAMO EXTERNO→DEVOLUCIÓN/INTEGRACIÓN con `sourceType: "externo"`
+- fondoEsperado usa `fondoApertEsp` del servicio de conciliación
+- advertencia no bloqueante en cierre para préstamos pendientes
+- opción "integrar permanentemente al fondo" desde tab DEVOLVER
 
 ### AJUSTES
-- CAPA 1 NEGOCIO + OPERACIÓN ✅ VALIDADA
-- UX sub-navegación contextual ✅ VALIDADA
-- `src/config/business.ts` — BusinessConfig persistida en `disateq.config.business`
-- `src/config/ops.ts` — OpsConfig persistida en `disateq.config.ops`
-- hardcode `businessName` eliminado de CashWorkspace y CobroPanel
-- hardcode `CTG_PIN = "1234"` eliminado de cash-rules.service
-- `canOpenSession` recibe `expectedCtgPin` como parámetro runtime
-- `ModulesBar` — "CONFIG" → "AJUSTES"
-- `ConfigSubView` — 4 sub-vistas: Negocio · Operación · Rubro · Experiencia
-- Sub-navegación en SubContextBar (mismo patrón TURNO/ABASTECIMIENTO)
-- Botón "Aplicar" (operacional) en lugar de "Guardar" (CRUD)
+- CAPA 1 NEGOCIO + OPERACIÓN validada
+- `BusinessConfig` · `OpsConfig` · sub-navegación contextual
+- hardcode `businessName` y `CTG_PIN` eliminados
+- `ConfigSubView`: Negocio · Operación · Rubro · Experiencia
+
+### LOGIN — RUNTIME UX
+- distinción doctrinal LOGIN vs RUNTIME PRINCIPAL formalizada
+- drag funcional · flash inicial eliminado
+- `capabilities/default.json` — `core:window:allow-show` + `core:window:allow-start-dragging`
+- login→app: `setSize → center → show`
+
+---
 
 ## Layout validado — Gestión Turno
 
@@ -76,36 +164,7 @@ LOGIN — RUNTIME UX ✅ VALIDADA Y CONSOLIDADA
 | MOVIMIENTOS | 360px fijo |
 | MOVIMIENTOS DEL TURNO | flex-1 |
 
-## Branching
-- `main` es la rama canónica desde 2026-05-28
-- `recovery/context-restoration` archivada en remote como referencia histórica
-
-### CORREGIR ARQUEO
-- subopción operacional bajo TURNO ✅ VALIDADA
-- `src/modules/cash/CorregirArqueoWorkspace.tsx` (nuevo)
-- `src/modules/cash/services/session-history.service.ts` — `CorrectionRecord` + `recordSessionCorrection`
-- `CashSubView` extendido: `"corregir-arqueo"`
-- `SubContextBar` — tab "Corregir arqueo" añadido
-- Casos soportados: cierre pendiente (null) → regularizar · diferencia (warn) → documentar
-- Presets operacionales de motivo por tipo de acción
-- Selección de señal: "Sin diferencias" / "Había diferencias" (solo en regularizar_cierre)
-- Trazabilidad: `correctedBy` · `correctedAt` · `motivo` · `accion` · `prevSignal` · `newSignal`
-- Refresco automático de ACTIVIDAD RECIENTE al volver a Gestión Turno
-- UX: excepcional · contextual · no ERPificado · lenguaje humano operacional
-
-### LOGIN — RUNTIME UX
-- distinción doctrinal LOGIN vs RUNTIME PRINCIPAL formalizada en memoria
-- drag funcional: `startDragging()` en `onMouseDown` del panel izquierdo ✅ VALIDADO
-- flash inicial eliminado: `visible: false` en `tauri.conf.json` + `win.show()` tras primer paint en LoginScreen ✅ VALIDADO
-- `capabilities/default.json` — `core:window:allow-show` + `core:window:allow-start-dragging`
-- `App.tsx` — `isInitialMount` ref: saltear JS window config en mount inicial (lo cubre tauri.conf)
-- login → app: `setSize → center → show` en cadena
-- logout → login: LoginScreen llama `show()` tras su propio render
-
-## Próximo foco posible
-- VENTAS CAPA 1 (si hay dolor operacional identificado)
-- COMPROBANTES integración real (businessRuc, businessAddr, businessPhone desde config)
-- consolidación documental (docs/philosophy/* si hay deriva)
+---
 
 ## Flujo operacional objetivo
 VENTAS → COMPRAS → INVENTARIOS
@@ -123,5 +182,5 @@ VENTAS → COMPRAS → INVENTARIOS
 - mezcla de contexto temporal con fundaciones
 
 ## Regla UX consolidada
-"La arquitectura puede ser sofisticada.
-El lenguaje visible debe ser humano, operacional y contextual."
+> "La arquitectura puede ser sofisticada.
+> El lenguaje visible debe ser humano, operacional y contextual."

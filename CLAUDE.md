@@ -72,6 +72,61 @@ The architecture may be sophisticated.
 Visible operational language must remain:
 human, contextual, operational, and clear.
 
+## Operational Discovery Doctrine
+
+Domain foundations must be discovered from operational reality,
+not from inherited ERP structures, technical abstractions,
+industry conventions, or implementation preferences.
+
+Do not adopt concepts because they are common.
+
+Do not reject concepts because they come from ERP systems.
+
+Understand first.
+
+Model second.
+
+Implement last.
+
+### Operational Discovery Questions
+
+For any candidate foundational concept:
+
+- What does it represent?
+- What would the business lose if it disappeared?
+- Who observes it?
+- Who operates on it?
+- What operational phenomena does it generate?
+- Was it discovered by the operation, or are we inventing it?
+
+### Persistence Test
+
+A foundational reality should remain recognizable through
+significant business evolution.
+
+Evaluate candidates against scenarios such as:
+
+- Ownership changes
+- Legal entity changes
+- Brand changes
+- Staff changes
+- Catalog evolution
+- Business model evolution
+
+### Persistence Principle
+
+Operational foundations reveal themselves through persistence,
+not through classification.
+
+### Operational Reference Principle
+
+The operation is the primary reference point for validating
+domain decisions.
+
+The model serves the operation.
+
+Technology serves the model.
+
 ## Environment
 
 Primary environment:
