@@ -219,7 +219,6 @@ Observaciones emergentes (no consolidadas):
 - Precio muestra señales de comportarse como instrumento de influencia comercial.
 - Cliente muestra señales de representar propósito operacional más que una entidad convencional.
 - Servicio continúa bajo observación.
-- **Identidad Operacional — distinción personal/funcional bajo observación**: el sistema trata de forma idéntica las identidades personales (Fernando, Carlos — vinculadas a un humano específico) y las identidades funcionales (ADMIN — vinculadas a una función, compartibles). Representan fenómenos operacionales distintos. No existe evidencia suficiente para formalizar un dominio nuevo. Requiere observación ante evolución del negocio (múltiples supervisores, acceso compartido).
 
 ### Decisión
 
