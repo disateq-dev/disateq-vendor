@@ -155,6 +155,19 @@ Descubrimientos 1–13 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACI
 - El enforcement no está activo en módulos operacionales — estado conocido del sistema, no deuda urgente ni inconsistencia doctrinal
 - Ver: `ENFORCEMENT DE CAPACIDADES` en Faltantes
 
+**Alias Operacional — APROBADO**
+- Representación humana operacional del Operador para uso en UI, tickets, comprobantes e impresiones
+- Generación: `<Inicial Primer Nombre><Primer Apellido>` → FTEJADA, CRAMIREZ, MPEREZ
+- Colisiones: `<Inicial Primer Nombre><Primer Apellido>_<Inicial Segundo Apellido>` → FTEJADA_Q
+- Resolución persistente de colisiones: manual — sin sufijos numéricos
+- Editable manualmente tras generación automática inicial
+- Pendiente de implementación en `operator.store.ts`
+
+**Código Operador — CANDIDATO EN EVALUACIÓN**
+- Referencia documental estable para reportes, auditoría y exportaciones
+- Formato conceptual: `OP023`
+- No formalizado como requisito hasta completar validación operacional
+
 ### CORREGIR ARQUEO
 - `src/modules/cash/CorregirArqueoWorkspace.tsx`
 - `CorrectionRecord` + `recordSessionCorrection`

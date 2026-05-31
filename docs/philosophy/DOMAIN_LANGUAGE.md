@@ -257,6 +257,76 @@ La definición doctrinal de las capacidades es independiente de los mecanismos d
 
 ---
 
+## Alias Operacional
+
+Representación humana operacional del Operador.
+
+Se utiliza preferentemente en:
+
+- UI operacional
+- tickets
+- comprobantes
+- impresiones
+- identificación rápida dentro de la operación
+
+Evita exponer nombres completos en documentos que pueden circular fuera de la organización.
+
+**Regla de generación:**
+
+`<Inicial Primer Nombre><Primer Apellido>` en mayúsculas.
+
+- Fernando Miguel Tejada Quevedo → FTEJADA
+- Carlos Alberto Ramírez Flores → CRAMIREZ
+- Miguel Ángel Pérez Soto → MPEREZ
+
+**Resolución de colisiones:**
+
+`<Inicial Primer Nombre><Primer Apellido>_<Inicial Segundo Apellido>`
+
+- Fernando Miguel Tejada Quevedo → FTEJADA_Q
+- Francisco Andrés Tejada Ruiz → FTEJADA_R
+
+La resolución de colisiones persistentes es manual.
+
+No utilizar sufijos numéricos automáticos (FTEJADA_2, FTEJADA_3) — reducen legibilidad operacional.
+
+La generación es automática únicamente como valor inicial.
+
+Puede modificarse manualmente si la operación lo requiere.
+
+---
+
+## Código Operador
+
+*Estado: Candidato — pendiente de validación operacional final.*
+
+Referencia documental estable del Operador.
+
+Casos de uso plausibles:
+
+- reportes
+- auditoría
+- exportaciones
+- integraciones futuras
+- referencia documental entre sistemas
+
+Formato conceptual: `OP023`
+
+No formalizar como requisito doctrinal obligatorio hasta completar validación operacional.
+
+---
+
+## Separación de Representaciones del Operador
+
+| Representación | Propósito | Estado |
+|---|---|---|
+| Nombre Completo | Referencia administrativa | Dato referencial |
+| Alias Operacional | Representación operacional visible | Aprobado |
+| Código Operador | Referencia documental estable | Candidato en evaluación |
+| ID Técnico | Persistencia interna del sistema | Implementado |
+
+---
+
 # Reglas de Naming
 
 ## El naming debe representar
