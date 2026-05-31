@@ -59,11 +59,12 @@ estabilización
 
 ## Descubrimientos Consolidados — Mayo 2026
 
-Descubrimientos 1–12 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACIONALES.md`.
+Descubrimientos 1–13 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACIONALES.md`.
 
 - Descubrimientos 1–8: auditoría inicial (Persistencia, Producto, Turno, Empresa, Identidad histórica, Áreas operacionales, Fenómenos, Método).
 - Descubrimiento 11: Disponibilidad = capacidad operacional efectiva.
 - Descubrimiento 12: Abastecimiento = preservar/recuperar disponibilidad para continuidad.
+- Descubrimiento 13: Bloque Operacional = entidad operacional independiente que agrupa cajas bajo reglas de disponibilidad secuencial y coordina Operadores, Cajas y Turnos.
 
 ---
 
@@ -117,6 +118,18 @@ Descubrimientos 1–12 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACI
   - columnas: CAJA · FUNCIÓN · APERTURA · CIERRE · ESTADO · reimpresión
   - `arqueo: ArqueoData` guardado al cerrar
 - layout 3 columnas pre-apertura alineado con turno abierto (320/360/flex-1)
+
+### BLOQUE OPERACIONAL — Auditoría y Formalización (Mayo 2026)
+- Concepto descubierto implícitamente en cinco componentes independientes del sistema
+- Formalizado como Descubrimiento 13
+- Documento doctrinal: `docs/architecture/bloque-operacional.md`
+- Incorporado en `DOMAIN_LANGUAGE.md` como Concepto de Dominio Cash
+- Nomenclatura doctrinal formalizada: Principal · Auxiliar 01 · Auxiliar 02 · Excepcional
+- Inconsistencias identificadas (pendientes de implementación):
+  - `BLOCKS_REF`, `BOX_DEFS` y `MOCK_BLOCKS` divergen — bloque 400 inoperable
+  - `CajasWorkspace` opera sobre `MOCK_BLOCKS` sin efecto en runtime real
+  - `suggestedCashBox` no filtra por bloque del operador activo
+  - `CashSession` no registra bloque explícitamente — se infiere del código de caja
 
 ### CORREGIR ARQUEO
 - `src/modules/cash/CorregirArqueoWorkspace.tsx`
@@ -192,6 +205,7 @@ Hallazgos con evidencia fuerte:
 - Producto
 - Turno
 - Disponibilidad
+- Bloque Operacional (formalizado Mayo 2026 — ver `docs/architecture/bloque-operacional.md`)
 
 Hallazgos con evidencia significativa:
 
