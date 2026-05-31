@@ -7,8 +7,7 @@ import {
 import { usePOS } from "../../context/POSContext";
 import type { OperatorRecord } from "../../domains/operator/operator.store";
 import { generateAlias, resolveAlias } from "../../domains/operator/operator.store";
-
-const BLOCKS_REF = [100, 200, 300, 400, 500];
+import { BLOCK_BASES } from "../../domains/operator/blocks.store";
 
 const BAJA_REASONS = [
   "Renuncia voluntaria",
@@ -648,7 +647,7 @@ function PanelGestion({ selectedId, onSelect }: {
                 <select value={editBlock ?? ""} onChange={e => { setEditBlock(e.target.value === "" ? null : Number(e.target.value)); setBlockError(null); }}
                   className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#2154d8]">
                   <option value="">Sin bloque</option>
-                  {BLOCKS_REF.map(b => {
+                  {BLOCK_BASES.map(b => {
                     const taken = operators.some(o => o.id !== selectedId && o.blockBase === b && o.status !== "INACTIVO");
                     return <option key={b} value={b} disabled={taken}>{b}{taken ? " · OCUPADO" : ""}</option>;
                   })}

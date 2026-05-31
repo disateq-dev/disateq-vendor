@@ -5,6 +5,7 @@ import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
 import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities, nextOperatorCode } from "../domains/operator/operator.store";
 import { type RoleRecord, loadRoles, saveRoles, setRoleCapabilities, isRoleCodeTaken } from "../domains/operator/roles.store";
+import { blockBoxDefs } from "../domains/operator/blocks.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -55,28 +56,7 @@ export type CashSession = {
 
 export type OpLog = { id: string; ts: string; text: string };
 
-const BOX_DEFS: { code: string; type: CashBoxType }[] = [
-  { code: "100", type: "normal" },
-  { code: "101", type: "contingency-1" },
-  { code: "102", type: "contingency-2" },
-  { code: "150", type: "contingencia" },
-  { code: "200", type: "normal" },
-  { code: "201", type: "contingency-1" },
-  { code: "202", type: "contingency-2" },
-  { code: "250", type: "contingencia" },
-  { code: "300", type: "normal" },
-  { code: "301", type: "contingency-1" },
-  { code: "302", type: "contingency-2" },
-  { code: "350", type: "contingencia" },
-  { code: "400", type: "normal" },
-  { code: "401", type: "contingency-1" },
-  { code: "402", type: "contingency-2" },
-  { code: "450", type: "contingencia" },
-  { code: "500", type: "normal" },
-  { code: "501", type: "contingency-1" },
-  { code: "502", type: "contingency-2" },
-  { code: "550", type: "contingencia" },
-];
+const BOX_DEFS = blockBoxDefs() as { code: string; type: CashBoxType }[];
 
 const TERMINAL = "PC-VENTAS01";
 
