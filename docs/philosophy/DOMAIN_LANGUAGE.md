@@ -298,32 +298,41 @@ Puede modificarse manualmente si la operación lo requiere.
 
 ## Código Operador
 
-*Estado: Candidato — pendiente de validación operacional final.*
+Referencia operacional y documental estable del Operador.
 
-Referencia documental estable del Operador.
+Único, estable e inmutable durante toda la vida del operador.
 
-Casos de uso plausibles:
+Independiente de nombre, alias, rol y bloque operacional.
+
+Formato: `OP001`, `OP023`, `OP105`
+
+Uso:
 
 - reportes
 - auditoría
 - exportaciones
 - integraciones futuras
-- referencia documental entre sistemas
+- referencias documentales
+- cruce de información operacional
 
-Formato conceptual: `OP023`
+No reemplaza el ID técnico (UUID / primary key).
 
-No formalizar como requisito doctrinal obligatorio hasta completar validación operacional.
+No reemplaza el Alias Operacional.
+
+No debe utilizarse como surrogate key.
 
 ---
 
-## Separación de Representaciones del Operador
+## Separación Arquitectónica de Representaciones del Operador
 
-| Representación | Propósito | Estado |
-|---|---|---|
-| Nombre Completo | Referencia administrativa | Dato referencial |
-| Alias Operacional | Representación operacional visible | Aprobado |
-| Código Operador | Referencia documental estable | Candidato en evaluación |
-| ID Técnico | Persistencia interna del sistema | Implementado |
+Separación obligatoria. Cada representación tiene propósito distinto y no reemplaza a las demás.
+
+| Representación | Propósito | Visible para usuarios | Uso |
+|---|---|---|---|
+| ID Técnico | Persistencia interna | No | Base de datos · relaciones · sincronización |
+| Código Operador | Referencia documental estable | Contextual | Reportes · auditoría · exportaciones · integraciones |
+| Alias Operacional | Representación humana visible | Sí (operación diaria) | POS · tickets · comprobantes · pantallas |
+| Nombre Completo | Referencia administrativa y legal | Sí (contextos formales) | Documentos administrativos |
 
 ---
 

@@ -7,6 +7,7 @@ export type BlockAssignment = {
 
 export type OperatorRecord = {
   id: string;
+  operatorCode: string;   // OP001, OP023... — referencia documental estable, inmutable
   code: string;
   alias: string;
   name: string;
@@ -24,10 +25,10 @@ export type OperatorRecord = {
 const LS_KEY = "disateq.pos.operators";
 
 const SEED: OperatorRecord[] = [
-  { id: "op1", code: "FER", alias: "FER", name: "FERNANDO", roleCode: "VEN", roleName: "Vendedor",      blockBase: 100,  blockAssignment: { assignedAt: "2024-01-10T08:00:00.000Z" }, status: "ACTIVO",   pin: "1000" },
-  { id: "op2", code: "CAR", alias: "CAR", name: "CARLOS",   roleCode: "VEN", roleName: "Vendedor",      blockBase: 200,  blockAssignment: { assignedAt: "2024-03-15T09:30:00.000Z" }, status: "ACTIVO",   pin: "2000" },
-  { id: "op3", code: "LUC", alias: "LUC", name: "LUCÍA",    roleCode: "VEN", roleName: "Vendedor",      blockBase: 300,  blockAssignment: { assignedAt: "2023-11-02T10:00:00.000Z", releasedAt: "2024-12-01T17:00:00.000Z" }, status: "INACTIVO", pin: "" },
-  { id: "op4", code: "ADM", alias: "ADM", name: "ADMIN",    roleCode: "ADM", roleName: "Administrador", blockBase: null, status: "ACTIVO",   pin: "9999" },
+  { id: "op1", operatorCode: "OP001", code: "FER", alias: "FER", name: "FERNANDO", roleCode: "VEN", roleName: "Vendedor",      blockBase: 100,  blockAssignment: { assignedAt: "2024-01-10T08:00:00.000Z" }, status: "ACTIVO",   pin: "1000" },
+  { id: "op2", operatorCode: "OP002", code: "CAR", alias: "CAR", name: "CARLOS",   roleCode: "VEN", roleName: "Vendedor",      blockBase: 200,  blockAssignment: { assignedAt: "2024-03-15T09:30:00.000Z" }, status: "ACTIVO",   pin: "2000" },
+  { id: "op3", operatorCode: "OP003", code: "LUC", alias: "LUC", name: "LUCÍA",    roleCode: "VEN", roleName: "Vendedor",      blockBase: 300,  blockAssignment: { assignedAt: "2023-11-02T10:00:00.000Z", releasedAt: "2024-12-01T17:00:00.000Z" }, status: "INACTIVO", pin: "" },
+  { id: "op4", operatorCode: "OP004", code: "ADM", alias: "ADM", name: "ADMIN",    roleCode: "ADM", roleName: "Administrador", blockBase: null, status: "ACTIVO",   pin: "9999" },
 ];
 
 export function loadOperators(): OperatorRecord[] {
@@ -40,9 +41,10 @@ export function loadOperators(): OperatorRecord[] {
     const arr = JSON.parse(raw) as Array<Record<string, unknown>>;
     if (!Array.isArray(arr) || arr.length === 0) return SEED;
     return arr.map(o => ({
-      id:              typeof o.id       === "string"  ? o.id       : String(Date.now()),
-      code:            typeof o.code     === "string"  ? o.code     : "",
-      alias:           typeof o.alias    === "string"  ? o.alias    : (typeof o.code === "string" ? o.code : ""),
+      id:              typeof o.id           === "string"  ? o.id           : String(Date.now()),
+      operatorCode:    typeof o.operatorCode === "string"  ? o.operatorCode  : "",
+      code:            typeof o.code         === "string"  ? o.code         : "",
+      alias:           typeof o.alias        === "string"  ? o.alias        : (typeof o.code === "string" ? o.code : ""),
       name:            typeof o.name     === "string"  ? o.name     : "",
       roleCode:        typeof o.roleCode === "string"  ? o.roleCode : "VEN",
       roleName:        typeof o.roleName === "string"  ? o.roleName : "Vendedor",
@@ -113,6 +115,22 @@ export function releaseBlock(ops: OperatorRecord[], id: string): OperatorRecord[
       ? { ...o.blockAssignment, releasedAt: new Date().toISOString() }
       : { assignedAt: new Date().toISOString(), releasedAt: new Date().toISOString() },
   } : o);
+}
+
+// ── código operador ─────────────────────────────────────────────────────────
+
+// Genera el siguiente código operador: OP001, OP002... hasta OP999.
+// Deriva desde el máximo existente — resiliente ante reset de localStorage.
+export function nextOperatorCode(existingOps: OperatorRecord[]): string {
+  const max = existingOps.reduce((acc, op) => {
+    const m = op.operatorCode.match(/^OP(\d+)$/);
+    return m ? Math.max(acc, parseInt(m[1], 10)) : acc;
+  }, 0);
+  return `OP${String(max + 1).padStart(3, "0")}`;
+}
+
+export function isOperatorCodeTaken(ops: OperatorRecord[], operatorCode: string, excludeId?: string): boolean {
+  return ops.some(o => o.id !== excludeId && o.operatorCode === operatorCode && o.operatorCode !== "");
 }
 
 // ── alias operacional ───────────────────────────────────────────────────────

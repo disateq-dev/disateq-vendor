@@ -163,10 +163,11 @@ Descubrimientos 1–13 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACI
 - Editable manualmente tras generación automática inicial
 - Pendiente de implementación en `operator.store.ts`
 
-**Código Operador — CANDIDATO EN EVALUACIÓN**
-- Referencia documental estable para reportes, auditoría y exportaciones
-- Formato conceptual: `OP023`
-- No formalizado como requisito hasta completar validación operacional
+**Código Operador — APROBADO**
+- Referencia operacional y documental estable: único, inmutable, independiente de nombre/alias/rol/bloque
+- Formato: `OP001`, `OP023`, `OP105`
+- No reemplaza el ID técnico ni el Alias Operacional — separación arquitectónica obligatoria
+- Pendiente de implementación en `operator.store.ts`
 
 ### CORREGIR ARQUEO
 - `src/modules/cash/CorregirArqueoWorkspace.tsx`
