@@ -22,11 +22,11 @@ function formatCreatedAt(d: Date): string {
 }
 
 const MOCK_ROLES: Role[] = [
-  { id: "1", code: "VEN", name: "Vendedor",       description: "Ventas y cobros en caja",     permsCount: 4,  active: true,  hasOperationalHistory: true,  createdAt: new Date("2024-01-15T09:00:00"), createdBy: "FERNANDO" },
-  { id: "2", code: "ADM", name: "Administrador",  description: "Acceso completo al sistema",  permsCount: 32, active: true,  hasOperationalHistory: true,  createdAt: new Date("2024-01-10T08:30:00"), createdBy: "FERNANDO" },
-  { id: "3", code: "GST", name: "Gestor",         description: "Inventario y reportes",       permsCount: 12, active: true,  hasOperationalHistory: false, createdAt: new Date("2025-03-08T14:20:00"), createdBy: "CARLOS"   },
-  { id: "4", code: "CNT", name: "Contador",       description: "Arqueos y comprobantes",      permsCount: 8,  active: true,  hasOperationalHistory: false, createdAt: new Date("2025-11-22T10:05:00"), createdBy: "FERNANDO" },
-  { id: "5", code: "SPT", name: "Soporte",        description: "Configuración y sistema",     permsCount: 6,  active: false, hasOperationalHistory: false, createdAt: new Date("2026-04-03T16:45:00"), createdBy: "ADMIN"    },
+  { id: "1", code: "VEN", name: "Ventas",       description: "Operación normal de venta",                         permsCount: 4,  active: true,  hasOperationalHistory: true,  createdAt: new Date("2024-01-15T09:00:00"), createdBy: "FERNANDO" },
+  { id: "2", code: "SUP", name: "Supervisión",  description: "Supervisión integral de la operación",              permsCount: 6,  active: true,  hasOperationalHistory: true,  createdAt: new Date("2024-01-10T08:30:00"), createdBy: "FERNANDO" },
+  { id: "3", code: "GES", name: "Gestión",      description: "Operación comercial ampliada",                      permsCount: 2,  active: true,  hasOperationalHistory: false, createdAt: new Date("2025-03-08T14:20:00"), createdBy: "CARLOS"   },
+  { id: "4", code: "AUD", name: "Auditoría",    description: "Observación, revisión y validación operacional",    permsCount: 2,  active: true,  hasOperationalHistory: false, createdAt: new Date("2025-11-22T10:05:00"), createdBy: "FERNANDO" },
+  { id: "5", code: "SOP", name: "Soporte",      description: "Asistencia, diagnóstico y continuidad operacional", permsCount: 1,  active: true,  hasOperationalHistory: false, createdAt: new Date("2026-04-03T16:45:00"), createdBy: "ADMIN"    },
 ];
 
 type ThirdAction = "delete" | "deactivate" | "activate";
