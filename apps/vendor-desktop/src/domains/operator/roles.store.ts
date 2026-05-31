@@ -9,7 +9,9 @@ export type RoleRecord = {
   createdBy: string;
 };
 
-const LS_KEY = "disateq.pos.roles";
+const LS_KEY      = "disateq.pos.roles";
+const LS_V_KEY    = "disateq.pos.roles.v";
+const SEED_VERSION = "2";
 
 const SEED: RoleRecord[] = [
   {
@@ -46,6 +48,11 @@ const SEED: RoleRecord[] = [
 
 export function loadRoles(): RoleRecord[] {
   try {
+    if (localStorage.getItem(LS_V_KEY) !== SEED_VERSION) {
+      localStorage.setItem(LS_KEY, JSON.stringify(SEED));
+      localStorage.setItem(LS_V_KEY, SEED_VERSION);
+      return SEED;
+    }
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) {
       localStorage.setItem(LS_KEY, JSON.stringify(SEED));

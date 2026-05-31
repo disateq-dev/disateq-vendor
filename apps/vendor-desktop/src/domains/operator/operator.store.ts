@@ -28,60 +28,30 @@ export type OperatorRecord = {
   registeredBy: string;
 };
 
-const LS_KEY = "disateq.pos.operators";
+const LS_KEY      = "disateq.pos.operators";
+const LS_V_KEY    = "disateq.pos.operators.v";
+const SEED_VERSION = "3";
 
 const SEED: OperatorRecord[] = [
   {
-    id: "op1", operatorCode: "OP001", code: "FER", alias: "FER",
-    apellidos: "TORRES GUZMÁN", nombres: "GABRIEL", name: "GABRIEL TORRES GUZMÁN",
-    dni: "", telefono: "",
-    roleCode: "VEN", roleName: "Ventas",
-    blockBase: 100, blockAssignment: { assignedAt: "2024-01-10T08:00:00.000Z" },
-    status: "ACTIVO", pin: "1000", capabilities: [],
-    registeredAt: "2024-01-10T08:00:00.000Z", registeredBy: "SISTEMA",
-  },
-  {
-    id: "op2", operatorCode: "OP002", code: "CAR", alias: "CAR",
-    apellidos: "SALINAS PÉREZ", nombres: "CARLOS ALBERTO", name: "CARLOS ALBERTO SALINAS PÉREZ",
-    dni: "", telefono: "",
-    roleCode: "VEN", roleName: "Ventas",
-    blockBase: 200, blockAssignment: { assignedAt: "2024-03-15T09:30:00.000Z" },
-    status: "ACTIVO", pin: "2000", capabilities: [],
-    registeredAt: "2024-03-15T09:30:00.000Z", registeredBy: "SISTEMA",
-  },
-  {
-    id: "op3", operatorCode: "OP003", code: "LUC", alias: "LUC",
-    apellidos: "MENDOZA QUISPE", nombres: "LUCÍA ELENA", name: "LUCÍA ELENA MENDOZA QUISPE",
-    dni: "", telefono: "",
-    roleCode: "VEN", roleName: "Ventas",
-    blockBase: null, blockAssignment: { assignedAt: "2023-11-02T10:00:00.000Z", releasedAt: "2024-12-01T17:00:00.000Z" },
-    status: "INACTIVO", statusReason: "Renuncia voluntaria", statusAt: "2024-12-01T17:00:00.000Z",
-    pin: "", capabilities: [],
-    registeredAt: "2023-11-02T10:00:00.000Z", registeredBy: "SISTEMA",
-  },
-  {
-    id: "op4", operatorCode: "OP004", code: "ADM", alias: "ADM",
-    apellidos: "", nombres: "ADMIN", name: "ADMIN",
+    id: "op1", operatorCode: "OP001", code: "FTEJADA", alias: "FTEJADA",
+    apellidos: "TEJADA QUEVEDO", nombres: "FERNANDO MIGUEL", name: "FERNANDO MIGUEL TEJADA QUEVEDO",
     dni: "", telefono: "",
     roleCode: "SUP", roleName: "Supervisión",
-    blockBase: null,
-    status: "ACTIVO", pin: "9999", capabilities: [],
-    registeredAt: "2024-01-10T08:00:00.000Z", registeredBy: "SISTEMA",
-  },
-  {
-    id: "op5", operatorCode: "OP005", code: "MDELGADO", alias: "MDELGADO",
-    apellidos: "DELGADO SALAZAR", nombres: "MIGUEL ÁNGEL", name: "MIGUEL ÁNGEL DELGADO SALAZAR",
-    dni: "73456789", telefono: "+51 987 123 456",
-    roleCode: "AUD", roleName: "Auditoría",
-    blockBase: 500, blockAssignment: { assignedAt: "2026-05-31T10:00:00.000Z" },
-    status: "ACTIVO", pin: "5000",
-    capabilities: ["observar_continuidad"],
-    registeredAt: "2026-05-31T10:00:00.000Z", registeredBy: "OP004",
+    blockBase: 400, blockAssignment: { assignedAt: "2026-05-31T22:28:36.302Z" },
+    status: "ACTIVO", pin: "",
+    capabilities: ["corregir_arqueos","reaperturar_cierres","regularizar_incidencias","observar_comprobantes_global","anular_comprobantes","observar_continuidad"],
+    registeredAt: "2026-05-31T22:26:30.542Z", registeredBy: "SISTEMA",
   },
 ];
 
 export function loadOperators(): OperatorRecord[] {
   try {
+    if (localStorage.getItem(LS_V_KEY) !== SEED_VERSION) {
+      localStorage.setItem(LS_KEY, JSON.stringify(SEED));
+      localStorage.setItem(LS_V_KEY, SEED_VERSION);
+      return SEED;
+    }
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) {
       localStorage.setItem(LS_KEY, JSON.stringify(SEED));
