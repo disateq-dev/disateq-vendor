@@ -1,189 +1,113 @@
-# Método DISATEQ de Descubrimiento Operacional
+# Descubrimientos Operacionales — DISATEQ VENDOR™
 
-## Propósito
+Registro de realidades operacionales identificadas mediante el Método DISATEQ de Descubrimiento Operacional.
 
-Descubrir realidades operacionales fundacionales a partir de la observación de la operación real.
-
-Evitar modelar desde:
-
-- estructuras técnicas,
-- patrones ERP heredados,
-- preferencias personales,
-- modas arquitectónicas,
-- abstracciones prematuras.
+Metodología: [METODO_DESCUBRIMIENTO_OPERACIONAL.md](METODO_DESCUBRIMIENTO_OPERACIONAL.md)
 
 ---
 
-# Principio Fundamental
+## Descubrimientos Preliminares (Auditoría Inicial)
 
-La operación manda.
-
-El modelo sirve a la operación.
-
-La tecnología sirve al modelo.
+Los descubrimientos 1–8 surgieron de la auditoría operacional inicial.
+Se documentan aquí en forma mínima a partir de los hallazgos consolidados.
 
 ---
 
-# Posición Filosófica
+# Descubrimiento 1
+## El Principio de Persistencia Operacional como criterio de validación
 
-DISATEQ no es anti ERP.
+### Conclusión
 
-DISATEQ no es pro ERP por defecto.
-
-DISATEQ es pro operación.
-
-Los conceptos heredados no deben adoptarse automáticamente.
-
-Tampoco deben rechazarse automáticamente.
-
-Deben auditarse.
+Las realidades operacionales fundacionales se revelan por su capacidad de sobrevivir transformaciones significativas del negocio, no por su clasificación administrativa.
 
 ---
 
-# Regla Principal
+# Descubrimiento 2
+## Producto sobrevive como realidad operacional fundacional
 
-Comprender primero.
+### Conclusión
 
-Modelar después.
+Producto supera la Prueba de Persistencia Operacional.
 
-Implementar al final.
-
----
-
-# Preguntas de Auditoría
-
-Ante cualquier candidato de dominio:
-
-## ¿Qué representa?
-
-Comprender qué realidad operacional intenta describir.
+Permanece reconocible bajo cambios de dueño, marca, razón social y catálogo.
 
 ---
 
-## ¿Qué pierde el negocio si desaparece?
+# Descubrimiento 3
+## Turno sobrevive como realidad operacional fundacional
 
-Analizar el impacto operacional real.
+### Conclusión
 
-No el impacto técnico.
+Turno supera la Prueba de Persistencia Operacional.
 
----
-
-## ¿Quién lo observa?
-
-Identificar actores y dominios que reconocen esa realidad.
+Representa la unidad de responsabilidad operacional con apertura, cierre y operador asignado.
 
 ---
 
-## ¿Quién opera sobre ello?
+# Descubrimiento 4
+## Empresa como convergencia de identidades
 
-Determinar qué dominios interactúan directamente con dicha realidad.
+### Observación
 
----
+Empresa no debe asumirse como realidad operacional simple.
 
-## ¿Qué fenómenos genera?
+Es una convergencia de identidades: legal, comercial, fiscal, operacional y humana.
 
-Priorizar fenómenos observables por encima de atributos o estructuras.
-
----
-
-## ¿La operación lo descubrió o lo estamos inventando?
-
-Evitar abstracciones artificiales.
+Cada identidad puede evolucionar de forma independiente.
 
 ---
 
-# Prueba de Persistencia Operacional
+# Descubrimiento 5
+## Identidad histórica como requisito de trazabilidad
 
-Pregunta incorporada durante las auditorías de Producto, Empresa y Personas.
+### Observación
 
-## Pregunta
+La identidad operacional debe preservarse históricamente.
 
-¿Qué sobrevive cuando el negocio evoluciona?
-
----
-
-## Escenarios válidos
-
-- Cambio de dueño.
-- Cambio de razón social.
-- Cambio de marca.
-- Cambio de rubro.
-- Cambio de personal.
-- Cambio de catálogo.
-- Crecimiento o reducción operacional.
+Los cambios de nombre, razón social o marca no deben destruir la trazabilidad de operaciones previas.
 
 ---
 
-## Objetivo
+# Descubrimiento 6
+## Áreas operacionales son contextuales al rubro
 
-Identificar qué realidades siguen siendo reconocibles después de transformaciones significativas.
+### Observación
 
----
+Las áreas operacionales (producción, distribución, almacén, etc.) no son universalizables.
 
-# Criterios de Validación
+Su existencia y forma dependen del tipo de negocio.
 
-Una realidad muestra potencial fundacional cuando:
-
-- Es reconocida por la operación.
-- Sobrevive cambios importantes.
-- Es observada por múltiples dominios.
-- Mantiene identidad reconocible a lo largo del tiempo.
-- No depende exclusivamente de estructuras administrativas.
+No deben imponerse como estructura universal.
 
 ---
 
-# Señales de Advertencia
+# Descubrimiento 7
+## Fenómenos operacionales muestran mayor universalidad que estructuras
 
-## Posible ERPización accidental
+### Observación
 
-Cuando una estructura heredada se adopta sin auditoría operacional.
-
----
-
-## Abstracción prematura
-
-Cuando se intenta modelar antes de comprender.
+Los fenómenos (disponibilidad, continuidad, reconciliación, causalidad) son más estables y universales que las estructuras administrativas que los contienen.
 
 ---
 
-## Universalización forzada
+# Descubrimiento 8
+## Método DISATEQ de Descubrimiento Operacional formalizado
 
-Cuando se intenta convertir una manifestación contextual en fundación universal.
+### Conclusión
 
----
-
-# Hallazgos Metodológicos Consolidados
-
-Las fundaciones operacionales no se descubren por clasificación.
-
-Se descubren por persistencia.
+El método de auditoría operacional queda formalizado como herramienta de validación antes de promover cualquier concepto a fundación operacional, dominio principal o contexto delimitado.
 
 ---
 
-Los fenómenos operacionales muestran mayor universalidad que las estructuras.
+> Descubrimientos 9 y 10 no están formalmente documentados.
 
 ---
 
-No todo lo transversal es fundacional.
+## Descubrimientos Formales (Metodología Aplicada)
+
+A partir del Descubrimiento 11 se aplica el método completo con observación, evidencia, conclusión e impacto.
 
 ---
-
-La operación constituye la referencia principal para validar decisiones de dominio.
-
----
-
-# Resultado Esperado
-
-Aplicar este método antes de promover cualquier concepto a:
-
-- Fundación operacional.
-- Dominio principal.
-- Contexto delimitado.
-- Capacidad transversal.
-
-El objetivo no es modelar más.
-
-El objetivo es modelar mejor.
 
 # Descubrimiento 11
 ## Disponibilidad representa capacidad operacional efectiva
@@ -223,6 +147,8 @@ Disponibilidad no debe confundirse con:
 
 Estas realidades pueden afectar la disponibilidad, pero no la definen.
 
+---
+
 # Descubrimiento 12
 ## Abastecimiento existe para garantizar continuidad operacional mediante disponibilidad
 
@@ -260,6 +186,8 @@ La continuidad operacional constituye el propósito.
 Abastecimiento muestra señales de comportarse como una capacidad operacional más que como una realidad fundacional.
 
 Esta hipótesis requiere auditorías posteriores.
+
+---
 
 ## Observación Metodológica
 

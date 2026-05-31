@@ -1,3 +1,7 @@
+> **DOCUMENTO OBSOLETO** — Estado desactualizado. Referencia actual: [docs/context/CURRENT_CONTEXT.md](../context/CURRENT_CONTEXT.md)
+
+---
+
 # CURRENT PHASE
 
 ## Fase Activa
