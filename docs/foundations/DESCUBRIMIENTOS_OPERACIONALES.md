@@ -251,3 +251,27 @@ Las auditorías de Disponibilidad, Abastecimiento y Bloque Operacional reforzaro
 - Las fundaciones operacionales se revelan por persistencia.
 - Los dominios se revelan por propósito operacional.
 - Las entidades operacionales se revelan por convergencia implícita en múltiples dominios.
+
+---
+
+## Observación Pendiente — Identidad Operacional
+
+Surgida durante la auditoría de Operador (Mayo 2026).
+
+El sistema trata de forma idéntica:
+
+- identidades personales (Fernando, Carlos) — vinculadas a un humano específico
+- identidades funcionales (ADMIN) — vinculadas a una función, potencialmente compartibles
+
+Ambas son `OperatorRecord`. Ambas autentican via alias + PIN. Ambas generan trazabilidad por nombre.
+
+Sin embargo representan fenómenos operacionales distintos:
+
+- La identidad personal identifica a una persona.
+- La identidad funcional identifica a quien ejerce una función, independientemente de quién sea.
+
+No existe evidencia suficiente para formalizar un concepto nuevo.
+
+La distinción se vuelve relevante si el negocio evoluciona hacia múltiples operadores con acceso compartido a una función de autoridad.
+
+Requiere observación ante evidencia operacional concreta.
