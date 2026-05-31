@@ -19,7 +19,7 @@ El runtime está vivo y operativo. El ciclo comercial completo (vender → desco
 - **VENTAS / COBRO:** ticket con catálogo estático, cobro efectivo/Yape/tarjeta/mixto, comprobantes, correlativos persistentes.
 - **INVENTARIOS CAPA 0+1:** ítems · movimientos causales · disponibilidad derivada · reservas · alertas · CSV · baja lógica.
 - **COMPRAS CAPA 0+1:** recepción parcial incremental · causalidad compra:XXXXXXXX → INVENTARIOS · estados automáticos.
-- **OPERADORES + ROLES:** ciclo de vida completo · PIN · bloques · capacidades · roles configurables.
+- **OPERADORES + ROLES:** ciclo de vida completo · PIN · Bloque Operacional · capacidades · roles configurables.
 - **AJUSTES:** BusinessConfig · OpsConfig · rubro · visualMode · printFlow. Hardcode eliminado.
 - **LOGIN:** distinción LOGIN vs Runtime Principal formalizada. Drag funcional. Flash eliminado.
 - **GOVERNANCE IA:** modelo de colaboración Humano→ChatGPT→Claude Code→Codex formalizado en `docs/00-governance/ia-governance.md`.
@@ -130,6 +130,30 @@ Descubrimientos 1–13 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACI
   - `CajasWorkspace` opera sobre `MOCK_BLOCKS` sin efecto en runtime real
   - `suggestedCashBox` no filtra por bloque del operador activo
   - `CashSession` no registra bloque explícitamente — se infiere del código de caja
+
+### OPERADOR — Auditoría Doctrinal (Mayo 2026)
+
+**Identidad Operacional**
+- El Operador es la identidad operacional a la que se atribuye responsabilidad y trazabilidad
+- La identidad observable es `op.name` — persiste a través de cambios de PIN, alias, rol y bloque
+- No es: usuario de sistema, empleado, rol, credencial ni Bloque Operacional
+- Puede estar asignado a un Rol Operacional y a un Bloque Operacional
+
+**Ciclo de vida**
+- `ACTIVO` — operación normal · puede autenticarse y operar
+- `SUSPENDIDO` — retención operacional temporal · conserva Bloque Operacional asignado · reversible
+- `INACTIVO` — cierre operacional permanente · libera Bloque Operacional · historial preservado · sin camino de retorno
+
+**Rol Operacional**
+- Función operacional nombrada + plantilla de capacidades
+- No es jerarquía, cargo laboral, nivel de acceso ni gate de módulos
+- Un rol sin capacidades asignadas es válido — nombra función sin ampliar acceso
+
+**Capacidades Operacionales**
+- Capacidades efectivas = capacidades del Rol Operacional + capacidades asignadas directamente al operador
+- Las capacidades son declarativas: el modelo está definido y persistido
+- El enforcement no está activo en módulos operacionales — estado conocido del sistema, no deuda urgente ni inconsistencia doctrinal
+- Ver: `ENFORCEMENT DE CAPACIDADES` en Faltantes
 
 ### CORREGIR ARQUEO
 - `src/modules/cash/CorregirArqueoWorkspace.tsx`

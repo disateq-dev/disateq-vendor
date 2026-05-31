@@ -58,6 +58,10 @@ DISATEQ evita:
 | puesto de caja | Bloque Operacional |
 | caja secundaria | Caja Auxiliar |
 | caja contingencia (tipo X50) | Caja Excepcional |
+| perfil de usuario | Rol Operacional |
+| nivel de acceso | Rol Operacional |
+| permiso | Capacidad Operacional |
+| privilegio | Capacidad Operacional |
 
 ---
 
@@ -196,6 +200,60 @@ Requiere autorización y motivo.
 Su apertura impide iniciar la Principal durante la misma jornada.
 
 No es una continuación del flujo normal — es una modalidad operacional distinta.
+
+---
+
+# Conceptos de Dominio Operador
+
+## Operador
+
+Identidad operacional a la que se atribuye responsabilidad, trazabilidad y acciones dentro del sistema.
+
+Puede tener:
+
+- Rol Operacional asignado
+- Bloque Operacional asignado
+- Credenciales de acceso asociadas
+
+No es:
+
+- un usuario de sistema
+- un empleado o cargo laboral
+- un Rol Operacional
+- una Credencial
+- un Bloque Operacional
+
+---
+
+## Rol Operacional
+
+Función operacional nombrada con un conjunto estándar de capacidades asignadas.
+
+Los roles nombran qué hace el operador en términos operacionales.
+
+Los roles agrupan capacidades para simplificar la configuración.
+
+Un rol sin capacidades asignadas es válido — describe una función sin ampliar el acceso base.
+
+No es:
+
+- una jerarquía de autoridad
+- un cargo laboral o nivel organizacional
+- un nivel de acceso al sistema
+- un gate de módulos
+
+---
+
+## Capacidad Operacional
+
+Acción operacional específica para la que un operador está habilitado.
+
+Las capacidades efectivas de un operador son la unión de:
+
+- capacidades otorgadas por el Rol Operacional asignado
+- capacidades asignadas directamente al operador
+
+La definición doctrinal de las capacidades es independiente de los mecanismos de enforcement que cada módulo implemente.
 
 ---
 
