@@ -52,6 +52,12 @@ DISATEQ evita:
 | módulo aislado | flujo operacional |
 | usuario administrativo | operador |
 | error operacional | diferencia operacional |
+| zona de caja | Bloque Operacional |
+| área de caja | Bloque Operacional |
+| estación de trabajo | Bloque Operacional |
+| puesto de caja | Bloque Operacional |
+| caja secundaria | Caja Auxiliar |
+| caja contingencia (tipo X50) | Caja Excepcional |
 
 ---
 
@@ -137,6 +143,59 @@ DISATEQ asume:
 - contexto dinámico
 - incertidumbre contextual
 - necesidad de continuidad
+
+---
+
+# Conceptos de Dominio Cash
+
+## Bloque Operacional
+
+Unidad operacional de infraestructura de caja.
+
+Agrupa un conjunto de cajas bajo reglas de disponibilidad secuencial propias.
+
+Representa el ámbito operacional de caja asignable a un operador.
+
+Puede existir sin operador asignado.
+
+Posee ciclo de vida propio.
+
+No es:
+
+- una caja individual
+- una ubicación física
+- un atributo del operador
+- un atributo del turno
+
+Ver: [bloque-operacional.md](../architecture/bloque-operacional.md)
+
+---
+
+## Categorías de Caja dentro de un Bloque
+
+### Caja Principal
+
+Caja de inicio normal de la jornada.
+
+Sin prerequisitos operacionales.
+
+### Caja Auxiliar
+
+Caja de continuación operacional disponible tras el cierre de la caja anterior.
+
+Requiere motivo.
+
+No es inferior a la Principal — es complementaria y secuencial.
+
+### Caja Excepcional
+
+Caja de apertura de emergencia disponible únicamente cuando la Principal no fue utilizada.
+
+Requiere autorización y motivo.
+
+Su apertura impide iniciar la Principal durante la misma jornada.
+
+No es una continuación del flujo normal — es una modalidad operacional distinta.
 
 ---
 

@@ -96,3 +96,16 @@ El sistema debe:
 seguir operando aun bajo inconsistencias parciales.
 
 La continuidad operacional tiene prioridad sobre rigidez absoluta.
+
+---
+
+# Contexto de Bloque Operacional
+
+El recovery de prerequisitos de contingencia
+es la aplicación de las reglas del Bloque Operacional en startup.
+
+Si una sesión de Caja Auxiliar está activa
+pero el prerequisito de su bloque no está registrado como usado,
+el sistema lo restaura automáticamente para preservar coherencia.
+
+Ver: [bloque-operacional.md](bloque-operacional.md)

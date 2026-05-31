@@ -34,18 +34,27 @@ Evitar:
 
 # Modelo CAJA
 
-Las cajas funcionan como bloques secuenciales:
+Las cajas se organizan en Bloques Operacionales.
+
+Cada Bloque Operacional contiene cajas con disponibilidad secuencial propia.
+
+Ver: [bloque-operacional.md](bloque-operacional.md)
+
+Ejemplo Bloque 100:
 
 100 → 101 → 102
-200 → 201 → 202
+(Excepcional: 150 — disponible solo cuando 100 no fue abierta)
 
 Semántica:
 
-- XX0 → operación normal
-- XX1 → contingencia secuencial
-- XX2 → contingencia extrema secuencial
+- XX0 → Caja Principal — inicio normal de la jornada
+- XX1 → Caja Auxiliar 01 — disponible tras cierre de la Principal
+- XX2 → Caja Auxiliar 02 — disponible tras cierre de la Auxiliar 01
+- X50 → Caja Excepcional — apertura de emergencia cuando la Principal no fue abierta
 
-Una caja contingente solo puede utilizarse si la anterior ya fue usada.
+Una Caja Auxiliar solo puede abrirse si la caja anterior del bloque fue usada y cerrada.
+
+Una Caja Excepcional solo puede abrirse si la Principal no fue utilizada ese día.
 
 ---
 

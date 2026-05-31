@@ -189,9 +189,65 @@ Esta hipótesis requiere auditorías posteriores.
 
 ---
 
+# Descubrimiento 13
+## Bloque Operacional existe como entidad operacional independiente
+
+### Observación
+
+La operación organiza las cajas en grupos funcionales
+que poseen reglas propias de disponibilidad secuencial.
+
+Cada grupo opera de forma autónoma durante la jornada.
+
+Los grupos pueden existir sin operador asignado.
+
+Los grupos sobreviven a cambios de operador, dueño y configuración.
+
+### Evidencia
+
+El concepto fue encontrado ya implementado implícitamente
+en cinco componentes independientes del sistema:
+
+- `OperatorRecord.blockBase` — referencia desde el operador al bloque
+- `BOX_DEFS` — catálogo de cajas organizado por bloque implícito
+- `CajasWorkspace.OperationalBlock` — tipo modelado con ciclo de vida propio
+- `CashWorkspace.operatorBoxes` — filtrado de cajas por bloque en runtime
+- `session-history` — historial filtrado por bloque para actividad reciente
+
+Ninguno de estos componentes se coordinó explícitamente.
+
+La convergencia evidencia descubrimiento, no diseño deliberado.
+
+### Conclusión Provisional
+
+Bloque Operacional es una entidad operacional que:
+
+- agrupa cajas bajo reglas de disponibilidad secuencial propias
+- puede existir sin operador asignado
+- posee ciclo de vida propio: Disponible → Asignado → En Uso → Liberado → Inactivo
+- actúa como unidad de coordinación entre Operadores, Cajas y Turnos
+
+### Impacto
+
+Bloque Operacional no debe confundirse con:
+
+- una caja individual
+- una ubicación física
+- un atributo del operador
+- un atributo del turno
+
+El Bloque Operacional es la fuente de coordinación del dominio Cash.
+
+Coordina qué cajas están disponibles, para qué operador, durante qué jornada.
+
+Ver: [bloque-operacional.md](../architecture/bloque-operacional.md)
+
+---
+
 ## Observación Metodológica
 
-Las auditorías de Disponibilidad y Abastecimiento reforzaron dos hallazgos previos:
+Las auditorías de Disponibilidad, Abastecimiento y Bloque Operacional reforzaron hallazgos previos:
 
 - Las fundaciones operacionales se revelan por persistencia.
 - Los dominios se revelan por propósito operacional.
+- Las entidades operacionales se revelan por convergencia implícita en múltiples dominios.
