@@ -8,6 +8,7 @@ export type BlockAssignment = {
 export type OperatorRecord = {
   id: string;
   code: string;
+  alias: string;
   name: string;
   roleCode: string;
   roleName: string;
@@ -23,10 +24,10 @@ export type OperatorRecord = {
 const LS_KEY = "disateq.pos.operators";
 
 const SEED: OperatorRecord[] = [
-  { id: "op1", code: "FER", name: "FERNANDO", roleCode: "VEN", roleName: "Vendedor",      blockBase: 100,  blockAssignment: { assignedAt: "2024-01-10T08:00:00.000Z" }, status: "ACTIVO",   pin: "1000" },
-  { id: "op2", code: "CAR", name: "CARLOS",   roleCode: "VEN", roleName: "Vendedor",      blockBase: 200,  blockAssignment: { assignedAt: "2024-03-15T09:30:00.000Z" }, status: "ACTIVO",   pin: "2000" },
-  { id: "op3", code: "LUC", name: "LUCÍA",    roleCode: "VEN", roleName: "Vendedor",      blockBase: 300,  blockAssignment: { assignedAt: "2023-11-02T10:00:00.000Z", releasedAt: "2024-12-01T17:00:00.000Z" }, status: "INACTIVO", pin: "" },
-  { id: "op4", code: "ADM", name: "ADMIN",    roleCode: "ADM", roleName: "Administrador", blockBase: null, status: "ACTIVO",   pin: "9999" },
+  { id: "op1", code: "FER", alias: "FER", name: "FERNANDO", roleCode: "VEN", roleName: "Vendedor",      blockBase: 100,  blockAssignment: { assignedAt: "2024-01-10T08:00:00.000Z" }, status: "ACTIVO",   pin: "1000" },
+  { id: "op2", code: "CAR", alias: "CAR", name: "CARLOS",   roleCode: "VEN", roleName: "Vendedor",      blockBase: 200,  blockAssignment: { assignedAt: "2024-03-15T09:30:00.000Z" }, status: "ACTIVO",   pin: "2000" },
+  { id: "op3", code: "LUC", alias: "LUC", name: "LUCÍA",    roleCode: "VEN", roleName: "Vendedor",      blockBase: 300,  blockAssignment: { assignedAt: "2023-11-02T10:00:00.000Z", releasedAt: "2024-12-01T17:00:00.000Z" }, status: "INACTIVO", pin: "" },
+  { id: "op4", code: "ADM", alias: "ADM", name: "ADMIN",    roleCode: "ADM", roleName: "Administrador", blockBase: null, status: "ACTIVO",   pin: "9999" },
 ];
 
 export function loadOperators(): OperatorRecord[] {
@@ -41,6 +42,7 @@ export function loadOperators(): OperatorRecord[] {
     return arr.map(o => ({
       id:              typeof o.id       === "string"  ? o.id       : String(Date.now()),
       code:            typeof o.code     === "string"  ? o.code     : "",
+      alias:           typeof o.alias    === "string"  ? o.alias    : (typeof o.code === "string" ? o.code : ""),
       name:            typeof o.name     === "string"  ? o.name     : "",
       roleCode:        typeof o.roleCode === "string"  ? o.roleCode : "VEN",
       roleName:        typeof o.roleName === "string"  ? o.roleName : "Vendedor",
@@ -111,4 +113,39 @@ export function releaseBlock(ops: OperatorRecord[], id: string): OperatorRecord[
       ? { ...o.blockAssignment, releasedAt: new Date().toISOString() }
       : { assignedAt: new Date().toISOString(), releasedAt: new Date().toISOString() },
   } : o);
+}
+
+// ── alias operacional ───────────────────────────────────────────────────────
+
+// Genera alias base: <InicialPrimerNombre><PrimerApellido>
+// Requiere nombres y apellidos separados para derivación correcta.
+// Ejemplo: nombres="Fernando Miguel" apellidos="Tejada Quevedo" → "FTEJADA"
+export function generateAlias(nombres: string, apellidos: string): string {
+  const n = nombres.trim().toUpperCase().split(/\s+/);
+  const a = apellidos.trim().toUpperCase().split(/\s+/);
+  const inicial       = n[0]?.[0] ?? "";
+  const primerApellido = a[0] ?? "";
+  return inicial + primerApellido;
+}
+
+// Resuelve colisión usando la inicial del segundo apellido.
+// Si la colisión persiste, devuelve el base — resolución manual requerida.
+// No genera sufijos numéricos: FTEJADA_2 reduce legibilidad operacional.
+export function resolveAlias(
+  base: string,
+  apellidos: string,
+  existingAliases: string[],
+): string {
+  if (!existingAliases.includes(base)) return base;
+  const a = apellidos.trim().toUpperCase().split(/\s+/);
+  const inicialSegundo = a[1]?.[0] ?? "";
+  if (inicialSegundo) {
+    const candidate = `${base}_${inicialSegundo}`;
+    if (!existingAliases.includes(candidate)) return candidate;
+  }
+  return base;
+}
+
+export function isAliasTaken(ops: OperatorRecord[], alias: string, excludeId?: string): boolean {
+  return ops.some(o => o.id !== excludeId && o.alias === alias && o.status !== "INACTIVO");
 }
