@@ -22,6 +22,7 @@ El runtime está vivo y operativo. El ciclo comercial completo (vender → desco
 - **OPERADORES + ROLES:** ciclo de vida completo · PIN · bloques · capacidades · roles configurables.
 - **AJUSTES:** BusinessConfig · OpsConfig · rubro · visualMode · printFlow. Hardcode eliminado.
 - **LOGIN:** distinción LOGIN vs Runtime Principal formalizada. Drag funcional. Flash eliminado.
+- **GOVERNANCE IA:** modelo de colaboración Humano→ChatGPT→Claude Code→Codex formalizado en `docs/00-governance/ia-governance.md`.
 
 ### Brecha estructural principal
 
@@ -39,7 +40,7 @@ El puente CATÁLOGO vivo como entidad operacional no existe todavía.
 - `POSContext.tsx` (~1000 líneas) concentra sesión, operadores, roles, comprobantes, correlativos, movimientos, opLogs — boundary difuso.
 - Capacidades (capabilities[]) definidas en roles pero sin enforcement en módulos.
 - FONDO DE CAMBIO creciendo en complejidad dentro de CashWorkspace — presión de boundary futura.
-- Documentación operacional parcialmente desactualizada (`03_CURRENT_PHASE.md`, `02_ACTIVE_RUNTIME_CONTEXT.md`).
+- Documentación operacional parcialmente desactualizada (`03_CURRENT_PHASE.md`, `02_ACTIVE_RUNTIME_CONTEXT.md`) — ~~deprecados Mayo 2026~~, referencia centralizada en este archivo.
 
 ### Posición en el ciclo evolutivo
 
@@ -58,14 +59,11 @@ estabilización
 
 ## Descubrimientos Consolidados — Mayo 2026
 
-- Principio de Persistencia Operacional validado.
-- Producto sobrevivió auditoría operacional.
-- Turno sobrevivió auditoría operacional.
-- Empresa observada como convergencia de identidades — no asumir como realidad operacional simple.
-- Identidad histórica validada como requisito de trazabilidad.
-- Áreas operacionales identificadas como contextuales al rubro — no universalizables.
-- Fenómenos operacionales muestran mayor universalidad que estructuras.
-- Método DISATEQ de Descubrimiento Operacional formalizado.
+Descubrimientos 1–12 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACIONALES.md`.
+
+- Descubrimientos 1–8: auditoría inicial (Persistencia, Producto, Turno, Empresa, Identidad histórica, Áreas operacionales, Fenómenos, Método).
+- Descubrimiento 11: Disponibilidad = capacidad operacional efectiva.
+- Descubrimiento 12: Abastecimiento = preservar/recuperar disponibilidad para continuidad.
 
 ---
 
