@@ -9,8 +9,12 @@ export type OperatorRecord = {
   id: string;
   operatorCode: string;   // OP001, OP023... — referencia documental estable, inmutable
   code: string;
-  alias: string;
-  name: string;
+  alias: string;          // FTEJADA, CRAMIREZ... — representación operacional visible
+  apellidos: string;
+  nombres: string;
+  name: string;           // derivado: "${nombres} ${apellidos}"
+  dni?: string;
+  telefono?: string;
   roleCode: string;
   roleName: string;
   blockBase: number | null;
@@ -20,15 +24,60 @@ export type OperatorRecord = {
   statusAt?: string;
   pin: string;
   capabilities?: string[];
+  registeredAt: string;
+  registeredBy: string;
 };
 
 const LS_KEY = "disateq.pos.operators";
 
 const SEED: OperatorRecord[] = [
-  { id: "op1", operatorCode: "OP001", code: "FER", alias: "FER", name: "FERNANDO", roleCode: "VEN", roleName: "Vendedor",      blockBase: 100,  blockAssignment: { assignedAt: "2024-01-10T08:00:00.000Z" }, status: "ACTIVO",   pin: "1000" },
-  { id: "op2", operatorCode: "OP002", code: "CAR", alias: "CAR", name: "CARLOS",   roleCode: "VEN", roleName: "Vendedor",      blockBase: 200,  blockAssignment: { assignedAt: "2024-03-15T09:30:00.000Z" }, status: "ACTIVO",   pin: "2000" },
-  { id: "op3", operatorCode: "OP003", code: "LUC", alias: "LUC", name: "LUCÍA",    roleCode: "VEN", roleName: "Vendedor",      blockBase: 300,  blockAssignment: { assignedAt: "2023-11-02T10:00:00.000Z", releasedAt: "2024-12-01T17:00:00.000Z" }, status: "INACTIVO", pin: "" },
-  { id: "op4", operatorCode: "OP004", code: "ADM", alias: "ADM", name: "ADMIN",    roleCode: "ADM", roleName: "Administrador", blockBase: null, status: "ACTIVO",   pin: "9999" },
+  {
+    id: "op1", operatorCode: "OP001", code: "FER", alias: "FER",
+    apellidos: "TORRES GUZMÁN", nombres: "GABRIEL", name: "GABRIEL TORRES GUZMÁN",
+    dni: "", telefono: "",
+    roleCode: "VEN", roleName: "Cajero",
+    blockBase: 100, blockAssignment: { assignedAt: "2024-01-10T08:00:00.000Z" },
+    status: "ACTIVO", pin: "1000", capabilities: [],
+    registeredAt: "2024-01-10T08:00:00.000Z", registeredBy: "SISTEMA",
+  },
+  {
+    id: "op2", operatorCode: "OP002", code: "CAR", alias: "CAR",
+    apellidos: "SALINAS PÉREZ", nombres: "CARLOS ALBERTO", name: "CARLOS ALBERTO SALINAS PÉREZ",
+    dni: "", telefono: "",
+    roleCode: "VEN", roleName: "Cajero",
+    blockBase: 200, blockAssignment: { assignedAt: "2024-03-15T09:30:00.000Z" },
+    status: "ACTIVO", pin: "2000", capabilities: [],
+    registeredAt: "2024-03-15T09:30:00.000Z", registeredBy: "SISTEMA",
+  },
+  {
+    id: "op3", operatorCode: "OP003", code: "LUC", alias: "LUC",
+    apellidos: "MENDOZA QUISPE", nombres: "LUCÍA ELENA", name: "LUCÍA ELENA MENDOZA QUISPE",
+    dni: "", telefono: "",
+    roleCode: "VEN", roleName: "Cajero",
+    blockBase: null, blockAssignment: { assignedAt: "2023-11-02T10:00:00.000Z", releasedAt: "2024-12-01T17:00:00.000Z" },
+    status: "INACTIVO", statusReason: "Renuncia voluntaria", statusAt: "2024-12-01T17:00:00.000Z",
+    pin: "", capabilities: [],
+    registeredAt: "2023-11-02T10:00:00.000Z", registeredBy: "SISTEMA",
+  },
+  {
+    id: "op4", operatorCode: "OP004", code: "ADM", alias: "ADM",
+    apellidos: "", nombres: "ADMIN", name: "ADMIN",
+    dni: "", telefono: "",
+    roleCode: "ADM", roleName: "Supervisión operacional",
+    blockBase: null,
+    status: "ACTIVO", pin: "9999", capabilities: [],
+    registeredAt: "2024-01-10T08:00:00.000Z", registeredBy: "SISTEMA",
+  },
+  {
+    id: "op5", operatorCode: "OP005", code: "MDELGADO", alias: "MDELGADO",
+    apellidos: "DELGADO SALAZAR", nombres: "MIGUEL ÁNGEL", name: "MIGUEL ÁNGEL DELGADO SALAZAR",
+    dni: "73456789", telefono: "+51 987 123 456",
+    roleCode: "CNT", roleName: "Regularización operacional",
+    blockBase: 500, blockAssignment: { assignedAt: "2026-05-31T10:00:00.000Z" },
+    status: "ACTIVO", pin: "5000",
+    capabilities: ["observar_continuidad"],
+    registeredAt: "2026-05-31T10:00:00.000Z", registeredBy: "OP004",
+  },
 ];
 
 export function loadOperators(): OperatorRecord[] {
@@ -45,9 +94,13 @@ export function loadOperators(): OperatorRecord[] {
       operatorCode:    typeof o.operatorCode === "string"  ? o.operatorCode  : "",
       code:            typeof o.code         === "string"  ? o.code         : "",
       alias:           typeof o.alias        === "string"  ? o.alias        : (typeof o.code === "string" ? o.code : ""),
-      name:            typeof o.name     === "string"  ? o.name     : "",
+      apellidos:       typeof o.apellidos    === "string"  ? o.apellidos    : "",
+      nombres:         typeof o.nombres      === "string"  ? o.nombres      : (typeof o.name === "string" ? o.name : ""),
+      name:            typeof o.name         === "string"  ? o.name         : "",
+      dni:             typeof o.dni          === "string"  ? o.dni          : undefined,
+      telefono:        typeof o.telefono     === "string"  ? o.telefono     : undefined,
       roleCode:        typeof o.roleCode === "string"  ? o.roleCode : "VEN",
-      roleName:        typeof o.roleName === "string"  ? o.roleName : "Vendedor",
+      roleName:        typeof o.roleName === "string"  ? o.roleName : "Cajero",
       blockBase:       typeof o.blockBase === "number" ? o.blockBase : null,
       blockAssignment: (o.blockAssignment && typeof o.blockAssignment === "object") ? o.blockAssignment as BlockAssignment : undefined,
       // Migration: if status missing but active present, derive
@@ -58,6 +111,8 @@ export function loadOperators(): OperatorRecord[] {
       statusAt:        typeof o.statusAt     === "string" ? o.statusAt     : undefined,
       pin:             typeof o.pin === "string" ? o.pin : "",
       capabilities:    Array.isArray(o.capabilities) ? o.capabilities as string[] : [],
+      registeredAt:    typeof o.registeredAt === "string" ? o.registeredAt : "",
+      registeredBy:    typeof o.registeredBy === "string" ? o.registeredBy : "SISTEMA",
     }));
   } catch { return SEED; }
 }

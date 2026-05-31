@@ -3,7 +3,7 @@ import { useTicketStore } from "../domains/ticket/state/ticket.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
-import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities } from "../domains/operator/operator.store";
+import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities, nextOperatorCode } from "../domains/operator/operator.store";
 import { type RoleRecord, loadRoles, saveRoles, setRoleCapabilities, isRoleCodeTaken } from "../domains/operator/roles.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
@@ -418,8 +418,8 @@ interface POSContextValue {
   changeOperatorPin: (currentPin: string, newPin: string) => boolean;
   changeOperatorPinById: (id: string, currentPin: string, newPin: string) => boolean;
   resetOperatorPin: (id: string, newPin: string) => boolean;
-  createOperator: (data: { code: string; name: string; roleCode: string; roleName: string; blockBase: number | null }) => OperatorRecord;
-  updateOperatorData: (id: string, data: { code: string; name: string; roleCode: string; roleName: string; blockBase: number | null }) => boolean;
+  createOperator: (data: { apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string; roleCode: string; roleName: string; blockBase: number | null }) => OperatorRecord;
+  updateOperatorData: (id: string, data: { apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string; roleCode: string; roleName: string; blockBase: number | null }) => boolean;
   setOperatorStatus: (id: string, status: OperatorStatus, reason?: string) => boolean;
   assignOperatorBlock: (id: string, blockBase: number) => boolean;
   releaseOperatorBlock: (id: string) => void;
@@ -553,40 +553,59 @@ export function POSProvider({ children }: { children: ReactNode }) {
   }, [addOpLog]);
 
   const createOperator = useCallback((data: {
-    code: string; name: string; roleCode: string; roleName: string; blockBase: number | null;
+    apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string;
+    roleCode: string; roleName: string; blockBase: number | null;
   }): OperatorRecord => {
     if (data.blockBase !== null && isBlockTaken(operatorsRef.current, data.blockBase)) {
       throw new Error(`Bloque ${data.blockBase} ya está asignado a otro operador activo`);
     }
+    const displayName = `${data.nombres.trim()} ${data.apellidos.trim()}`.trim();
+    const opCode = nextOperatorCode(operatorsRef.current);
     const op: OperatorRecord = {
       id: `op${Date.now()}`,
-      code: data.code,
-      name: data.name,
+      operatorCode: opCode,
+      code: data.alias,
+      alias: data.alias,
+      apellidos: data.apellidos,
+      nombres: data.nombres,
+      name: displayName,
+      dni: data.dni,
+      telefono: data.telefono,
       roleCode: data.roleCode,
       roleName: data.roleName,
       blockBase: data.blockBase,
       blockAssignment: data.blockBase !== null ? { assignedAt: new Date().toISOString() } : undefined,
       status: "ACTIVO",
       pin: "",
+      capabilities: [],
+      registeredAt: new Date().toISOString(),
+      registeredBy: activeOperatorRef.current?.operatorCode || activeOperatorRef.current?.code || "SISTEMA",
     };
     const updated = [...operatorsRef.current, op];
     saveOperators(updated);
     setOperators(updated);
-    addOpLog(`[OPERADOR] Creado ${op.name} (${op.code})${data.blockBase ? ` · BLQ ${data.blockBase}` : ""}`);
+    addOpLog(`[OPERADOR] Creado ${op.name} (${op.alias} · ${opCode})${data.blockBase ? ` · BLQ ${data.blockBase}` : ""}`);
     return op;
   }, [addOpLog]);
 
   const updateOperatorData = useCallback((id: string, data: {
-    code: string; name: string; roleCode: string; roleName: string; blockBase: number | null;
+    apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string;
+    roleCode: string; roleName: string; blockBase: number | null;
   }): boolean => {
     const op = operatorsRef.current.find(o => o.id === id);
     if (!op) return false;
     if (data.blockBase !== null && isBlockTaken(operatorsRef.current, data.blockBase, id)) return false;
     const blockChanged = data.blockBase !== op.blockBase;
+    const displayName = `${data.nombres.trim()} ${data.apellidos.trim()}`.trim();
     const updated = operatorsRef.current.map(o => o.id === id ? {
       ...o,
-      code: data.code,
-      name: data.name,
+      code: data.alias,
+      alias: data.alias,
+      apellidos: data.apellidos,
+      nombres: data.nombres,
+      name: displayName,
+      dni: data.dni,
+      telefono: data.telefono,
       roleCode: data.roleCode,
       roleName: data.roleName,
       blockBase: data.blockBase,
@@ -600,8 +619,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setOperators(updated);
     if (blockChanged) {
       addOpLog(data.blockBase !== null
-        ? `[OPERADOR] ${data.name} asignado a BLQ ${data.blockBase}`
-        : `[OPERADOR] ${data.name} sin bloque asignado`);
+        ? `[OPERADOR] ${displayName} asignado a BLQ ${data.blockBase}`
+        : `[OPERADOR] ${displayName} sin bloque asignado`);
     }
     return true;
   }, [addOpLog]);

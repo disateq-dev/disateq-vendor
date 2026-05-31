@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Plus, Pencil, CircleCheck, PauseCircle, Archive,
   KeyRound, AlertTriangle, ChevronRight, Unlink,
-  Users, UserX, Activity, ClipboardList,
+  Users, UserX, Activity, ClipboardList, Hash, Phone, CreditCard,
 } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import type { OperatorRecord } from "../../domains/operator/operator.store";
+import { generateAlias, resolveAlias } from "../../domains/operator/operator.store";
 
 const BLOCKS_REF = [100, 200, 300, 400, 500];
 
@@ -167,12 +168,12 @@ function PanelActivos({ selectedId, onSelect }: {
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${
                         isSuspended ? "bg-amber-100 text-amber-700" : isSel ? "bg-[#2A7CA8] text-white" : "bg-[#EBF4FA] text-[#1a5f7a]"
                       }`}>
-                        {op.code}
+                        {op.alias}
                       </span>
                       <span className={`truncate text-[12px] font-semibold ${
                         isSel ? "text-[#2d6640]" : isSuspended ? "text-[#9ca3af]" : "text-[#2F3E46]"
                       }`}>
-                        {op.name}
+                        {op.nombres} {op.apellidos}
                       </span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
@@ -218,10 +219,26 @@ function PanelGestion({ selectedId, onSelect }: {
   const [panel,       setPanel]       = useState<GestionPanel>("view");
   const [blockError,  setBlockError]  = useState<string | null>(null);
 
-  const [editCode,  setEditCode]  = useState("");
-  const [editName,  setEditName]  = useState("");
-  const [editRole,  setEditRole]  = useState("VEN");
-  const [editBlock, setEditBlock] = useState<number | null>(null);
+  const [editApellidos, setEditApellidos] = useState("");
+  const [editNombres,   setEditNombres]   = useState("");
+  const [editAlias,     setEditAlias]     = useState("");
+  const [aliasEdited,   setAliasEdited]   = useState(false);
+  const [editDni,       setEditDni]       = useState("");
+  const [editTelefono,  setEditTelefono]  = useState("");
+  const [editRole,      setEditRole]      = useState("VEN");
+  const [editBlock,     setEditBlock]     = useState<number | null>(null);
+
+  // Auto-generar alias mientras el usuario escribe nombres/apellidos (solo si no lo editó manualmente)
+  const existingAliases = useMemo(
+    () => operators.filter(o => o.id !== selectedId && o.status !== "INACTIVO").map(o => o.alias),
+    [operators, selectedId],
+  );
+  useEffect(() => {
+    if (!aliasEdited && panel === "create") {
+      const base = generateAlias(editNombres, editApellidos);
+      if (base) setEditAlias(resolveAlias(base, editApellidos, existingAliases));
+    }
+  }, [editNombres, editApellidos, aliasEdited, panel, existingAliases]);
 
   const [reason,      setReason]      = useState("");
   const [reasonError, setReasonError] = useState("");
@@ -252,28 +269,40 @@ function PanelGestion({ selectedId, onSelect }: {
 
   function handleNew() {
     onSelect(null); setPanel("create");
-    setEditCode(""); setEditName(""); setEditRole("VEN"); setEditBlock(null);
+    setEditApellidos(""); setEditNombres(""); setEditAlias(""); setAliasEdited(false);
+    setEditDni(""); setEditTelefono("");
+    setEditRole("VEN"); setEditBlock(null);
     setBlockError(null);
   }
 
   function handleStartEdit() {
     if (!selected) return;
-    setEditCode(selected.code); setEditName(selected.name);
-    setEditRole(selected.roleCode); setEditBlock(selected.blockBase);
+    setEditApellidos(selected.apellidos);
+    setEditNombres(selected.nombres);
+    setEditAlias(selected.alias);
+    setAliasEdited(true);
+    setEditDni(selected.dni ?? "");
+    setEditTelefono(selected.telefono ?? "");
+    setEditRole(selected.roleCode);
+    setEditBlock(selected.blockBase);
     setPanel("edit"); setBlockError(null);
   }
 
-  const canSave = editCode.trim().length >= 2 && editName.trim().length >= 2;
+  const canSave = editApellidos.trim().length >= 2 && editNombres.trim().length >= 2 && editAlias.trim().length >= 2;
 
   function handleSave() {
     setBlockError(null);
+    const apellidos = editApellidos.trim().toUpperCase();
+    const nombres   = editNombres.trim().toUpperCase();
+    const alias     = editAlias.trim().toUpperCase();
+    const roleName  = roles.find(r => r.code === editRole)?.name ?? editRole;
     if (panel === "create") {
       try {
         const op = createOperator({
-          code:      editCode.trim().toUpperCase(),
-          name:      editName.trim().toUpperCase(),
-          roleCode:  editRole,
-          roleName:  roles.find(r => r.code === editRole)?.name ?? editRole,
+          apellidos, nombres, alias,
+          dni: editDni.trim() || undefined,
+          telefono: editTelefono.trim() || undefined,
+          roleCode: editRole, roleName,
           blockBase: editBlock,
         });
         onSelect(op.id); setPanel("view");
@@ -282,10 +311,10 @@ function PanelGestion({ selectedId, onSelect }: {
       }
     } else if (panel === "edit" && selectedId) {
       const ok = updateOperatorData(selectedId, {
-        code:      editCode.trim().toUpperCase(),
-        name:      editName.trim().toUpperCase(),
-        roleCode:  editRole,
-        roleName:  roles.find(r => r.code === editRole)?.name ?? editRole,
+        apellidos, nombres, alias,
+        dni: editDni.trim() || undefined,
+        telefono: editTelefono.trim() || undefined,
+        roleCode: editRole, roleName,
         blockBase: editBlock,
       });
       if (!ok) { setBlockError(`Bloque ${editBlock} ya asignado a otro operador activo`); return; }
@@ -391,13 +420,30 @@ function PanelGestion({ selectedId, onSelect }: {
         {/* VIEW */}
         {showView && selected && (
           <div className="flex flex-col gap-2.5">
-            <div className="flex items-center gap-2">
-              <span className="rounded bg-[#2A7CA8] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.code}</span>
-              <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.name}</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="rounded bg-[#e4e9f0] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#6b7280]">{selected.operatorCode}</span>
+              <span className="rounded bg-[#2A7CA8] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.alias}</span>
+              <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.nombres} {selected.apellidos}</span>
               {selected.status === "SUSPENDIDO" && (
                 <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">SUSP.</span>
               )}
             </div>
+            {(selected.dni || selected.telefono) && (
+              <div className="flex flex-wrap gap-2">
+                {selected.dni && (
+                  <div className="flex items-center gap-1 text-[10px] text-[#9ca3af]">
+                    <CreditCard size={9} strokeWidth={2} />
+                    <span>{selected.dni}</span>
+                  </div>
+                )}
+                {selected.telefono && (
+                  <div className="flex items-center gap-1 text-[10px] text-[#9ca3af]">
+                    <Phone size={9} strokeWidth={2} />
+                    <span>{selected.telefono}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {hasActiveTurno && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-1.5">
@@ -539,26 +585,56 @@ function PanelGestion({ selectedId, onSelect }: {
         {showForm && (
           <div className="flex flex-col gap-2.5">
             <span className="text-[9px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-              {panel === "create" ? "NUEVO OPERADOR" : "EDITAR"}
+              {panel === "create" ? "NUEVO OPERADOR" : "EDITAR OPERADOR"}
             </span>
+            {/* Apellidos + Nombres */}
             <div className="flex gap-2">
-              <div className="flex w-20 flex-col gap-0.5">
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Código</span>
-                <input type="text" value={editCode} maxLength={5} placeholder="FER"
-                  onChange={e => { setEditCode(e.target.value.toUpperCase().slice(0, 5)); setBlockError(null); }}
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Apellidos</span>
+                <input autoFocus type="text" value={editApellidos} placeholder="TORRES GUZMÁN"
+                  onChange={e => { setEditApellidos(e.target.value.toUpperCase()); setBlockError(null); }}
                   onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-bold uppercase text-[#2F3E46] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold uppercase text-[#2F3E46] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
                 />
               </div>
               <div className="flex flex-1 flex-col gap-0.5">
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Nombre</span>
-                <input autoFocus type="text" value={editName} placeholder="NOMBRE"
-                  onChange={e => setEditName(e.target.value.toUpperCase())}
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Nombres</span>
+                <input type="text" value={editNombres} placeholder="GABRIEL"
+                  onChange={e => { setEditNombres(e.target.value.toUpperCase()); setBlockError(null); }}
                   onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
                   className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold uppercase text-[#2F3E46] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
                 />
               </div>
             </div>
+            {/* Alias + DNI */}
+            <div className="flex gap-2">
+              <div className="flex w-[120px] shrink-0 flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Alias</span>
+                <input type="text" value={editAlias} placeholder="GTORRES" maxLength={20}
+                  onChange={e => { setEditAlias(e.target.value.toUpperCase().replace(/\s/g, "")); setAliasEdited(true); setBlockError(null); }}
+                  onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-bold uppercase tracking-wider text-[#2F3E46] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">DNI <span className="normal-case font-normal">(opc.)</span></span>
+                <input type="text" value={editDni} placeholder="12345678" maxLength={12}
+                  onChange={e => setEditDni(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                  onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#2F3E46] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
+                />
+              </div>
+            </div>
+            {/* Teléfono */}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Teléfono <span className="normal-case font-normal">(opc.)</span></span>
+              <input type="text" value={editTelefono} placeholder="+51 987 654 321" maxLength={20}
+                onChange={e => setEditTelefono(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") resetForm(); }}
+                className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#2F3E46] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10 placeholder:text-[#d1d9e1]"
+              />
+            </div>
+            {/* Rol + Bloque */}
             <div className="flex gap-2">
               <div className="flex flex-1 flex-col gap-0.5">
                 <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Rol</span>
@@ -654,9 +730,9 @@ function PanelHistorico() {
                   <div key={op.id} className="flex flex-col gap-1 border-b border-amber-50 bg-amber-50/15 px-3.5 py-2.5">
                     <div className="flex items-center gap-2">
                       <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
-                        {op.code}
+                        {op.alias}
                       </span>
-                      <span className="truncate text-[11px] font-semibold text-[#374151]">{op.name}</span>
+                      <span className="truncate text-[11px] font-semibold text-[#374151]">{op.nombres} {op.apellidos}</span>
                     </div>
                     {op.statusAt && (
                       <p className="text-[9px] text-[#9ca3af]">Desde {fmtDateShort(op.statusAt)}</p>
@@ -685,9 +761,9 @@ function PanelHistorico() {
                   <div key={op.id} className="flex flex-col gap-1 border-b border-[#eef0f4] px-3.5 py-2.5 opacity-55">
                     <div className="flex items-center gap-2">
                       <span className="rounded bg-[#eef0f4] px-1.5 py-0.5 text-[9px] font-bold text-[#9ca3af]">
-                        {op.code}
+                        {op.alias}
                       </span>
-                      <span className="truncate text-[11px] font-semibold text-[#9ca3af]">{op.name}</span>
+                      <span className="truncate text-[11px] font-semibold text-[#9ca3af]">{op.nombres} {op.apellidos}</span>
                     </div>
                     {op.statusAt && (
                       <p className="text-[9px] text-[#b0bac8]">Baja: {fmtDateShort(op.statusAt)}</p>

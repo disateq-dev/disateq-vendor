@@ -307,7 +307,9 @@ export function LoginScreen() {
               >
                 <option value="" disabled hidden>Seleccione USUARIO (Alias)</option>
                 {activeOps.map(op => (
-                  <option key={op.id} value={op.id}>{op.code} · {op.name}</option>
+                  <option key={op.id} value={op.id}>
+                    {op.alias} · {op.nombres ? `${op.nombres} ${op.apellidos}`.trim() : op.name}
+                  </option>
                 ))}
               </select>
               <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#a0aec0]">
