@@ -57,6 +57,16 @@ const MOCK_BLOCKS: OperationalBlock[] = [
       { code: "350", slotType: "contingencia", hasHistory: false },
     ],
   },
+  {
+    id: "b400", blockBase: 400, active: true,
+    createdAt: new Date("2026-05-31T22:28:36"), createdBy: "FTEJADA",
+    slots: [
+      { code: "400", slotType: "principal",    hasHistory: false },
+      { code: "401", slotType: "secundaria-1", hasHistory: false },
+      { code: "402", slotType: "secundaria-2", hasHistory: false },
+      { code: "450", slotType: "contingencia", hasHistory: false },
+    ],
+  },
 ];
 
 // ── helpers ────────────────────────────────────────────────────────────────
