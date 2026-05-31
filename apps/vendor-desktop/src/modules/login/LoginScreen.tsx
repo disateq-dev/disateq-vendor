@@ -308,7 +308,7 @@ export function LoginScreen() {
                 <option value="" disabled hidden>Seleccione OPERADOR</option>
                 {activeOps.map(op => (
                   <option key={op.id} value={op.id}>
-                    {op.operatorCode} · {op.alias}
+                    {op.operatorCode} · {op.roleCode} · {op.alias}
                   </option>
                 ))}
               </select>
