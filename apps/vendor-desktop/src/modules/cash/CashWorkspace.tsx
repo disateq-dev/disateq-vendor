@@ -2063,7 +2063,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   {fondoSubTab === "retiro" && (
                     <>
                       <p className="text-[10px] text-amber-600 font-semibold px-1">
-                        ↓ Retiro del fondo de cambio · quedará pendiente de reintegro
+                        Retiro del fondo de cambio · quedará pendiente de reintegro
                       </p>
 
                       <div className="flex flex-wrap gap-1">
@@ -2118,7 +2118,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   {fondoSubTab === "deposito" && (
                     <>
                       <p className="text-[10px] text-[#2154d8] font-semibold px-1">
-                        ↑ Reintegrar un retiro pendiente del fondo
+                        Reintegrar un retiro pendiente del fondo
                       </p>
 
                       {pendientesApertura.length === 0 ? (
@@ -2207,7 +2207,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   {fondoSubTab === "prestado" && (
                     <>
                       <p className="text-[10px] text-emerald-700 font-semibold px-1">
-                        ↑ Préstamo recibido al fondo · quedará pendiente de devolución
+                        Préstamo recibido al fondo · quedará pendiente de devolución
                       </p>
 
                       <div className="flex flex-wrap gap-1">
@@ -2256,7 +2256,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   {fondoSubTab === "devolver" && (
                     <>
                       <p className="text-[10px] text-rose-600 font-semibold px-1">
-                        ↓ Devolver préstamo recibido al fondo
+                        Devolver préstamo recibido al fondo
                       </p>
 
                       {externosPendientes.length === 0 ? (
@@ -2431,7 +2431,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                             <span className="text-[9px] tabular-nums text-[#c0cad4] leading-none">{hm}</span>
                           </div>
                           <span className={`shrink-0 text-[11px] font-bold leading-none pt-0.5 ${cls}`}>{sym}</span>
-                          <p className="flex-1 min-w-0 text-[11px] font-semibold text-[#374151] leading-snug">{ev.text}</p>
+                          <p className="flex-1 min-w-0 text-[11px] font-semibold text-[#374151] leading-snug">{ev.text.replace(/^[↑↓]\s*(?:Ingreso|Egreso)\s*·\s*/, "")}</p>
                         </div>
                       );
                     })}
