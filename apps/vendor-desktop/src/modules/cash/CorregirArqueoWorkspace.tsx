@@ -216,7 +216,7 @@ export function CorregirArqueoWorkspace() {
     <section className="flex min-h-0 flex-1 gap-2">
 
       {/* LEFT: lista sesiones */}
-      <div className="flex w-[520px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+      <div className="flex w-[600px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <RotateCcw size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGISTROS</span>
@@ -250,9 +250,9 @@ export function CorregirArqueoWorkspace() {
           {/* Caja + Rango de fechas — una sola línea */}
           <div className="flex items-center gap-1.5">
             <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
-              className="w-[110px] shrink-0 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
-              <option value="">Todas</option>
-              {uniqueCajas.map(c => <option key={c} value={c}>C{c}</option>)}
+              className="w-[150px] shrink-0 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
+              <option value="">Todas las cajas</option>
+              {uniqueCajas.map(c => <option key={c} value={c}>Caja {c}</option>)}
             </select>
             <input type="date" value={filterFechaDesde} onChange={e => setFilterFechaDesde(e.target.value)}
               className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
