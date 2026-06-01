@@ -6,13 +6,19 @@ const MAX_RECORDS    = 50;
 
 export type CloseSignal = "ok" | "warn";
 
+export type CorrectionAccion =
+  | "regularizar_cierre"
+  | "cierre_extemporaneo"
+  | "documentar_diferencia";
+
 export type CorrectionRecord = {
-  correctedBy: string;
-  correctedAt: string;           // ISO
-  motivo:      string;
-  accion:      "regularizar_cierre" | "documentar_diferencia";
-  prevSignal:  CloseSignal | null;
-  newSignal:   CloseSignal;
+  correctedBy:      string;
+  correctedAt:      string;           // ISO — momento de la regularización
+  motivo:           string;
+  accion:           CorrectionAccion;
+  prevSignal:       CloseSignal | null;
+  newSignal:        CloseSignal;
+  fechaOperacional?: string;          // ISO — para cierre_extemporaneo: cuando ocurrió realmente
 };
 
 export type SessionEntry = {

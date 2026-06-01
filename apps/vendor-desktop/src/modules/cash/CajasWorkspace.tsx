@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import { loadSessionHistory } from "./services/session-history.service";
+import { loadTurnEvents } from "../../domains/cash/turn-events.store";
 
 // ── tipos ─────────────────────────────────────────────────────────────────
 
@@ -593,11 +594,25 @@ export function CajasWorkspace() {
 
   const lastActivity = (() => {
     const map = new Map<string, LastActivity>();
-    for (const e of loadSessionHistory()) {
+    const history   = loadSessionHistory();
+    const turnEvs   = loadTurnEvents();
+    // Mapa sessionKey → operador para enriquecer eventos de turno
+    const opByKey   = new Map(history.map(e => [`${e.boxCode}-${e.openedAt}`, e.operator]));
+
+    for (const e of history) {
       const prefix = e.boxCode[0];
       const at     = e.closedAt ?? e.openedAt;
       const cur    = map.get(prefix);
       if (!cur || at > cur.at) map.set(prefix, { at, operator: e.operator });
+    }
+    for (const e of turnEvs) {
+      const boxCode = e.sessionKey.split("-")[0];
+      if (!boxCode) continue;
+      const prefix = boxCode[0];
+      const cur    = map.get(prefix);
+      if (!cur || e.ts > cur.at) {
+        map.set(prefix, { at: e.ts, operator: opByKey.get(e.sessionKey) ?? "" });
+      }
     }
     return map;
   })();
