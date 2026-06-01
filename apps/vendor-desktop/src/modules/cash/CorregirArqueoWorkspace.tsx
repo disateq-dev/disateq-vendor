@@ -136,7 +136,7 @@ export function CorregirArqueoWorkspace() {
     <section className="flex min-h-0 flex-1 gap-2">
 
       {/* LEFT: lista sesiones */}
-      <div className="flex w-[320px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+      <div className="flex w-[400px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <RotateCcw size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGISTROS</span>
@@ -163,7 +163,7 @@ export function CorregirArqueoWorkspace() {
                     : "bg-white text-[#374151] shadow-sm"
                     : "text-[#9ca3af] hover:text-[#374151]"
                 }`}>
-                {est === "todos" ? "Todos" : est === "pendiente" ? "Pend." : est === "revisar" ? "Revisar" : est === "regularizado" ? "Reg." : "OK"}
+                {est === "todos" ? "Todos" : est === "pendiente" ? "Pendiente" : est === "revisar" ? "Revisar" : est === "regularizado" ? "Regularizado" : "OK"}
               </button>
             ))}
           </div>
@@ -241,7 +241,7 @@ export function CorregirArqueoWorkspace() {
 
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGULARIZACIÓN DE CAJAS</span>
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGULARIZACIÓN</span>
           {selectedEntry && (
             <span className="ml-auto text-[10px] font-semibold text-[#9ca3af]">C{selectedEntry.boxCode} · {selectedEntry.boxLabel}</span>
           )}
