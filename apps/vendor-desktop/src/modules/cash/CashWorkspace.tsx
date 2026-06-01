@@ -1680,27 +1680,29 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </div>
                   </div>
 
-                  {/* Movimientos del turno — referencia/auditoría, no afectan comparación */}
+                  {/* Desglose efectivo esperado — visible si hay movimientos caja del día */}
                   {(moneyGt(ingVendido, 0) || moneyGt(egVendido, 0)) && (
                     <div className="flex flex-col gap-0.5 rounded-xl border border-[#f1f5f9] bg-[#f8fafc] px-3.5 py-2">
-                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Movimientos del turno · Caja del día</span>
+                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Efectivo esperado · cómo se calcula</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] text-[#9ca3af]">Ventas efectivo</span>
+                        <span className="text-[10px] font-semibold tabular-nums text-[#374151]">S/ {sessionStats.cash.toFixed(2)}</span>
+                      </div>
                       {moneyGt(ingVendido, 0) && (
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] text-[#9ca3af]">Ingresos</span>
+                          <span className="text-[9px] text-[#9ca3af]">Ingresos caja del día</span>
                           <span className="text-[10px] font-semibold tabular-nums text-emerald-600">+S/ {ingVendido.toFixed(2)}</span>
                         </div>
                       )}
                       {moneyGt(egVendido, 0) && (
                         <div className="flex justify-between items-center">
-                          <span className="text-[9px] text-[#9ca3af]">Egresos</span>
+                          <span className="text-[9px] text-[#9ca3af]">Egresos caja del día</span>
                           <span className="text-[10px] font-semibold tabular-nums text-red-400">−S/ {egVendido.toFixed(2)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center border-t border-[#f1f5f9] pt-0.5 mt-0.5">
-                        <span className="text-[9px] text-[#9ca3af]">Total reconstruido</span>
-                        <span className="text-[10px] font-bold tabular-nums text-[#374151]">
-                          S/ {moneySub(moneyAdd(contadoEfeNum, ingVendido), egVendido).toFixed(2)}
-                        </span>
+                      <div className="flex justify-between items-center border-t border-[#f1f5f9] pt-1 mt-0.5">
+                        <span className="text-[9px] font-bold text-[#374151]">Efectivo neto esperado</span>
+                        <span className="text-[10px] font-bold tabular-nums text-[#374151]">S/ {arqueoOperacional.toFixed(2)}</span>
                       </div>
                     </div>
                   )}
