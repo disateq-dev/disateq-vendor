@@ -121,13 +121,17 @@ export function CorregirArqueoWorkspace() {
   const [fechaOperacional, setFechaOperacional] = useState("");
 
   // Filtros
-  const [filterEstado,   setFilterEstado]   = useState<"todos" | "pendiente" | "revisar" | "regularizado" | "ok">("todos");
-  const [filterCaja,     setFilterCaja]     = useState("");
-  const [filterOperador, setFilterOperador] = useState("");
-  const [filterFechaDesde, setFilterFechaDesde] = useState("");
-  const [filterFechaHasta, setFilterFechaHasta] = useState("");
+  const [filterEstado,      setFilterEstado]      = useState<"todos" | "pendiente" | "revisar" | "regularizado" | "ok">("todos");
+  const [filterCaja,        setFilterCaja]        = useState("");
+  const [filterOperadorCode,setFilterOperadorCode]= useState("");
+  const [filterFechaDesde,  setFilterFechaDesde]  = useState("");
+  const [filterFechaHasta,  setFilterFechaHasta]  = useState("");
 
-  const uniqueCajas = [...new Set(history.map(e => e.boxCode))].sort();
+  const activeOperators    = operators.filter(o => o.status !== "INACTIVO");
+  const selectedFilterOp   = activeOperators.find(o => o.operatorCode === filterOperadorCode) ?? null;
+  const filterBlockPrefix  = selectedFilterOp?.blockBase != null ? String(selectedFilterOp.blockBase)[0] : "";
+  const uniqueCajas        = [...new Set(history.map(e => e.boxCode))].sort();
+  const cajaOptions        = filterBlockPrefix ? uniqueCajas.filter(c => c[0] === filterBlockPrefix) : uniqueCajas;
 
   const filtered = history
     .slice(0, 60)
@@ -142,8 +146,8 @@ export function CorregirArqueoWorkspace() {
         if (filterEstado === "regularizado" && !isCorrected) return false;
         if (filterEstado === "ok"           && !isOk)        return false;
       }
-      if (filterCaja     && e.boxCode !== filterCaja) return false;
-      if (filterOperador && !e.operator.toLowerCase().includes(filterOperador.toLowerCase())) return false;
+      if (filterBlockPrefix && e.boxCode[0] !== filterBlockPrefix) return false;
+      if (filterCaja        && e.boxCode !== filterCaja)            return false;
       const entryDate = e.openedAt.slice(0, 10);
       if (filterFechaDesde && entryDate < filterFechaDesde) return false;
       if (filterFechaHasta && entryDate > filterFechaHasta) return false;
@@ -216,7 +220,7 @@ export function CorregirArqueoWorkspace() {
     <section className="flex min-h-0 flex-1 gap-2">
 
       {/* LEFT: lista sesiones */}
-      <div className="flex w-[600px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+      <div className="flex w-[480px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <RotateCcw size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGISTROS</span>
@@ -247,23 +251,32 @@ export function CorregirArqueoWorkspace() {
               </button>
             ))}
           </div>
-          {/* Caja + Rango de fechas — una sola línea */}
+          {/* Operador + Caja — misma línea */}
           <div className="flex items-center gap-1.5">
+            <select value={filterOperadorCode}
+              onChange={e => { setFilterOperadorCode(e.target.value); setFilterCaja(""); }}
+              className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
+              <option value="">Todos los operadores</option>
+              {activeOperators.map(o => (
+                <option key={o.operatorCode} value={o.operatorCode}>
+                  {o.operatorCode} · {o.roleCode} · {o.alias}{o.blockBase != null ? ` · ${o.blockBase}` : ""}
+                </option>
+              ))}
+            </select>
             <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
               className="shrink-0 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
-              <option value="">Todas las cajas</option>
-              {uniqueCajas.map(c => <option key={c} value={c}>Caja {c}</option>)}
+              <option value="">Todas</option>
+              {cajaOptions.map(c => <option key={c} value={c}>C{c}</option>)}
             </select>
+          </div>
+          {/* Rango de fechas */}
+          <div className="flex items-center gap-1.5">
             <input type="date" value={filterFechaDesde} onChange={e => setFilterFechaDesde(e.target.value)}
               className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
             <span className="shrink-0 text-[9px] font-semibold text-[#9ca3af]">—</span>
             <input type="date" value={filterFechaHasta} onChange={e => setFilterFechaHasta(e.target.value)}
               className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
           </div>
-          {/* Operador */}
-          <input type="text" value={filterOperador} onChange={e => setFilterOperador(e.target.value)}
-            placeholder="Buscar operador..."
-            className="w-full rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8] placeholder:text-[#c8d4e0]" />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -324,7 +337,7 @@ export function CorregirArqueoWorkspace() {
 
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGULARIZACIÓN</span>
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGULARIZAR</span>
           {selectedEntry && (
             <span className="ml-auto text-[10px] font-semibold text-[#9ca3af]">C{selectedEntry.boxCode} · {selectedEntry.boxLabel}</span>
           )}
@@ -429,26 +442,37 @@ export function CorregirArqueoWorkspace() {
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 pt-4 pb-5">
 
             {/* Info sesión */}
-            <div className="flex flex-col divide-y divide-[#f4f6f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2 bg-[#f8fafd]">
-                <Monitor size={11} strokeWidth={2} className="text-[#9ca3af] shrink-0" />
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Sesión seleccionada</span>
-              </div>
-              <div className="flex justify-between px-4 py-2">
-                <span className="text-[10px] text-[#9ca3af]">Caja</span>
-                <span className="text-[10.5px] font-bold text-[#1a5f7a]">C{selectedEntry.boxCode} · {selectedEntry.boxLabel}</span>
-              </div>
-              <div className="flex justify-between px-4 py-2">
-                <span className="text-[10px] text-[#9ca3af]">Apertura</span>
-                <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(selectedEntry.openedAt)}</span>
-              </div>
-              <div className="flex justify-between px-4 py-2">
-                <span className="text-[10px] text-[#9ca3af]">Cierre</span>
-                <span className={`text-[10.5px] tabular-nums ${selectedEntry.closedAt ? "text-[#374151]" : "font-semibold text-amber-500"}`}>
-                  {selectedEntry.closedAt ? fmtDatetime(selectedEntry.closedAt) : "Sin cierre registrado"}
-                </span>
-              </div>
-            </div>
+            {(() => {
+              const lastActTs = sessionTimeline.length > 0
+                ? sessionTimeline[sessionTimeline.length - 1].ts
+                : (selectedEntry.closedAt ?? selectedEntry.openedAt);
+              return (
+                <div className="flex flex-col divide-y divide-[#f4f6f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-[#f8fafd]">
+                    <Monitor size={11} strokeWidth={2} className="text-[#9ca3af] shrink-0" />
+                    <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Bloque seleccionado</span>
+                  </div>
+                  <div className="flex justify-between px-4 py-2">
+                    <span className="text-[10px] text-[#9ca3af]">Caja</span>
+                    <span className="text-[10.5px] font-bold text-[#1a5f7a]">C{selectedEntry.boxCode} · {selectedEntry.boxLabel}</span>
+                  </div>
+                  <div className="flex justify-between px-4 py-2">
+                    <span className="text-[10px] text-[#9ca3af]">Apertura</span>
+                    <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(selectedEntry.openedAt)}</span>
+                  </div>
+                  <div className="flex justify-between px-4 py-2">
+                    <span className="text-[10px] text-[#9ca3af]">Última actividad</span>
+                    <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(lastActTs)}</span>
+                  </div>
+                  <div className="flex justify-between px-4 py-2">
+                    <span className="text-[10px] text-[#9ca3af]">Cierre</span>
+                    <span className={`text-[10.5px] tabular-nums ${selectedEntry.closedAt ? "text-[#374151]" : "font-semibold text-amber-500"}`}>
+                      {selectedEntry.closedAt ? fmtDatetime(selectedEntry.closedAt) : "Sin cierre registrado"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Línea de tiempo — si tiene eventos */}
             {sessionTimeline.length > 0 && <TimelineSection events={sessionTimeline} entry={selectedEntry} />}
@@ -457,27 +481,38 @@ export function CorregirArqueoWorkspace() {
             {selectedEntry.closeSignal === null && (
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Acción</span>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-1.5">
+                  {/* EXTENSION POINT: al seleccionar "Regularizar Cierre", conectar con
+                      CONTEO PARA EL CIERRE (actualmente en CashWorkspace/closingStage).
+                      Requiere extracción de <ConteoCierreSheet> como componente reutilizable.
+                      Props necesarias: cashMoves, fondoEsperado, onConfirm(arqueo, signal).
+                      Por ahora registra via el formulario de motivo existente. */}
                   <button
                     onClick={() => { setSelectedAccion("regularizar_cierre"); setFechaOperacional(""); setMotivoPreset(""); setMotivoLibre(""); }}
-                    className={`flex-1 rounded-xl border py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                    className={`w-full rounded-xl border py-2.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
                       selectedAccion === "regularizar_cierre"
                         ? "border-[#2154d8]/30 bg-[#EEF3FD] text-[#2154d8]"
                         : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#2154d8]/20"
                     }`}
                   >
-                    Regularizar cierre
+                    Regularizar Cierre
                   </button>
                   <button
                     onClick={() => { setSelectedAccion("cierre_extemporaneo"); setMotivoPreset(""); setMotivoLibre(""); }}
-                    className={`flex-1 rounded-xl border py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                    className={`w-full rounded-xl border py-2.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
                       selectedAccion === "cierre_extemporaneo"
                         ? "border-amber-300 bg-amber-50 text-amber-700"
                         : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-amber-200"
                     }`}
                   >
-                    Cierre extemporáneo
+                    Cierre Extemporáneo
                   </button>
+                  {/* EXTENSION POINT: "Regularizar Cierre Autorizado" — misma lógica que
+                      "Regularizar Cierre" pero ejecutado por el operador de ventas desde
+                      Gestión Turno tras habilitación del supervisor. El supervisor activa
+                      un flag de autorización; el operador ve el botón "Regularizar Cierre
+                      Autorizado" en su entorno natural que dirige a CONTEO PARA EL CIERRE.
+                      Requiere: mecanismo de autorización en POSContext + flag en cashSession. */}
                 </div>
               </div>
             )}
@@ -560,9 +595,9 @@ export function CorregirArqueoWorkspace() {
                   : "cursor-not-allowed bg-[#2154d8]/[0.15] text-[#2154d8]/50"
               }`}>
               <RotateCcw size={13} strokeWidth={2} />
-              {accion === "cierre_extemporaneo" ? "Registrar cierre extemporáneo"
-                : accion === "regularizar_cierre" ? "Regularizar cierre"
-                : "Documentar diferencia"}
+              {accion === "cierre_extemporaneo"  ? "Registrar Cierre Extemporáneo"
+                : accion === "regularizar_cierre" ? "Regularizar Cierre"
+                : "Documentar Diferencia"}
             </button>
 
           </div>
