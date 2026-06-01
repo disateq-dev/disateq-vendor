@@ -4,7 +4,7 @@ import { usePOS } from "../../context/POSContext";
 
 // ── tipos ─────────────────────────────────────────────────────────────────
 
-type SlotType = "principal" | "secundaria-1" | "secundaria-2" | "contingencia";
+type SlotType = "principal" | "secundaria-1" | "secundaria-2" | "secundaria-3" | "secundaria-4" | "contingencia";
 
 type CajaSlot = {
   code: string;
@@ -88,7 +88,8 @@ function nextBlockBase(blocks: OperationalBlock[]): number {
 
 function slotSummary(slots: CajaSlot[]): string {
   const labels: Record<SlotType, string> = {
-    "principal": "P", "secundaria-1": "S1", "secundaria-2": "S2", "contingencia": "CTG",
+    "principal": "P", "secundaria-1": "S1", "secundaria-2": "S2",
+    "secundaria-3": "S3", "secundaria-4": "S4", "contingencia": "CTG",
   };
   return slots.map(s => labels[s.slotType]).join(" · ");
 }
@@ -97,6 +98,8 @@ function slotLabel(t: SlotType): string {
   if (t === "principal")    return "PRINCIPAL";
   if (t === "secundaria-1") return "SECUNDARIA 01";
   if (t === "secundaria-2") return "SECUNDARIA 02";
+  if (t === "secundaria-3") return "SECUNDARIA 03";
+  if (t === "secundaria-4") return "SECUNDARIA 04";
   return "CONTINGENCIA";
 }
 
@@ -107,14 +110,22 @@ function slotObservacion(slot: CajaSlot, blockBase: number): string {
   return `Requiere caja ${blockBase} sin apertura · PIN + motivo obligatorio`;
 }
 
-function buildSlots(base: number, secCount: 0 | 1 | 2, prev?: CajaSlot[]): CajaSlot[] {
+type SecCount = 0 | 1 | 2 | 3 | 4;
+
+const SEC_SLOTS: [SlotType, number][] = [
+  ["secundaria-1", 1], ["secundaria-2", 2], ["secundaria-3", 3], ["secundaria-4", 4],
+];
+
+function buildSlots(base: number, secCount: SecCount, prev?: CajaSlot[]): CajaSlot[] {
   const histOf = (st: SlotType) => prev?.find(s => s.slotType === st)?.hasHistory ?? false;
   const slots: CajaSlot[] = [
-    { code: String(base),      slotType: "principal",    hasHistory: histOf("principal")    },
+    { code: String(base), slotType: "principal", hasHistory: histOf("principal") },
   ];
-  if (secCount >= 1) slots.push({ code: String(base + 1),  slotType: "secundaria-1", hasHistory: histOf("secundaria-1") });
-  if (secCount >= 2) slots.push({ code: String(base + 2),  slotType: "secundaria-2", hasHistory: histOf("secundaria-2") });
-  slots.push(       { code: String(base + 50), slotType: "contingencia", hasHistory: histOf("contingencia") });
+  for (const [st, offset] of SEC_SLOTS) {
+    if (secCount >= offset)
+      slots.push({ code: String(base + offset), slotType: st, hasHistory: histOf(st) });
+  }
+  slots.push({ code: String(base + 50), slotType: "contingencia", hasHistory: histOf("contingencia") });
   return slots;
 }
 
@@ -227,7 +238,7 @@ interface PanelGestionCajasProps {
 
 function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: PanelGestionCajasProps) {
   const [mode,             setMode]             = useState<PanelMode>("view");
-  const [editSecondaryCount, setEditSecondaryCount] = useState<0 | 1 | 2>(2);
+  const [editSecondaryCount, setEditSecondaryCount] = useState<SecCount>(2);
 
   const selected    = blocks.find(b => b.id === selectedId) ?? null;
   const canActOnSel = selected !== null;
@@ -245,8 +256,9 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   function handleStartEdit() {
     if (!selected) return;
     const secCount = selected.slots.filter(
-      s => s.slotType === "secundaria-1" || s.slotType === "secundaria-2"
-    ).length as 0 | 1 | 2;
+      s => s.slotType === "secundaria-1" || s.slotType === "secundaria-2" ||
+           s.slotType === "secundaria-3" || s.slotType === "secundaria-4"
+    ).length as SecCount;
     setEditSecondaryCount(secCount);
     setMode("edit");
   }
@@ -444,8 +456,8 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
             {mode === "edit" && (
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">CAJAS SECUNDARIAS</span>
-                <div className="flex gap-2">
-                  {([0, 1, 2] as const).map(n => (
+                <div className="flex gap-1.5">
+                  {([0, 1, 2, 3, 4] as const).map(n => (
                     <button
                       key={n}
                       onClick={() => setEditSecondaryCount(n)}
@@ -454,10 +466,13 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                           ? "border-[#2154d8] bg-[#eff6ff] text-[#2154d8]"
                           : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-[#c0cad4]"
                       }`}>
-                      {n === 0 ? "Sin secundarias" : n === 1 ? "1 secundaria" : "2 secundarias"}
+                      {n}
                     </button>
                   ))}
                 </div>
+                <p className="text-[9px] text-[#9ca3af]">
+                  {editSecondaryCount === 0 ? "Sin cajas secundarias" : `${editSecondaryCount} caja${editSecondaryCount > 1 ? "s" : ""} secundaria${editSecondaryCount > 1 ? "s" : ""} · máx. 4`}
+                </p>
               </div>
             )}
 
