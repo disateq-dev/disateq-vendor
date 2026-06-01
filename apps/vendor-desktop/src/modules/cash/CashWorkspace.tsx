@@ -2413,24 +2413,24 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       const hm = `${String(ts.getHours()).padStart(2, "0")}:${String(ts.getMinutes()).padStart(2, "0")}`;
                       const dd = `${String(ts.getDate()).padStart(2, "0")}/${String(ts.getMonth() + 1).padStart(2, "0")}`;
                       
-                      const cfg: Record<string, { sym: string; cls: string; sz?: string }> = {
-                        apertura:           { sym: "🔓", cls: "",                sz: "text-[12px]" },
-                        movimiento_ingreso: { sym: "+",  cls: "text-emerald-500"                  },
-                        movimiento_egreso:  { sym: "−",  cls: "text-red-400"                      },
-                        fondo_ingreso:      { sym: "+",  cls: "text-amber-500"                    },
-                        fondo_egreso:       { sym: "−",  cls: "text-amber-600"                    },
-                        comprobante:        { sym: "≡",  cls: "text-[#005BE3]"                    },
-                        anulacion:          { sym: "⊘",  cls: "text-red-400"                      },
-                        cierre:             { sym: "🔒", cls: "",                sz: "text-[12px]" },
+                      const cfg: Record<string, { sym: string; cls: string }> = {
+                        apertura:           { sym: "⊕", cls: "text-[#2154d8]"   },
+                        movimiento_ingreso: { sym: "+",  cls: "text-emerald-500" },
+                        movimiento_egreso:  { sym: "−",  cls: "text-red-400"     },
+                        fondo_ingreso:      { sym: "+",  cls: "text-amber-500"   },
+                        fondo_egreso:       { sym: "−",  cls: "text-amber-600"   },
+                        comprobante:        { sym: "≡",  cls: "text-[#005BE3]"   },
+                        anulacion:          { sym: "⊘",  cls: "text-red-400"     },
+                        cierre:             { sym: "⊗",  cls: "text-[#6b7280]"   },
                       };
-                      const { sym, cls, sz } = cfg[ev.type] ?? { sym: "·", cls: "text-[#9ca3af]" };
+                      const { sym, cls } = cfg[ev.type] ?? { sym: "·", cls: "text-[#9ca3af]" };
                       return (
                         <div key={ev.id} className="flex items-start gap-2 px-2 py-1.5 rounded-xl hover:bg-white">
                           <div className="shrink-0 w-[34px] flex flex-col items-end gap-px pt-0.5">
                             <span className="text-[8px] tabular-nums text-[#d1d9e1] leading-none">{dd}</span>
                             <span className="text-[9px] tabular-nums text-[#c0cad4] leading-none">{hm}</span>
                           </div>
-                          <span className={`shrink-0 ${sz ?? "text-[11px] font-bold"} leading-none pt-0.5 ${cls}`}>{sym}</span>
+                          <span className={`shrink-0 text-[11px] font-bold leading-none pt-0.5 ${cls}`}>{sym}</span>
                           <p className="flex-1 min-w-0 text-[11px] font-semibold text-[#374151] leading-snug">{ev.text}</p>
                         </div>
                       );
