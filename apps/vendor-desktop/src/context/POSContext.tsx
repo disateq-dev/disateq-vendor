@@ -859,10 +859,13 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const ref    = refId ? ` [comp.${refId.slice(0, 8)}]` : "";
     addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}${ref}`);
     if (!refId && s.cashBox && s.openedAt) {
-      const sk = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
-      const evType   = type === "ingreso" ? "movimiento_ingreso" : "movimiento_egreso";
+      const sk       = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
+      const isFondo  = sourceType === "apertura" || sourceType === "externo";
+      const evType   = isFondo
+        ? (type === "ingreso" ? "fondo_ingreso"      : "fondo_egreso")
+        : (type === "ingreso" ? "movimiento_ingreso"  : "movimiento_egreso");
       const srcLabel = sourceType === "apertura" ? "Fondo de cambio" : sourceType === "externo" ? "Préstamo al fondo" : "Caja del día";
-      const evText   = `${type === "ingreso" ? "↑ Ingreso" : "↓ Egreso"} · ${srcLabel} · ${motivo}`;
+      const evText   = `${srcLabel} · ${motivo}`;
       addTurnEvent(sk, evType, evText);
     }
     return move;

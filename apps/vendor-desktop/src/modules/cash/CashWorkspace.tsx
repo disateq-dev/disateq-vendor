@@ -2417,11 +2417,13 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         apertura:           { sym: "○", cls: "text-[#2154d8]"   },
                         movimiento_ingreso: { sym: "↑", cls: "text-emerald-500" },
                         movimiento_egreso:  { sym: "↓", cls: "text-red-400"     },
+                        fondo_ingreso:      { sym: "↑", cls: "text-amber-500"   },
+                        fondo_egreso:       { sym: "↓", cls: "text-amber-600"   },
                         comprobante:        { sym: "▪", cls: "text-[#005BE3]"   },
                         anulacion:          { sym: "⊘", cls: "text-red-400"     },
                         cierre:             { sym: "●", cls: "text-[#6b7280]"   },
                       };
-                      const { sym, cls } = cfg[ev.type] ?? { sym: "·", cls: "text-[#c0cad4]" };
+                      const { sym, cls } = cfg[ev.type] ?? { sym: "·", cls: "text-[#9ca3af]" };
                       return (
                         <div key={ev.id} className="flex items-start gap-2 px-2 py-1.5 rounded-xl hover:bg-white">
                           <div className="shrink-0 w-[34px] flex flex-col items-end gap-px pt-0.5">

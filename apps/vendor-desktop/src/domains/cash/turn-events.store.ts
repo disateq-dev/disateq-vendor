@@ -2,6 +2,8 @@ export type TurnEventType =
   | "apertura"
   | "movimiento_ingreso"
   | "movimiento_egreso"
+  | "fondo_ingreso"
+  | "fondo_egreso"
   | "comprobante"
   | "anulacion"
   | "cierre";
