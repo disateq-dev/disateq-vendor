@@ -753,7 +753,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setComprobantes(prev => [...prev, c]);
     if (sessionKey) {
       const correlStr = String(data.docCorrelative).padStart(8, "0");
-      addTurnEvent(sessionKey, "comprobante", `${data.docSeries}-${correlStr} generada`);
+      addTurnEvent(sessionKey, "comprobante", `Comprobante ${data.docSeries}-${correlStr} generado`);
     }
   }, [addTurnEvent]);
 
@@ -785,7 +785,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const correlStr = String(c.docCorrelative).padStart(8, "0");
     addOpLog(`${s.operator} anuló ${c.docSeries}-${correlStr} — ${motivo}`);
     const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
-    addTurnEvent(sk, "anulacion", `${c.docSeries}-${correlStr} anulada`);
+    addTurnEvent(sk, "anulacion", `Comprobante ${c.docSeries}-${correlStr} anulado`);
   }, [addOpLog, addTurnEvent]);
 
   const recordSale = useCallback((
