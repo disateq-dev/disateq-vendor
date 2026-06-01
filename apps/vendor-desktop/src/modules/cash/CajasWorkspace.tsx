@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 
-// ── tipos estructurales ────────────────────────────────────────────────────
+// ── tipos ─────────────────────────────────────────────────────────────────
 
 type SlotType = "principal" | "secundaria-1" | "secundaria-2" | "contingencia";
 
@@ -24,7 +24,7 @@ type OperationalBlock = {
 type PanelMode   = "view" | "create" | "edit";
 type ThirdAction = "deactivate" | "activate" | null;
 
-// ── mock data ──────────────────────────────────────────────────────────────
+// ── mock data ─────────────────────────────────────────────────────────────
 
 const MOCK_BLOCKS: OperationalBlock[] = [
   {
@@ -69,7 +69,7 @@ const MOCK_BLOCKS: OperationalBlock[] = [
   },
 ];
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────
 
 function formatCreatedAt(d: Date): string {
   const dd  = String(d.getDate()).padStart(2, "0");
@@ -104,11 +104,21 @@ function slotObservacion(slot: CajaSlot, blockBase: number): string {
   if (slot.slotType === "principal")    return "Sin restricciones — flujo principal de ventas";
   if (slot.slotType === "secundaria-1") return `Requiere caja ${blockBase} cerrada`;
   if (slot.slotType === "secundaria-2") return `Requiere caja ${blockBase + 1} cerrada`;
-  if (slot.slotType === "contingencia") return `Requiere caja ${blockBase} sin apertura · PIN + motivo obligatorio`;
-  return "";
+  return `Requiere caja ${blockBase} sin apertura · PIN + motivo obligatorio`;
 }
 
-// ── interfaces de props ────────────────────────────────────────────────────
+function buildSlots(base: number, secCount: 0 | 1 | 2, prev?: CajaSlot[]): CajaSlot[] {
+  const histOf = (st: SlotType) => prev?.find(s => s.slotType === st)?.hasHistory ?? false;
+  const slots: CajaSlot[] = [
+    { code: String(base),      slotType: "principal",    hasHistory: histOf("principal")    },
+  ];
+  if (secCount >= 1) slots.push({ code: String(base + 1),  slotType: "secundaria-1", hasHistory: histOf("secundaria-1") });
+  if (secCount >= 2) slots.push({ code: String(base + 2),  slotType: "secundaria-2", hasHistory: histOf("secundaria-2") });
+  slots.push(       { code: String(base + 50), slotType: "contingencia", hasHistory: histOf("contingencia") });
+  return slots;
+}
+
+// ── interfaces ────────────────────────────────────────────────────────────
 
 interface POSRef {
   operators: ReturnType<typeof usePOS>["operators"];
@@ -126,11 +136,10 @@ function getBlockStatus(pos: POSRef, block: OperationalBlock): BlockStatus {
   if (!block.active) return "INACTIVO";
   const inUso = pos.isOpen && pos.cashBox !== null && pos.cashBox.code[0] === String(block.blockBase)[0];
   if (inUso) return "EN_USO";
-  const hasOp = getBlockOperator(pos.operators, block.blockBase);
-  return hasOp ? "ASIGNADO" : "DISPONIBLE";
+  return getBlockOperator(pos.operators, block.blockBase) ? "ASIGNADO" : "DISPONIBLE";
 }
 
-// ── PanelCajas — selector ──────────────────────────────────────────────────
+// ── PanelCajas — 35% ─────────────────────────────────────────────────────
 
 interface PanelCajasProps {
   blocks: OperationalBlock[];
@@ -151,9 +160,8 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
   };
 
   return (
-    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
+    <div className="flex w-[35%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
 
-      {/* SheetHeader */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
         <Layers size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS OPERATIVAS</span>
@@ -167,7 +175,6 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
         </div>
       </div>
 
-      {/* Lista */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {blocks.map(block => {
           const isSel   = block.id === selectedId;
@@ -187,7 +194,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className={`text-[12px] font-semibold ${isSel ? "text-[#2d6640]" : blockOp ? "text-[#2F3E46]" : "text-[#b0bac8]"}`}>
-                  {blockOp ? blockOp.name : "Sin operador"}
+                  {blockOp ? blockOp.alias : "Sin operador"}
                 </p>
                 <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusColor[bStatus]}`}>
                   {bStatus.replace("_", " ")}&ensp;·&ensp;
@@ -208,7 +215,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
   );
 }
 
-// ── PanelGestionCajas — detalle + form ────────────────────────────────────
+// ── PanelGestionCajas — flex-1 ────────────────────────────────────────────
 
 interface PanelGestionCajasProps {
   blocks: OperationalBlock[];
@@ -219,7 +226,8 @@ interface PanelGestionCajasProps {
 }
 
 function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: PanelGestionCajasProps) {
-  const [mode, setMode] = useState<PanelMode>("view");
+  const [mode,             setMode]             = useState<PanelMode>("view");
+  const [editSecondaryCount, setEditSecondaryCount] = useState<0 | 1 | 2>(2);
 
   const selected    = blocks.find(b => b.id === selectedId) ?? null;
   const canActOnSel = selected !== null;
@@ -234,21 +242,27 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
     setBlocks(prev => prev.map(b => b.id === selectedId ? fn(b) : b));
   }
 
+  function handleStartEdit() {
+    if (!selected) return;
+    const secCount = selected.slots.filter(
+      s => s.slotType === "secundaria-1" || s.slotType === "secundaria-2"
+    ).length as 0 | 1 | 2;
+    setEditSecondaryCount(secCount);
+    setMode("edit");
+  }
+
   function handleSave() {
     if (mode === "create") {
       const base = nextBlockBase(blocks);
       const next: OperationalBlock = {
         id: `b${base}`, blockBase: base, active: true,
-        slots: [
-          { code: String(base),      slotType: "principal",    hasHistory: false },
-          { code: String(base + 1),  slotType: "secundaria-1", hasHistory: false },
-          { code: String(base + 2),  slotType: "secundaria-2", hasHistory: false },
-          { code: String(base + 50), slotType: "contingencia", hasHistory: false },
-        ],
+        slots: buildSlots(base, 2),
         createdAt: new Date(), createdBy: "OPERADOR",
       };
       setBlocks(prev => [...prev, next]);
       onSelect(next.id);
+    } else if (mode === "edit" && selected) {
+      mutateBlock(b => ({ ...b, slots: buildSlots(b.blockBase, editSecondaryCount, b.slots) }));
     }
     setMode("view");
   }
@@ -267,6 +281,15 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   const showView = mode === "view" && selected !== null;
   const showForm = mode === "create" || mode === "edit";
 
+  // Preview slots for edit form
+  const previewSlots = showForm
+    ? buildSlots(
+        mode === "create" ? nextBlockBase(blocks) : (selected?.blockBase ?? 100),
+        mode === "create" ? 2 : editSecondaryCount,
+        selected?.slots,
+      )
+    : [];
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
 
@@ -284,7 +307,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
           <Plus size={10} strokeWidth={2.5} />CREAR BLOQUE
         </button>
         <button
-          onClick={() => { if (selected) setMode("edit"); }}
+          onClick={handleStartEdit}
           disabled={!canActOnSel}
           className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
             canActOnSel
@@ -320,46 +343,39 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
         {showView && selected && (
           <div className="flex flex-col gap-4">
 
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">BLOQUE OPERACIONAL</span>
-
             {(() => {
               const bStatus = getBlockStatus(pos, selected);
               const blockOp = getBlockOperator(pos.operators, selected.blockBase);
-              const statusLabel: Record<string, string> = {
-                DISPONIBLE: "DISPONIBLE", ASIGNADO: "ASIGNADO", EN_USO: "EN USO", INACTIVO: "INACTIVO",
-              };
-              const statusCls: Record<string, string> = {
+              const statusCls: Record<BlockStatus, string> = {
                 DISPONIBLE: "bg-[#EBF4FA] text-[#1a5f7a]",
                 ASIGNADO:   "bg-[#dbeafe] text-[#2154d8]",
                 EN_USO:     "bg-emerald-100 text-emerald-700",
                 INACTIVO:   "bg-red-50 text-[#dc2626]",
               };
               return (
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="rounded-md bg-[#2A7CA8] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">
                     {selected.blockBase}
                   </span>
                   <span className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase ${statusCls[bStatus]}`}>
-                    {statusLabel[bStatus]}
+                    {bStatus.replace("_", " ")}
                   </span>
-                  {blockOp && (
+                  {blockOp ? (
                     <div className="flex items-center gap-1.5 rounded-lg border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1">
                       <User size={10} strokeWidth={2} className="shrink-0 text-[#2A7CA8]" />
-                      <span className="text-[11px] font-semibold text-[#374151]">{blockOp.name}</span>
-                      <span className="text-[10px] text-[#9ca3af]">· {blockOp.code}</span>
+                      <span className="text-[11px] font-semibold text-[#374151]">{blockOp.alias}</span>
+                      <span className="text-[10px] text-[#9ca3af]">· {blockOp.operatorCode}</span>
                     </div>
-                  )}
-                  {!blockOp && selected.active && (
+                  ) : selected.active && (
                     <span className="text-[11px] font-semibold text-[#b0bac8]">Sin operador asignado</span>
                   )}
                 </div>
               );
             })()}
 
-            {/* Composición de cajas */}
+            {/* Composición */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Composición del bloque</span>
-
               {selected.slots.map(slot => {
                 const isContg = slot.slotType === "contingencia";
                 const isSec   = slot.slotType === "secundaria-1" || slot.slotType === "secundaria-2";
@@ -368,7 +384,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                     className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 ${
                       isContg ? "border-amber-100 bg-amber-50/30" :
                       isSec   ? "border-[#dbeafe] bg-[#f0f6ff]" :
-                      "border-[#e4e9f0] bg-[#f8fafc]"
+                                "border-[#e4e9f0] bg-[#f8fafc]"
                     }`}>
                     <div className="flex items-center gap-2">
                       {isContg ? <ShieldAlert size={11} strokeWidth={2} className="shrink-0 text-amber-500" /> :
@@ -407,26 +423,48 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                 </div>
               </div>
             </div>
-
           </div>
         )}
 
         {/* FORM */}
         {showForm && (
           <div className="flex flex-col gap-4">
+
+            {/* Header bloque */}
             <div className="flex items-center gap-2.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-2">
               <span className="rounded-md bg-[#2A7CA8] px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">
                 {mode === "create" ? nextBlockBase(blocks) : selected?.blockBase}
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-widest text-[#9ca3af]">
-                {mode === "create" ? "NUEVO BLOQUE OPERACIONAL" : "CONFIRMAR EDICIÓN"}
+                {mode === "create" ? "NUEVO BLOQUE OPERACIONAL" : "EDITAR BLOQUE"}
               </span>
             </div>
+
+            {/* Selector de secundarias — solo en EDIT, CREATE siempre 2 */}
+            {mode === "edit" && (
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">CAJAS SECUNDARIAS</span>
+                <div className="flex gap-2">
+                  {([0, 1, 2] as const).map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setEditSecondaryCount(n)}
+                      className={`flex-1 rounded-xl border py-2 text-[11px] font-bold transition active:scale-[0.97] ${
+                        editSecondaryCount === n
+                          ? "border-[#2154d8] bg-[#eff6ff] text-[#2154d8]"
+                          : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-[#c0cad4]"
+                      }`}>
+                      {n === 0 ? "Sin secundarias" : n === 1 ? "1 secundaria" : "2 secundarias"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {mode === "create" && (
               <div className="rounded-xl border border-[#dbeafe] bg-[#f0f6ff] px-3 py-2.5">
                 <p className="text-[11px] font-semibold text-[#2154d8]/80">
-                  Se crearán 4 cajas: principal, secundaria-1, secundaria-2 y contingencia.
+                  Se crearán 4 cajas: principal, 2 secundarias y contingencia.
                 </p>
                 <p className="mt-1 text-[10px] text-[#9ca3af]">
                   La asignación de operador se realiza en la sección OPERADORES.
@@ -434,14 +472,46 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
               </div>
             )}
 
+            {/* Preview composición */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
+                {mode === "create" ? "Composición" : "Composición resultante"}
+              </span>
+              {previewSlots.map(slot => {
+                const isContg = slot.slotType === "contingencia";
+                const isSec   = slot.slotType === "secundaria-1" || slot.slotType === "secundaria-2";
+                return (
+                  <div key={slot.code}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
+                      isContg ? "border-amber-100 bg-amber-50/30" :
+                      isSec   ? "border-[#dbeafe] bg-[#f0f6ff]" :
+                                "border-[#e4e9f0] bg-[#f8fafc]"
+                    }`}>
+                    {isContg ? <ShieldAlert size={10} strokeWidth={2} className="shrink-0 text-amber-500" /> :
+                     isSec   ? <Monitor size={10} strokeWidth={2} className="shrink-0 text-[#2154d8]/60" /> :
+                               <CircleCheck size={10} strokeWidth={2} className="shrink-0 text-emerald-500" />}
+                    <span className="text-[11px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+                      isContg ? "text-amber-600" : isSec ? "text-[#2154d8]/70" : "text-[#1a5f7a]"
+                    }`}>
+                      {slotLabel(slot.slotType)}
+                    </span>
+                    {slot.hasHistory && (
+                      <span className="ml-auto text-[9px] font-bold text-[#9ca3af]">con uso</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="flex gap-2 pt-1">
-              <button onClick={() => setMode("view")} title="Tecla [Escape]"
-                className="flex h-10 flex-1 items-center justify-center rounded-md border border-[#e4e9f0] bg-white text-[13px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8] hover:text-[#374151]">
+              <button onClick={() => setMode("view")}
+                className="flex h-10 flex-1 items-center justify-center rounded-md border border-[#e4e9f0] bg-white text-[13px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8]">
                 Cancelar
               </button>
-              <button onClick={handleSave} title="Tecla [Enter]"
+              <button onClick={handleSave}
                 className="flex h-10 flex-1 items-center justify-center rounded-md bg-[#45b356] text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98]">
-                {mode === "create" ? "Crear bloque" : "Confirmar"}
+                {mode === "create" ? "Crear bloque" : "Guardar cambios"}
               </button>
             </div>
           </div>
@@ -461,7 +531,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   );
 }
 
-// ── CajasWorkspace — root ──────────────────────────────────────────────────
+// ── CajasWorkspace ────────────────────────────────────────────────────────
 
 export function CajasWorkspace() {
   const { operators, isOpen, cashBox } = usePOS();
