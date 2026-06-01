@@ -105,8 +105,10 @@ function slotLabel(t: SlotType): string {
 
 function slotObservacion(slot: CajaSlot, blockBase: number): string {
   if (slot.slotType === "principal")    return "Sin restricciones — flujo principal de ventas";
-  if (slot.slotType === "secundaria-1") return `Requiere caja ${blockBase} cerrada`;
-  if (slot.slotType === "secundaria-2") return `Requiere caja ${blockBase + 1} cerrada`;
+  if (slot.slotType === "secundaria-1") return `Requiere caja ${blockBase} cerrada · motivo obligatorio`;
+  if (slot.slotType === "secundaria-2") return `Requiere caja ${blockBase + 1} cerrada · motivo obligatorio`;
+  if (slot.slotType === "secundaria-3") return `Requiere caja ${blockBase + 2} cerrada · motivo obligatorio`;
+  if (slot.slotType === "secundaria-4") return `Requiere caja ${blockBase + 3} cerrada · motivo obligatorio`;
   return `Requiere caja ${blockBase} sin apertura · PIN + motivo obligatorio`;
 }
 
@@ -237,11 +239,13 @@ interface PanelGestionCajasProps {
 }
 
 function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: PanelGestionCajasProps) {
-  const [mode,             setMode]             = useState<PanelMode>("view");
+  const [mode,               setMode]               = useState<PanelMode>("view");
   const [editSecondaryCount, setEditSecondaryCount] = useState<SecCount>(2);
+  const [confirmDelete,      setConfirmDelete]      = useState(false);
 
   const selected    = blocks.find(b => b.id === selectedId) ?? null;
   const canActOnSel = selected !== null;
+  const canDelete   = selected !== null && !selected.slots.some(s => s.hasHistory);
 
   const thirdAction: ThirdAction =
     !canActOnSel        ? null
@@ -255,6 +259,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
 
   function handleStartEdit() {
     if (!selected) return;
+    setConfirmDelete(false);
     const secCount = selected.slots.filter(
       s => s.slotType === "secundaria-1" || s.slotType === "secundaria-2" ||
            s.slotType === "secundaria-3" || s.slotType === "secundaria-4"
@@ -288,6 +293,14 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   function handleActivate() {
     if (!selected || selected.active) return;
     mutateBlock(b => ({ ...b, active: true }));
+  }
+
+  function handleDelete() {
+    if (!canDelete) return;
+    setBlocks(prev => prev.filter(b => b.id !== selectedId));
+    onSelect(null);
+    setConfirmDelete(false);
+    setMode("view");
   }
 
   const showView = mode === "view" && selected !== null;
@@ -346,6 +359,16 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
             <ToggleRight size={10} strokeWidth={2.5} />ACTIVAR
           </button>
         )}
+        <button
+          onClick={() => { if (canDelete) setConfirmDelete(true); }}
+          disabled={!canDelete}
+          className={`ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+            canDelete
+              ? "bg-[#dc2626]/10 text-[#dc2626] hover:bg-[#dc2626]/20 active:scale-[0.97]"
+              : "cursor-not-allowed text-[#d1d9e1]"
+          }`}>
+          <Ban size={10} strokeWidth={2.5} />ELIMINAR
+        </button>
       </div>
 
       {/* Body */}
@@ -435,6 +458,25 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                 </div>
               </div>
             </div>
+
+            {/* Confirmar eliminación */}
+            {confirmDelete && (
+              <div className="flex flex-col gap-2 rounded-xl border border-[#dc2626]/30 bg-[#fef2f2] px-3.5 py-2.5">
+                <p className="text-[10px] font-semibold text-[#dc2626]">
+                  ¿Eliminar bloque {selected.blockBase}? Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-2">
+                  <button onClick={() => setConfirmDelete(false)}
+                    className="flex-1 rounded-lg border border-[#e4e9f0] bg-white py-1.5 text-[10px] font-bold uppercase text-[#6b7280] hover:border-[#b0bac8] transition">
+                    Cancelar
+                  </button>
+                  <button onClick={handleDelete}
+                    className="flex-1 rounded-lg bg-[#dc2626] py-1.5 text-[10px] font-bold uppercase text-white hover:bg-[#b91c1c] transition">
+                    Confirmar eliminación
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
