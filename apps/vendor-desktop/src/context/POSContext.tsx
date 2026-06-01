@@ -6,6 +6,7 @@ import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/t
 import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities, nextOperatorCode } from "../domains/operator/operator.store";
 import { type RoleRecord, loadRoles, saveRoles, setRoleCapabilities, isRoleCodeTaken } from "../domains/operator/roles.store";
 import { blockBoxDefs } from "../domains/operator/blocks.store";
+import { type TurnEvent, type TurnEventType, loadTurnEvents, saveTurnEvents } from "../domains/cash/turn-events.store";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -385,6 +386,8 @@ interface POSContextValue {
   editCashMove: (id: string, motivo: string, observacion?: string) => void;
   opLogs: OpLog[];
   addOpLog: (text: string) => void;
+  turnEvents: TurnEvent[];
+  currentSessionEvents: TurnEvent[];
   comprobantes: Comprobante[];
   addComprobante: (data: {
     docType: string; docSeries: string; docCorrelative: number; dateTime: string;
@@ -464,6 +467,28 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const [opLogs, setOpLogs] = useState<OpLog[]>(loadOpLogs);
   useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
+
+  const [turnEvents, setTurnEvents] = useState<TurnEvent[]>(loadTurnEvents);
+  useEffect(() => { saveTurnEvents(turnEvents); }, [turnEvents]);
+
+  const addTurnEvent = useCallback((sk: string, type: TurnEventType, text: string) => {
+    if (!sk) return;
+    const entry: TurnEvent = {
+      id:         `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sessionKey: sk,
+      ts:         new Date().toISOString(),
+      type,
+      text,
+    };
+    setTurnEvents(prev => [...prev, entry]);
+  }, []);
+
+  const currentSessionEvents = useMemo(() => {
+    const s = cashSession;
+    if (!s.isOpen || !s.cashBox || !s.openedAt) return [];
+    const sk = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
+    return turnEvents.filter(e => e.sessionKey === sk);
+  }, [turnEvents, cashSession]);
 
   const addOpLog = useCallback((text: string) => {
     const entry: OpLog = {
@@ -726,7 +751,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
       status: "active",
     };
     setComprobantes(prev => [...prev, c]);
-  }, []);
+    if (sessionKey) {
+      const correlStr = String(data.docCorrelative).padStart(8, "0");
+      addTurnEvent(sessionKey, "comprobante", `${data.docSeries}-${correlStr} generada`);
+    }
+  }, [addTurnEvent]);
 
   const voidComprobante = useCallback((id: string, motivo: string) => {
     const s = cashSessionRef.current;
@@ -753,8 +782,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cancelledBy:     s.operator,
       cancelledMotivo: motivo,
     } : x));
-    addOpLog(`${s.operator} anuló ${c.docSeries}-${String(c.docCorrelative).padStart(8,"0")} — ${motivo}`);
-  }, [addOpLog]);
+    const correlStr = String(c.docCorrelative).padStart(8, "0");
+    addOpLog(`${s.operator} anuló ${c.docSeries}-${correlStr} — ${motivo}`);
+    const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
+    addTurnEvent(sk, "anulacion", `${c.docSeries}-${correlStr} anulada`);
+  }, [addOpLog, addTurnEvent]);
 
   const recordSale = useCallback((
     netTotal: number, payMethod: string,
@@ -826,8 +858,14 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const obs    = observacion ? ` · ${observacion}` : "";
     const ref    = refId ? ` [comp.${refId.slice(0, 8)}]` : "";
     addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}${ref}`);
+    if (!refId && s.cashBox && s.openedAt) {
+      const sk = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
+      const evType = type === "ingreso" ? "movimiento_ingreso" : "movimiento_egreso";
+      const evText = `${type === "ingreso" ? "↑ Ingreso" : "↓ Egreso"} · ${motivo}`;
+      addTurnEvent(sk, evType, evText);
+    }
     return move;
-  }, [addOpLog]);
+  }, [addOpLog, addTurnEvent]);
 
   const updateCashMove = useCallback((id: string, status: RegularizationStatus, mode?: RegularizationMode) => {
     const target = cashMovesRef.current.find(m => m.id === id);
@@ -919,11 +957,13 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const trimmedMotivo = motivo?.trim() || undefined;
     const trimmedRefOp  = refOp?.trim()  || undefined;
     const tag = isExceptional ? " [EXCEPCIONAL]" : "";
-    setCashSession({ isOpen: true, cashBox: box, operator, operatorId, terminal: TERMINAL, openedAt: new Date(), apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
+    const now = new Date();
+    setCashSession({ isOpen: true, cashBox: box, operator, operatorId, terminal: TERMINAL, openedAt: now, apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
     const base = `${operator} abrió CAJA ${boxCode}${tag} · fondo S/ ${apertura.toFixed(2)}`;
     const extra = [trimmedMotivo && `Motivo: ${trimmedMotivo}`, trimmedRefOp && `Ref: ${trimmedRefOp}`].filter(Boolean).join(" · ");
     addOpLog(extra ? `${base} — ${extra}` : base);
-  }, [cashBoxes, addOpLog]);
+    addTurnEvent(`${boxCode}-${now.toISOString()}`, "apertura", `Apertura de turno · Caja ${boxCode}${tag}`);
+  }, [cashBoxes, addOpLog, addTurnEvent]);
 
   const correctAperturaData = useCallback((
     newApertura: number,
@@ -963,10 +1003,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setSessionStats(NULL_STATS);
     setCashMoves([]);
     const op = s.operator;
+    const sk = s.openedAt ? `${code}-${s.openedAt.toISOString()}` : "";
+    addTurnEvent(sk, "cierre", `Cierre de turno · Caja ${code}`);
     setUsedCodes(prev => { const next = new Set(prev); next.add(code); return next; });
     setCashSession({ isOpen: false, cashBox: null, operator: "", operatorId: undefined, terminal: TERMINAL, openedAt: null, apertura: 0 });
     addOpLog(`${op} cerró CAJA ${code}`);
-  }, [addOpLog]);
+  }, [addOpLog, addTurnEvent]);
 
   return (
     <POSContext.Provider value={{
@@ -977,6 +1019,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       sessionStats, docCorrelatives, recordSale,
       cashMoves, addCashMove, updateCashMove, editCashMove,
       opLogs, addOpLog,
+      turnEvents, currentSessionEvents,
       comprobantes, addComprobante, voidComprobante,
       sessionNotice, showNotice,
       operators, activeOperator, loginOperator, logoutOperator, changeOperatorPin, changeOperatorPinById, resetOperatorPin,
