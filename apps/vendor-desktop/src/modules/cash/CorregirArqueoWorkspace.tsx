@@ -250,7 +250,7 @@ export function CorregirArqueoWorkspace() {
           {/* Caja + Rango de fechas — una sola línea */}
           <div className="flex items-center gap-1.5">
             <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
-              className="w-[150px] shrink-0 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
+              className="shrink-0 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
               <option value="">Todas las cajas</option>
               {uniqueCajas.map(c => <option key={c} value={c}>Caja {c}</option>)}
             </select>
