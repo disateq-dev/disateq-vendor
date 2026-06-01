@@ -858,7 +858,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const obs    = observacion ? ` · ${observacion}` : "";
     const ref    = refId ? ` [comp.${refId.slice(0, 8)}]` : "";
     addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}${ref}`);
-    if (!refId && s.cashBox && s.openedAt) {
+    if (s.cashBox && s.openedAt) {
       const sk       = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
       const isFondo  = sourceType === "apertura" || sourceType === "externo";
       const evType   = isFondo
@@ -881,7 +881,13 @@ export function POSProvider({ children }: { children: ReactNode }) {
       ...m, regularizationStatus: status, ...(mode ? { regularizationMode: mode } : {}),
     } : m));
     addOpLog(`[REGULARIZACIÓN] ${s.operator} — CAJA ${s.cashBox?.code ?? "?"} — S/${target.amount.toFixed(2)} ${modeLabel}: ${target.motivo}`);
-  }, [addOpLog]);
+    if (s.cashBox && s.openedAt && (target.sourceType === "apertura" || target.sourceType === "externo")) {
+      const sk = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
+      const evType = mode === "integracion_fondo" ? "fondo_ingreso" : "fondo_egreso";
+      const label  = mode === "integracion_fondo" ? "Préstamo integrado al fondo" : "Préstamo devuelto";
+      addTurnEvent(sk, evType, `Fondo de cambio · ${label} · ${target.motivo}`);
+    }
+  }, [addOpLog, addTurnEvent]);
 
   const editCashMove = useCallback((id: string, motivo: string, observacion?: string) => {
     const target = cashMovesRef.current.find(m => m.id === id);
