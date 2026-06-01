@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 
@@ -246,6 +246,11 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   const selected    = blocks.find(b => b.id === selectedId) ?? null;
   const canActOnSel = selected !== null;
   const canDelete   = selected !== null && !selected.slots.some(s => s.hasHistory);
+
+  useEffect(() => {
+    setMode("view");
+    setConfirmDelete(false);
+  }, [selectedId]);
 
   const thirdAction: ThirdAction =
     !canActOnSel        ? null
