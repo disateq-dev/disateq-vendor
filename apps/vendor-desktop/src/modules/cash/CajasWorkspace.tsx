@@ -147,7 +147,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
 
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
         <Layers size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS OPERATIVAS</span>
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ESTADO CAJAS</span>
         <div className="ml-auto flex items-center gap-1">
           {activeCount > 0 && (
             <span className="rounded bg-[#EBF4FA] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#1a5f7a]">{activeCount}</span>
@@ -296,7 +296,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
       {/* SheetHeader */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
         <LayoutGrid size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">GESTIÓN DE CAJAS</span>
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONFIGURACIÓN DE CAJAS</span>
       </div>
 
       {/* ActionBar */}

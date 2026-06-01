@@ -1209,7 +1209,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             </div>
           </div>
 
-          {/* RIGHT: ACTIVIDAD RECIENTE — worksheet completa */}
+          {/* RIGHT: ESTADO DE APERTURAS Y CIERRES — worksheet completa */}
           {(() => {
             const fmtTime = (iso: string) =>
               new Date(iso).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
@@ -1229,7 +1229,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 {/* Header */}
                 <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
                   <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-                  <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ACTIVIDAD RECIENTE</span>
+                  <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ESTADO DE APERTURAS Y CIERRES</span>
                 </div>
 
                 {blockEntries.length === 0 ? (
@@ -1237,7 +1237,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   /* Empty state */
                   <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
                     <ClipboardList size={28} strokeWidth={1.2} className="text-[#d1d5db]" />
-                    <p className="text-[11px] font-semibold text-[#9ca3af]">Sin actividad registrada en este bloque</p>
+                    <p className="text-[11px] font-semibold text-[#9ca3af]">Sin aperturas ni cierres en este bloque</p>
                     <p className="text-[10px] text-[#c0c8d4]">Las sesiones aparecerán aquí al cerrar el primer turno</p>
                   </div>
 
@@ -1387,11 +1387,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         return (
                           <div key={m.id} className="flex flex-col border-b border-[#f0f4f8] last:border-0">
                             <div className="flex items-center gap-2 px-3.5 py-2">
-                              <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[8px] font-bold uppercase text-amber-700">Salida</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-semibold text-[#374151] truncate">{m.motivo}</p>
-                                <p className="text-[9px] text-[#9ca3af]">{hm} · S/ {m.amount.toFixed(2)}</p>
-                              </div>
+                              <span className="shrink-0 text-[9px] tabular-nums font-bold text-amber-600 w-[30px]">{hm}</span>
+                              <span className="shrink-0 text-[11px] font-bold text-amber-500">↓</span>
+                              <p className="flex-1 min-w-0 text-[10px] font-semibold text-[#374151] truncate">{m.motivo}</p>
+                              <span className="shrink-0 text-[11px] font-bold tabular-nums text-amber-600">S/ {m.amount.toFixed(2)}</span>
                               {!isT && (
                                 <button
                                   onClick={() => { setReintegroTargetId(m.id); setReintegroAmount(m.amount.toFixed(2)); setReintegroMotivo(`Reintegro: ${m.motivo}`); setTimeout(() => reintegroAmountRef.current?.focus(), 50); }}
@@ -1425,11 +1424,10 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
                         return (
                           <div key={m.id} className="flex items-center gap-2 px-3.5 py-2 border-b border-[#f0f4f8] last:border-0">
-                            <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[8px] font-bold uppercase text-emerald-700">Préstamo</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-semibold text-[#374151] truncate">{m.motivo}</p>
-                              <p className="text-[9px] text-[#9ca3af]">{hm} · S/ {m.amount.toFixed(2)}</p>
-                            </div>
+                            <span className="shrink-0 text-[9px] tabular-nums font-bold text-emerald-600 w-[30px]">{hm}</span>
+                            <span className="shrink-0 text-[11px] font-bold text-emerald-500">↑</span>
+                            <p className="flex-1 min-w-0 text-[10px] font-semibold text-[#374151] truncate">{m.motivo}</p>
+                            <span className="shrink-0 text-[11px] font-bold tabular-nums text-emerald-600">S/ {m.amount.toFixed(2)}</span>
                             <button onClick={() => updateCashMove(m.id, "regularizado")}
                               className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-[9px] font-bold uppercase text-white hover:bg-emerald-700 active:scale-95 transition">Devolver</button>
                             <button onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
@@ -2416,12 +2414,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       const dd = `${String(ts.getDate()).padStart(2, "0")}/${String(ts.getMonth() + 1).padStart(2, "0")}`;
                       
                       const cfg: Record<string, { sym: string; cls: string }> = {
-                        apertura:           { sym: "→", cls: "text-emerald-500" },
+                        apertura:           { sym: "○", cls: "text-[#2154d8]"   },
                         movimiento_ingreso: { sym: "↑", cls: "text-emerald-500" },
                         movimiento_egreso:  { sym: "↓", cls: "text-red-400"     },
-                        comprobante:        { sym: "◎", cls: "text-[#005BE3]"   },
-                        anulacion:          { sym: "⊘", cls: "text-[#9ca3af]"   },
-                        cierre:             { sym: "✓", cls: "text-[#6b7280]"   },
+                        comprobante:        { sym: "▪", cls: "text-[#005BE3]"   },
+                        anulacion:          { sym: "⊘", cls: "text-red-400"     },
+                        cierre:             { sym: "●", cls: "text-[#6b7280]"   },
                       };
                       const { sym, cls } = cfg[ev.type] ?? { sym: "·", cls: "text-[#c0cad4]" };
                       return (

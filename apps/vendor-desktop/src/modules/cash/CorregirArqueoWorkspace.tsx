@@ -40,7 +40,7 @@ function fmtTime(iso: string): string {
 }
 
 export function CorregirArqueoWorkspace() {
-  const { cashBoxes: _cb, suggestedCashBox, activeOperator, operators, cashSession } = usePOS();
+  const { suggestedCashBox, activeOperator, operators, cashSession } = usePOS();
 
   const currentOpBlockBase  = activeOperator?.blockBase ?? null;
   const activeBox           = cashSession.cashBox;
@@ -50,18 +50,41 @@ export function CorregirArqueoWorkspace() {
     operators.find(o => o.blockBase !== null && String(o.blockBase)[0] === operatorBlockPrefix && o.status === "ACTIVO")?.name ??
     "Operador";
 
-  const [history,      setHistory]      = useState<SessionEntry[]>(() => loadSessionHistory());
-  const [selectedId,   setSelectedId]   = useState<string | null>(null);
-  const [motivoPreset, setMotivoPreset] = useState("");
-  const [motivoLibre,  setMotivoLibre]  = useState("");
-  const [newSignal,    setNewSignal]    = useState<CloseSignal>("ok");
-  const [applied,      setApplied]      = useState(false);
+  const [history,        setHistory]        = useState<SessionEntry[]>(() => loadSessionHistory());
+  const [selectedId,     setSelectedId]     = useState<string | null>(null);
+  const [motivoPreset,   setMotivoPreset]   = useState("");
+  const [motivoLibre,    setMotivoLibre]    = useState("");
+  const [newSignal,      setNewSignal]      = useState<CloseSignal>("ok");
+  const [applied,        setApplied]        = useState(false);
 
-  const blockEntries = history
-    .filter(e => e.boxCode[0] === operatorBlockPrefix)
-    .slice(0, 30);
+  // Filtros
+  const [filterEstado,   setFilterEstado]   = useState<"todos" | "pendiente" | "revisar" | "regularizado" | "ok">("todos");
+  const [filterCaja,     setFilterCaja]     = useState("");
+  const [filterOperador, setFilterOperador] = useState("");
+  const [filterFecha,    setFilterFecha]    = useState("");
 
-  const sorted = [...blockEntries].sort((a, b) => {
+  const uniqueCajas = [...new Set(history.map(e => e.boxCode))].sort();
+
+  const filtered = history
+    .slice(0, 60)
+    .filter(e => {
+      if (filterEstado !== "todos") {
+        const isPending   = e.closeSignal === null;
+        const isWarn      = e.closeSignal === "warn" && !e.correction;
+        const isCorrected = !!e.correction;
+        const isOk        = e.closeSignal === "ok" && !isCorrected;
+        if (filterEstado === "pendiente"    && !isPending)   return false;
+        if (filterEstado === "revisar"      && !isWarn)      return false;
+        if (filterEstado === "regularizado" && !isCorrected) return false;
+        if (filterEstado === "ok"           && !isOk)        return false;
+      }
+      if (filterCaja     && e.boxCode !== filterCaja) return false;
+      if (filterOperador && !e.operator.toLowerCase().includes(filterOperador.toLowerCase())) return false;
+      if (filterFecha    && e.openedAt.slice(0, 10) !== filterFecha) return false;
+      return true;
+    });
+
+  const sorted = [...filtered].sort((a, b) => {
     const priority = (e: SessionEntry) =>
       e.closeSignal === null                          ? 0 :
       (e.closeSignal === "warn" && !e.correction)    ? 1 : 2;
@@ -116,18 +139,55 @@ export function CorregirArqueoWorkspace() {
       <div className="flex w-[320px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <RotateCcw size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SESIONES</span>
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGISTROS</span>
           {sorted.filter(e => e.closeSignal === null).length > 0 && (
             <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold text-white tabular-nums">
               {sorted.filter(e => e.closeSignal === null).length}
             </span>
           )}
         </div>
+
+        {/* Filtros */}
+        <div className="shrink-0 flex flex-col gap-1.5 border-b border-[#e8edf3] px-3 py-2">
+          {/* Estado */}
+          <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5">
+            {(["todos", "pendiente", "revisar", "regularizado", "ok"] as const).map(est => (
+              <button key={est}
+                onClick={() => setFilterEstado(est)}
+                className={`flex-1 rounded-md py-1 text-[8px] font-bold uppercase tracking-wide transition ${
+                  filterEstado === est
+                    ? est === "pendiente" ? "bg-amber-500 text-white shadow-sm"
+                    : est === "revisar"   ? "bg-orange-400 text-white shadow-sm"
+                    : est === "regularizado" ? "bg-emerald-600 text-white shadow-sm"
+                    : est === "ok"        ? "bg-[#6b7280] text-white shadow-sm"
+                    : "bg-white text-[#374151] shadow-sm"
+                    : "text-[#9ca3af] hover:text-[#374151]"
+                }`}>
+                {est === "todos" ? "Todos" : est === "pendiente" ? "Pend." : est === "revisar" ? "Revisar" : est === "regularizado" ? "Reg." : "OK"}
+              </button>
+            ))}
+          </div>
+          {/* Caja + Fecha */}
+          <div className="flex gap-1.5">
+            <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
+              className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
+              <option value="">Todas las cajas</option>
+              {uniqueCajas.map(c => <option key={c} value={c}>Caja {c}</option>)}
+            </select>
+            <input type="date" value={filterFecha} onChange={e => setFilterFecha(e.target.value)}
+              className="w-[110px] rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
+          </div>
+          {/* Operador */}
+          <input type="text" value={filterOperador} onChange={e => setFilterOperador(e.target.value)}
+            placeholder="Buscar operador..."
+            className="w-full rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8] placeholder:text-[#c8d4e0]" />
+        </div>
+
         <div className="min-h-0 flex-1 overflow-y-auto">
           {sorted.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
               <ClipboardList size={24} strokeWidth={1.2} className="text-[#d1d5db]" />
-              <p className="text-[11px] font-semibold text-[#9ca3af]">Sin sesiones registradas en este bloque</p>
+              <p className="text-[11px] font-semibold text-[#9ca3af]">Sin registros para los filtros seleccionados</p>
             </div>
           ) : (
             <div className="flex flex-col divide-y divide-[#f4f6f9]">
@@ -181,7 +241,7 @@ export function CorregirArqueoWorkspace() {
 
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CORREGIR ARQUEO</span>
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGULARIZACIÓN DE CAJAS</span>
           {selectedEntry && (
             <span className="ml-auto text-[10px] font-semibold text-[#9ca3af]">C{selectedEntry.boxCode} · {selectedEntry.boxLabel}</span>
           )}
