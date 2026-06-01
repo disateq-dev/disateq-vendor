@@ -30,7 +30,7 @@ export type OperatorRecord = {
 
 const LS_KEY      = "disateq.pos.operators";
 const LS_V_KEY    = "disateq.pos.operators.v";
-const SEED_VERSION = "3";
+const SEED_VERSION = "4";
 
 const SEED: OperatorRecord[] = [
   {
@@ -38,7 +38,7 @@ const SEED: OperatorRecord[] = [
     apellidos: "TEJADA QUEVEDO", nombres: "FERNANDO MIGUEL", name: "FERNANDO MIGUEL TEJADA QUEVEDO",
     dni: "", telefono: "",
     roleCode: "SUP", roleName: "Supervisión",
-    blockBase: 400, blockAssignment: { assignedAt: "2026-05-31T22:28:36.302Z" },
+    blockBase: null,
     status: "ACTIVO", pin: "",
     capabilities: ["corregir_arqueos","reaperturar_cierres","regularizar_incidencias","observar_comprobantes_global","anular_comprobantes","observar_continuidad"],
     registeredAt: "2026-05-31T22:26:30.542Z", registeredBy: "SISTEMA",
