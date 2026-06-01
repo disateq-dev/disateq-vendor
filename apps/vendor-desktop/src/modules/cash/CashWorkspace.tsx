@@ -412,7 +412,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const currentOpBlockBase  = activeOperator?.blockBase ?? null;
   const operatorBlockPrefix = activeBox?.code[0] ?? (currentOpBlockBase !== null ? String(currentOpBlockBase)[0] : suggestedCashBox?.code[0] ?? "1");
   const operatorBoxes       = cashBoxes.filter(b => b.code[0] === operatorBlockPrefix);
-  const operatorName        = activeOperator?.name ?? operators.find(o => o.blockBase !== null && String(o.blockBase)[0] === operatorBlockPrefix && o.status === "ACTIVO")?.name ?? "Operador";
+  const operatorName        = activeOperator?.alias ?? operators.find(o => o.blockBase !== null && String(o.blockBase)[0] === operatorBlockPrefix && o.status === "ACTIVO")?.alias ?? "Operador";
 
   useEffect(() => {
     if (!canCorrectApertura) setEditingApertura(false);
