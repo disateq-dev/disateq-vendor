@@ -455,7 +455,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
   // fondo breakdown — excluye anulados
   const {
-    ingresosTotal, egresosTotal, arqueoOperacional, egApertura, egVendido, fondoApertEsp,
+    ingresosTotal, egresosTotal, ingVendido, arqueoOperacional, egApertura, egVendido, fondoApertEsp,
   } = calcConciliation(activeMoves, sessionStats.cash, apertura);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
@@ -828,11 +828,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 );
               })()}
 
-              {closingStage === 0 && (moneyGt(ingresosTotal, 0) || moneyGt(egresosTotal, 0)) && (
+              {closingStage === 0 && (moneyGt(ingVendido, 0) || moneyGt(egVendido, 0)) && (
                 <>
                   <div className="-mx-5 h-px bg-[#f0f4f8]" />
-                  {moneyGt(ingresosTotal, 0) && <InfoRow label="Ingresos ↑" value={`S/ ${ingresosTotal.toFixed(2)}`} accent />}
-                  {moneyGt(egresosTotal, 0)  && <InfoRow label="Egresos ↓"  value={`S/ ${egresosTotal.toFixed(2)}`}  red />}
+                  {moneyGt(ingVendido, 0) && <InfoRow label="Ingresos ↑" value={`S/ ${ingVendido.toFixed(2)}`} accent />}
+                  {moneyGt(egVendido, 0)  && <InfoRow label="Egresos ↓"  value={`S/ ${egVendido.toFixed(2)}`}  red />}
                 </>
               )}
             </div>
@@ -1664,25 +1664,25 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                   </div>
 
                   {/* Movimientos del turno — referencia/auditoría, no afectan comparación */}
-                  {(moneyGt(ingresosTotal, 0) || moneyGt(egresosTotal, 0)) && (
+                  {(moneyGt(ingVendido, 0) || moneyGt(egVendido, 0)) && (
                     <div className="flex flex-col gap-0.5 rounded-xl border border-[#f1f5f9] bg-[#f8fafc] px-3.5 py-2">
-                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Movimientos del turno</span>
-                      {moneyGt(ingresosTotal, 0) && (
+                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Movimientos del turno · Caja del día</span>
+                      {moneyGt(ingVendido, 0) && (
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] text-[#9ca3af]">Ingresos</span>
-                          <span className="text-[10px] font-semibold tabular-nums text-emerald-600">+S/ {ingresosTotal.toFixed(2)}</span>
+                          <span className="text-[10px] font-semibold tabular-nums text-emerald-600">+S/ {ingVendido.toFixed(2)}</span>
                         </div>
                       )}
-                      {moneyGt(egresosTotal, 0) && (
+                      {moneyGt(egVendido, 0) && (
                         <div className="flex justify-between items-center">
                           <span className="text-[9px] text-[#9ca3af]">Egresos</span>
-                          <span className="text-[10px] font-semibold tabular-nums text-red-400">−S/ {egresosTotal.toFixed(2)}</span>
+                          <span className="text-[10px] font-semibold tabular-nums text-red-400">−S/ {egVendido.toFixed(2)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center border-t border-[#f1f5f9] pt-0.5 mt-0.5">
                         <span className="text-[9px] text-[#9ca3af]">Total reconstruido</span>
                         <span className="text-[10px] font-bold tabular-nums text-[#374151]">
-                          S/ {moneySub(moneyAdd(contadoEfeNum, ingresosTotal), egVendido).toFixed(2)}
+                          S/ {moneySub(moneyAdd(contadoEfeNum, ingVendido), egVendido).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -1864,8 +1864,8 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
               {cashMoves.length > 0 && (
                 <div className="ml-auto flex items-center gap-2.5">
-                  {ingresosTotal > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingresosTotal.toFixed(2)}</span>}
-                  {egresosTotal  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egresosTotal.toFixed(2)}</span>}
+                  {ingVendido > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingVendido.toFixed(2)}</span>}
+                  {egVendido  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egVendido.toFixed(2)}</span>}
                   {moneyGt(totalPending, 0) && <span className="text-[10px] font-bold text-amber-600 tabular-nums">↩ S/ {totalPending.toFixed(2)}</span>}
                 </div>
               )}
