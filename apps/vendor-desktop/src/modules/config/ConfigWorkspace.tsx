@@ -324,6 +324,10 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                         "disateq.pos.opLogs",
                         "disateq.pos.correlatives",
                         "disateq.pos.comprobantes",
+                        "disateq.pos.sessionHistory",
+                        "disateq.pos.currentSessionId",
+                        "disateq.pos.turnEvents",
+                        "disateq.pos.lastArqueo",
                         "disateq.pos.ui.closingStage",
                         "disateq.pos.ui.contado",
                       ];

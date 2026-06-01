@@ -13,7 +13,7 @@ import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento";
-export type CashSubView             = "turno" | "cajas" | "corregir-arqueo";
+export type CashSubView             = "turno" | "cajas" | "supervision-caja";
 export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "roles" | "capacidades";
 
@@ -75,7 +75,7 @@ function AppRoot() {
           <TicketWorkspace />
         </>
       )}
-      {activeModule === "cash"         && <CashWorkspace onOpened={() => setActiveModule("sales")} cashSubView={cashSubView} />}
+      {activeModule === "cash"         && <CashWorkspace onOpened={() => setActiveModule("sales")} cashSubView={cashSubView} onCashSubViewChange={setCashSubView} />}
       {activeModule === "comprobantes" && <ComprobantesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}

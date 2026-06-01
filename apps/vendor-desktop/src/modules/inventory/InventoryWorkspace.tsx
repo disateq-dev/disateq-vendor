@@ -1008,6 +1008,51 @@ function ViewReset() {
     window.location.reload();
   }
 
+  function resetCaja(boxCode: string) {
+    // Session activa — borrar solo si pertenece a esta caja
+    try {
+      const raw = localStorage.getItem("disateq.pos.cashSession");
+      if (raw) {
+        const s = JSON.parse(raw) as { cashBox?: { code?: string } };
+        if (s?.cashBox?.code === boxCode) {
+          localStorage.removeItem("disateq.pos.cashSession");
+          localStorage.removeItem("disateq.pos.cashMoves");
+          localStorage.removeItem("disateq.pos.sessionStats");
+          localStorage.removeItem("disateq.pos.currentSessionId");
+        }
+      }
+    } catch { /* ignore */ }
+
+    // SessionHistory — filtrar entradas de esta caja
+    try {
+      const raw = localStorage.getItem("disateq.pos.sessionHistory");
+      if (raw) {
+        const hist = JSON.parse(raw) as { boxCode?: string }[];
+        const filtered = hist.filter(e => e.boxCode !== boxCode);
+        localStorage.setItem("disateq.pos.sessionHistory", JSON.stringify(filtered));
+      }
+    } catch { /* ignore */ }
+
+    // UsedCodes — quitar el código de caja del set diario
+    try {
+      const raw = localStorage.getItem("disateq.pos.usedCodes");
+      if (raw) {
+        const arr = JSON.parse(raw) as string[];
+        localStorage.setItem("disateq.pos.usedCodes", JSON.stringify(arr.filter(c => c !== boxCode)));
+      }
+    } catch { /* ignore */ }
+
+    // Turn events — borrar todos (son del turno activo)
+    localStorage.removeItem("disateq.pos.turnEvents");
+
+    // Últimos datos de UI de cierre
+    localStorage.removeItem("disateq.pos.lastArqueo");
+    localStorage.removeItem("disateq.pos.ui.closingStage");
+    localStorage.removeItem("disateq.pos.ui.contado");
+
+    window.location.reload();
+  }
+
   function cargarMuestra() {
     const now      = Date.now();
     const day      = 86_400_000;
@@ -1095,6 +1140,21 @@ function ViewReset() {
         </div>
         <p className="text-[9px] text-amber-500 leading-snug">
           ÍTEMS + MOVIMIENTOS conserva runtimeId · RESET TOTAL genera nueva identidad de runtime.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-dashed border-[#dc2626]/40 bg-red-50 px-4 py-4 flex flex-col gap-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#dc2626]">DEV · Reset — Turno de Caja</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => resetCaja("100")}
+            className="rounded-xl border border-[#dc2626]/40 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[#dc2626] hover:bg-red-100 transition active:scale-95"
+          >
+            RESET CAJA 100
+          </button>
+        </div>
+        <p className="text-[9px] text-[#dc2626]/60 leading-snug">
+          Borra sesión activa, historial, movimientos, turno y UI de caja 100. La caja queda como recién creada.
         </p>
       </div>
     </div>

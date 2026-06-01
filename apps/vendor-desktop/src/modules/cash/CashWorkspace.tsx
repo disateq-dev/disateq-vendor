@@ -2,7 +2,7 @@
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks, HandCoins } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { CajasWorkspace } from "./CajasWorkspace";
-import { CorregirArqueoWorkspace } from "./CorregirArqueoWorkspace";
+import { SupervisionCajaWorkspace } from "./SupervisionCajaWorkspace";
 import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
 import type { TurnEvent } from "../../domains/cash/turn-events.store";
 import {
@@ -216,9 +216,10 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
 interface CashWorkspaceProps {
   onOpened?: () => void;
   cashSubView: CashSubView;
+  onCashSubViewChange?: (sv: CashSubView) => void;
 }
 
-export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
+export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: CashWorkspaceProps) {
   const {
     cashSession, cashBoxes, suggestedCashBox,
     openCashSession, closeCashSession, correctAperturaData,
@@ -295,6 +296,8 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   const contadoEfeRef  = useRef<HTMLInputElement>(null);
   const contadoYapeRef = useRef<HTMLInputElement>(null);
   const contadoTarRef  = useRef<HTMLInputElement>(null);
+
+  const [cierreAutorizado, setCierreAutorizado] = useState(false);
 
   useEffect(() => {
     if (closingStage > 0) localStorage.setItem("disateq.pos.ui.closingStage", String(closingStage));
@@ -685,6 +688,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
     setClosingStage(0);
     setContadoEfe(""); setContadoYape(""); setContadoTar("");
     setValidatedAt(null); setObservations(""); setZeroMotive("");
+    setCierreAutorizado(false);
     localStorage.removeItem("disateq.pos.ui.closingStage");
     localStorage.removeItem("disateq.pos.ui.contado");
     setTimeout(() => {
@@ -743,7 +747,18 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
   // ── sub-view routing ─────────────────────────────────────────
 
   if (cashSubView === "cajas")           return <CajasWorkspace />;
-  if (cashSubView === "corregir-arqueo") return <CorregirArqueoWorkspace />;
+  if (cashSubView === "supervision-caja") return (
+    <SupervisionCajaWorkspace
+      onEjecutarCierre={() => {
+        onCashSubViewChange?.("turno");
+        setClosingStage(1);
+      }}
+      onAutorizarCierre={() => {
+        setCierreAutorizado(true);
+        onCashSubViewChange?.("turno");
+      }}
+    />
+  );
 
   // ── render ────────────────────────────────────────────────────
 
@@ -1055,7 +1070,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#dc2626] py-3 text-[12px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(220,38,38,0.28)] transition hover:bg-[#b91c1c] active:scale-[0.98]"
               >
                 <LogOut size={13} strokeWidth={2.5} />
-                CIERRE DE TURNO
+                {cierreAutorizado ? "CIERRE AUTORIZADO" : "CIERRE DE TURNO"}
               </button>
             </>
 
@@ -1162,7 +1177,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                 }`}
               >
                 <CheckCircle size={14} strokeWidth={2.5} />
-                CERRAR TURNO
+                {cierreAutorizado ? "CIERRE AUTORIZADO" : "CERRAR TURNO"}
                 {canClose && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+↵</span>}
               </button>
               <button
