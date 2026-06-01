@@ -1341,7 +1341,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
               {/* ── STAGE 1: FONDO DE CAMBIO ── */}
               {closingStage === 1 && (
                 <>
-                  {/* Desglose fondo de cambio */}
+                  {/* 1. Desglose fondo */}
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
                     <div className="flex justify-between items-center px-3.5 py-2">
                       <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO DE CAMBIO INICIAL</span>
@@ -1361,7 +1361,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     )}
                     {moneyGt(totalExternosPendientes, 0) && (
                       <div className="flex justify-between items-center px-3.5 py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">PRÉSTAMOS RECIBIDOS · pdte. devolver</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">PRÉSTAMOS · pdte. resolver</span>
                         <span className="text-[12px] font-bold tabular-nums text-emerald-700">+S/ {totalExternosPendientes.toFixed(2)}</span>
                       </div>
                     )}
@@ -1371,149 +1371,78 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </div>
                   </div>
 
-                  {/* Préstamos pendientes — acciones inline */}
-                  {externosPendientes.length > 0 && (
-                    <div className="flex flex-col gap-px rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
-                      <div className="flex items-center justify-between px-3.5 py-2 border-b border-emerald-100">
-                        <div className="flex items-center gap-1.5">
-                          <AlertTriangle size={10} strokeWidth={2} className="shrink-0 text-emerald-700" />
-                          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-700">Préstamos pendientes</span>
-                        </div>
-                        <span className="text-[10px] font-bold tabular-nums text-emerald-700">S/ {totalExternosPendientes.toFixed(2)}</span>
+                  {/* 2. Pendientes unificados — salidas + préstamos */}
+                  {(pendientesApertura.length > 0 || externosPendientes.length > 0) && (
+                    <div className="flex flex-col rounded-xl border border-[#e4e9f0] bg-[#fafbfc] overflow-hidden">
+                      <div className="flex items-center gap-1.5 px-3.5 py-2 border-b border-[#f0f4f8] bg-white">
+                        <AlertTriangle size={10} strokeWidth={2} className="shrink-0 text-[#9ca3af]" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b7280]">Pendientes del fondo</span>
                       </div>
-                      {externosPendientes.map(m => {
-                        const ts = new Date(m.timestamp);
-                        const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
-                        return (
-                          <div key={m.id} className="flex items-center gap-2 px-3.5 py-2 border-b border-emerald-100/60 last:border-0">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-semibold text-emerald-900 truncate">{m.motivo}</p>
-                              <p className="text-[9px] text-emerald-600">{hm} · S/ {m.amount.toFixed(2)}</p>
-                            </div>
-                            <button
-                              onClick={() => updateCashMove(m.id, "regularizado")}
-                              className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-white hover:bg-emerald-700 active:scale-95 transition"
-                            >
-                              Devolver
-                            </button>
-                            <button
-                              onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
-                              className="shrink-0 rounded-lg border border-[#2154d8] bg-white px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#2154d8] hover:bg-[#eff6ff] active:scale-95 transition"
-                            >
-                              Al fondo
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
 
-                  {/* Input contado fondo */}
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
-                      <Helper text="Cuenta físicamente el dinero del cajón de vueltos. Sin incluir dinero de ventas." />
-                    </div>
-                    <input
-                      ref={contadoFondoRef}
-                      type="text"
-                      inputMode="decimal"
-                      value={contadoFondo}
-                      onChange={e => setContadoFondo(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter" && contadoFondo !== "") {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
-                          setClosingStage(2);
-                        }
-                      }}
-                      onBlur={() => {
-                        if (hasExpr(contadoFondo)) {
-                          const r = safeCalc(contadoFondo);
-                          if (r !== null && r >= 0) setContadoFondo(r.toFixed(2));
-                        }
-                      }}
-                      placeholder="0.00"
-                      className="w-full rounded-xl border border-[#2154d8]/30 px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] tabular-nums focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                    />
-                  </div>
-
-                  {/* Salidas fondo pendientes — reintegro inline */}
-                  {pendientesApertura.length > 0 && (
-                    <div className="flex flex-col gap-px rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
-                      <div className="flex items-center justify-between px-3.5 py-2 border-b border-amber-100">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">Salidas del fondo · pendiente reintegro</span>
-                        <span className="text-[10px] font-bold tabular-nums text-amber-700">S/ {totalPendienteApertura.toFixed(2)}</span>
-                      </div>
+                      {/* Salidas pendientes de reintegro */}
                       {pendientesApertura.map(m => {
-                        const ts = new Date(m.timestamp);
-                        const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
-                        const isTarget = reintegroTargetId === m.id;
+                        const ts  = new Date(m.timestamp);
+                        const hm  = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
+                        const isT = reintegroTargetId === m.id;
                         return (
-                          <div key={m.id} className="flex flex-col border-b border-amber-100/60 last:border-0">
+                          <div key={m.id} className="flex flex-col border-b border-[#f0f4f8] last:border-0">
                             <div className="flex items-center gap-2 px-3.5 py-2">
+                              <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[8px] font-bold uppercase text-amber-700">Salida</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-semibold text-amber-900 truncate">{m.motivo}</p>
-                                <p className="text-[9px] text-amber-600">{hm} · S/ {m.amount.toFixed(2)}</p>
+                                <p className="text-[10px] font-semibold text-[#374151] truncate">{m.motivo}</p>
+                                <p className="text-[9px] text-[#9ca3af]">{hm} · S/ {m.amount.toFixed(2)}</p>
                               </div>
-                              {!isTarget && (
+                              {!isT && (
                                 <button
-                                  onClick={() => {
-                                    setReintegroTargetId(m.id);
-                                    setReintegroAmount(m.amount.toFixed(2));
-                                    setReintegroMotivo(`Reintegro: ${m.motivo}`);
-                                    setTimeout(() => reintegroAmountRef.current?.focus(), 50);
-                                  }}
-                                  className="shrink-0 rounded-lg bg-amber-500 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-white hover:bg-amber-600 active:scale-95 transition"
-                                >
-                                  Reintegrar
-                                </button>
+                                  onClick={() => { setReintegroTargetId(m.id); setReintegroAmount(m.amount.toFixed(2)); setReintegroMotivo(`Reintegro: ${m.motivo}`); setTimeout(() => reintegroAmountRef.current?.focus(), 50); }}
+                                  className="shrink-0 rounded-lg bg-amber-500 px-2.5 py-1 text-[9px] font-bold uppercase text-white hover:bg-amber-600 active:scale-95 transition"
+                                >Reintegrar</button>
                               )}
                             </div>
-                            {isTarget && (
+                            {isT && (
                               <div className="flex flex-col gap-1.5 px-3.5 pb-2.5">
-                                <input
-                                  ref={reintegroAmountRef}
-                                  type="number" min="0" step="0.01"
-                                  value={reintegroAmount}
-                                  onChange={e => setReintegroAmount(e.target.value)}
-                                  placeholder="Monto"
-                                  className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-[13px] font-bold tabular-nums text-[#2F3E46] outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200"
-                                />
-                                <input
-                                  type="text"
-                                  value={reintegroMotivo}
-                                  onChange={e => setReintegroMotivo(e.target.value)}
-                                  placeholder="Motivo reintegro"
-                                  className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] text-[#374151] outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-200"
-                                />
                                 <div className="flex gap-2">
-                                  <button
-                                    onClick={() => { setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo(""); }}
-                                    className="flex-1 rounded-lg border border-amber-200 bg-white py-1 text-[9px] font-bold uppercase text-amber-600 hover:bg-amber-50 transition"
-                                  >
-                                    Cancelar
-                                  </button>
-                                  <button
-                                    onClick={handleReintegro}
-                                    disabled={!(parseFloat(reintegroAmount) > 0 && reintegroMotivo.trim().length > 0)}
-                                    className="flex-1 rounded-lg bg-amber-500 py-1 text-[9px] font-bold uppercase text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                  >
-                                    Confirmar
-                                  </button>
+                                  <input ref={reintegroAmountRef} type="number" min="0" step="0.01" value={reintegroAmount} onChange={e => setReintegroAmount(e.target.value)} placeholder="Monto"
+                                    className="w-24 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-[13px] font-bold tabular-nums text-[#2F3E46] outline-none focus:border-amber-500" />
+                                  <input type="text" value={reintegroMotivo} onChange={e => setReintegroMotivo(e.target.value)} placeholder="Motivo"
+                                    className="flex-1 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] text-[#374151] outline-none focus:border-amber-500" />
+                                </div>
+                                <div className="flex gap-2">
+                                  <button onClick={() => { setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo(""); }}
+                                    className="flex-1 rounded-lg border border-amber-200 bg-white py-1 text-[9px] font-bold uppercase text-amber-600 hover:bg-amber-50 transition">Cancelar</button>
+                                  <button onClick={handleReintegro} disabled={!(parseFloat(reintegroAmount) > 0 && reintegroMotivo.trim().length > 0)}
+                                    className="flex-1 rounded-lg bg-amber-500 py-1 text-[9px] font-bold uppercase text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition">Confirmar</button>
                                 </div>
                               </div>
                             )}
                           </div>
                         );
                       })}
+
+                      {/* Préstamos pendientes */}
+                      {externosPendientes.map(m => {
+                        const ts = new Date(m.timestamp);
+                        const hm = `${String(ts.getHours()).padStart(2,"0")}:${String(ts.getMinutes()).padStart(2,"0")}`;
+                        return (
+                          <div key={m.id} className="flex items-center gap-2 px-3.5 py-2 border-b border-[#f0f4f8] last:border-0">
+                            <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[8px] font-bold uppercase text-emerald-700">Préstamo</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-semibold text-[#374151] truncate">{m.motivo}</p>
+                              <p className="text-[9px] text-[#9ca3af]">{hm} · S/ {m.amount.toFixed(2)}</p>
+                            </div>
+                            <button onClick={() => updateCashMove(m.id, "regularizado")}
+                              className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-[9px] font-bold uppercase text-white hover:bg-emerald-700 active:scale-95 transition">Devolver</button>
+                            <button onClick={() => updateCashMove(m.id, "regularizado", "integracion_fondo")}
+                              className="shrink-0 rounded-lg border border-[#2154d8] bg-white px-2.5 py-1 text-[9px] font-bold uppercase text-[#2154d8] hover:bg-[#eff6ff] active:scale-95 transition">Al fondo</button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
-                  {/* Diferencia fondo */}
+                  {/* 3. Diferencia fondo */}
                   {contadoFondo !== "" && (() => {
-                    const diffFondo = moneySub(contadoFondoNum, fondoEsperado);
+                    const diffFondo     = moneySub(contadoFondoNum, fondoEsperado);
                     const fondoCuadrado = moneyIsZero(diffFondo);
                     const fondoSobrante = !fondoCuadrado && moneyGt(diffFondo, 0);
                     const esPendienteReg = !fondoCuadrado && !fondoSobrante && moneyIsZero(moneySub(Math.abs(diffFondo), totalPendienteApertura));
@@ -1524,16 +1453,12 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                         : "border-red-200 bg-[#fef2f2]"
                       }`}>
                         <span className={`text-[10px] font-bold uppercase tracking-[0.10em] ${
-                          fondoCuadrado ? "text-emerald-600"
-                          : esPendienteReg ? "text-amber-700"
-                          : "text-red-600"
+                          fondoCuadrado ? "text-emerald-600" : esPendienteReg ? "text-amber-700" : "text-red-600"
                         }`}>
-                          {fondoCuadrado ? "✓ FONDO ÍNTEGRO" : fondoSobrante ? "EXCEDENTE FONDO" : esPendienteReg ? "⚠ HAY DINERO POR DEVOLVER" : "FALTANTE FONDO"}
+                          {fondoCuadrado ? "✓ FONDO ÍNTEGRO" : fondoSobrante ? "EXCEDENTE FONDO" : esPendienteReg ? "⚠ DINERO POR DEVOLVER" : "FALTANTE FONDO"}
                         </span>
                         <span className={`text-[12px] font-bold tabular-nums ${
-                          fondoCuadrado ? "text-emerald-600"
-                          : esPendienteReg ? "text-amber-700"
-                          : "text-red-600"
+                          fondoCuadrado ? "text-emerald-600" : esPendienteReg ? "text-amber-700" : "text-red-600"
                         }`}>
                           {fondoCuadrado ? "±S/ 0.00" : `${moneyGte(diffFondo, 0) ? "+" : "−"}S/ ${Math.abs(diffFondo).toFixed(2)}`}
                         </span>
@@ -1541,9 +1466,31 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     );
                   })()}
 
-                  <p className="text-[10.5px] text-[#9ca3af]">
-                    <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo y pasar al conteo de ventas
-                  </p>
+                  {/* 4. Fondo contado */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
+                      <Helper text="Cuenta físicamente el dinero del cajón de vueltos. Sin incluir dinero de ventas." />
+                    </div>
+                    <input
+                      ref={contadoFondoRef}
+                      type="text" inputMode="decimal" value={contadoFondo}
+                      onChange={e => setContadoFondo(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && contadoFondo !== "") {
+                          e.preventDefault(); e.stopPropagation();
+                          const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
+                          setClosingStage(2);
+                        }
+                      }}
+                      onBlur={() => { if (hasExpr(contadoFondo)) { const r = safeCalc(contadoFondo); if (r !== null && r >= 0) setContadoFondo(r.toFixed(2)); } }}
+                      placeholder="0.00"
+                      className="w-full rounded-xl border border-[#2154d8]/30 px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] tabular-nums focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                    />
+                    <p className="text-[10px] text-[#9ca3af]">
+                      <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo y pasar al conteo de ventas
+                    </p>
+                  </div>
                 </>
               )}
 
