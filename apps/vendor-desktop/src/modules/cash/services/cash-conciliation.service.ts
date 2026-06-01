@@ -33,10 +33,9 @@ export function calcConciliation(
   const fondoApertEsp    = moneySub(moneyAdd(apertura, ingApertura), egApertura);
   const fondoVendidoEsp  = moneySub(moneyAdd(cashVendido, ingVendido), egVendido);
   const efectivoEsperado = moneyAdd(fondoApertEsp, fondoVendidoEsp);
-  // Arqueo operacional = solo ventas en efectivo registradas.
-  // Ingresos/egresos se muestran como referencia/auditoría pero NO se reaaplican
-  // sobre el monto final contado por el operador — ese monto ya los incluye implícitamente.
-  const arqueoOperacional = cashVendido;
+  // Arqueo operacional = ventas efectivo ± movimientos Caja del Día.
+  // Los egresos reducen lo esperado; los ingresos lo aumentan.
+  const arqueoOperacional = fondoVendidoEsp;
 
   return {
     ingApertura, egApertura, ingVendido, egVendido,
