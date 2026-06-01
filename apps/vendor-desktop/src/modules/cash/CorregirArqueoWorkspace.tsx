@@ -61,7 +61,8 @@ export function CorregirArqueoWorkspace() {
   const [filterEstado,   setFilterEstado]   = useState<"todos" | "pendiente" | "revisar" | "regularizado" | "ok">("todos");
   const [filterCaja,     setFilterCaja]     = useState("");
   const [filterOperador, setFilterOperador] = useState("");
-  const [filterFecha,    setFilterFecha]    = useState("");
+  const [filterFechaDesde, setFilterFechaDesde] = useState("");
+  const [filterFechaHasta, setFilterFechaHasta] = useState("");
 
   const uniqueCajas = [...new Set(history.map(e => e.boxCode))].sort();
 
@@ -80,7 +81,9 @@ export function CorregirArqueoWorkspace() {
       }
       if (filterCaja     && e.boxCode !== filterCaja) return false;
       if (filterOperador && !e.operator.toLowerCase().includes(filterOperador.toLowerCase())) return false;
-      if (filterFecha    && e.openedAt.slice(0, 10) !== filterFecha) return false;
+      const entryDate = e.openedAt.slice(0, 10);
+      if (filterFechaDesde && entryDate < filterFechaDesde) return false;
+      if (filterFechaHasta && entryDate > filterFechaHasta) return false;
       return true;
     });
 
@@ -167,15 +170,19 @@ export function CorregirArqueoWorkspace() {
               </button>
             ))}
           </div>
-          {/* Caja + Fecha */}
-          <div className="flex gap-1.5">
-            <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
-              className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
-              <option value="">Todas las cajas</option>
-              {uniqueCajas.map(c => <option key={c} value={c}>Caja {c}</option>)}
-            </select>
-            <input type="date" value={filterFecha} onChange={e => setFilterFecha(e.target.value)}
-              className="w-[110px] rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
+          {/* Caja */}
+          <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
+            className="w-full rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
+            <option value="">Todas las cajas</option>
+            {uniqueCajas.map(c => <option key={c} value={c}>Caja {c}</option>)}
+          </select>
+          {/* Rango de fechas */}
+          <div className="flex items-center gap-1.5">
+            <input type="date" value={filterFechaDesde} onChange={e => setFilterFechaDesde(e.target.value)}
+              className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
+            <span className="shrink-0 text-[9px] font-semibold text-[#9ca3af]">—</span>
+            <input type="date" value={filterFechaHasta} onChange={e => setFilterFechaHasta(e.target.value)}
+              className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
           </div>
           {/* Operador */}
           <input type="text" value={filterOperador} onChange={e => setFilterOperador(e.target.value)}
