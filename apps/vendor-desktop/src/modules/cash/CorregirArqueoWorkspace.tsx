@@ -139,7 +139,7 @@ export function CorregirArqueoWorkspace() {
     <section className="flex min-h-0 flex-1 gap-2">
 
       {/* LEFT: lista sesiones */}
-      <div className="flex w-[400px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+      <div className="flex w-[520px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <RotateCcw size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGISTROS</span>
@@ -157,7 +157,7 @@ export function CorregirArqueoWorkspace() {
             {(["todos", "pendiente", "revisar", "regularizado", "ok"] as const).map(est => (
               <button key={est}
                 onClick={() => setFilterEstado(est)}
-                className={`flex-1 rounded-md py-1 text-[8px] font-bold uppercase tracking-wide transition ${
+                className={`flex-1 rounded-md py-2 text-[9px] font-bold uppercase tracking-wide transition ${
                   filterEstado === est
                     ? est === "pendiente" ? "bg-amber-500 text-white shadow-sm"
                     : est === "revisar"   ? "bg-orange-400 text-white shadow-sm"
