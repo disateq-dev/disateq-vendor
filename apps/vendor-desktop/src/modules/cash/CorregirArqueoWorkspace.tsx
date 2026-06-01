@@ -157,7 +157,7 @@ export function CorregirArqueoWorkspace() {
             {(["todos", "pendiente", "revisar", "regularizado", "ok"] as const).map(est => (
               <button key={est}
                 onClick={() => setFilterEstado(est)}
-                className={`flex-1 rounded-md py-2 text-[9px] font-bold uppercase tracking-wide transition ${
+                className={`flex-1 rounded-md py-2 text-[9.5px] font-bold uppercase tracking-wide transition ${
                   filterEstado === est
                     ? est === "pendiente" ? "bg-amber-500 text-white shadow-sm"
                     : est === "revisar"   ? "bg-orange-400 text-white shadow-sm"
