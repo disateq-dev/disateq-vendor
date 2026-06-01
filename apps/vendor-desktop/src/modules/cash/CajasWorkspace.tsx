@@ -218,7 +218,7 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   const canDelete   = selected !== null && !selected.slots.some(s => s.hasHistory);
 
   useEffect(() => {
-    setMode("view");
+    setMode(prev => prev === "create" ? prev : "view");
     setConfirmDelete(false);
   }, [selectedId]);
 
