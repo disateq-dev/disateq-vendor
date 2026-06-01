@@ -793,7 +793,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
 
 
             <div className="flex flex-col gap-2">
-              <InfoRow label="Operador"     value={operator} />
+              <InfoRow label="Operador"     value={operatorName} />
               {openedAt && <InfoRow label="Fecha"    value={formatDate(openedAt)} />}
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal"     value={terminal} />
@@ -1763,7 +1763,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                     </div>
                     <div className="flex justify-between items-center px-3.5 py-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">OPERADOR</span>
-                      <span className="text-[11px] font-semibold text-[#374151]">{operator}</span>
+                      <span className="text-[11px] font-semibold text-[#374151]">{operatorName}</span>
                     </div>
                     {sessionStats.count > 0 && (
                       <div className="flex justify-between items-center px-3.5 py-1.5">
@@ -1836,7 +1836,7 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">TURNO</span>
               <span className="text-[11px] font-bold text-[#374151]">CAJA {activeBox?.code}</span>
-              <span className="text-[10px] text-[#9ca3af] leading-tight">{operator}</span>
+              <span className="text-[10px] text-[#9ca3af] leading-tight">{operatorName}</span>
               {sessionStats.count > 0 && (
                 <span className="text-[10px] tabular-nums text-[#b0bac8]">{sessionStats.count} op.</span>
               )}
