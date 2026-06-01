@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
+import { loadSessionHistory } from "./services/session-history.service";
 
 // ── tipos ─────────────────────────────────────────────────────────────────
 
@@ -124,14 +125,17 @@ function getBlockStatus(pos: POSRef, block: OperationalBlock): BlockStatus {
 
 // ── PanelCajas — 35% ─────────────────────────────────────────────────────
 
+type LastActivity = { at: string; operator: string };
+
 interface PanelCajasProps {
   blocks: OperationalBlock[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   pos: POSRef;
+  lastActivity: Map<string, LastActivity>;
 }
 
-function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
+function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity }: PanelCajasProps) {
   const activeCount   = blocks.filter(b => b.active).length;
   const inactiveCount = blocks.filter(b => !b.active).length;
 
@@ -163,6 +167,16 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
           const isSel   = block.id === selectedId;
           const bStatus = getBlockStatus(pos, block);
           const blockOp = getBlockOperator(pos.operators, block.blockBase);
+          const prefix  = String(block.blockBase)[0];
+          const lastAct = lastActivity.get(prefix);
+          const lastAtFmt = lastAct ? (() => {
+            const d = new Date(lastAct.at);
+            const dd = String(d.getDate()).padStart(2, "0");
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const hh = String(d.getHours()).padStart(2, "0");
+            const mn = String(d.getMinutes()).padStart(2, "0");
+            return `${dd}/${mm}/${d.getFullYear()} ${hh}:${mn}`;
+          })() : null;
           return (
             <div
               key={block.id}
@@ -183,6 +197,11 @@ function PanelCajas({ blocks, selectedId, onSelect, pos }: PanelCajasProps) {
                   {bStatus.replace("_", " ")}&ensp;·&ensp;
                   <span className="normal-case tracking-normal text-[#9ca3af]">{slotSummary(block.slots)}</span>
                 </p>
+                {lastAtFmt && (
+                  <p className="mt-1 text-[9px] tabular-nums text-[#b0bac8] leading-none">
+                    {lastAtFmt}&ensp;·&ensp;<span className="font-semibold">{lastAct!.operator}</span>
+                  </p>
+                )}
               </div>
               <ChevronRight size={12} className={`mt-1 shrink-0 ${isSel ? "text-[#2A7CA8]" : "text-[#d1d9e1]"}`} />
             </div>
@@ -572,6 +591,17 @@ export function CajasWorkspace() {
   const [blocks,     setBlocks]     = useState<OperationalBlock[]>(MOCK_BLOCKS);
   const [selectedId, setSelectedId] = useState<string | null>("b100");
 
+  const lastActivity = (() => {
+    const map = new Map<string, LastActivity>();
+    for (const e of loadSessionHistory()) {
+      const prefix = e.boxCode[0];
+      const at     = e.closedAt ?? e.openedAt;
+      const cur    = map.get(prefix);
+      if (!cur || at > cur.at) map.set(prefix, { at, operator: e.operator });
+    }
+    return map;
+  })();
+
   return (
     <section className="flex min-h-0 flex-1 gap-2">
       <PanelCajas
@@ -579,6 +609,7 @@ export function CajasWorkspace() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         pos={pos}
+        lastActivity={lastActivity}
       />
       <PanelGestionCajas
         blocks={blocks}
