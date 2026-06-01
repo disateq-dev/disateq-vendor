@@ -2415,11 +2415,11 @@ export function CashWorkspace({ onOpened, cashSubView }: CashWorkspaceProps) {
                       
                       const cfg: Record<string, { sym: string; cls: string }> = {
                         apertura:           { sym: "○", cls: "text-[#2154d8]"   },
-                        movimiento_ingreso: { sym: "↑", cls: "text-emerald-500" },
-                        movimiento_egreso:  { sym: "↓", cls: "text-red-400"     },
-                        fondo_ingreso:      { sym: "↑", cls: "text-amber-500"   },
-                        fondo_egreso:       { sym: "↓", cls: "text-amber-600"   },
-                        comprobante:        { sym: "▪", cls: "text-[#005BE3]"   },
+                        movimiento_ingreso: { sym: "+", cls: "text-emerald-500" },
+                        movimiento_egreso:  { sym: "−", cls: "text-red-400"     },
+                        fondo_ingreso:      { sym: "+", cls: "text-amber-500"   },
+                        fondo_egreso:       { sym: "−", cls: "text-amber-600"   },
+                        comprobante:        { sym: "≡", cls: "text-[#005BE3]"   },
                         anulacion:          { sym: "⊘", cls: "text-red-400"     },
                         cierre:             { sym: "●", cls: "text-[#6b7280]"   },
                       };
