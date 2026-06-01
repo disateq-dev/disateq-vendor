@@ -37,36 +37,6 @@ const MOCK_BLOCKS: OperationalBlock[] = [
       { code: "150", slotType: "contingencia", hasHistory: false },
     ],
   },
-  {
-    id: "b200", blockBase: 200, active: true,
-    createdAt: new Date("2024-03-15T09:30:00"), createdBy: "FERNANDO",
-    slots: [
-      { code: "200", slotType: "principal",    hasHistory: true  },
-      { code: "201", slotType: "secundaria-1", hasHistory: false },
-      { code: "202", slotType: "secundaria-2", hasHistory: false },
-      { code: "250", slotType: "contingencia", hasHistory: false },
-    ],
-  },
-  {
-    id: "b300", blockBase: 300, active: false,
-    createdAt: new Date("2023-11-02T10:00:00"), createdBy: "ADMIN",
-    slots: [
-      { code: "300", slotType: "principal",    hasHistory: true  },
-      { code: "301", slotType: "secundaria-1", hasHistory: false },
-      { code: "302", slotType: "secundaria-2", hasHistory: false },
-      { code: "350", slotType: "contingencia", hasHistory: false },
-    ],
-  },
-  {
-    id: "b400", blockBase: 400, active: true,
-    createdAt: new Date("2026-05-31T22:28:36"), createdBy: "FTEJADA",
-    slots: [
-      { code: "400", slotType: "principal",    hasHistory: false },
-      { code: "401", slotType: "secundaria-1", hasHistory: false },
-      { code: "402", slotType: "secundaria-2", hasHistory: false },
-      { code: "450", slotType: "contingencia", hasHistory: false },
-    ],
-  },
 ];
 
 // ── helpers ───────────────────────────────────────────────────────────────
