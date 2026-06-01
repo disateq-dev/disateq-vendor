@@ -247,14 +247,13 @@ export function CorregirArqueoWorkspace() {
               </button>
             ))}
           </div>
-          {/* Caja */}
-          <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
-            className="w-full rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
-            <option value="">Todas las cajas</option>
-            {uniqueCajas.map(c => <option key={c} value={c}>Caja {c}</option>)}
-          </select>
-          {/* Rango de fechas */}
+          {/* Caja + Rango de fechas — una sola línea */}
           <div className="flex items-center gap-1.5">
+            <select value={filterCaja} onChange={e => setFilterCaja(e.target.value)}
+              className="w-[110px] shrink-0 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
+              <option value="">Todas</option>
+              {uniqueCajas.map(c => <option key={c} value={c}>C{c}</option>)}
+            </select>
             <input type="date" value={filterFechaDesde} onChange={e => setFilterFechaDesde(e.target.value)}
               className="flex-1 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]" />
             <span className="shrink-0 text-[9px] font-semibold text-[#9ca3af]">—</span>
