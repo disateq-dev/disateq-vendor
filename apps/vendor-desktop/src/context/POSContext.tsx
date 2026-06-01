@@ -860,8 +860,9 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}${ref}`);
     if (!refId && s.cashBox && s.openedAt) {
       const sk = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
-      const evType = type === "ingreso" ? "movimiento_ingreso" : "movimiento_egreso";
-      const evText = `${type === "ingreso" ? "↑ Ingreso" : "↓ Egreso"} · ${motivo}`;
+      const evType   = type === "ingreso" ? "movimiento_ingreso" : "movimiento_egreso";
+      const srcLabel = sourceType === "apertura" ? "Fondo de cambio" : sourceType === "externo" ? "Préstamo al fondo" : "Caja del día";
+      const evText   = `${type === "ingreso" ? "↑ Ingreso" : "↓ Egreso"} · ${srcLabel} · ${motivo}`;
       addTurnEvent(sk, evType, evText);
     }
     return move;
