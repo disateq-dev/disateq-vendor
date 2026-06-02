@@ -240,7 +240,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     } catch { return null; }
   });
   const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>(() => loadSessionHistory());
-  const [selectedCode,    setSelectedCode]    = useState<string>(() => suggestedCashBox?.code ?? "100");
+  const [selectedCode,    setSelectedCode]    = useState<string>(() => {
+    const principalCode = activeOperator?.blockBase != null ? String(activeOperator.blockBase) : null;
+    const principalBox  = principalCode ? cashBoxes.find(b => b.code === principalCode) : null;
+    return (principalBox?.available ? principalBox.code : suggestedCashBox?.code) ?? "100";
+  });
   const [aperturaInput,   setAperturaInput]   = useState("");
   const [aperturaMotivo,  setAperturaMotivo]  = useState("");
   const [aperturaRefOp,   setAperturaRefOp]   = useState("");
@@ -334,8 +338,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen && suggestedCashBox) setSelectedCode(suggestedCashBox.code);
-  }, [isOpen, suggestedCashBox]);
+    if (!isOpen) {
+      const principalCode = activeOperator?.blockBase != null ? String(activeOperator.blockBase) : null;
+      const principalBox  = principalCode ? cashBoxes.find(b => b.code === principalCode) : null;
+      const best = principalBox?.available ? principalBox : suggestedCashBox;
+      if (best) setSelectedCode(best.code);
+    }
+  }, [isOpen, suggestedCashBox, cashBoxes, activeOperator]);
 
   // ── movements panel tab ───────────────────────────────────────
   const [movPanel, setMovPanel] = useState<"vendido" | "fondo">("vendido");
