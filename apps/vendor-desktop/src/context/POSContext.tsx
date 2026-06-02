@@ -444,7 +444,6 @@ export function POSProvider({ children }: { children: ReactNode }) {
   useEffect(() => { saveUsedCodes(usedCodes); }, [usedCodes]);
 
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
-  const suggestedCashBox = useMemo(() => cashBoxes.find(b => b.available) ?? null, [cashBoxes]);
 
   const [sessionStats, setSessionStats] = useState(() => initState.stats);
   const [cashMoves,    setCashMoves]    = useState(() => initState.moves);
@@ -513,6 +512,13 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const [activeOperator, setActiveOperator] = useState<OperatorRecord | null>(null);
   const activeOperatorRef = useRef<OperatorRecord | null>(null);
   activeOperatorRef.current = activeOperator;
+
+  // Sugerencia de caja acotada al bloque del operador activo — nunca cruza bloques
+  const suggestedCashBox = useMemo(() => {
+    const prefix = activeOperator?.blockBase != null ? String(activeOperator.blockBase)[0] : null;
+    const pool   = prefix ? cashBoxes.filter(b => b.code[0] === prefix) : cashBoxes;
+    return pool.find(b => b.available) ?? null;
+  }, [cashBoxes, activeOperator]);
 
   const loginOperator = useCallback((id: string, pin: string): boolean => {
     const ok = checkPin(operators, id, pin);
