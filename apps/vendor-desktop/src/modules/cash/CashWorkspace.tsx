@@ -749,10 +749,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   if (cashSubView === "cajas")           return <CajasWorkspace />;
   if (cashSubView === "supervision-caja") return (
     <SupervisionCajaWorkspace
-      onEjecutarCierre={() => {
-        onCashSubViewChange?.("turno");
-        setClosingStage(1);
-      }}
       onAutorizarCierre={() => {
         setCierreAutorizado(true);
         onCashSubViewChange?.("turno");

@@ -1,39 +1,51 @@
 import { useState } from "react";
-import { Shield, CheckCircle, ClipboardList, Clock, Monitor, LogOut, Printer } from "lucide-react";
+import { Shield, CheckCircle, ClipboardList, Clock, Monitor, Printer, ShieldCheck } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import {
-  loadSessionHistory, recordSessionCorrection, getCurrentSessionId,
-  type SessionEntry, type CloseSignal, type CorrectionRecord, type CorrectionAccion,
+  loadSessionHistory, getCurrentSessionId,
+  type SessionEntry,
 } from "./services/session-history.service";
-import { loadTurnEvents, type TurnEvent } from "../../domains/cash/turn-events.store";
+import {
+  loadAuthorizations, recordAuthorization, markAuthorizationValidated,
+  type CajaAuthorization, type AuthorizationType,
+} from "./services/supervision-authorization.service";
 
-const MOTIVOS_EXTEMPORANEO = [
-  "Operador olvidó cerrar al terminar turno",
-  "Cierre no completado por corte eléctrico",
-  "Sistema cerrado sin completar cierre",
-  "Cierre delegado no ejecutado",
-  "Recuperación posterior al turno",
-  "Otro",
-];
+const MOTIVOS_AUTH: Record<string, string[]> = {
+  cierre_activo: [
+    "Fin de turno regular",
+    "Relevo de turno",
+    "Cierre por baja operación",
+    "Cierre por emergencia",
+    "Otro",
+  ],
+  cierre_extemporaneo: [
+    "Operador olvidó cerrar al terminar turno",
+    "Cierre no completado por corte eléctrico",
+    "Sistema cerrado sin completar cierre",
+    "Cierre delegado no ejecutado",
+    "Recuperación posterior al turno",
+    "Otro",
+  ],
+  correccion_cierre: [
+    "Diferencia verificada · billete o moneda falso",
+    "Error de conteo confirmado",
+    "Diferencia por operación externa autorizada",
+    "Monto de arqueo corregido en revisión",
+    "Otro",
+  ],
+  correccion_apertura: [
+    "Fondo de apertura mal registrado",
+    "Error de denominación en apertura",
+    "Diferencia en fondo inicial detectada",
+    "Otro",
+  ],
+};
 
-const MOTIVOS_CORREGIR_CIERRE = [
-  "Billete falso detectado",
-  "Moneda falsa detectada",
-  "Monto mal ingresado en arqueo",
-  "Error de conteo",
-  "Diferencia por operación externa",
-  "Otro",
-];
-
-const SYM_CFG: Record<string, { sym: string; cls: string }> = {
-  apertura:           { sym: "⊕", cls: "text-[#2154d8]"   },
-  movimiento_ingreso: { sym: "+",  cls: "text-emerald-500" },
-  movimiento_egreso:  { sym: "−",  cls: "text-red-400"     },
-  fondo_ingreso:      { sym: "→",  cls: "text-amber-500"   },
-  fondo_egreso:       { sym: "←",  cls: "text-amber-600"   },
-  comprobante:        { sym: "≡",  cls: "text-[#005BE3]"   },
-  anulacion:          { sym: "⊘",  cls: "text-red-400"     },
-  cierre:             { sym: "⊗",  cls: "text-[#6b7280]"   },
+const AUTH_LABELS: Record<string, string> = {
+  cierre_activo:       "Cierre de sesión activa",
+  cierre_extemporaneo: "Cierre extemporáneo",
+  correccion_cierre:   "Corrección de cierre",
+  correccion_apertura: "Corrección de apertura",
 };
 
 function fmtDatetime(iso: string): string {
@@ -50,52 +62,6 @@ function fmtTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function Timeline({ events, entry }: { events: TurnEvent[]; entry: SessionEntry }) {
-  function fmtTs(iso: string) {
-    const d = new Date(iso);
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  }
-  return (
-    <div className="flex flex-col rounded-xl border border-[#e8edf3] bg-white overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2 bg-[#f8fafd] border-b border-[#f0f4f8]">
-        <Clock size={10} strokeWidth={2} className="text-[#9ca3af] shrink-0" />
-        <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
-          Línea de tiempo · C{entry.boxCode}
-        </span>
-        <span className="ml-auto text-[9px] tabular-nums text-[#c0cad4]">
-          {events.length} evento{events.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-      <div className="flex flex-col px-3 py-2 gap-px">
-        {events.map(ev => {
-          const { sym, cls } = SYM_CFG[ev.type] ?? { sym: "·", cls: "text-[#9ca3af]" };
-          return (
-            <div key={ev.id} className="flex items-baseline gap-2 py-0.5">
-              <span className="shrink-0 w-[28px] text-[9px] tabular-nums text-[#c0cad4] text-right">{fmtTs(ev.ts)}</span>
-              <span className={`shrink-0 text-[10px] font-bold ${cls}`}>{sym}</span>
-              <span className="flex-1 min-w-0 text-[10px] text-[#374151] leading-snug truncate">{ev.text}</span>
-            </div>
-          );
-        })}
-        {entry.correction && (
-          <div className="flex items-baseline gap-2 py-0.5 mt-0.5 border-t border-[#f4f6f9] pt-1.5">
-            <span className="shrink-0 w-[28px] text-[9px] tabular-nums text-[#c0cad4] text-right">
-              {(() => {
-                const d = new Date(entry.correction.correctedAt);
-                return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-              })()}
-            </span>
-            <span className="shrink-0 text-[10px] font-bold text-[#2154d8]">⚑</span>
-            <span className="flex-1 min-w-0 text-[10px] font-semibold text-[#2154d8] leading-snug">
-              Corrección supervisada · {entry.correction.correctedBy}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function MotivoForm({ presets, motivoPreset, motivoLibre, setMotivoPreset, setMotivoLibre }: {
   presets: string[];
   motivoPreset: string;
@@ -106,7 +72,7 @@ function MotivoForm({ presets, motivoPreset, motivoLibre, setMotivoPreset, setMo
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
-        Motivo <span className="text-amber-500">*</span>
+        Motivo de autorización <span className="text-amber-500">*</span>
       </span>
       <div className="flex flex-wrap gap-1.5">
         {presets.map(p => (
@@ -134,20 +100,25 @@ function InfoSupervisor({ name }: { name: string }) {
     <div className="flex items-center gap-1.5 rounded-xl border border-[#f0f4f8] bg-[#f8fafd] px-3.5 py-2">
       <Shield size={11} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
       <span className="text-[10px] text-[#9ca3af]">
-        Se registrará como: <strong className="text-[#374151]">{name}</strong>
+        Autorización emitida por: <strong className="text-[#374151]">{name}</strong>
       </span>
     </div>
   );
 }
 
-function ApplyButton({ canApply, onClick, label }: { canApply: boolean; onClick: () => void; label: string }) {
+function AuthorizeButton({ canAuthorize, onClick, label }: {
+  canAuthorize: boolean;
+  onClick: () => void;
+  label: string;
+}) {
   return (
-    <button onClick={onClick} disabled={!canApply}
+    <button onClick={onClick} disabled={!canAuthorize}
       className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
-        canApply
+        canAuthorize
           ? "bg-[#2154d8] text-white hover:bg-[#1a44be] active:scale-[0.98] shadow-[0_2px_8px_rgba(33,84,216,0.20)]"
           : "cursor-not-allowed bg-[#2154d8]/[0.15] text-[#2154d8]/50"
       }`}>
+      <ShieldCheck size={14} strokeWidth={2.5} />
       {label}
     </button>
   );
@@ -156,24 +127,19 @@ function ApplyButton({ canApply, onClick, label }: { canApply: boolean; onClick:
 // ── Componente principal ────────────────────────────────────────────────────
 
 interface SupervisionCajaProps {
-  onEjecutarCierre?:  () => void;
   onAutorizarCierre?: () => void;
 }
 
-export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }: SupervisionCajaProps = {}) {
+export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaProps = {}) {
   const { activeOperator, operators, cashSession } = usePOS();
 
-  const [history,      setHistory]      = useState<SessionEntry[]>(() => loadSessionHistory());
-  const [turnEvents]                   = useState<TurnEvent[]>(() => loadTurnEvents());
-  const [selectedId,   setSelectedId]   = useState<string | null>(null);
-  const [motivoPreset, setMotivoPreset] = useState("");
-  const [motivoLibre,  setMotivoLibre]  = useState("");
-  const [newSignal,    setNewSignal]    = useState<CloseSignal>("ok");
-  const [applied,      setApplied]      = useState(false);
-  const [fechaOp,      setFechaOp]      = useState("");
+  const [history,        setHistory]        = useState<SessionEntry[]>(() => loadSessionHistory());
+  const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
+  const [selectedId,     setSelectedId]     = useState<string | null>(null);
+  const [motivoPreset,   setMotivoPreset]   = useState("");
+  const [motivoLibre,    setMotivoLibre]    = useState("");
 
-  // Filtros
-  const [filterEstado,       setFilterEstado]       = useState<"todos" | "pendiente" | "revisar" | "corregido" | "ok">("todos");
+  const [filterEstado,       setFilterEstado]       = useState<"todos" | "abierto" | "sin_cierre" | "cerrado">("todos");
   const [filterCaja,         setFilterCaja]         = useState("");
   const [filterOperadorCode, setFilterOperadorCode] = useState("");
   const [filterFechaDesde,   setFilterFechaDesde]   = useState("");
@@ -186,16 +152,16 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
   const uniqueCajas      = [...new Set(history.map(e => e.boxCode))].sort();
   const cajaOptions      = filterBlockPrefix ? uniqueCajas.filter(c => c[0] === filterBlockPrefix) : uniqueCajas;
 
+  const currentSid = getCurrentSessionId();
+
   const filtered = history.slice(0, 60).filter(e => {
     if (filterEstado !== "todos") {
-      const isPend = e.closeSignal === null;
-      const isWrn  = e.closeSignal === "warn" && !e.correction;
-      const isCor  = !!e.correction;
-      const isOk   = e.closeSignal === "ok"   && !isCor;
-      if (filterEstado === "pendiente" && !isPend) return false;
-      if (filterEstado === "revisar"   && !isWrn)  return false;
-      if (filterEstado === "corregido" && !isCor)  return false;
-      if (filterEstado === "ok"        && !isOk)   return false;
+      const isAbierto   = cashSession.isOpen && e.id === currentSid;
+      const isSinCierre = e.closeSignal === null && !isAbierto;
+      const isCerrado   = e.closeSignal !== null;
+      if (filterEstado === "abierto"    && !isAbierto)   return false;
+      if (filterEstado === "sin_cierre" && !isSinCierre) return false;
+      if (filterEstado === "cerrado"    && !isCerrado)   return false;
     }
     if (filterBlockPrefix && e.boxCode[0] !== filterBlockPrefix) return false;
     if (filterCaja        && e.boxCode !== filterCaja)           return false;
@@ -206,63 +172,71 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    const p = (e: SessionEntry) =>
-      e.closeSignal === null                    ? 0 :
-      e.closeSignal === "warn" && !e.correction ? 1 : 2;
+    const p = (e: SessionEntry) => {
+      if (cashSession.isOpen && e.id === currentSid) return 0;
+      if (e.closeSignal === null) return 1;
+      if (e.closeSignal === "warn") return 2;
+      return 3;
+    };
     return p(a) - p(b);
   });
 
-  const selectedEntry = sorted.find(e => e.id === selectedId) ?? null;
+  const selectedEntry        = sorted.find(e => e.id === selectedId) ?? null;
+  const sessionAuthorization = selectedEntry
+    ? (authorizations.find(a => a.sessionId === selectedEntry.id) ?? null)
+    : null;
 
   const isPending       = selectedEntry?.closeSignal === null;
-  const isWarn          = selectedEntry?.closeSignal === "warn" && !selectedEntry?.correction;
-  const isCorrected     = !!selectedEntry?.correction;
-  const isActiveSession = !!(
-    selectedEntry && isPending && cashSession.isOpen &&
-    selectedEntry.id === getCurrentSessionId()
-  );
+  const isWarn          = selectedEntry?.closeSignal === "warn";
+  const isOk            = selectedEntry?.closeSignal === "ok";
+  const isActiveSession = !!(selectedEntry && isPending && cashSession.isOpen && selectedEntry.id === currentSid);
+  const isExtemporaneo  = isPending && !isActiveSession;
 
-  const sessionTimeline = selectedEntry
-    ? turnEvents
-        .filter(e => e.sessionKey === `${selectedEntry.boxCode}-${selectedEntry.openedAt}`)
-        .sort((a, b) => a.ts.localeCompare(b.ts))
-    : [];
+  const lastActTs = selectedEntry?.closedAt ?? selectedEntry?.openedAt ?? "";
 
-  const lastActTs = sessionTimeline.length > 0
-    ? sessionTimeline[sessionTimeline.length - 1].ts
-    : (selectedEntry?.closedAt ?? selectedEntry?.openedAt ?? "");
+  const authType: AuthorizationType | null =
+    isActiveSession ? "cierre_activo"       :
+    isExtemporaneo  ? "cierre_extemporaneo" :
+    isWarn          ? "correccion_cierre"   :
+    null;
 
-  const motivoFinal   = (motivoPreset === "Otro" || motivoPreset === "") ? motivoLibre.trim() : motivoPreset;
-  const isExtemporaneo = isPending && !isActiveSession;
-  const canApply      = motivoFinal.length >= 5 && (!isExtemporaneo || fechaOp.length > 0);
-  const PRESETS       = isExtemporaneo ? MOTIVOS_EXTEMPORANEO : MOTIVOS_CORREGIR_CIERRE;
+  const presets      = authType ? (MOTIVOS_AUTH[authType] ?? []) : [];
+  const motivoFinal  = (motivoPreset === "Otro" || motivoPreset === "") ? motivoLibre.trim() : motivoPreset;
+  const canAuthorize = motivoFinal.length >= 5 && !sessionAuthorization;
+
+  const pendingCount = sorted.filter(e => {
+    const isAct = cashSession.isOpen && e.id === currentSid;
+    const isSC  = e.closeSignal === null && !isAct;
+    const isWrn = e.closeSignal === "warn";
+    const auth  = authorizations.find(a => a.sessionId === e.id);
+    return (isAct || isSC || isWrn) && auth?.status !== "validada";
+  }).length;
 
   function handleSelect(id: string) {
     if (id === selectedId) return;
     setSelectedId(id);
     setMotivoPreset(""); setMotivoLibre("");
-    setNewSignal("ok"); setApplied(false); setFechaOp("");
   }
 
-  function handleApply() {
-    if (!selectedEntry || !canApply) return;
-    const accion: CorrectionAccion = isExtemporaneo ? "cierre_extemporaneo" : "documentar_diferencia";
-    const resolvedSignal: CloseSignal = isExtemporaneo ? newSignal : "warn";
-    const correction: CorrectionRecord = {
-      correctedBy: supervisorName,
-      correctedAt: new Date().toISOString(),
-      motivo: motivoFinal,
-      accion,
-      prevSignal: selectedEntry.closeSignal,
-      newSignal:  resolvedSignal,
-      ...(isExtemporaneo && fechaOp ? { fechaOperacional: new Date(fechaOp).toISOString() } : {}),
-    };
-    recordSessionCorrection(selectedEntry.id, correction, resolvedSignal);
-    setHistory(loadSessionHistory());
-    setApplied(true);
+  function handleAuthorize() {
+    if (!selectedEntry || !canAuthorize || !authType) return;
+    recordAuthorization({
+      cajaCode:     selectedEntry.boxCode,
+      sessionId:    selectedEntry.id,
+      type:         authType,
+      motivo:       motivoFinal,
+      authorizedBy: supervisorName,
+      authorizedAt: new Date().toISOString(),
+    });
+    setAuthorizations(loadAuthorizations());
+    if (authType === "cierre_activo") onAutorizarCierre?.();
   }
 
-  const pendingCount = sorted.filter(e => e.closeSignal === null).length;
+  function handleValidate() {
+    if (!sessionAuthorization) return;
+    markAuthorizationValidated(sessionAuthorization.id, supervisorName);
+    setAuthorizations(loadAuthorizations());
+  }
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
@@ -283,22 +257,20 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
         <div className="shrink-0 flex flex-col gap-1.5 border-b border-[#e8edf3] px-3 py-2">
           {/* Estado turno */}
           <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5">
-            {(["todos", "pendiente", "revisar", "corregido", "ok"] as const).map(est => (
+            {(["todos", "abierto", "sin_cierre", "cerrado"] as const).map(est => (
               <button key={est} onClick={() => setFilterEstado(est)}
                 className={`flex-1 rounded-md py-2 text-[9.5px] font-bold uppercase tracking-wide transition ${
                   filterEstado === est
-                    ? est === "pendiente" ? "bg-amber-500 text-white shadow-sm"
-                    : est === "revisar"   ? "bg-orange-400 text-white shadow-sm"
-                    : est === "corregido" ? "bg-emerald-600 text-white shadow-sm"
-                    : est === "ok"        ? "bg-[#6b7280] text-white shadow-sm"
+                    ? est === "abierto"    ? "bg-emerald-600 text-white shadow-sm"
+                    : est === "sin_cierre" ? "bg-amber-500 text-white shadow-sm"
+                    : est === "cerrado"    ? "bg-[#6b7280] text-white shadow-sm"
                     : "bg-white text-[#374151] shadow-sm"
                     : "text-[#9ca3af] hover:text-[#374151]"
                 }`}>
-                {est === "todos"     ? "Todos"
-                : est === "pendiente" ? "Pendiente"
-                : est === "revisar"   ? "Revisar"
-                : est === "corregido" ? "Corregido"
-                : "OK"}
+                {est === "todos"      ? "Todos"
+                : est === "abierto"   ? "Abierto"
+                : est === "sin_cierre" ? "Sin Cierre"
+                : "Cerrado"}
               </button>
             ))}
           </div>
@@ -342,11 +314,12 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
           ) : (
             <div className="flex flex-col divide-y divide-[#f4f6f9]">
               {sorted.map(e => {
-                const ePend = e.closeSignal === null;
-                const eWarn = e.closeSignal === "warn" && !e.correction;
-                const eCor  = !!e.correction;
-                const eOk   = e.closeSignal === "ok"   && !eCor;
-                const isSel = e.id === selectedId;
+                const isAct  = cashSession.isOpen && e.id === currentSid;
+                const isSC   = e.closeSignal === null && !isAct;
+                const isWrn  = e.closeSignal === "warn";
+                const isCorr = e.closeSignal === "ok";
+                const isSel  = e.id === selectedId;
+                const auth   = authorizations.find(a => a.sessionId === e.id);
                 return (
                   <button key={e.id} onClick={() => handleSelect(e.id)}
                     className={`flex flex-col gap-0.5 px-4 py-2.5 text-left transition hover:bg-[#f8fafc] ${
@@ -355,10 +328,13 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-bold tabular-nums text-[#1a5f7a]">C{e.boxCode}</span>
                       <span className="truncate flex-1 text-[10px] font-semibold text-[#6b7280]">{e.boxLabel}</span>
-                      {ePend && <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[8.5px] font-bold text-amber-700">PENDIENTE</span>}
-                      {eWarn && <span className="shrink-0 rounded-full bg-amber-50  px-1.5 py-0.5 text-[8.5px] font-bold text-amber-600">⚠ REVISAR</span>}
-                      {eCor  && <span className="shrink-0 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-bold text-emerald-700">✓ CORREGIDO</span>}
-                      {eOk   && <span className="shrink-0 rounded-full bg-[#f4f6f9] px-1.5 py-0.5 text-[8.5px] font-semibold text-[#9ca3af]">CORRECTO</span>}
+                      {isAct  && <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[8.5px] font-bold text-emerald-700">ACTIVO</span>}
+                      {isSC   && <span className="shrink-0 rounded-full bg-amber-100  px-1.5 py-0.5 text-[8.5px] font-bold text-amber-700">SIN CIERRE</span>}
+                      {isWrn  && !auth && <span className="shrink-0 rounded-full bg-orange-50 px-1.5 py-0.5 text-[8.5px] font-bold text-orange-600">⚠ REVISAR</span>}
+                      {auth?.status === "emitida"   && <span className="shrink-0 rounded-full bg-[#EEF3FD] px-1.5 py-0.5 text-[8.5px] font-bold text-[#2154d8]">AUTORIZADO</span>}
+                      {auth?.status === "ejecutada" && <span className="shrink-0 rounded-full bg-purple-50 px-1.5 py-0.5 text-[8.5px] font-bold text-purple-700">EJECUTADO</span>}
+                      {auth?.status === "validada"  && <span className="shrink-0 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-bold text-emerald-700">✓ VALIDADO</span>}
+                      {isCorr && !auth && <span className="shrink-0 rounded-full bg-[#f4f6f9] px-1.5 py-0.5 text-[8.5px] font-semibold text-[#9ca3af]">CORRECTO</span>}
                     </div>
                     <span className="text-[10px] font-medium text-[#9ca3af]">{e.operator}</span>
                     <div className="flex items-center gap-1.5">
@@ -388,24 +364,22 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
           )}
         </div>
 
-        {/* Sin selección */}
         {!selectedEntry && (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
             <Shield size={32} strokeWidth={1} className="text-[#d1d5db]" />
             <div>
               <p className="text-[12px] font-semibold text-[#6b7280]">Supervisión de Caja</p>
               <p className="text-[11px] text-[#9ca3af] mt-1 leading-relaxed">
-                Selecciona un registro para revisar el detalle<br />y ejecutar acciones de supervisión.
+                Selecciona un registro para revisar el detalle<br />y emitir autorizaciones.
               </p>
             </div>
           </div>
         )}
 
-        {/* Con selección */}
         {selectedEntry && (
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 pt-4 pb-5">
 
-            {/* ── DETALLE ── */}
+            {/* DETALLE */}
             <div className="flex flex-col rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2 bg-[#f8fafd] border-b border-[#f0f4f8]">
                 <Monitor size={11} strokeWidth={2} className="text-[#9ca3af] shrink-0" />
@@ -437,144 +411,169 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
               </div>
             </div>
 
-            {/* Línea de tiempo */}
-            {sessionTimeline.length > 0 && <Timeline events={sessionTimeline} entry={selectedEntry} />}
-
-            {/* Trazabilidad — si existe corrección */}
-            {isCorrected && selectedEntry.correction && (
+            {/* TRAZABILIDAD */}
+            {(sessionAuthorization || selectedEntry.correction) && (
               <div className="flex flex-col gap-2 rounded-xl border border-[#e4e9f0] bg-white px-4 py-3">
-                <p className="text-[9.5px] font-bold uppercase tracking-widest text-[#c0cad4]">
-                  Trazabilidad · Corrección registrada
-                </p>
-                <div className="flex flex-col gap-1.5">
-                  {selectedEntry.correction.fechaOperacional && (
+                <p className="text-[9.5px] font-bold uppercase tracking-widest text-[#c0cad4]">Trazabilidad</p>
+
+                {sessionAuthorization && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#2154d8]">
+                      Autorización · {AUTH_LABELS[sessionAuthorization.type] ?? sessionAuthorization.type}
+                    </p>
                     <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Fecha operacional</span>
-                      <span className="text-[10.5px] tabular-nums text-[#374151]">
-                        {fmtDatetime(selectedEntry.correction.fechaOperacional)}
-                      </span>
+                      <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151]">{sessionAuthorization.authorizedBy}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between items-start gap-4">
-                    <span className="text-[10px] text-[#9ca3af] shrink-0">Supervisor</span>
-                    <span className="text-[10.5px] font-semibold text-[#374151] text-right">
-                      {selectedEntry.correction.correctedBy}
-                    </span>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Emitida</span>
+                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(sessionAuthorization.authorizedAt)}</span>
+                    </div>
+                    <div className="flex justify-between items-start gap-4">
+                      <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151] text-right">{sessionAuthorization.motivo}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[10px] text-[#9ca3af]">Registrado</span>
-                    <span className="text-[10.5px] tabular-nums text-[#374151]">
-                      {fmtDatetime(selectedEntry.correction.correctedAt)}
-                    </span>
+                )}
+
+                {(sessionAuthorization?.status === "ejecutada" || sessionAuthorization?.status === "validada") && sessionAuthorization.executedBy && (
+                  <div className="flex flex-col gap-1.5 pt-1.5 border-t border-[#f4f6f9]">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-purple-600">Ejecución</p>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Operador</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151]">{sessionAuthorization.executedBy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Ejecutado</span>
+                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(sessionAuthorization.executedAt!)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-start gap-4">
-                    <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
-                    <span className="text-[10.5px] font-semibold text-[#374151] text-right">
-                      {selectedEntry.correction.motivo}
-                    </span>
+                )}
+
+                {sessionAuthorization?.status === "validada" && (
+                  <div className="flex flex-col gap-1.5 pt-1.5 border-t border-[#f4f6f9]">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600">Validación</p>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151]">{sessionAuthorization.validatedBy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Validado</span>
+                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(sessionAuthorization.validatedAt!)}</span>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Corrección legada — modelo anterior */}
+                {selectedEntry.correction && !sessionAuthorization && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#9ca3af]">Corrección registrada</p>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Por</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151]">{selectedEntry.correction.correctedBy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Registrado</span>
+                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(selectedEntry.correction.correctedAt)}</span>
+                    </div>
+                    <div className="flex justify-between items-start gap-4">
+                      <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151] text-right">{selectedEntry.correction.motivo}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* ── ACCIONES SUPERVISOR ── */}
+            {/* ACCIONES SUPERVISOR */}
             <div className="flex flex-col gap-2.5 rounded-xl border border-[#2A7CA8]/30 bg-[#f8fafd] px-4 py-3">
               <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#1a5f7a]">Acciones Supervisor</p>
 
-              {/* A: Sesión activa, cierre pendiente */}
-              {isActiveSession && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-[10px] text-[#9ca3af] leading-snug">
-                    Turno activo sin cierre. El supervisor puede ejecutar el cierre directamente o autorizarlo al operador de ventas.
-                  </p>
-                  <div className="flex gap-2">
-                    <button onClick={() => onEjecutarCierre?.()}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#dc2626]/30 bg-red-50 py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-[#dc2626] transition hover:bg-red-100 active:scale-[0.98]">
-                      <LogOut size={11} strokeWidth={2.5} />
-                      Ejecutar Cierre
-                    </button>
-                    <button onClick={() => onAutorizarCierre?.()}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#2154d8]/30 bg-[#EEF3FD] py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-[#2154d8] transition hover:bg-[#dce8fb] active:scale-[0.98]">
-                      <CheckCircle size={11} strokeWidth={2.5} />
-                      Autorizar Cierre
-                    </button>
+              {/* Autorización emitida */}
+              {sessionAuthorization?.status === "emitida" && (
+                <div className="flex items-start gap-2 rounded-xl bg-[#EEF3FD] border border-[#2154d8]/20 px-3 py-2.5">
+                  <ShieldCheck size={13} className="text-[#2154d8] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[10.5px] font-bold text-[#2154d8]">Autorización emitida</p>
+                    <p className="text-[10px] text-[#6b7280] leading-snug">
+                      Pendiente de ejecución por el operador en Gestión Cajas.
+                    </p>
                   </div>
                 </div>
               )}
 
-              {/* B: Histórica, cierre pendiente */}
-              {isPending && !isActiveSession && !applied && (
+              {/* Ejecutada — pendiente validación */}
+              {sessionAuthorization?.status === "ejecutada" && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-[9.5px] font-bold uppercase tracking-wide text-amber-600">Cierre Extemporáneo</p>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
-                      Fecha/hora real del cierre <span className="text-amber-500">*</span>
-                    </span>
-                    <input type="datetime-local" value={fechaOp} onChange={e => setFechaOp(e.target.value)}
-                      max={new Date().toISOString().slice(0, 16)}
-                      className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/15" />
-                    <p className="text-[9.5px] text-[#9ca3af] px-1">Momento real en que ocurrió el cierre.</p>
+                  <div className="flex items-start gap-2 rounded-xl bg-purple-50 border border-purple-200 px-3 py-2.5">
+                    <ShieldCheck size={13} className="text-purple-600 shrink-0 mt-0.5" />
+                    <p className="text-[10.5px] font-bold text-purple-700">Ejecución registrada · Pendiente de validación</p>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">¿El arqueo cuadró?</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => setNewSignal("ok")}
-                        className={`flex-1 rounded-xl border py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
-                          newSignal === "ok"
-                            ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                            : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-emerald-200"
-                        }`}>✓ Sin diferencias</button>
-                      <button onClick={() => setNewSignal("warn")}
-                        className={`flex-1 rounded-xl border py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
-                          newSignal === "warn"
-                            ? "border-amber-300 bg-amber-50 text-amber-700"
-                            : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-amber-200"
-                        }`}>⚠ Con diferencias</button>
-                    </div>
-                  </div>
-                  <MotivoForm presets={PRESETS} motivoPreset={motivoPreset} motivoLibre={motivoLibre}
-                    setMotivoPreset={setMotivoPreset} setMotivoLibre={setMotivoLibre} />
-                  <InfoSupervisor name={supervisorName} />
-                  <ApplyButton canApply={canApply} onClick={handleApply} label="Registrar Cierre Extemporáneo" />
-                </div>
-              )}
-
-              {/* C: warn, sin corrección */}
-              {isWarn && !applied && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-[9.5px] font-bold uppercase tracking-wide text-orange-600">Corregir Cierre</p>
-                  <MotivoForm presets={PRESETS} motivoPreset={motivoPreset} motivoLibre={motivoLibre}
-                    setMotivoPreset={setMotivoPreset} setMotivoLibre={setMotivoLibre} />
-                  <InfoSupervisor name={supervisorName} />
-                  <ApplyButton canApply={canApply} onClick={handleApply} label="Registrar Corrección" />
-                </div>
-              )}
-
-              {/* Corrección aplicada */}
-              {applied && (
-                <div className="flex flex-col items-center gap-2 py-2 text-center">
-                  <CheckCircle size={22} strokeWidth={1.5} className="text-emerald-500" />
-                  <p className="text-[11px] font-semibold text-[#374151]">Corrección registrada</p>
-                  <button onClick={() => { setApplied(false); setSelectedId(null); }}
-                    className="text-[11px] font-semibold text-[#2154d8] hover:underline">
-                    Seleccionar otro registro
+                  <button onClick={handleValidate}
+                    className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 text-white text-[13px] font-semibold uppercase tracking-wider transition hover:bg-emerald-700 active:scale-[0.98]">
+                    <CheckCircle size={14} strokeWidth={2.5} />
+                    Validar Ejecución
                   </button>
                 </div>
               )}
 
-              {/* D: Sesión resuelta — reimprimir */}
-              {!isActiveSession && !isPending && !isWarn && !applied && (
+              {/* Validada */}
+              {sessionAuthorization?.status === "validada" && (
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5">
+                  <CheckCircle size={13} className="text-emerald-500 shrink-0" />
+                  <span className="text-[10.5px] font-semibold text-emerald-700">Intervención supervisora completada · Validada</span>
+                </div>
+              )}
+
+              {/* Bloque A: sesión activa */}
+              {isActiveSession && !sessionAuthorization && (
                 <div className="flex flex-col gap-2">
-                  {isCorrected ? (
-                    <p className="text-[10px] text-[#9ca3af] leading-snug">
-                      Corrección ya registrada. Ver trazabilidad arriba.
-                    </p>
-                  ) : (
-                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
-                      <CheckCircle size={13} className="text-emerald-500 shrink-0" />
-                      <span className="text-[10.5px] font-semibold text-emerald-700">Cierre correcto · sin corrección pendiente</span>
-                    </div>
-                  )}
+                  <p className="text-[9.5px] font-bold uppercase tracking-wide text-[#1a5f7a]">Autorizar Cierre</p>
+                  <p className="text-[10px] text-[#9ca3af] leading-snug">
+                    El turno está activo. La autorización habilita al operador para ejecutar el cierre.
+                  </p>
+                  <MotivoForm presets={presets} motivoPreset={motivoPreset} motivoLibre={motivoLibre}
+                    setMotivoPreset={setMotivoPreset} setMotivoLibre={setMotivoLibre} />
+                  <InfoSupervisor name={supervisorName} />
+                  <AuthorizeButton canAuthorize={canAuthorize} onClick={handleAuthorize} label="Autorizar Cierre" />
+                </div>
+              )}
+
+              {/* Bloque B: histórica sin cierre */}
+              {isExtemporaneo && !sessionAuthorization && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[9.5px] font-bold uppercase tracking-wide text-amber-600">Autorizar Cierre Extemporáneo</p>
+                  <p className="text-[10px] text-[#9ca3af] leading-snug">
+                    El operador ejecutará el cierre con la fecha y resultado real del arqueo desde Gestión Cajas.
+                  </p>
+                  <MotivoForm presets={presets} motivoPreset={motivoPreset} motivoLibre={motivoLibre}
+                    setMotivoPreset={setMotivoPreset} setMotivoLibre={setMotivoLibre} />
+                  <InfoSupervisor name={supervisorName} />
+                  <AuthorizeButton canAuthorize={canAuthorize} onClick={handleAuthorize} label="Autorizar Cierre Extemporáneo" />
+                </div>
+              )}
+
+              {/* Bloque C: cierre con observación */}
+              {isWarn && !sessionAuthorization && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[9.5px] font-bold uppercase tracking-wide text-orange-600">Autorizar Corrección de Cierre</p>
+                  <p className="text-[10px] text-[#9ca3af] leading-snug">
+                    El operador ejecutará la corrección desde Gestión Cajas.
+                  </p>
+                  <MotivoForm presets={presets} motivoPreset={motivoPreset} motivoLibre={motivoLibre}
+                    setMotivoPreset={setMotivoPreset} setMotivoLibre={setMotivoLibre} />
+                  <InfoSupervisor name={supervisorName} />
+                  <AuthorizeButton canAuthorize={canAuthorize} onClick={handleAuthorize} label="Autorizar Corrección de Cierre" />
+                </div>
+              )}
+
+              {/* Bloque D: sesión correcta */}
+              {isOk && !sessionAuthorization && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+                    <CheckCircle size={13} className="text-emerald-500 shrink-0" />
+                    <span className="text-[10.5px] font-semibold text-emerald-700">Cierre correcto · sin corrección pendiente</span>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       disabled={!selectedEntry.arqueo}
@@ -587,14 +586,13 @@ export function SupervisionCajaWorkspace({ onEjecutarCierre, onAutorizarCierre }
                       <Printer size={11} strokeWidth={2} />
                       Reimprimir Arqueo
                     </button>
-                    <button disabled title="Pendiente: apertura no persiste en historial de sesión"
+                    <button disabled title="Pendiente: datos de apertura no disponibles en historial"
                       className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#f4f6f9] py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-[#c0cad4] cursor-not-allowed">
                       Corregir Apertura
                     </button>
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         )}

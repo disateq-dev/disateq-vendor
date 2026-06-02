@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User } from "lucide-react";
+import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User, ShieldCheck, CheckCircle } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
-import { loadSessionHistory } from "./services/session-history.service";
+import {
+  loadSessionHistory, recordSessionCorrection,
+  type SessionEntry, type CorrectionRecord,
+} from "./services/session-history.service";
 import { loadTurnEvents } from "../../domains/cash/turn-events.store";
+import {
+  loadAuthorizations, markAuthorizationExecuted,
+  type CajaAuthorization,
+} from "./services/supervision-authorization.service";
 
 // ── tipos ─────────────────────────────────────────────────────────────────
 
@@ -41,6 +48,31 @@ const MOCK_BLOCKS: OperationalBlock[] = [
   },
 ];
 
+// ── motivos ejecución operador ─────────────────────────────────────────────
+
+const MOTIVOS_EXEC_EXTMP = [
+  "Finalicé el turno sin cerrar el sistema",
+  "Corte eléctrico antes del cierre",
+  "Emergencia antes del cierre",
+  "Delegué el turno sin cerrar",
+  "Otro",
+];
+
+const MOTIVOS_EXEC_CORRECCION = [
+  "Reconteo confirmó el monto correcto",
+  "Separé el billete o moneda falso identificado",
+  "Ingresé el monto correcto en el sistema",
+  "Registré la diferencia autorizada",
+  "Otro",
+];
+
+const AUTH_EXEC_LABELS: Record<string, string> = {
+  cierre_activo:       "Cierre de sesión activa",
+  cierre_extemporaneo: "Cierre extemporáneo",
+  correccion_cierre:   "Corrección de cierre",
+  correccion_apertura: "Corrección de apertura",
+};
+
 // ── helpers ───────────────────────────────────────────────────────────────
 
 function formatCreatedAt(d: Date): string {
@@ -49,6 +81,11 @@ function formatCreatedAt(d: Date): string {
   const hh  = String(d.getHours()).padStart(2, "0");
   const min = String(d.getMinutes()).padStart(2, "0");
   return `${dd}/${mm}/${d.getFullYear()} · ${hh}:${min}`;
+}
+
+function fmtDt(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
 function nextBlockBase(blocks: OperationalBlock[]): number {
@@ -134,9 +171,10 @@ interface PanelCajasProps {
   onSelect: (id: string) => void;
   pos: POSRef;
   lastActivity: Map<string, LastActivity>;
+  authBlockPrefixes: Set<string>;
 }
 
-function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity }: PanelCajasProps) {
+function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlockPrefixes }: PanelCajasProps) {
   const activeCount   = blocks.filter(b => b.active).length;
   const inactiveCount = blocks.filter(b => !b.active).length;
 
@@ -165,11 +203,12 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity }: PanelCa
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {blocks.map(block => {
-          const isSel   = block.id === selectedId;
-          const bStatus = getBlockStatus(pos, block);
-          const blockOp = getBlockOperator(pos.operators, block.blockBase);
-          const prefix  = String(block.blockBase)[0];
-          const lastAct = lastActivity.get(prefix);
+          const isSel    = block.id === selectedId;
+          const bStatus  = getBlockStatus(pos, block);
+          const blockOp  = getBlockOperator(pos.operators, block.blockBase);
+          const prefix   = String(block.blockBase)[0];
+          const lastAct  = lastActivity.get(prefix);
+          const hasAuth  = authBlockPrefixes.has(prefix);
           const lastAtFmt = lastAct ? (() => {
             const d = new Date(lastAct.at);
             const dd = String(d.getDate()).padStart(2, "0");
@@ -191,9 +230,16 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity }: PanelCa
                 {block.blockBase}
               </span>
               <div className="min-w-0 flex-1">
-                <p className={`text-[12px] font-semibold ${isSel ? "text-[#2d6640]" : blockOp ? "text-[#2F3E46]" : "text-[#b0bac8]"}`}>
-                  {blockOp ? blockOp.alias : "Sin operador"}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className={`text-[12px] font-semibold ${isSel ? "text-[#2d6640]" : blockOp ? "text-[#2F3E46]" : "text-[#b0bac8]"}`}>
+                    {blockOp ? blockOp.alias : "Sin operador"}
+                  </p>
+                  {hasAuth && (
+                    <span className="rounded-full bg-[#EEF3FD] px-1.5 py-0.5 text-[8px] font-bold text-[#2154d8]">
+                      AUTORIZACIÓN
+                    </span>
+                  )}
+                </div>
                 <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusColor[bStatus]}`}>
                   {bStatus.replace("_", " ")}&ensp;·&ensp;
                   <span className="normal-case tracking-normal text-[#9ca3af]">{slotSummary(block.slots)}</span>
@@ -226,12 +272,26 @@ interface PanelGestionCajasProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   pos: POSRef;
+  authorizations: CajaAuthorization[];
+  onAuthExecuted: () => void;
+  operatorName: string;
+  sessionHistory: SessionEntry[];
 }
 
-function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: PanelGestionCajasProps) {
+function PanelGestionCajas({
+  blocks, setBlocks, selectedId, onSelect, pos,
+  authorizations, onAuthExecuted, operatorName, sessionHistory,
+}: PanelGestionCajasProps) {
   const [mode,               setMode]               = useState<PanelMode>("view");
   const [editSecondaryCount, setEditSecondaryCount] = useState<SecCount>(2);
   const [confirmDelete,      setConfirmDelete]      = useState(false);
+
+  // Estado ejecución de autorización
+  const [execFecha,        setExecFecha]        = useState("");
+  const [execSignal,       setExecSignal]       = useState<"ok" | "warn">("ok");
+  const [execMotivoPreset, setExecMotivoPreset] = useState("");
+  const [execMotivoLibre,  setExecMotivoLibre]  = useState("");
+  const [execDone,         setExecDone]         = useState(false);
 
   const selected    = blocks.find(b => b.id === selectedId) ?? null;
   const canActOnSel = selected !== null;
@@ -240,7 +300,48 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   useEffect(() => {
     setMode(prev => prev === "create" ? prev : "view");
     setConfirmDelete(false);
+    setExecFecha(""); setExecSignal("ok");
+    setExecMotivoPreset(""); setExecMotivoLibre(""); setExecDone(false);
   }, [selectedId]);
+
+  // Autorización activa para el bloque seleccionado
+  const activeAuth = selected
+    ? (authorizations.find(a =>
+        selected.slots.some(s => s.code === a.cajaCode) && a.status === "emitida"
+      ) ?? null)
+    : null;
+
+  const targetSession: SessionEntry | null = activeAuth
+    ? (sessionHistory.find(e => e.id === activeAuth.sessionId) ?? null)
+    : null;
+
+  const execMotivoCombined = (execMotivoPreset === "Otro" || execMotivoPreset === "")
+    ? execMotivoLibre.trim()
+    : execMotivoPreset;
+
+  const canExec = execMotivoCombined.length >= 3 &&
+    (activeAuth?.type !== "cierre_extemporaneo" || execFecha.length > 0) &&
+    !execDone;
+
+  function handleExec() {
+    if (!activeAuth || !canExec) return;
+    if (activeAuth.type === "cierre_extemporaneo" || activeAuth.type === "correccion_cierre") {
+      const correction: CorrectionRecord = {
+        correctedBy: operatorName,
+        correctedAt: new Date().toISOString(),
+        motivo:      execMotivoCombined,
+        accion:      activeAuth.type === "cierre_extemporaneo" ? "cierre_extemporaneo" : "documentar_diferencia",
+        prevSignal:  activeAuth.type === "cierre_extemporaneo" ? null : "warn",
+        newSignal:   execSignal,
+        ...(activeAuth.type === "cierre_extemporaneo" && execFecha
+          ? { fechaOperacional: new Date(execFecha).toISOString() } : {}),
+      };
+      recordSessionCorrection(activeAuth.sessionId, correction, execSignal);
+    }
+    markAuthorizationExecuted(activeAuth.id, operatorName);
+    onAuthExecuted();
+    setExecDone(true);
+  }
 
   const thirdAction: ThirdAction =
     !canActOnSel        ? null
@@ -301,7 +402,6 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
   const showView = mode === "view" && selected !== null;
   const showForm = mode === "create" || mode === "edit";
 
-  // Preview slots for edit form
   const previewSlots = showForm
     ? buildSlots(
         mode === "create" ? nextBlockBase(blocks) : (selected?.blockBase ?? 100),
@@ -409,9 +509,11 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
               {selected.slots.map(slot => {
                 const isContg = slot.slotType === "contingencia";
                 const isSec   = slot.slotType === "secundaria-1" || slot.slotType === "secundaria-2";
+                const slotAuth = activeAuth?.cajaCode === slot.code ? activeAuth : null;
                 return (
                   <div key={slot.code}
                     className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 ${
+                      slotAuth    ? "border-[#2154d8]/30 bg-[#EEF3FD]/50" :
                       isContg ? "border-amber-100 bg-amber-50/30" :
                       isSec   ? "border-[#dbeafe] bg-[#f0f6ff]" :
                                 "border-[#e4e9f0] bg-[#f8fafc]"
@@ -426,9 +528,14 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
                       }`}>
                         {slotLabel(slot.slotType)}
                       </span>
-                      {slot.hasHistory && (
+                      {slot.hasHistory && !slotAuth && (
                         <span className="ml-auto rounded bg-[#EBF4FA] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#1a5f7a]">
                           CON USO
+                        </span>
+                      )}
+                      {slotAuth && (
+                        <span className="ml-auto rounded bg-[#EEF3FD] px-1.5 py-0.5 text-[9px] font-bold text-[#2154d8]">
+                          AUTORIZACIÓN
                         </span>
                       )}
                     </div>
@@ -440,7 +547,141 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
               })}
             </div>
 
-            {/* Trazabilidad */}
+            {/* Autorización activa — superficie de ejecución del operador */}
+            {activeAuth && (
+              <div className="flex flex-col gap-3 rounded-xl border border-[#2154d8]/30 bg-[#f4f7fe] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={12} strokeWidth={2} className="text-[#2154d8] shrink-0" />
+                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#2154d8]">
+                    Autorización supervisora activa
+                  </p>
+                </div>
+
+                {/* Info de la autorización */}
+                <div className="flex flex-col gap-1 rounded-lg border border-[#2154d8]/15 bg-white px-3 py-2">
+                  <div className="flex justify-between">
+                    <span className="text-[10px] text-[#9ca3af]">Acción autorizada</span>
+                    <span className="text-[10.5px] font-semibold text-[#374151]">{AUTH_EXEC_LABELS[activeAuth.type]}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[10px] text-[#9ca3af]">Autorizado por</span>
+                    <span className="text-[10.5px] font-semibold text-[#374151]">{activeAuth.authorizedBy}</span>
+                  </div>
+                  <div className="flex justify-between items-start gap-3">
+                    <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
+                    <span className="text-[10.5px] text-[#374151] text-right">{activeAuth.motivo}</span>
+                  </div>
+                  {targetSession && (
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Sesión</span>
+                      <span className="text-[10.5px] tabular-nums text-[#6b7280]">
+                        C{targetSession.boxCode} · {fmtDt(targetSession.openedAt)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sesión activa: operador cierra desde Turno */}
+                {activeAuth.type === "cierre_activo" && (
+                  <p className="text-[10px] text-[#6b7280] leading-snug">
+                    El cierre se ejecuta desde la pantalla de Gestión Turno.
+                  </p>
+                )}
+
+                {/* Corrección apertura: pendiente */}
+                {activeAuth.type === "correccion_apertura" && (
+                  <p className="text-[10px] text-[#9ca3af] leading-snug">
+                    Corrección de apertura — pendiente de implementación.
+                  </p>
+                )}
+
+                {/* Formulario de ejecución — extemporáneo y corrección de cierre */}
+                {(activeAuth.type === "cierre_extemporaneo" || activeAuth.type === "correccion_cierre") && !execDone && (
+                  <div className="flex flex-col gap-2">
+
+                    {activeAuth.type === "cierre_extemporaneo" && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
+                          Fecha/hora real del cierre <span className="text-amber-500">*</span>
+                        </span>
+                        <input type="datetime-local" value={execFecha} onChange={e => setExecFecha(e.target.value)}
+                          max={new Date().toISOString().slice(0, 16)}
+                          className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/15" />
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
+                        {activeAuth.type === "cierre_extemporaneo" ? "¿El arqueo cuadró?" : "Resultado de la corrección"}
+                      </span>
+                      <div className="flex gap-2">
+                        <button onClick={() => setExecSignal("ok")}
+                          className={`flex-1 rounded-xl border py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                            execSignal === "ok"
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                              : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-emerald-200"
+                          }`}>✓ Sin diferencias</button>
+                        <button onClick={() => setExecSignal("warn")}
+                          className={`flex-1 rounded-xl border py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                            execSignal === "warn"
+                              ? "border-amber-300 bg-amber-50 text-amber-700"
+                              : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-amber-200"
+                          }`}>⚠ Con diferencias</button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
+                        Motivo de la ejecución <span className="text-amber-500">*</span>
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {(activeAuth.type === "cierre_extemporaneo" ? MOTIVOS_EXEC_EXTMP : MOTIVOS_EXEC_CORRECCION).map(p => (
+                          <button key={p}
+                            onClick={() => { setExecMotivoPreset(p); if (p !== "Otro") setExecMotivoLibre(""); }}
+                            className={`rounded-xl border px-3 py-1.5 text-[10px] font-semibold transition ${
+                              execMotivoPreset === p
+                                ? "border-[#45b356]/40 bg-emerald-50 text-emerald-700"
+                                : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-emerald-200"
+                            }`}>{p}</button>
+                        ))}
+                      </div>
+                      {(execMotivoPreset === "Otro" || execMotivoPreset === "") && (
+                        <input type="text" value={execMotivoLibre} onChange={e => setExecMotivoLibre(e.target.value)}
+                          placeholder="Describe brevemente..."
+                          className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-[#45b356]" />
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 rounded-xl border border-[#f0f4f8] bg-white px-3.5 py-2">
+                      <Monitor size={11} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
+                      <span className="text-[10px] text-[#9ca3af]">
+                        Ejecutado por: <strong className="text-[#374151]">{operatorName}</strong>
+                      </span>
+                    </div>
+
+                    <button onClick={handleExec} disabled={!canExec}
+                      className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
+                        canExec
+                          ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
+                          : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
+                      }`}>
+                      Ejecutar Corrección
+                    </button>
+                  </div>
+                )}
+
+                {execDone && (
+                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5">
+                    <CheckCircle size={13} className="text-emerald-500 shrink-0" />
+                    <span className="text-[10.5px] font-semibold text-emerald-700">
+                      Corrección registrada · Pendiente de validación supervisora
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Trazabilidad bloque */}
             <div className="mt-auto border-t border-[#f1f5f9] pt-3">
               <div className="flex flex-col gap-1">
                 <div className="flex items-baseline justify-between">
@@ -479,7 +720,6 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
         {showForm && (
           <div className="flex flex-col gap-4">
 
-            {/* Header bloque */}
             <div className="flex items-center gap-2.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-2">
               <span className="rounded-md bg-[#2A7CA8] px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">
                 {mode === "create" ? nextBlockBase(blocks) : selected?.blockBase}
@@ -489,7 +729,6 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
               </span>
             </div>
 
-            {/* Selector de secundarias — solo en EDIT, CREATE siempre 2 */}
             {mode === "edit" && (
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">CAJAS SECUNDARIAS</span>
@@ -524,7 +763,6 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
               </div>
             )}
 
-            {/* Preview composición */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
                 {mode === "create" ? "Composición" : "Composición resultante"}
@@ -586,17 +824,19 @@ function PanelGestionCajas({ blocks, setBlocks, selectedId, onSelect, pos }: Pan
 // ── CajasWorkspace ────────────────────────────────────────────────────────
 
 export function CajasWorkspace() {
-  const { operators, isOpen, cashBox } = usePOS();
+  const { operators, isOpen, cashBox, activeOperator } = usePOS();
   const pos: POSRef = { operators, isOpen, cashBox };
+  const operatorName = activeOperator?.name ?? "Operador";
 
-  const [blocks,     setBlocks]     = useState<OperationalBlock[]>(MOCK_BLOCKS);
-  const [selectedId, setSelectedId] = useState<string | null>("b100");
+  const [blocks,         setBlocks]         = useState<OperationalBlock[]>(MOCK_BLOCKS);
+  const [selectedId,     setSelectedId]     = useState<string | null>("b100");
+  const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
+  const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>(() => loadSessionHistory());
 
   const lastActivity = (() => {
     const map = new Map<string, LastActivity>();
-    const history   = loadSessionHistory();
+    const history   = sessionHistory;
     const turnEvs   = loadTurnEvents();
-    // Mapa sessionKey → operador para enriquecer eventos de turno
     const opByKey   = new Map(history.map(e => [`${e.boxCode}-${e.openedAt}`, e.operator]));
 
     for (const e of history) {
@@ -617,6 +857,17 @@ export function CajasWorkspace() {
     return map;
   })();
 
+  const authBlockPrefixes = new Set(
+    authorizations
+      .filter(a => a.status === "emitida")
+      .map(a => a.cajaCode[0]),
+  );
+
+  function handleAuthExecuted() {
+    setAuthorizations(loadAuthorizations());
+    setSessionHistory(loadSessionHistory());
+  }
+
   return (
     <section className="flex min-h-0 flex-1 gap-2">
       <PanelCajas
@@ -625,6 +876,7 @@ export function CajasWorkspace() {
         onSelect={setSelectedId}
         pos={pos}
         lastActivity={lastActivity}
+        authBlockPrefixes={authBlockPrefixes}
       />
       <PanelGestionCajas
         blocks={blocks}
@@ -632,6 +884,10 @@ export function CajasWorkspace() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         pos={pos}
+        authorizations={authorizations}
+        onAuthExecuted={handleAuthExecuted}
+        operatorName={operatorName}
+        sessionHistory={sessionHistory}
       />
     </section>
   );
