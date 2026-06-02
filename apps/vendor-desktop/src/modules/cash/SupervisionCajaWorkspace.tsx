@@ -200,10 +200,10 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
     return p(a) - p(b);
   });
 
-  const selectedEntry        = sorted.find(e => e.id === selectedId) ?? null;
-  const sessionAuthorization = selectedEntry
-    ? (authorizations.find(a => a.sessionId === selectedEntry.id) ?? null)
-    : null;
+  const selectedEntry           = sorted.find(e => e.id === selectedId) ?? null;
+  const sessionAuthorizations   = selectedEntry
+    ? authorizations.filter(a => a.sessionId === selectedEntry.id)
+    : [];
 
   const isPending       = selectedEntry?.closeSignal === null;
   const isWarn          = selectedEntry?.closeSignal === "warn";
@@ -226,14 +226,17 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
         : (MOTIVOS_AUTH[authType] ?? []))
     : [];
   const motivoFinal  = (motivoPreset === "Otro" || motivoPreset === "") ? motivoLibre.trim() : motivoPreset;
-  const canAuthorize = motivoFinal.length >= 5 && !sessionAuthorization;
+  // Permite nueva autorización si no existe una pendiente del mismo tipo
+  const canAuthorize = motivoFinal.length >= 5 &&
+    !sessionAuthorizations.some(a => a.type === authType && a.status !== "validada");
 
   const pendingCount = sorted.filter(e => {
     const isAct = cashSession.isOpen && e.id === currentSid;
     const isSC  = e.closeSignal === null && !isAct;
     const isWrn = e.closeSignal === "warn";
-    const auth  = authorizations.find(a => a.sessionId === e.id);
-    return (isAct || isSC || isWrn) && auth?.status !== "validada";
+    const auths = authorizations.filter(a => a.sessionId === e.id);
+    const allValidated = auths.length > 0 && auths.every(a => a.status === "validada");
+    return (isAct || isSC || isWrn) && !allValidated;
   }).length;
 
   function handleSelect(id: string) {
@@ -257,9 +260,8 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
     if (authType === "cierre_activo") onAutorizarCierre?.();
   }
 
-  function handleValidate() {
-    if (!sessionAuthorization) return;
-    markAuthorizationValidated(sessionAuthorization.id, supervisorName);
+  function handleValidate(authId: string) {
+    markAuthorizationValidated(authId, supervisorName);
     setAuthorizations(loadAuthorizations());
   }
 
@@ -437,60 +439,78 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
             </div>
 
             {/* TRAZABILIDAD */}
-            {(sessionAuthorization || selectedEntry.correction) && (
+            {(sessionAuthorizations.length > 0 || selectedEntry.correction) && (
               <div className="flex flex-col gap-2 rounded-xl border border-[#e4e9f0] bg-white px-4 py-3">
                 <p className="text-[9.5px] font-bold uppercase tracking-widest text-[#c0cad4]">Trazabilidad</p>
 
-                {sessionAuthorization && (
-                  <div className="flex flex-col gap-1.5">
+                {sessionAuthorizations.map((auth, idx) => (
+                  <div key={auth.id} className={`flex flex-col gap-1.5 ${idx > 0 ? "pt-2 border-t border-[#f4f6f9]" : ""}`}>
                     <p className="text-[9px] font-bold uppercase tracking-wider text-[#2154d8]">
-                      Autorización · {AUTH_LABELS[sessionAuthorization.type] ?? sessionAuthorization.type}
+                      Autorización · {AUTH_LABELS[auth.type] ?? auth.type}
                     </p>
                     <div className="flex justify-between">
                       <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151]">{sessionAuthorization.authorizedBy}</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151]">{auth.authorizedBy}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[10px] text-[#9ca3af]">Emitida</span>
-                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(sessionAuthorization.authorizedAt)}</span>
+                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.authorizedAt)}</span>
                     </div>
                     <div className="flex justify-between items-start gap-4">
                       <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151] text-right">{sessionAuthorization.motivo}</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151] text-right">{auth.motivo}</span>
                     </div>
+                    {(auth.status === "ejecutada" || auth.status === "validada") && auth.executedBy && (
+                      <div className="flex flex-col gap-1 pt-1 border-t border-[#f4f6f9]">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-purple-600">Ejecución</p>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] text-[#9ca3af]">Operador</span>
+                          <span className="text-[10.5px] font-semibold text-[#374151]">{auth.executedBy}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] text-[#9ca3af]">Ejecutado</span>
+                          <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.executedAt!)}</span>
+                        </div>
+                        {auth.type === "correccion_apertura" && auth.executedBy && (
+                          <>
+                            {auth.status === "validada" || auth.status === "ejecutada" ? (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-[10px] text-[#9ca3af]">Apertura anterior</span>
+                                  <span className="text-[10.5px] tabular-nums text-[#374151]">
+                                    S/ {selectedEntry.correction?.prevApertura?.toFixed(2) ?? "—"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-[10px] text-[#9ca3af]">Apertura corregida</span>
+                                  <span className="text-[10.5px] tabular-nums font-semibold text-emerald-700">
+                                    S/ {selectedEntry.correction?.newApertura?.toFixed(2) ?? "—"}
+                                  </span>
+                                </div>
+                              </>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {auth.status === "validada" && (
+                      <div className="flex flex-col gap-1 pt-1 border-t border-[#f4f6f9]">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600">Validación</p>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
+                          <span className="text-[10.5px] font-semibold text-[#374151]">{auth.validatedBy}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] text-[#9ca3af]">Validado</span>
+                          <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.validatedAt!)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {(sessionAuthorization?.status === "ejecutada" || sessionAuthorization?.status === "validada") && sessionAuthorization.executedBy && (
-                  <div className="flex flex-col gap-1.5 pt-1.5 border-t border-[#f4f6f9]">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-purple-600">Ejecución</p>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Operador</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151]">{sessionAuthorization.executedBy}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Ejecutado</span>
-                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(sessionAuthorization.executedAt!)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {sessionAuthorization?.status === "validada" && (
-                  <div className="flex flex-col gap-1.5 pt-1.5 border-t border-[#f4f6f9]">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600">Validación</p>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151]">{sessionAuthorization.validatedBy}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Validado</span>
-                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(sessionAuthorization.validatedAt!)}</span>
-                    </div>
-                  </div>
-                )}
+                ))}
 
                 {/* Corrección legada — modelo anterior */}
-                {selectedEntry.correction && !sessionAuthorization && (
+                {selectedEntry.correction && sessionAuthorizations.length === 0 && (
                   <div className="flex flex-col gap-1.5">
                     <p className="text-[9px] font-bold uppercase tracking-wider text-[#9ca3af]">Corrección registrada</p>
                     <div className="flex justify-between">
@@ -514,44 +534,50 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
             <div className="flex flex-col gap-2.5 rounded-xl border border-[#2A7CA8]/30 bg-[#f8fafd] px-4 py-3">
               <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#1a5f7a]">Acciones Supervisor</p>
 
-              {/* Autorización emitida */}
-              {sessionAuthorization?.status === "emitida" && (
-                <div className="flex items-start gap-2 rounded-xl bg-[#EEF3FD] border border-[#2154d8]/20 px-3 py-2.5">
-                  <ShieldCheck size={13} className="text-[#2154d8] shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-[10.5px] font-bold text-[#2154d8]">Autorización emitida</p>
-                    <p className="text-[10px] text-[#6b7280] leading-snug">
-                      Pendiente de ejecución por el operador en Gestión Cajas.
-                    </p>
-                  </div>
+              {/* Estado por cada autorización existente */}
+              {sessionAuthorizations.map(auth => (
+                <div key={auth.id}>
+                  {auth.status === "emitida" && (
+                    <div className="flex items-start gap-2 rounded-xl bg-[#EEF3FD] border border-[#2154d8]/20 px-3 py-2.5">
+                      <ShieldCheck size={13} className="text-[#2154d8] shrink-0 mt-0.5" />
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-[10.5px] font-bold text-[#2154d8]">
+                          Autorización emitida · {AUTH_LABELS[auth.type]}
+                        </p>
+                        <p className="text-[10px] text-[#6b7280] leading-snug">
+                          Pendiente de ejecución por el operador en Gestión Cajas.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {auth.status === "ejecutada" && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start gap-2 rounded-xl bg-purple-50 border border-purple-200 px-3 py-2.5">
+                        <ShieldCheck size={13} className="text-purple-600 shrink-0 mt-0.5" />
+                        <p className="text-[10.5px] font-bold text-purple-700">
+                          Ejecución registrada · {AUTH_LABELS[auth.type]} · Pendiente de validación
+                        </p>
+                      </div>
+                      <button onClick={() => handleValidate(auth.id)}
+                        className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 text-white text-[13px] font-semibold uppercase tracking-wider transition hover:bg-emerald-700 active:scale-[0.98]">
+                        <CheckCircle size={14} strokeWidth={2.5} />
+                        Validar · {AUTH_LABELS[auth.type]}
+                      </button>
+                    </div>
+                  )}
+                  {auth.status === "validada" && (
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5">
+                      <CheckCircle size={13} className="text-emerald-500 shrink-0" />
+                      <span className="text-[10.5px] font-semibold text-emerald-700">
+                        {AUTH_LABELS[auth.type]} · Validada
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {/* Ejecutada — pendiente validación */}
-              {sessionAuthorization?.status === "ejecutada" && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start gap-2 rounded-xl bg-purple-50 border border-purple-200 px-3 py-2.5">
-                    <ShieldCheck size={13} className="text-purple-600 shrink-0 mt-0.5" />
-                    <p className="text-[10.5px] font-bold text-purple-700">Ejecución registrada · Pendiente de validación</p>
-                  </div>
-                  <button onClick={handleValidate}
-                    className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 text-white text-[13px] font-semibold uppercase tracking-wider transition hover:bg-emerald-700 active:scale-[0.98]">
-                    <CheckCircle size={14} strokeWidth={2.5} />
-                    Validar Ejecución
-                  </button>
-                </div>
-              )}
-
-              {/* Validada */}
-              {sessionAuthorization?.status === "validada" && (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5">
-                  <CheckCircle size={13} className="text-emerald-500 shrink-0" />
-                  <span className="text-[10.5px] font-semibold text-emerald-700">Intervención supervisora completada · Validada</span>
-                </div>
-              )}
+              ))}
 
               {/* Bloque A: sesión activa */}
-              {isActiveSession && !sessionAuthorization && (
+              {isActiveSession && !sessionAuthorizations.some(a => a.type === "cierre_activo" && a.status !== "validada") && (
                 <div className="flex flex-col gap-2">
                   <p className="text-[9.5px] font-bold uppercase tracking-wide text-[#1a5f7a]">Autorizar Cierre</p>
                   <p className="text-[10px] text-[#9ca3af] leading-snug">
@@ -565,7 +591,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
               )}
 
               {/* Bloque B: histórica sin cierre */}
-              {isExtemporaneo && !sessionAuthorization && (
+              {isExtemporaneo && !sessionAuthorizations.some(a => a.type === "cierre_extemporaneo" && a.status !== "validada") && (
                 <div className="flex flex-col gap-2">
                   <p className="text-[9.5px] font-bold uppercase tracking-wide text-amber-600">Autorizar Cierre Extemporáneo</p>
                   <p className="text-[10px] text-[#9ca3af] leading-snug">
@@ -579,7 +605,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
               )}
 
               {/* Bloque C: cierre con observación */}
-              {isWarn && !sessionAuthorization && (
+              {isWarn && !sessionAuthorizations.some(a => a.type === "correccion_cierre" && a.status !== "validada") && (
                 <div className="flex flex-col gap-2">
                   <p className="text-[9.5px] font-bold uppercase tracking-wide text-orange-600">Autorizar Corrección de Cierre</p>
                   <p className="text-[10px] text-[#9ca3af] leading-snug">
@@ -593,7 +619,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
               )}
 
               {/* Bloque D: sesión correcta */}
-              {isOk && !sessionAuthorization && (
+              {isOk && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
                     <CheckCircle size={13} className="text-emerald-500 shrink-0" />
@@ -628,16 +654,25 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
                         </p>
 
                         <div className="flex gap-1.5">
-                          {(["correccion_cierre", "correccion_apertura"] as const).map(t => (
-                            <button key={t} onClick={() => { setObsAuthType(t); setMotivoPreset(""); setMotivoLibre(""); }}
-                              className={`flex-1 rounded-xl border py-2 text-[10px] font-bold uppercase tracking-wide transition ${
-                                obsAuthType === t
-                                  ? "border-[#2154d8]/30 bg-[#EEF3FD] text-[#2154d8]"
-                                  : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#2154d8]/20"
-                              }`}>
-                              {t === "correccion_cierre" ? "Corrección Cierre" : "Corrección Apertura"}
-                            </button>
-                          ))}
+                          {(["correccion_cierre", "correccion_apertura"] as const).map(t => {
+                            const alreadyPending = sessionAuthorizations.some(a => a.type === t && a.status !== "validada");
+                            const noApertura = t === "correccion_apertura" && !selectedEntry.apertura;
+                            const disabled = alreadyPending || noApertura;
+                            return (
+                              <button key={t}
+                                onClick={() => { if (!disabled) { setObsAuthType(t); setMotivoPreset(""); setMotivoLibre(""); } }}
+                                title={alreadyPending ? "Ya existe una autorización activa de este tipo" : noApertura ? "Sin datos de apertura disponibles" : undefined}
+                                className={`flex-1 rounded-xl border py-2 text-[10px] font-bold uppercase tracking-wide transition ${
+                                  disabled
+                                    ? "border-[#e4e9f0] bg-[#f4f6f9] text-[#c0cad4] cursor-not-allowed"
+                                    : obsAuthType === t
+                                    ? "border-[#2154d8]/30 bg-[#EEF3FD] text-[#2154d8]"
+                                    : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#2154d8]/20"
+                                }`}>
+                                {t === "correccion_cierre" ? "Corrección Cierre" : "Corrección Apertura"}
+                              </button>
+                            );
+                          })}
                         </div>
 
                         <MotivoForm presets={presets} motivoPreset={motivoPreset} motivoLibre={motivoLibre}

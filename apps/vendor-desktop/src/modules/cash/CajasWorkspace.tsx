@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User, ShieldCheck, CheckCircle } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import {
-  loadSessionHistory, recordSessionCorrection,
+  loadSessionHistory, recordSessionCorrection, recordAperturaCorrection,
   type SessionEntry, type CorrectionRecord,
 } from "./services/session-history.service";
 import { loadTurnEvents } from "../../domains/cash/turn-events.store";
@@ -291,6 +291,7 @@ function PanelGestionCajas({
   const [execSignal,       setExecSignal]       = useState<"ok" | "warn">("ok");
   const [execMotivoPreset, setExecMotivoPreset] = useState("");
   const [execMotivoLibre,  setExecMotivoLibre]  = useState("");
+  const [execNewApertura,  setExecNewApertura]  = useState("");
   const [execDone,         setExecDone]         = useState(false);
 
   const selected    = blocks.find(b => b.id === selectedId) ?? null;
@@ -301,15 +302,17 @@ function PanelGestionCajas({
     setMode(prev => prev === "create" ? prev : "view");
     setConfirmDelete(false);
     setExecFecha(""); setExecSignal("ok");
-    setExecMotivoPreset(""); setExecMotivoLibre(""); setExecDone(false);
+    setExecMotivoPreset(""); setExecMotivoLibre("");
+    setExecNewApertura(""); setExecDone(false);
   }, [selectedId]);
 
-  // Autorización activa para el bloque seleccionado
-  const activeAuth = selected
-    ? (authorizations.find(a =>
-        selected.slots.some(s => s.code === a.cajaCode) && a.status === "emitida"
-      ) ?? null)
-    : null;
+  // Todas las autorizaciones activas para el bloque seleccionado (en orden de emisión)
+  const blockAuths = selected
+    ? authorizations
+        .filter(a => selected.slots.some(s => s.code === a.cajaCode) && a.status === "emitida")
+        .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt))
+    : [];
+  const activeAuth = blockAuths[0] ?? null; // el operador ejecuta de a una
 
   const targetSession: SessionEntry | null = activeAuth
     ? (sessionHistory.find(e => e.id === activeAuth.sessionId) ?? null)
@@ -319,8 +322,10 @@ function PanelGestionCajas({
     ? execMotivoLibre.trim()
     : execMotivoPreset;
 
+  const newAperturaNum = parseFloat(execNewApertura.replace(",", "."));
   const canExec = execMotivoCombined.length >= 3 &&
     (activeAuth?.type !== "cierre_extemporaneo" || execFecha.length > 0) &&
+    (activeAuth?.type !== "correccion_apertura" || (execNewApertura.length > 0 && newAperturaNum >= 0)) &&
     !execDone;
 
   function handleExec() {
@@ -337,6 +342,18 @@ function PanelGestionCajas({
           ? { fechaOperacional: new Date(execFecha).toISOString() } : {}),
       };
       recordSessionCorrection(activeAuth.sessionId, correction, execSignal);
+    } else if (activeAuth.type === "correccion_apertura") {
+      const correction: CorrectionRecord = {
+        correctedBy:  operatorName,
+        correctedAt:  new Date().toISOString(),
+        motivo:       execMotivoCombined,
+        accion:       "correccion_apertura",
+        prevSignal:   targetSession?.closeSignal ?? "ok",
+        newSignal:    targetSession?.closeSignal ?? "ok",
+        prevApertura: targetSession?.apertura,
+        newApertura:  newAperturaNum,
+      };
+      recordAperturaCorrection(activeAuth.sessionId, correction);
     }
     markAuthorizationExecuted(activeAuth.id, operatorName);
     onAuthExecuted();
@@ -555,6 +572,11 @@ function PanelGestionCajas({
                   <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#2154d8]">
                     Autorización supervisora activa
                   </p>
+                  {blockAuths.length > 1 && (
+                    <span className="ml-auto text-[9px] font-bold text-[#2154d8]/60">
+                      1 de {blockAuths.length}
+                    </span>
+                  )}
                 </div>
 
                 {/* Info de la autorización */}
@@ -588,11 +610,65 @@ function PanelGestionCajas({
                   </p>
                 )}
 
-                {/* Corrección apertura: pendiente */}
-                {activeAuth.type === "correccion_apertura" && (
-                  <p className="text-[10px] text-[#9ca3af] leading-snug">
-                    Corrección de apertura — pendiente de implementación.
-                  </p>
+                {/* Formulario corrección de apertura */}
+                {activeAuth.type === "correccion_apertura" && !execDone && (
+                  <div className="flex flex-col gap-2">
+                    {targetSession && targetSession.apertura > 0 && (
+                      <div className="flex justify-between items-center rounded-lg border border-[#e4e9f0] bg-white px-3 py-2">
+                        <span className="text-[10px] text-[#9ca3af]">Apertura registrada</span>
+                        <span className="text-[11px] font-bold tabular-nums text-[#374151]">
+                          S/ {targetSession.apertura.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
+                        Monto correcto de apertura <span className="text-amber-500">*</span>
+                      </span>
+                      <input
+                        type="number" min="0" step="0.01"
+                        value={execNewApertura}
+                        onChange={e => setExecNewApertura(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full rounded-xl border border-[#2154d8]/30 bg-white px-3 py-2 text-[13px] font-bold tabular-nums text-[#374151] outline-none focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
+                        Motivo <span className="text-amber-500">*</span>
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {MOTIVOS_EXEC_CORRECCION.map(p => (
+                          <button key={p}
+                            onClick={() => { setExecMotivoPreset(p); if (p !== "Otro") setExecMotivoLibre(""); }}
+                            className={`rounded-xl border px-3 py-1.5 text-[10px] font-semibold transition ${
+                              execMotivoPreset === p
+                                ? "border-[#45b356]/40 bg-emerald-50 text-emerald-700"
+                                : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-emerald-200"
+                            }`}>{p}</button>
+                        ))}
+                      </div>
+                      {(execMotivoPreset === "Otro" || execMotivoPreset === "") && (
+                        <input type="text" value={execMotivoLibre} onChange={e => setExecMotivoLibre(e.target.value)}
+                          placeholder="Describe brevemente..."
+                          className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-[#45b356]" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded-xl border border-[#f0f4f8] bg-white px-3.5 py-2">
+                      <Monitor size={11} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
+                      <span className="text-[10px] text-[#9ca3af]">
+                        Ejecutado por: <strong className="text-[#374151]">{operatorName}</strong>
+                      </span>
+                    </div>
+                    <button onClick={handleExec} disabled={!canExec}
+                      className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
+                        canExec
+                          ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
+                          : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
+                      }`}>
+                      Registrar Corrección de Apertura
+                    </button>
+                  </div>
                 )}
 
                 {/* Formulario de ejecución — extemporáneo y corrección de cierre */}

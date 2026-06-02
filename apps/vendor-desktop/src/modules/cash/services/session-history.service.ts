@@ -9,28 +9,32 @@ export type CloseSignal = "ok" | "warn";
 export type CorrectionAccion =
   | "regularizar_cierre"
   | "cierre_extemporaneo"
-  | "documentar_diferencia";
+  | "documentar_diferencia"
+  | "correccion_apertura";
 
 export type CorrectionRecord = {
   correctedBy:      string;
-  correctedAt:      string;           // ISO — momento de la regularización
+  correctedAt:      string;
   motivo:           string;
   accion:           CorrectionAccion;
   prevSignal:       CloseSignal | null;
   newSignal:        CloseSignal;
-  fechaOperacional?: string;          // ISO — para cierre_extemporaneo: cuando ocurrió realmente
+  fechaOperacional?: string;
+  prevApertura?:    number;
+  newApertura?:     number;
 };
 
 export type SessionEntry = {
   id:          string;
   boxCode:     string;
-  boxLabel:    string;           // "PRINCIPAL" | "SECUNDARIA 01" | "SECUNDARIA 02" | "CONTINGENCIA"
+  boxLabel:    string;
   operator:    string;
-  openedAt:    string;           // ISO
+  openedAt:    string;
   closedAt:    string | null;
   closeSignal: CloseSignal | null;
-  arqueo:      ArqueoData | null; // snapshot para reimpresión
-  correction?: CorrectionRecord; // regularización excepcional
+  apertura:    number;
+  arqueo:      ArqueoData | null;
+  correction?: CorrectionRecord;
 };
 
 export function loadSessionHistory(): SessionEntry[] {
@@ -46,6 +50,7 @@ export function loadSessionHistory(): SessionEntry[] {
       openedAt:    e.openedAt    ?? "",
       closedAt:    e.closedAt    ?? null,
       closeSignal: e.closeSignal ?? null,
+      apertura:    e.apertura    ?? 0,
       arqueo:      e.arqueo      ?? null,
       ...(e.correction ? { correction: e.correction } : {}),
     }));
@@ -53,11 +58,15 @@ export function loadSessionHistory(): SessionEntry[] {
 }
 
 export function recordSessionOpen(
-  sid: string, boxCode: string, boxLabel: string, operator: string, openedAt: string,
+  sid: string, boxCode: string, boxLabel: string,
+  operator: string, openedAt: string, apertura: number,
 ): void {
   try {
     const hist = loadSessionHistory();
-    const entry: SessionEntry = { id: sid, boxCode, boxLabel, operator, openedAt, closedAt: null, closeSignal: null, arqueo: null };
+    const entry: SessionEntry = {
+      id: sid, boxCode, boxLabel, operator, openedAt,
+      closedAt: null, closeSignal: null, apertura, arqueo: null,
+    };
     const trimmed = [entry, ...hist].slice(0, MAX_RECORDS);
     localStorage.setItem(LS_HISTORY, JSON.stringify(trimmed));
     localStorage.setItem(LS_CURRENT_SID, sid);
@@ -81,6 +90,7 @@ export function getCurrentSessionId(): string | null {
   return localStorage.getItem(LS_CURRENT_SID);
 }
 
+// Rectificación de cierre — actualiza closeSignal y registra corrección
 export function recordSessionCorrection(
   sid: string,
   correction: CorrectionRecord,
@@ -91,6 +101,25 @@ export function recordSessionCorrection(
     const updated = hist.map(e =>
       e.id === sid ? { ...e, closeSignal: newSignal, correction } : e,
     );
+    localStorage.setItem(LS_HISTORY, JSON.stringify(updated));
+  } catch { /* quota */ }
+}
+
+// Rectificación de apertura — actualiza el fondo de apertura sin cambiar closeSignal
+export function recordAperturaCorrection(
+  sid: string,
+  correction: CorrectionRecord,
+): void {
+  try {
+    const hist = loadSessionHistory();
+    const updated = hist.map(e => {
+      if (e.id !== sid) return e;
+      return {
+        ...e,
+        apertura:   correction.newApertura ?? e.apertura,
+        correction,
+      };
+    });
     localStorage.setItem(LS_HISTORY, JSON.stringify(updated));
   } catch { /* quota */ }
 }

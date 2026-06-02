@@ -522,7 +522,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       selectedBox.type === "contingency-1" ? "SECUNDARIA 01" :
       selectedBox.type === "contingency-2" ? "SECUNDARIA 02" :
       "CONTINGENCIA";
-    recordSessionOpen(sid, selectedBox.code, boxLabel, operatorName, new Date().toISOString());
+    recordSessionOpen(sid, selectedBox.code, boxLabel, operatorName, new Date().toISOString(), amt);
     setSessionHistory(loadSessionHistory());
     onOpened?.();
   }
