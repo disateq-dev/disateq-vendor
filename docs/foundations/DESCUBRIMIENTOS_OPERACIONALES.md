@@ -252,3 +252,251 @@ Las auditorías de Disponibilidad, Abastecimiento y Bloque Operacional reforzaro
 - Los dominios se revelan por propósito operacional.
 - Las entidades operacionales se revelan por convergencia implícita en múltiples dominios.
 
+# Descubrimiento Provisional — Habilitación Operacional de Venta
+
+## Observación
+
+La operación no comercializa productos directamente.
+
+La operación comercializa productos y servicios a través de habilitaciones operacionales de venta que determinan bajo qué modalidades, condiciones y reglas pueden ser comercializados.
+
+---
+
+## Separación Fundamental
+
+### Producto
+
+Responde:
+
+¿Qué es?
+
+Ejemplos:
+
+* Paracetamol
+* Pañal Huggies
+* Viaje Lima-Cusco
+* Pollo a la Brasa
+* Consulta Médica
+
+### Habilitación Operacional de Venta
+
+Responde:
+
+¿Cómo puede venderse?
+
+Ejemplos:
+
+#### Farmacia
+
+* Unidad
+* Blister
+* Caja
+
+#### Restaurante
+
+* 1/8
+* 1/4
+* 1/2
+* Entero
+* Combo
+
+#### Ferretería
+
+* Metro
+* Rollo
+
+#### Transporte
+
+* VIP
+* Estándar
+* Primer Piso
+* Segundo Piso
+
+#### Retail
+
+* Unidad
+* Pack
+* Promoción
+* Mayorista
+
+#### Servicios
+
+* Consulta Regular
+* Consulta Especializada
+* Teleconsulta
+* Consulta Domiciliaria
+
+---
+
+## Conclusión Provisional
+
+Producto y Habilitación Operacional de Venta representan conceptos distintos.
+
+El producto define la identidad de lo ofertado.
+
+La Habilitación Operacional de Venta define las modalidades bajo las cuales dicha identidad puede ser comercializada.
+
+---
+
+## Propiedades Observadas de una Habilitación Operacional de Venta
+
+Una Habilitación Operacional de Venta puede:
+
+* Activarse
+* Desactivarse
+* Restringirse
+* Modificarse
+* Programarse
+* Caducar
+
+sin modificar la identidad del producto o servicio.
+
+---
+
+## Prueba de Persistencia
+
+Si desaparece una Habilitación Operacional de Venta:
+
+* El producto continúa existiendo.
+* Desaparece una forma específica de comercialización.
+
+Si desaparece el producto:
+
+* Desaparecen todas sus habilitaciones asociadas.
+
+---
+
+# Valor Operacional Asociado
+
+Se observa que una misma Habilitación Operacional de Venta puede poseer múltiples Valores Operacionales Asociados.
+
+Ejemplos:
+
+* Normal
+* Oferta
+* Preferencial
+* Mayorista
+* Libre
+* Campaña
+* Cliente Frecuente
+
+---
+
+## Observación
+
+El Valor Operacional Asociado responde:
+
+¿Qué valor aplica a esta Habilitación Operacional de Venta en este contexto?
+
+El valor no forma parte de la identidad del producto.
+
+El valor no forma parte de la identidad de la Habilitación Operacional de Venta.
+
+Representa una valorización contextual aplicable a una habilitación determinada.
+
+---
+
+## Ejemplo
+
+Paracetamol
+↓
+Venta por Caja
+↓
+Valor Normal
+
+Paracetamol
+↓
+Venta por Caja
+↓
+Valor Preferencial
+
+Paracetamol
+↓
+Venta por Caja
+↓
+Valor Mayorista
+
+La Habilitación Operacional de Venta permanece inalterada.
+
+Lo que cambia es el Valor Operacional Asociado aplicable al contexto.
+
+---
+
+# Intención Operacional de Materialización Comercial
+
+La implementación actualmente denominada Ticket no evidencia una venta materializada.
+
+La evidencia observada muestra operaciones de:
+
+* Agregar
+* Quitar
+* Modificar
+* Dividir
+* Anotar
+* Limpiar
+
+sin producir todavía efectos comerciales definitivos.
+
+---
+
+## Definición Provisional
+
+La Intención Operacional de Materialización Comercial representa un ámbito operacional temporal donde se agregan Habilitaciones Operacionales de Venta valorizadas con el propósito de materializar posteriormente una operación comercial.
+
+---
+
+## Secuencia Operacional Observada
+
+Producto
+
+↓
+
+Habilitación Operacional de Venta
+
+↓
+
+Valor Operacional Asociado
+
+↓
+
+Intención Operacional de Materialización Comercial
+
+↓
+
+Cobro
+
+↓
+
+Comprobante
+
+---
+
+## Impacto Arquitectónico
+
+El modelo actual:
+
+Producto → Ticket
+
+parece incompleto desde una perspectiva operacional.
+
+La evidencia observada sugiere la existencia de al menos dos capas operacionales no modeladas explícitamente:
+
+* Habilitación Operacional de Venta
+* Valor Operacional Asociado
+
+Asimismo, el concepto actual de Ticket requiere reevaluación doctrinal al no existir evidencia suficiente de que represente la realidad operacional principal del dominio.
+
+---
+
+## Estado
+
+Descubrimiento provisional.
+
+Requiere contraste posterior contra:
+
+* Dominio VENTAS
+* TicketLineDTO
+* ticket.store
+* ticket.service
+* Sales Workspace
+* Flujo de Cobro
