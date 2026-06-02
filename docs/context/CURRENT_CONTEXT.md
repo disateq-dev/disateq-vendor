@@ -5,7 +5,7 @@ main
 
 ---
 
-## Situación general — Mayo 2026
+## Situación general — Junio 2026
 
 DISATEQ VENDOR está en estado de **madurez operacional parcial**.
 
@@ -41,6 +41,29 @@ El puente CATÁLOGO vivo como entidad operacional no existe todavía.
 - Capacidades (capabilities[]) definidas en roles pero sin enforcement en módulos.
 - FONDO DE CAMBIO creciendo en complejidad dentro de CashWorkspace — presión de boundary futura.
 - Documentación operacional parcialmente desactualizada (`03_CURRENT_PHASE.md`, `02_ACTIVE_RUNTIME_CONTEXT.md`) — ~~deprecados Mayo 2026~~, referencia centralizada en este archivo.
+
+### Auditoría Doctrinal VENTAS (Junio 2026)
+
+Contraste documentación vs implementación realizado. Hallazgos principales:
+
+**Desalineaciones activas:**
+- `visualMode === "mixto"` renderiza como visual — no implementado, sin decisión documentada.
+- `ticket-calculation.service.ts` calcula IGV pero `CobroPanel` lo calcula inline de forma independiente — duplicidad sin coordinación.
+- Correlativos de despacho (`_dispatchCorrelative`) sin persistencia — se resetean al reiniciar.
+- RUC, dirección y teléfono del negocio hardcodeados en `handleImprimir` — `loadBusinessConfig()` solo conecta `businessName`.
+
+**Contradicciones:**
+- Botón COBRAR verde claro cuando no hay turno activo — semánticamente ambiguo contra doctrina de color operacional.
+- `F10` y `F11` invocan la misma función (`confirmEmit`) — botón `Enviar` visualmente distinto pero funcionalmente idéntico a `Guardar`.
+
+**Vacíos reales:**
+- Sin documentación del ciclo de vida del ticket en dominio VENTAS.
+- `CatalogProduct` en `data/catalogs.ts` — estático, sin conexión con `domains/inventory/`. Venta no descuenta stock real. (Brecha ya registrada arriba.)
+- `flags.isManualPrice` modelado en `TicketLineDTO` sin UI ni flujo implementado.
+- `PrintFlow` define 6 tipos; solo `solo-comprobante` y `comprobante-despacho` tienen implementación real.
+- `Enviar` no envía — sin integración externa. Acción visual sin respaldo real.
+
+---
 
 ### Posición en el ciclo evolutivo
 
@@ -169,12 +192,18 @@ Descubrimientos 1–13 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACI
 - No reemplaza el ID técnico ni el Alias Operacional — separación arquitectónica obligatoria
 - Pendiente de implementación en `operator.store.ts`
 
-### CORREGIR ARQUEO
-- `src/modules/cash/CorregirArqueoWorkspace.tsx`
-- `CorrectionRecord` + `recordSessionCorrection`
-- casos: cierre pendiente → regularizar · diferencia → documentar
-- presets operacionales por tipo de acción
-- trazabilidad: correctedBy · correctedAt · motivo · acción · señales
+### SUPERVISIÓN DE CAJA — Ciclo completo (Junio 2026)
+
+- `CorregirArqueoWorkspace` eliminado como entidad. Reemplazado por `SupervisionCajaWorkspace`.
+- Responsabilidad diferenciada: Supervisor emite autorizaciones · Operador las ejecuta desde `CajasWorkspace`.
+- Ciclo trazado: `Emitida → Ejecutada → Validada` por actor.
+- Múltiples autorizaciones concurrentes por tipo independiente con indicador `1 de N`.
+- Corrección de apertura: formulario con valor anterior, valor corregido y motivo. `recordAperturaCorrection` no altera `closeSignal`.
+- Intervenciones en sesiones correctas (sin diferencias): observación supervisora con tipo seleccionable.
+- Servicio: `supervision-authorization.service.ts`.
+- Layout final 3 columnas: `REGISTROS` (w-480px) · `SUPERVISIÓN DE CAJA` (w-420px) · `TRAZABILIDAD` (flex-1).
+- REGISTROS: ítem en una sola línea — `C{code}` · operador · rango horario · badge. `boxLabel` en `title`.
+- DETALLE eliminado de SUPERVISIÓN DE CAJA — redundante con REGISTROS.
 
 ### FONDO DE CAMBIO
 - ciclo RETIRO→REINTEGRO con `refId` y `regularizationStatus`
