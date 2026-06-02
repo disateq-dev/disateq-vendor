@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, CheckCircle, ClipboardList, Clock, Monitor, Printer, ShieldCheck } from "lucide-react";
+import { Shield, CheckCircle, ClipboardList, Clock, Printer, ShieldCheck } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import {
   loadSessionHistory, getCurrentSessionId,
@@ -211,8 +211,6 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const isActiveSession = !!(selectedEntry && isPending && cashSession.isOpen && selectedEntry.id === currentSid);
   const isExtemporaneo  = isPending && !isActiveSession;
 
-  const lastActTs = selectedEntry?.closedAt ?? selectedEntry?.openedAt ?? "";
-
   const authType: AuthorizationType | null =
     isActiveSession        ? "cierre_activo"       :
     isExtemporaneo         ? "cierre_extemporaneo" :
@@ -349,28 +347,25 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
                 const auth   = authorizations.find(a => a.sessionId === e.id);
                 return (
                   <button key={e.id} onClick={() => handleSelect(e.id)}
-                    className={`flex flex-col gap-0.5 px-4 py-2.5 text-left transition hover:bg-[#f8fafc] ${
+                    title={e.boxLabel}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-left transition hover:bg-[#f8fafc] ${
                       isSel ? "bg-[#EEF3FD] ring-inset ring-1 ring-[#2154d8]/20" : ""
                     }`}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold tabular-nums text-[#1a5f7a]">C{e.boxCode}</span>
-                      <span className="truncate flex-1 text-[10px] font-semibold text-[#6b7280]">{e.boxLabel}</span>
-                      {isAct  && <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[8.5px] font-bold text-emerald-700">ACTIVO</span>}
-                      {isSC   && <span className="shrink-0 rounded-full bg-amber-100  px-1.5 py-0.5 text-[8.5px] font-bold text-amber-700">SIN CIERRE</span>}
-                      {isWrn  && !auth && <span className="shrink-0 rounded-full bg-orange-50 px-1.5 py-0.5 text-[8.5px] font-bold text-orange-600">⚠ REVISAR</span>}
-                      {auth?.status === "emitida"   && <span className="shrink-0 rounded-full bg-[#EEF3FD] px-1.5 py-0.5 text-[8.5px] font-bold text-[#2154d8]">AUTORIZADO</span>}
-                      {auth?.status === "ejecutada" && <span className="shrink-0 rounded-full bg-purple-50 px-1.5 py-0.5 text-[8.5px] font-bold text-purple-700">EJECUTADO</span>}
-                      {auth?.status === "validada"  && <span className="shrink-0 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-bold text-emerald-700">✓ VALIDADO</span>}
-                      {isCorr && !auth && <span className="shrink-0 rounded-full bg-[#f4f6f9] px-1.5 py-0.5 text-[8.5px] font-semibold text-[#9ca3af]">CORRECTO</span>}
-                    </div>
-                    <span className="text-[10px] font-medium text-[#9ca3af]">{e.operator}</span>
-                    <div className="flex items-center gap-1.5">
-                      <Clock size={9} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
+                    <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#1a5f7a]">C{e.boxCode}</span>
+                    <span className="truncate flex-1 text-[10px] font-semibold text-[#6b7280]">{e.operator}</span>
+                    <div className="flex shrink-0 items-center gap-1 text-[#c0cad4]">
+                      <Clock size={9} strokeWidth={2} />
                       <span className="text-[10px] tabular-nums text-[#9ca3af]">
-                        {fmtDatetime(e.openedAt)}
-                        {e.closedAt ? ` → ${fmtTime(e.closedAt)}` : " · sin cierre"}
+                        {fmtDatetime(e.openedAt)}{e.closedAt ? ` → ${fmtTime(e.closedAt)}` : ""}
                       </span>
                     </div>
+                    {isAct  && <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[8.5px] font-bold text-emerald-700">ACTIVO</span>}
+                    {isSC   && <span className="shrink-0 rounded-full bg-amber-100  px-1.5 py-0.5 text-[8.5px] font-bold text-amber-700">SIN CIERRE</span>}
+                    {isWrn  && !auth && <span className="shrink-0 rounded-full bg-orange-50 px-1.5 py-0.5 text-[8.5px] font-bold text-orange-600">⚠ REVISAR</span>}
+                    {auth?.status === "emitida"   && <span className="shrink-0 rounded-full bg-[#EEF3FD] px-1.5 py-0.5 text-[8.5px] font-bold text-[#2154d8]">AUTORIZADO</span>}
+                    {auth?.status === "ejecutada" && <span className="shrink-0 rounded-full bg-purple-50 px-1.5 py-0.5 text-[8.5px] font-bold text-purple-700">EJECUTADO</span>}
+                    {auth?.status === "validada"  && <span className="shrink-0 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-bold text-emerald-700">✓ VALIDADO</span>}
+                    {isCorr && !auth && <span className="shrink-0 rounded-full bg-[#f4f6f9] px-1.5 py-0.5 text-[8.5px] font-semibold text-[#9ca3af]">CORRECTO</span>}
                   </button>
                 );
               })}
@@ -379,8 +374,8 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
         </div>
       </div>
 
-      {/* ── DETALLE + ACCIONES SUPERVISOR ── */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/30 bg-[#FDFCF9]">
+      {/* ── SUPERVISIÓN DE CAJA ── */}
+      <div className="flex w-[420px] shrink-0 min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/30 bg-[#FDFCF9]">
         <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
           <Shield size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SUPERVISIÓN DE CAJA</span>
@@ -404,131 +399,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
         )}
 
         {selectedEntry && (
-          <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 pt-4 pb-5">
-
-            {/* DETALLE */}
-            <div className="flex flex-col rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2 bg-[#f8fafd] border-b border-[#f0f4f8]">
-                <Monitor size={11} strokeWidth={2} className="text-[#9ca3af] shrink-0" />
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Detalle</span>
-              </div>
-              <div className="flex flex-col divide-y divide-[#f4f6f9]">
-                <div className="flex justify-between px-4 py-2">
-                  <span className="text-[10px] text-[#9ca3af]">Caja</span>
-                  <span className="text-[10.5px] font-bold text-[#1a5f7a]">C{selectedEntry.boxCode} · {selectedEntry.boxLabel}</span>
-                </div>
-                <div className="flex justify-between px-4 py-2">
-                  <span className="text-[10px] text-[#9ca3af]">Operador</span>
-                  <span className="text-[10.5px] font-semibold text-[#374151]">{selectedEntry.operator}</span>
-                </div>
-                <div className="flex justify-between px-4 py-2">
-                  <span className="text-[10px] text-[#9ca3af]">Apertura</span>
-                  <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(selectedEntry.openedAt)}</span>
-                </div>
-                <div className="flex justify-between px-4 py-2">
-                  <span className="text-[10px] text-[#9ca3af]">Última actividad</span>
-                  <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(lastActTs)}</span>
-                </div>
-                <div className="flex justify-between px-4 py-2">
-                  <span className="text-[10px] text-[#9ca3af]">Cierre</span>
-                  <span className={`text-[10.5px] tabular-nums ${selectedEntry.closedAt ? "text-[#374151]" : "font-semibold text-amber-500"}`}>
-                    {selectedEntry.closedAt ? fmtDatetime(selectedEntry.closedAt) : "Sin cierre registrado"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* TRAZABILIDAD */}
-            {(sessionAuthorizations.length > 0 || selectedEntry.correction) && (
-              <div className="flex flex-col gap-2 rounded-xl border border-[#e4e9f0] bg-white px-4 py-3">
-                <p className="text-[9.5px] font-bold uppercase tracking-widest text-[#c0cad4]">Trazabilidad</p>
-
-                {sessionAuthorizations.map((auth, idx) => (
-                  <div key={auth.id} className={`flex flex-col gap-1.5 ${idx > 0 ? "pt-2 border-t border-[#f4f6f9]" : ""}`}>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#2154d8]">
-                      Autorización · {AUTH_LABELS[auth.type] ?? auth.type}
-                    </p>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151]">{auth.authorizedBy}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Emitida</span>
-                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.authorizedAt)}</span>
-                    </div>
-                    <div className="flex justify-between items-start gap-4">
-                      <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151] text-right">{auth.motivo}</span>
-                    </div>
-                    {(auth.status === "ejecutada" || auth.status === "validada") && auth.executedBy && (
-                      <div className="flex flex-col gap-1 pt-1 border-t border-[#f4f6f9]">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-purple-600">Ejecución</p>
-                        <div className="flex justify-between">
-                          <span className="text-[10px] text-[#9ca3af]">Operador</span>
-                          <span className="text-[10.5px] font-semibold text-[#374151]">{auth.executedBy}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[10px] text-[#9ca3af]">Ejecutado</span>
-                          <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.executedAt!)}</span>
-                        </div>
-                        {auth.type === "correccion_apertura" && auth.executedBy && (
-                          <>
-                            {auth.status === "validada" || auth.status === "ejecutada" ? (
-                              <>
-                                <div className="flex justify-between">
-                                  <span className="text-[10px] text-[#9ca3af]">Apertura anterior</span>
-                                  <span className="text-[10.5px] tabular-nums text-[#374151]">
-                                    S/ {selectedEntry.correction?.prevApertura?.toFixed(2) ?? "—"}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-[10px] text-[#9ca3af]">Apertura corregida</span>
-                                  <span className="text-[10.5px] tabular-nums font-semibold text-emerald-700">
-                                    S/ {selectedEntry.correction?.newApertura?.toFixed(2) ?? "—"}
-                                  </span>
-                                </div>
-                              </>
-                            ) : null}
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {auth.status === "validada" && (
-                      <div className="flex flex-col gap-1 pt-1 border-t border-[#f4f6f9]">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600">Validación</p>
-                        <div className="flex justify-between">
-                          <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
-                          <span className="text-[10.5px] font-semibold text-[#374151]">{auth.validatedBy}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[10px] text-[#9ca3af]">Validado</span>
-                          <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.validatedAt!)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Corrección legada — modelo anterior */}
-                {selectedEntry.correction && sessionAuthorizations.length === 0 && (
-                  <div className="flex flex-col gap-1.5">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#9ca3af]">Corrección registrada</p>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Por</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151]">{selectedEntry.correction.correctedBy}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] text-[#9ca3af]">Registrado</span>
-                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(selectedEntry.correction.correctedAt)}</span>
-                    </div>
-                    <div className="flex justify-between items-start gap-4">
-                      <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
-                      <span className="text-[10.5px] font-semibold text-[#374151] text-right">{selectedEntry.correction.motivo}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+          <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 pt-4 pb-5">
 
             {/* ACCIONES SUPERVISOR */}
             <div className="flex flex-col gap-2.5 rounded-xl border border-[#2A7CA8]/30 bg-[#f8fafd] px-4 py-3">
@@ -686,6 +557,122 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
                 </div>
               )}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── TRAZABILIDAD ── */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/20 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
+          <CheckCircle size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">TRAZABILIDAD</span>
+          {selectedEntry && sessionAuthorizations.length > 0 && (
+            <span className="ml-auto rounded-full bg-[#e8edf3] px-2 py-0.5 text-[9px] font-bold text-[#6b7280] tabular-nums">
+              {sessionAuthorizations.length}
+            </span>
+          )}
+        </div>
+
+        {!selectedEntry && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
+            <CheckCircle size={28} strokeWidth={1} className="text-[#e4e9f0]" />
+            <p className="text-[11px] text-[#c0cad4]">Selecciona un registro para ver su trazabilidad.</p>
+          </div>
+        )}
+
+        {selectedEntry && sessionAuthorizations.length === 0 && !selectedEntry.correction && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
+            <CheckCircle size={28} strokeWidth={1} className="text-[#e4e9f0]" />
+            <p className="text-[11px] text-[#c0cad4]">Sin intervenciones registradas para esta sesión.</p>
+          </div>
+        )}
+
+        {selectedEntry && (sessionAuthorizations.length > 0 || selectedEntry.correction) && (
+          <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 pt-4 pb-5">
+
+            {sessionAuthorizations.map((auth, idx) => (
+              <div key={auth.id} className={`flex flex-col gap-1.5 rounded-xl border border-[#e4e9f0] bg-white px-4 py-3 ${idx > 0 ? "" : ""}`}>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-[#2154d8]">
+                  Autorización · {AUTH_LABELS[auth.type] ?? auth.type}
+                </p>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
+                  <span className="text-[10.5px] font-semibold text-[#374151]">{auth.authorizedBy}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-[#9ca3af]">Emitida</span>
+                  <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.authorizedAt)}</span>
+                </div>
+                <div className="flex justify-between items-start gap-4">
+                  <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
+                  <span className="text-[10.5px] font-semibold text-[#374151] text-right">{auth.motivo}</span>
+                </div>
+
+                {(auth.status === "ejecutada" || auth.status === "validada") && auth.executedBy && (
+                  <div className="flex flex-col gap-1 pt-2 mt-1 border-t border-[#f4f6f9]">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-purple-600">Ejecución</p>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Operador</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151]">{auth.executedBy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Ejecutado</span>
+                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.executedAt!)}</span>
+                    </div>
+                    {auth.type === "correccion_apertura" && auth.executedBy && (auth.status === "validada" || auth.status === "ejecutada") && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] text-[#9ca3af]">Apertura anterior</span>
+                          <span className="text-[10.5px] tabular-nums text-[#374151]">
+                            S/ {selectedEntry.correction?.prevApertura?.toFixed(2) ?? "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] text-[#9ca3af]">Apertura corregida</span>
+                          <span className="text-[10.5px] tabular-nums font-semibold text-emerald-700">
+                            S/ {selectedEntry.correction?.newApertura?.toFixed(2) ?? "—"}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {auth.status === "validada" && (
+                  <div className="flex flex-col gap-1 pt-2 mt-1 border-t border-[#f4f6f9]">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600">Validación</p>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Supervisor</span>
+                      <span className="text-[10.5px] font-semibold text-[#374151]">{auth.validatedBy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-[#9ca3af]">Validado</span>
+                      <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(auth.validatedAt!)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Corrección legada — modelo anterior */}
+            {selectedEntry.correction && sessionAuthorizations.length === 0 && (
+              <div className="flex flex-col gap-1.5 rounded-xl border border-[#e4e9f0] bg-white px-4 py-3">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-[#9ca3af]">Corrección registrada</p>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-[#9ca3af]">Por</span>
+                  <span className="text-[10.5px] font-semibold text-[#374151]">{selectedEntry.correction.correctedBy}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[10px] text-[#9ca3af]">Registrado</span>
+                  <span className="text-[10.5px] tabular-nums text-[#374151]">{fmtDatetime(selectedEntry.correction.correctedAt)}</span>
+                </div>
+                <div className="flex justify-between items-start gap-4">
+                  <span className="text-[10px] text-[#9ca3af] shrink-0">Motivo</span>
+                  <span className="text-[10.5px] font-semibold text-[#374151] text-right">{selectedEntry.correction.motivo}</span>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
       </div>
