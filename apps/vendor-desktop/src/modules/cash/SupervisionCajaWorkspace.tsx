@@ -48,6 +48,23 @@ const AUTH_LABELS: Record<string, string> = {
   correccion_apertura: "Corrección de apertura",
 };
 
+// Motivos para intervenciones de origen humano — observaciones posteriores al cierre correcto
+const MOTIVOS_AUTH_POSTERIOR: Record<string, string[]> = {
+  correccion_cierre: [
+    "Billete o moneda falso detectado con posterioridad",
+    "Discrepancia encontrada en conciliación posterior",
+    "Diferencia detectada en revisión de registros",
+    "Observación operacional descubierta tras cierre",
+    "Otro",
+  ],
+  correccion_apertura: [
+    "Fondo de apertura registrado incorrectamente",
+    "Error de denominación detectado en revisión",
+    "Diferencia en fondo inicial descubierta con posterioridad",
+    "Otro",
+  ],
+};
+
 function fmtDatetime(iso: string): string {
   const d  = new Date(iso);
   const dd = String(d.getDate()).padStart(2, "0");
@@ -138,6 +155,8 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const [selectedId,     setSelectedId]     = useState<string | null>(null);
   const [motivoPreset,   setMotivoPreset]   = useState("");
   const [motivoLibre,    setMotivoLibre]    = useState("");
+  const [obsExpanded,    setObsExpanded]    = useState(false);
+  const [obsAuthType,    setObsAuthType]    = useState<"correccion_cierre" | "correccion_apertura">("correccion_cierre");
 
   const [filterEstado,       setFilterEstado]       = useState<"todos" | "abierto" | "sin_cierre" | "cerrado">("todos");
   const [filterCaja,         setFilterCaja]         = useState("");
@@ -195,12 +214,17 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const lastActTs = selectedEntry?.closedAt ?? selectedEntry?.openedAt ?? "";
 
   const authType: AuthorizationType | null =
-    isActiveSession ? "cierre_activo"       :
-    isExtemporaneo  ? "cierre_extemporaneo" :
-    isWarn          ? "correccion_cierre"   :
+    isActiveSession        ? "cierre_activo"       :
+    isExtemporaneo         ? "cierre_extemporaneo" :
+    isWarn                 ? "correccion_cierre"   :
+    (isOk && obsExpanded)  ? obsAuthType           :
     null;
 
-  const presets      = authType ? (MOTIVOS_AUTH[authType] ?? []) : [];
+  const presets = authType
+    ? (isOk && obsExpanded
+        ? (MOTIVOS_AUTH_POSTERIOR[authType] ?? [])
+        : (MOTIVOS_AUTH[authType] ?? []))
+    : [];
   const motivoFinal  = (motivoPreset === "Otro" || motivoPreset === "") ? motivoLibre.trim() : motivoPreset;
   const canAuthorize = motivoFinal.length >= 5 && !sessionAuthorization;
 
@@ -216,6 +240,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
     if (id === selectedId) return;
     setSelectedId(id);
     setMotivoPreset(""); setMotivoLibre("");
+    setObsExpanded(false); setObsAuthType("correccion_cierre");
   }
 
   function handleAuthorize() {
@@ -572,24 +597,56 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
                     <CheckCircle size={13} className="text-emerald-500 shrink-0" />
-                    <span className="text-[10.5px] font-semibold text-emerald-700">Cierre correcto · sin corrección pendiente</span>
+                    <span className="text-[10.5px] font-semibold text-emerald-700">Cierre correcto · sin diferencias registradas</span>
                   </div>
-                  <div className="flex gap-2">
+
+                  <button
+                    disabled={!selectedEntry.arqueo}
+                    title={selectedEntry.arqueo ? "Reimprimir arqueo de esta sesión" : "Sin datos de arqueo disponibles"}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                      selectedEntry.arqueo
+                        ? "border-[#e4e9f0] bg-white text-[#374151] hover:border-[#2154d8]/30 hover:text-[#2154d8]"
+                        : "border-[#e4e9f0] bg-[#f4f6f9] text-[#c0cad4] cursor-not-allowed"
+                    }`}>
+                    <Printer size={11} strokeWidth={2} />
+                    Reimprimir Arqueo
+                  </button>
+
+                  {/* Intervención supervisora de origen humano */}
+                  <div className="flex flex-col gap-2 rounded-xl border border-[#e8edf3] bg-[#fafbfc] px-3 py-2.5">
                     <button
-                      disabled={!selectedEntry.arqueo}
-                      title={selectedEntry.arqueo ? "Reimprimir arqueo de esta sesión" : "Sin datos de arqueo disponibles"}
-                      className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-[10.5px] font-bold uppercase tracking-wide transition ${
-                        selectedEntry.arqueo
-                          ? "border-[#e4e9f0] bg-white text-[#374151] hover:border-[#2154d8]/30 hover:text-[#2154d8]"
-                          : "border-[#e4e9f0] bg-[#f4f6f9] text-[#c0cad4] cursor-not-allowed"
-                      }`}>
-                      <Printer size={11} strokeWidth={2} />
-                      Reimprimir Arqueo
+                      onClick={() => { setObsExpanded(v => !v); setMotivoPreset(""); setMotivoLibre(""); }}
+                      className="flex items-center justify-between text-left w-full">
+                      <span className="text-[10px] font-semibold text-[#6b7280]">Registrar observación supervisora</span>
+                      <span className="text-[10px] text-[#9ca3af]">{obsExpanded ? "▲" : "▼"}</span>
                     </button>
-                    <button disabled title="Pendiente: datos de apertura no disponibles en historial"
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#f4f6f9] py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-[#c0cad4] cursor-not-allowed">
-                      Corregir Apertura
-                    </button>
+
+                    {obsExpanded && (
+                      <div className="flex flex-col gap-2 pt-1 border-t border-[#f0f4f8]">
+                        <p className="text-[9.5px] text-[#9ca3af] leading-snug">
+                          Intervención iniciada por observación operacional — no necesariamente por una diferencia automática.
+                        </p>
+
+                        <div className="flex gap-1.5">
+                          {(["correccion_cierre", "correccion_apertura"] as const).map(t => (
+                            <button key={t} onClick={() => { setObsAuthType(t); setMotivoPreset(""); setMotivoLibre(""); }}
+                              className={`flex-1 rounded-xl border py-2 text-[10px] font-bold uppercase tracking-wide transition ${
+                                obsAuthType === t
+                                  ? "border-[#2154d8]/30 bg-[#EEF3FD] text-[#2154d8]"
+                                  : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#2154d8]/20"
+                              }`}>
+                              {t === "correccion_cierre" ? "Corrección Cierre" : "Corrección Apertura"}
+                            </button>
+                          ))}
+                        </div>
+
+                        <MotivoForm presets={presets} motivoPreset={motivoPreset} motivoLibre={motivoLibre}
+                          setMotivoPreset={setMotivoPreset} setMotivoLibre={setMotivoLibre} />
+                        <InfoSupervisor name={supervisorName} />
+                        <AuthorizeButton canAuthorize={canAuthorize} onClick={handleAuthorize}
+                          label={obsAuthType === "correccion_cierre" ? "Autorizar Corrección de Cierre" : "Autorizar Corrección de Apertura"} />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
