@@ -303,3 +303,93 @@ Prioridades:
 La operación real vuelve a ser la principal fuente de descubrimiento.
 
 Las auditorías futuras deberán surgir de evidencia observada durante implementación, validación o uso operacional.
+
+## Descubrimientos Provisionales — Auditoría Dominio VENTAS
+
+### Habilitación Operacional de Venta (HOV)
+
+Se observa una separación clara entre Producto y las modalidades mediante las cuales dicho producto puede ser comercializado.
+
+Producto responde:
+
+¿Qué es?
+
+HOV responde:
+
+¿Cómo puede venderse?
+
+Ejemplos observados:
+
+* Unidad
+* Blister
+* Caja
+* Pack
+* Combo
+* Mayorista
+* VIP
+* Estándar
+
+### Valor Operacional Asociado
+
+Se observa que una misma HOV puede poseer múltiples valores aplicables según contexto.
+
+Ejemplos:
+
+* Normal
+* Oferta
+* Preferencial
+* Mayorista
+* Libre
+
+El valor no forma parte de la identidad del producto ni de la HOV.
+
+### Pedido
+
+Durante la auditoría se cuestiona la centralidad doctrinal de Ticket.
+
+Se observa que múltiples conceptos aparentemente distintos:
+
+* Ticket
+* Precuenta
+* Carrito
+* Preventa
+* Reserva
+
+comparten propiedades operacionales equivalentes.
+
+Hipótesis actual:
+
+Pedido representa mejor la realidad operacional observada.
+
+Propiedades identificadas:
+
+* Mutable
+* Divisible
+* Fusionable
+* Transformable
+* Abandonable
+* Concretable
+
+### Flujo Operacional Observado
+
+Identifico qué necesita el cliente
+↓
+Defino cómo puedo ofrecérselo
+↓
+Reconozco el valor aplicable
+↓
+Construyo el pedido
+↓
+Lo ajusto si es necesario
+↓
+Lo confirmo
+↓
+Lo cobro
+↓
+Lo entrego
+↓
+Lo evidencio
+
+Observación:
+
+VENTAS parece comportarse más como un dominio de construcción, evolución y concreción de pedidos que como un dominio centrado en transacciones.
