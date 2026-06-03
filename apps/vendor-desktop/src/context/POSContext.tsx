@@ -7,6 +7,7 @@ import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, chan
 import { type RoleRecord, loadRoles, saveRoles, setRoleCapabilities, isRoleCodeTaken } from "../domains/operator/roles.store";
 import { blockBoxDefs } from "../domains/operator/blocks.store";
 import { type TurnEvent, type TurnEventType, loadTurnEvents, saveTurnEvents } from "../domains/cash/turn-events.store";
+import { syncCatalogToInventory } from "../domains/inventory/catalog-bridge";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -905,9 +906,14 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addOpLog(`[EDICIÓN] ${s.operator} — S/${target.amount.toFixed(2)}: ${motivo}`);
   }, [addOpLog]);
 
-  const [rubro, setRubroState] = useState<Rubro>(loadRubro);
+  const [rubro, setRubroState] = useState<Rubro>(() => {
+    const r = loadRubro();
+    syncCatalogToInventory(r);
+    return r;
+  });
   const setRubro = useCallback((r: Rubro) => {
     setRubroState(r);
+    syncCatalogToInventory(r);
     try { localStorage.setItem(LS_RUBRO, r); } catch { /* quota */ }
   }, []);
 
