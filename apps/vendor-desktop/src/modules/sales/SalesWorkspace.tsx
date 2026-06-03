@@ -4,8 +4,9 @@ import { useTicketStore } from "../../domains/ticket/state/ticket.store";
 import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
 import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
-import { RUBROS, type CatalogProduct } from "../../data/catalogs";
+import { RUBROS, type CatalogProduct, type Presentacion, type PrecioTipo } from "../../data/catalogs";
 import { inventoryService } from "../../domains/inventory/service";
+import { PresentacionSheet } from "./PresentacionSheet";
 
 function Helper({ text }: { text: string }) {
   return (
@@ -162,6 +163,8 @@ export function SalesWorkspace() {
   const [query, setQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [sheetProduct,  setSheetProduct]  = useState<CatalogProduct | null>(null);
+  const [sheetPres,     setSheetPres]     = useState<Presentacion | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
@@ -246,17 +249,44 @@ export function SalesWorkspace() {
 
   const addProductToTicket = useCallback((p: CatalogProduct) => {
     if (p.status === "out") return;
+    if (p.presentaciones && p.presentaciones.length > 0) {
+      if (cobroOpen) closeCobro();
+      setSheetProduct(p);
+      setSheetPres(null);
+      return;
+    }
     if (cobroOpen) closeCobro();
     ticketService.addProduct({
-      productId: p.id,
-      description: p.name,
-      barcode: p.code,
-      unitPrice: p.price,
+      productId:    p.id,
+      description:  p.name,
+      barcode:      p.code,
+      unitPrice:    p.price,
     });
     setQuery("");
     setSearchQuery("");
     inputRef.current?.focus();
   }, [cobroOpen, closeCobro]);
+
+  const confirmPresentacion = useCallback((
+    p: CatalogProduct,
+    pres: Presentacion,
+    precio: number,
+    tipoPrecio?: string,
+  ) => {
+    ticketService.addProduct({
+      productId:    p.id,
+      description:  `${p.name} · ${pres.label}`,
+      barcode:      p.code,
+      unitPrice:    precio,
+      presentacion: pres.label,
+      tipoPrecio,
+    });
+    setSheetProduct(null);
+    setSheetPres(null);
+    setQuery("");
+    setSearchQuery("");
+    inputRef.current?.focus();
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (cobroOpen) return;
@@ -348,7 +378,18 @@ export function SalesWorkspace() {
   }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
+    <>
+      {sheetProduct && (
+        <PresentacionSheet
+          product={sheetProduct}
+          selectedPres={sheetPres}
+          onSelectPres={setSheetPres}
+          onConfirm={confirmPresentacion}
+          onCancel={() => { setSheetProduct(null); setSheetPres(null); inputRef.current?.focus(); }}
+        />
+      )}
+
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* TOOLBAR — Visual mode */}
       {view === "visual" && (
@@ -583,6 +624,7 @@ export function SalesWorkspace() {
         )}
 
       </div>
-    </section>
+      </section>
+    </>
   );
 }

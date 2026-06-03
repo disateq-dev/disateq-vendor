@@ -3,21 +3,25 @@ import { createTicketLine } from "../state/ticket.actions";
 import { useTicketStore } from "../state/ticket.store";
 
 type AddProductInput = {
-  productId: string;
-  description: string;
-  barcode: string;
-  unitPrice: number;
+  productId:    string;
+  description:  string;
+  barcode:      string;
+  unitPrice:    number;
+  presentacion?: string;
+  tipoPrecio?:   string;
 };
 
 export const ticketService = {
   addProduct(input: AddProductInput) {
     useTicketStore.getState().addLine(
       createTicketLine({
-        productId: input.productId,
-        description: input.description,
-        barcode: input.barcode,
-        quantity: 1,
-        unitPrice: input.unitPrice,
+        productId:    input.productId,
+        description:  input.description,
+        barcode:      input.barcode,
+        quantity:     1,
+        unitPrice:    input.unitPrice,
+        presentacion: input.presentacion,
+        tipoPrecio:   input.tipoPrecio,
       }),
     );
   },
