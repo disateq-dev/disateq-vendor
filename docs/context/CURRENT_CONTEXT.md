@@ -29,7 +29,7 @@ El runtime está vivo y operativo. El ciclo comercial completo (vender → desco
 ```
 VENTAS ──► catálogo estático (catalogs.ts)   ✗ sin conexión con INVENTARIOS
 COMPRAS ──► INVENTARIOS                       ✅ integrado
-VENTAS ──► INVENTARIOS                        ✗ no integrado
+VENTAS ──► INVENTARIOS                        ✅ integrado (8d2918a)
 ```
 
 VENTAS consume precios y productos hardcodeados. Una venta no descuenta stock real.
@@ -70,8 +70,8 @@ Contraste documentación vs implementación realizado. Hallazgos principales:
 ```
 operación real          ✅ TURNO · FONDO · COBRO · COMPRAS
 dolor operacional       ✅ VENTAS vs INVENTARIOS identificado
-solución mínima         ← siguiente paso
-validación runtime      ← metodología establecida
+solución mínima         ✅ VENTAS → INVENTARIOS conectado
+validación runtime      ✅ movimientos de salida confirmados
 reconciliación/control  ⚠ parcial (capacidades sin enforcement)
 sofisticación progresiva
 consolidación
