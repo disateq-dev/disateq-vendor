@@ -1,5 +1,17 @@
 export type Rubro = "abarrotes" | "food-fast" | "panaderia" | "farmacia";
 
+export interface PrecioTipo {
+  tipo:  string;   // "Normal" | "Mayoreo" | "Promoción" | "Libre"
+  valor: number;
+}
+
+export interface Presentacion {
+  id:      string;
+  label:   string;   // "Unidad", "Blíster", "Caja x10", "1/4 Pollo"
+  precio:  number;   // precio base de esta presentación
+  precios?: PrecioTipo[];  // opcional — tipos de precio
+}
+
 export type StockStatus = "normal" | "low" | "out" | "promo" | "expiring";
 
 export type VisualMode = "lista" | "visual" | "mixto";
@@ -24,6 +36,7 @@ export interface CatalogProduct {
   accent:   string;
   stock:    number;
   status:   StockStatus;
+  presentaciones?: Presentacion[];
 }
 
 export interface RubroConfig {
@@ -144,29 +157,310 @@ export const RUBROS: Record<Rubro, RubroConfig> = {
     defaultVisualMode: "lista",
     defaultPrintFlow:  "solo-comprobante",
     categories: [
-      { id: "all",         label: "Todo"            },
-      { id: "analgesicos", label: "💊 Analgésicos"  },
-      { id: "vitaminas",   label: "🌿 Vitaminas"    },
-      { id: "topicos",     label: "🩹 Tópicos"      },
+      { id: "all",          label: "Todo"              },
+      { id: "analgesicos",  label: " Analgésicos"    },
+      { id: "antibioticos", label: " Antibióticos"   },
+      { id: "vitaminas",    label: " Vitaminas"       },
+      { id: "topicos",      label: " Tópicos"         },
+      { id: "cuidado",      label: " Cuidado personal"},
+      { id: "bebes",        label: " Bebés"           },
+      { id: "dispositivos", label: "️ Dispositivos"    },
     ],
     catalog: [
-      { id: "FM01", name: "Paracetamol 500mg x10",  short: "Paracetamol x10", emoji: "💊", category: "analgesicos", price:  1.50, code: "9900001001", color: "#EFF6FF", accent: "#1D4ED8", stock: 200, status: "normal" },
-      { id: "FM02", name: "Ibuprofeno 400mg x10",   short: "Ibuprofeno x10",  emoji: "💊", category: "analgesicos", price:  2.50, code: "9900001002", color: "#F0F9FF", accent: "#0369A1", stock: 150, status: "normal" },
-      { id: "FM03", name: "Aspirina 100mg x20",     short: "Aspirina x20",    emoji: "💊", category: "analgesicos", price:  3.00, code: "9900001003", color: "#EFF6FF", accent: "#1E40AF", stock:  80, status: "normal" },
-      { id: "FM04", name: "Naproxeno 250mg x10",    short: "Naproxeno x10",   emoji: "💊", category: "analgesicos", price:  4.00, code: "9900001004", color: "#F0F9FF", accent: "#0C4A6E", stock:  40, status: "normal" },
-      { id: "FM05", name: "Vitamina C 500mg x10",   short: "Vit C x10",       emoji: "🌿", category: "vitaminas",   price:  3.50, code: "9900001010", color: "#FFF7ED", accent: "#C2410C", stock: 100, status: "normal" },
-      { id: "FM06", name: "Vitamina D3 1000UI x30", short: "Vit D3 x30",      emoji: "🌿", category: "vitaminas",   price:  8.00, code: "9900001011", color: "#FEFCE8", accent: "#A16207", stock:  60, status: "normal" },
-      { id: "FM07", name: "Zinc 10mg x30",          short: "Zinc x30",        emoji: "🌿", category: "vitaminas",   price:  5.50, code: "9900001012", color: "#F0FDF4", accent: "#166534", stock:  45, status: "normal" },
-      { id: "FM08", name: "Complejo B x30",         short: "Complejo B x30",  emoji: "🌿", category: "vitaminas",   price:  6.00, code: "9900001013", color: "#ECFDF5", accent: "#065F46", stock:   8, status: "low"    },
-      { id: "FM09", name: "Alcohol 70% 250ml",      short: "Alcohol 250ml",   emoji: "🩹", category: "topicos",     price:  4.50, code: "9900001020", color: "#F5F5F4", accent: "#57534E", stock:  30, status: "normal" },
-      { id: "FM10", name: "Agua Oxigenada 250ml",   short: "Agua Ox 250ml",   emoji: "🩹", category: "topicos",     price:  3.00, code: "9900001021", color: "#EFF6FF", accent: "#1D4ED8", stock:  25, status: "normal" },
-      { id: "FM11", name: "Betadine 30ml",          short: "Betadine 30ml",   emoji: "🩹", category: "topicos",     price:  7.50, code: "9900001022", color: "#FEF9C3", accent: "#92400E", stock:  20, status: "normal" },
-      { id: "FM12", name: "Termómetro Digital",     short: "Termómetro",      emoji: "🌡️", category: "topicos",     price: 15.00, code: "9900001023", color: "#F0F9FF", accent: "#0C4A6E", stock:  2, status: "low"      },
-      { id: "FM13", name: "Amoxicilina 500mg x12",  short: "Amoxicilina x12", emoji: "💊", category: "analgesicos", price:  6.50, code: "9900001005", color: "#FEF9C3", accent: "#92400E", stock:  7, status: "expiring"  },
-      { id: "FM14", name: "Loratadina 10mg x10",    short: "Loratadina x10",  emoji: "💊", category: "analgesicos", price:  3.50, code: "9900001006", color: "#F0F9FF", accent: "#0369A1", stock:  0, status: "out"       },
-      { id: "FM15", name: "Omega 3 1000mg x30",     short: "Omega 3 x30",     emoji: "🌿", category: "vitaminas",   price: 12.00, code: "9900001014", color: "#EFF6FF", accent: "#1D4ED8", stock: 38, status: "promo"     },
-      { id: "FM16", name: "Melatonina 5mg x30",     short: "Melatonina x30",  emoji: "🌿", category: "vitaminas",   price:  9.00, code: "9900001015", color: "#FDF4FF", accent: "#7E22CE", stock:  0, status: "out"       },
-      { id: "FM17", name: "Gasas Estériles x10",    short: "Gasas x10",       emoji: "🩹", category: "topicos",     price:  2.00, code: "9900001024", color: "#F5F5F4", accent: "#57534E", stock:  3, status: "expiring"  },
+      // ── ANALGÉSICOS ──────────────────────────────────────────────
+      {
+        id: "FM01", name: "Paracetamol 500mg", short: "Paracetamol", emoji: "",
+        category: "analgesicos", price: 0.15, code: "9900001001",
+        color: "#EFF6FF", accent: "#1D4ED8", stock: 200, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",    precio: 0.15 },
+          { id: "blister", label: "Blíster x10", precio: 1.50,
+            precios: [
+              { tipo: "Normal",    valor: 1.50 },
+              { tipo: "Promoción", valor: 1.20 },
+            ]
+          },
+          { id: "caja", label: "Caja x100", precio: 12.00,
+            precios: [
+              { tipo: "Normal",  valor: 12.00 },
+              { tipo: "Mayoreo", valor: 10.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM02", name: "Ibuprofeno 400mg", short: "Ibuprofeno", emoji: "",
+        category: "analgesicos", price: 0.25, code: "9900001002",
+        color: "#F0F9FF", accent: "#0369A1", stock: 150, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",      precio: 0.25 },
+          { id: "blister", label: "Blíster x10",  precio: 2.50,
+            precios: [
+              { tipo: "Normal",    valor: 2.50 },
+              { tipo: "Promoción", valor: 2.00 },
+            ]
+          },
+          { id: "caja", label: "Caja x100", precio: 20.00,
+            precios: [
+              { tipo: "Normal",  valor: 20.00 },
+              { tipo: "Mayoreo", valor: 17.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM03", name: "Naproxeno 500mg", short: "Naproxeno", emoji: "",
+        category: "analgesicos", price: 0.30, code: "9900001003",
+        color: "#EFF6FF", accent: "#1E40AF", stock: 80, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",     precio: 0.30 },
+          { id: "blister", label: "Blíster x10", precio: 3.00 },
+        ],
+      },
+      {
+        id: "FM04", name: "Metamizol 500mg", short: "Metamizol", emoji: "",
+        category: "analgesicos", price: 0.20, code: "9900001004",
+        color: "#F0F9FF", accent: "#0C4A6E", stock: 120, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",     precio: 0.20 },
+          { id: "blister", label: "Blíster x10", precio: 2.00 },
+        ],
+      },
+      {
+        id: "FM05", name: "Aspirina 100mg", short: "Aspirina", emoji: "",
+        category: "analgesicos", price: 0.20, code: "9900001005",
+        color: "#EFF6FF", accent: "#1D4ED8", stock: 90, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",     precio: 0.20 },
+          { id: "blister", label: "Blíster x10", precio: 2.00 },
+          { id: "caja",    label: "Caja x100",   precio: 16.00,
+            precios: [
+              { tipo: "Normal",  valor: 16.00 },
+              { tipo: "Mayoreo", valor: 13.50 },
+            ]
+          },
+        ],
+      },
+      // ── ANTIBIÓTICOS ─────────────────────────────────────────────
+      {
+        id: "FM10", name: "Amoxicilina 500mg", short: "Amoxicilina", emoji: "",
+        category: "antibioticos", price: 0.50, code: "9900002001",
+        color: "#FEF9C3", accent: "#92400E", stock: 80, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",     precio: 0.50 },
+          { id: "blister", label: "Blíster x12", precio: 6.00,
+            precios: [
+              { tipo: "Normal",    valor: 6.00 },
+              { tipo: "Promoción", valor: 5.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM11", name: "Azitromicina 500mg", short: "Azitromicina", emoji: "",
+        category: "antibioticos", price: 1.50, code: "9900002002",
+        color: "#FEF3C7", accent: "#B45309", stock: 40, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",    precio: 1.50 },
+          { id: "blister", label: "Blíster x3", precio: 4.50 },
+        ],
+      },
+      {
+        id: "FM12", name: "Loratadina 10mg", short: "Loratadina", emoji: "",
+        category: "antibioticos", price: 0.30, code: "9900002003",
+        color: "#F0F9FF", accent: "#0369A1", stock: 60, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",     precio: 0.30 },
+          { id: "blister", label: "Blíster x10", precio: 3.00 },
+        ],
+      },
+      // ── VITAMINAS ────────────────────────────────────────────────
+      {
+        id: "FM20", name: "Vitamina C 500mg", short: "Vit C", emoji: "",
+        category: "vitaminas", price: 0.30, code: "9900003001",
+        color: "#FFF7ED", accent: "#C2410C", stock: 100, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",     precio: 0.30 },
+          { id: "blister", label: "Blíster x10", precio: 3.00 },
+          { id: "frasco",  label: "Frasco x100", precio: 25.00,
+            precios: [
+              { tipo: "Normal",  valor: 25.00 },
+              { tipo: "Mayoreo", valor: 21.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM21", name: "Vitamina D3 1000UI", short: "Vit D3", emoji: "",
+        category: "vitaminas", price: 8.00, code: "9900003002",
+        color: "#FEFCE8", accent: "#A16207", stock: 60, status: "normal",
+        presentaciones: [
+          { id: "frasco", label: "Frasco x30", precio: 8.00 },
+        ],
+      },
+      {
+        id: "FM22", name: "Complejo B", short: "Complejo B", emoji: "",
+        category: "vitaminas", price: 6.00, code: "9900003003",
+        color: "#F0FDF4", accent: "#166534", stock: 45, status: "low",
+        presentaciones: [
+          { id: "frasco", label: "Frasco x30", precio: 6.00 },
+          { id: "unidad", label: "Unidad",     precio: 0.30 },
+        ],
+      },
+      {
+        id: "FM23", name: "Omega 3 1000mg", short: "Omega 3", emoji: "",
+        category: "vitaminas", price: 12.00, code: "9900003004",
+        color: "#EFF6FF", accent: "#1D4ED8", stock: 38, status: "promo",
+        presentaciones: [
+          { id: "frasco", label: "Frasco x30", precio: 12.00,
+            precios: [
+              { tipo: "Normal",    valor: 12.00 },
+              { tipo: "Promoción", valor: 9.90 },
+            ]
+          },
+        ],
+      },
+      // ── TÓPICOS ──────────────────────────────────────────────────
+      {
+        id: "FM30", name: "Alcohol 70% 250ml", short: "Alcohol 250ml", emoji: "",
+        category: "topicos", price: 4.50, code: "9900004001",
+        color: "#F5F5F4", accent: "#57534E", stock: 30, status: "normal",
+        presentaciones: [
+          { id: "frasco250", label: "Frasco 250ml", precio: 4.50 },
+          { id: "frasco1l",  label: "Frasco 1L",    precio: 14.00,
+            precios: [
+              { tipo: "Normal",  valor: 14.00 },
+              { tipo: "Mayoreo", valor: 12.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM31", name: "Agua Oxigenada 250ml", short: "Agua Ox.", emoji: "",
+        category: "topicos", price: 3.00, code: "9900004002",
+        color: "#EFF6FF", accent: "#1D4ED8", stock: 25, status: "normal",
+        presentaciones: [
+          { id: "frasco250", label: "Frasco 250ml", precio: 3.00 },
+        ],
+      },
+      {
+        id: "FM32", name: "Betadine 30ml", short: "Betadine", emoji: "",
+        category: "topicos", price: 7.50, code: "9900004003",
+        color: "#FEF9C3", accent: "#92400E", stock: 20, status: "normal",
+        presentaciones: [
+          { id: "frasco30",  label: "Frasco 30ml",  precio: 7.50 },
+          { id: "frasco120", label: "Frasco 120ml", precio: 22.00 },
+        ],
+      },
+      {
+        id: "FM33", name: "Gasas Estériles", short: "Gasas x10", emoji: "",
+        category: "topicos", price: 2.00, code: "9900004004",
+        color: "#F5F5F4", accent: "#57534E", stock: 30, status: "normal",
+        presentaciones: [
+          { id: "sobre",  label: "Sobre x10",  precio: 2.00 },
+          { id: "caja50", label: "Caja x50",   precio: 8.50,
+            precios: [
+              { tipo: "Normal",  valor: 8.50 },
+              { tipo: "Mayoreo", valor: 7.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM34", name: "Vendas Elásticas 3\"", short: "Venda 3\"", emoji: "",
+        category: "topicos", price: 3.50, code: "9900004005",
+        color: "#F5F5F4", accent: "#57534E", stock: 15, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 3.50 },
+        ],
+      },
+      // ── CUIDADO PERSONAL ─────────────────────────────────────────
+      {
+        id: "FM40", name: "Jabón Protex 110g", short: "Protex 110g", emoji: "",
+        category: "cuidado", price: 3.50, code: "9900005001",
+        color: "#FDF4FF", accent: "#7E22CE", stock: 40, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 3.50 },
+        ],
+      },
+      {
+        id: "FM41", name: "Shampoo H&S 200ml", short: "H&S 200ml", emoji: "",
+        category: "cuidado", price: 12.00, code: "9900005002",
+        color: "#EFF6FF", accent: "#1D4ED8", stock: 20, status: "normal",
+        presentaciones: [
+          { id: "frasco200", label: "Frasco 200ml", precio: 12.00 },
+          { id: "frasco400", label: "Frasco 400ml", precio: 20.00 },
+        ],
+      },
+      {
+        id: "FM42", name: "Colgate Triple Acción", short: "Colgate", emoji: "",
+        category: "cuidado", price: 4.50, code: "9900005003",
+        color: "#EFF6FF", accent: "#0369A1", stock: 30, status: "normal",
+        presentaciones: [
+          { id: "tubo75",  label: "Tubo 75ml",  precio: 4.50 },
+          { id: "tubo150", label: "Tubo 150ml", precio: 7.50 },
+        ],
+      },
+      // ── BEBÉS ────────────────────────────────────────────────────
+      {
+        id: "FM50", name: "Pañal Huggies RN", short: "Huggies RN", emoji: "",
+        category: "bebes", price: 1.20, code: "9900006001",
+        color: "#FDF4FF", accent: "#7E22CE", stock: 80, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",    precio: 1.20 },
+          { id: "paquete", label: "Paquete x20", precio: 22.00,
+            precios: [
+              { tipo: "Normal",  valor: 22.00 },
+              { tipo: "Mayoreo", valor: 19.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM51", name: "Talco Johnson's 100g", short: "Talco J&J", emoji: "",
+        category: "bebes", price: 8.00, code: "9900006002",
+        color: "#F0FDF4", accent: "#166534", stock: 15, status: "normal",
+        presentaciones: [
+          { id: "frasco100", label: "Frasco 100g", precio: 8.00 },
+        ],
+      },
+      // ── DISPOSITIVOS MÉDICOS ──────────────────────────────────────
+      {
+        id: "FM60", name: "Termómetro Digital", short: "Termómetro", emoji: "️",
+        category: "dispositivos", price: 15.00, code: "9900007001",
+        color: "#F0F9FF", accent: "#0C4A6E", stock: 8, status: "low",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 15.00 },
+        ],
+      },
+      {
+        id: "FM61", name: "Jeringa 5ml c/aguja", short: "Jeringa 5ml", emoji: "",
+        category: "dispositivos", price: 0.50, code: "9900007002",
+        color: "#EFF6FF", accent: "#1D4ED8", stock: 100, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",   precio: 0.50 },
+          { id: "caja100", label: "Caja x100", precio: 38.00,
+            precios: [
+              { tipo: "Normal",  valor: 38.00 },
+              { tipo: "Mayoreo", valor: 32.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "FM62", name: "Guantes de Látex S", short: "Guantes S", emoji: "",
+        category: "dispositivos", price: 0.80, code: "9900007003",
+        color: "#F5F5F4", accent: "#57534E", stock: 50, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Par",      precio: 0.80 },
+          { id: "caja100", label: "Caja x100", precio: 55.00,
+            precios: [
+              { tipo: "Normal",  valor: 55.00 },
+              { tipo: "Mayoreo", valor: 48.00 },
+            ]
+          },
+        ],
+      },
     ],
   },
 };
