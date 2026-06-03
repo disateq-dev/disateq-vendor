@@ -5,6 +5,7 @@ import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors"
 import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type CatalogProduct } from "../../data/catalogs";
+import { inventoryService } from "../../domains/inventory/service";
 
 function Helper({ text }: { text: string }) {
   return (
@@ -484,7 +485,7 @@ export function SalesWorkspace() {
                           </div>
                           <div className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold">
                             <span className="tabular-nums text-[#374151]">
-                              {product.id}{!isOut ? ` · ${product.stock} uds.` : ""}
+                              {product.id}{!isOut ? ` · ${inventoryService.disponibilidad(product.id)} uds.` : ""}
                             </span>
                             <span className="text-[#d1d9e1]">·</span>
                             {statusChip(product)}

@@ -10,6 +10,7 @@ import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptW
 
 import { toCents, moneySum, moneySub, moneyRound, moneyGt, moneyGte, moneyEq } from "../../lib/money";
 import { loadBusinessConfig } from "../../config/business";
+import { inventoryService } from "../../domains/inventory/service";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
@@ -222,6 +223,9 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
     addComprobante(buildComprobanteData(dt));
+    lines.forEach(line => {
+      inventoryService.registrarSalida(line.productId, line.quantity, `venta:${docNumber}`);
+    });
     ticketService.clear();
     closeCobro();
   }
@@ -271,6 +275,9 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
     addComprobante(buildComprobanteData(dateTime));
+    lines.forEach(line => {
+      inventoryService.registrarSalida(line.productId, line.quantity, `venta:${docNumber}`);
+    });
     ticketService.clear();
     closeCobro();
   }
