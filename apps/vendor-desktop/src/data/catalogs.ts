@@ -1,4 +1,4 @@
-export type Rubro = "abarrotes" | "food-fast" | "panaderia" | "farmacia";
+export type Rubro = "abarrotes" | "food-fast" | "panaderia" | "farmacia" | "optica";
 
 export interface PrecioTipo {
   tipo:  string;   // "Normal" | "Mayoreo" | "Promoción" | "Libre"
@@ -49,6 +49,266 @@ export interface RubroConfig {
 }
 
 export const RUBROS: Record<Rubro, RubroConfig> = {
+  optica: {
+    label:             "Óptica",
+    description:       "Armazones · Lunas · Lentes · Servicios",
+    defaultVisualMode: "lista",
+    defaultPrintFlow:  "solo-comprobante",
+    categories: [
+      { id: "all",         label: "Todo"              },
+      { id: "armazones",   label: "️ Armazones"      },
+      { id: "lunas",       label: " Lunas"           },
+      { id: "contacto",    label: "️ Lentes contacto" },
+      { id: "soluciones",  label: " Soluciones"      },
+      { id: "accesorios",  label: " Accesorios"      },
+      { id: "servicios",   label: " Servicios"       },
+    ],
+    catalog: [
+      // ── ARMAZONES ────────────────────────────────────────────────
+      {
+        id: "OP01", name: "Armazón Clásico Metal", short: "Armazón Metal",
+        emoji: "️", category: "armazones",
+        price: 45.00, code: "OPT0001",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 20, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 45.00,
+            precios: [
+              { tipo: "Normal", valor: 45.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "OP02", name: "Armazón Acetato", short: "Armazón Acetato",
+        emoji: "️", category: "armazones",
+        price: 55.00, code: "OPT0002",
+        color: "#FEF3C7", accent: "#B45309",
+        stock: 15, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 55.00,
+            precios: [
+              { tipo: "Normal", valor: 55.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "OP03", name: "Armazón Niños", short: "Armazón Niños",
+        emoji: "️", category: "armazones",
+        price: 35.00, code: "OPT0003",
+        color: "#FDF4FF", accent: "#7E22CE",
+        stock: 10, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 35.00,
+            precios: [
+              { tipo: "Normal", valor: 35.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "OP04", name: "Armazón Sol Polarizado", short: "Sol Polarizado",
+        emoji: "️", category: "armazones",
+        price: 80.00, code: "OPT0004",
+        color: "#1f2937", accent: "#f9fafb",
+        stock: 8, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 80.00,
+            precios: [
+              { tipo: "Normal", valor: 80.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      // ── LUNAS ────────────────────────────────────────────────────
+      {
+        id: "OP10", name: "Luna Simple", short: "Luna Simple",
+        emoji: "", category: "lunas",
+        price: 30.00, code: "OPT0010",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 30, status: "normal",
+        presentaciones: [
+          { id: "blanca",      label: "Blanca",           precio: 30.00 },
+          { id: "antireflex",  label: "Antirreflejo",     precio: 45.00 },
+          { id: "fotocromica", label: "Fotocrómica",      precio: 65.00 },
+          { id: "polarizada",  label: "Polarizada",       precio: 70.00 },
+        ],
+      },
+      {
+        id: "OP11", name: "Luna Bifocal", short: "Luna Bifocal",
+        emoji: "", category: "lunas",
+        price: 60.00, code: "OPT0011",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 20, status: "normal",
+        presentaciones: [
+          { id: "blanca",     label: "Blanca",       precio: 60.00 },
+          { id: "antireflex", label: "Antirreflejo", precio: 80.00 },
+        ],
+      },
+      {
+        id: "OP12", name: "Luna Progresiva", short: "Luna Progresiva",
+        emoji: "", category: "lunas",
+        price: 120.00, code: "OPT0012",
+        color: "#F0F9FF", accent: "#0C4A6E",
+        stock: 15, status: "normal",
+        presentaciones: [
+          { id: "blanca",     label: "Blanca",       precio: 120.00 },
+          { id: "antireflex", label: "Antirreflejo", precio: 150.00 },
+          { id: "premium",    label: "Premium",      precio: 200.00 },
+        ],
+      },
+      // ── LENTES DE CONTACTO ────────────────────────────────────────
+      {
+        id: "OP20", name: "Lentes Contacto Diarios", short: "L.C. Diarios",
+        emoji: "️", category: "contacto",
+        price: 35.00, code: "OPT0020",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 20, status: "normal",
+        presentaciones: [
+          { id: "caja30", label: "Caja x30 días",  precio: 35.00 },
+          { id: "caja90", label: "Caja x90 días",  precio: 90.00,
+            precios: [
+              { tipo: "Normal",    valor: 90.00 },
+              { tipo: "Promoción", valor: 80.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "OP21", name: "Lentes Contacto Mensuales", short: "L.C. Mensuales",
+        emoji: "️", category: "contacto",
+        price: 45.00, code: "OPT0021",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 15, status: "normal",
+        presentaciones: [
+          { id: "par",   label: "Par 1 mes",   precio: 45.00 },
+          { id: "caja6", label: "Caja 6 meses", precio: 240.00,
+            precios: [
+              { tipo: "Normal",    valor: 240.00 },
+              { tipo: "Promoción", valor: 210.00 },
+            ]
+          },
+        ],
+      },
+      // ── SOLUCIONES ────────────────────────────────────────────────
+      {
+        id: "OP30", name: "Solución Multiusos 360ml", short: "Solución 360ml",
+        emoji: "", category: "soluciones",
+        price: 22.00, code: "OPT0030",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 15, status: "normal",
+      },
+      {
+        id: "OP31", name: "Solución Multiusos 120ml", short: "Solución 120ml",
+        emoji: "", category: "soluciones",
+        price: 12.00, code: "OPT0031",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 20, status: "normal",
+      },
+      {
+        id: "OP32", name: "Gotas Lubricantes", short: "Gotas",
+        emoji: "", category: "soluciones",
+        price: 15.00, code: "OPT0032",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 10, status: "normal",
+      },
+      // ── ACCESORIOS ────────────────────────────────────────────────
+      {
+        id: "OP40", name: "Estuche Rígido", short: "Estuche",
+        emoji: "", category: "accesorios",
+        price: 8.00, code: "OPT0040",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 25, status: "normal",
+      },
+      {
+        id: "OP41", name: "Cadena para Lentes", short: "Cadena",
+        emoji: "", category: "accesorios",
+        price: 5.00, code: "OPT0041",
+        color: "#FEF9C3", accent: "#92400E",
+        stock: 30, status: "normal",
+      },
+      {
+        id: "OP42", name: "Paño Microfibra", short: "Paño",
+        emoji: "", category: "accesorios",
+        price: 3.00, code: "OPT0042",
+        color: "#F0FDF4", accent: "#166534",
+        stock: 40, status: "normal",
+      },
+      {
+        id: "OP43", name: "Spray Limpiador", short: "Spray",
+        emoji: "", category: "accesorios",
+        price: 6.00, code: "OPT0043",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 20, status: "normal",
+      },
+      {
+        id: "OP44", name: "Kit Reparación", short: "Kit Rep.",
+        emoji: "", category: "accesorios",
+        price: 4.00, code: "OPT0044",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 15, status: "normal",
+      },
+      // ── SERVICIOS ────────────────────────────────────────────────
+      {
+        id: "OP50", name: "Toma de Medida", short: "Toma Medida",
+        emoji: "", category: "servicios",
+        price: 10.00, code: "OPT0050",
+        color: "#F0FDF4", accent: "#166534",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 10.00,
+            precios: [
+              { tipo: "Normal", valor: 10.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "OP51", name: "Ajuste de Armazón", short: "Ajuste",
+        emoji: "", category: "servicios",
+        price: 5.00, code: "OPT0051",
+        color: "#F0FDF4", accent: "#166534",
+        stock: 99, status: "normal",
+      },
+      {
+        id: "OP52", name: "Reparación de Armazón", short: "Reparación",
+        emoji: "", category: "servicios",
+        price: 15.00, code: "OPT0052",
+        color: "#FFF7ED", accent: "#C2410C",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 15.00,
+            precios: [
+              { tipo: "Normal", valor: 15.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "OP53", name: "Cambio de Luna", short: "Cambio Luna",
+        emoji: "", category: "servicios",
+        price: 20.00, code: "OPT0053",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 20.00,
+            precios: [
+              { tipo: "Normal", valor: 20.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+    ],
+  },
+
   abarrotes: {
     label:             "Abarrotes",
     description:       "Scanner · Lista · Menudeo y Mayoreo",
