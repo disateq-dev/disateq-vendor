@@ -51,33 +51,341 @@ export interface RubroConfig {
 export const RUBROS: Record<Rubro, RubroConfig> = {
   abarrotes: {
     label:             "Abarrotes",
-    description:       "Scanner · Lista · Velocidad extrema",
+    description:       "Scanner · Lista · Menudeo y Mayoreo",
     defaultVisualMode: "lista",
     defaultPrintFlow:  "solo-comprobante",
     categories: [
-      { id: "all",       label: "Todo"          },
-      { id: "lacteos",   label: "🥛 Lácteos"    },
-      { id: "abarrotes", label: "🛒 Abarrotes"  },
-      { id: "bebidas",   label: "🥤 Bebidas"    },
+      { id: "all",      label: "Todo"           },
+      { id: "lacteos",  label: " Lácteos"     },
+      { id: "despensa", label: " Despensa"     },
+      { id: "bebidas",  label: " Bebidas"      },
+      { id: "limpieza", label: " Limpieza"     },
+      { id: "snacks",   label: " Snacks"       },
     ],
     catalog: [
-      { id: "AB01", name: "Leche Gloria 400g",   short: "Gloria 400g",  emoji: "🥛", category: "lacteos",   price:  3.50, code: "7750025000001", color: "#F0F9FF", accent: "#0369A1", stock:  80, status: "normal" },
-      { id: "AB02", name: "Leche Gloria 1L",     short: "Gloria 1L",    emoji: "🥛", category: "lacteos",   price:  5.20, code: "7750025000002", color: "#E0F2FE", accent: "#0369A1", stock:  60, status: "normal" },
-      { id: "AB03", name: "Yogurt Tigo 200g",    short: "Yogurt 200g",  emoji: "🫙", category: "lacteos",   price:  1.80, code: "7750025000003", color: "#FDF4FF", accent: "#7E22CE", stock:  40, status: "normal" },
-      { id: "AB04", name: "Arroz Extra 1kg",     short: "Arroz 1kg",    emoji: "🌾", category: "abarrotes", price:  3.80, code: "7750025000010", color: "#FEFCE8", accent: "#A16207", stock: 120, status: "normal" },
-      { id: "AB05", name: "Azúcar 1kg",          short: "Azúcar 1kg",   emoji: "🍬", category: "abarrotes", price:  3.20, code: "7750025000011", color: "#FFFBEB", accent: "#B45309", stock:  90, status: "normal" },
-      { id: "AB06", name: "Aceite Primor 1L",    short: "Primor 1L",    emoji: "🫙", category: "abarrotes", price:  8.50, code: "7750025000012", color: "#FFF7ED", accent: "#C2410C", stock:  35, status: "normal" },
-      { id: "AB07", name: "Fideos Don Vittorio", short: "Fideos 500g",  emoji: "🍝", category: "abarrotes", price:  2.50, code: "7750025000013", color: "#FEF9C3", accent: "#92400E", stock:  55, status: "normal" },
-      { id: "AB08", name: "Sal 1kg",             short: "Sal 1kg",      emoji: "🧂", category: "abarrotes", price:  1.20, code: "7750025000014", color: "#F8FAFC", accent: "#475467", stock:  70, status: "normal" },
-      { id: "AB09", name: "Inca Kola 1.5L",      short: "Inca 1.5L",    emoji: "🥤", category: "bebidas",   price:  5.50, code: "7750025000020", color: "#FEFCE8", accent: "#A16207", stock:  48, status: "normal" },
-      { id: "AB10", name: "Coca-Cola 1.5L",      short: "Coca 1.5L",    emoji: "🥤", category: "bebidas",   price:  5.50, code: "7750025000021", color: "#FEE2E2", accent: "#991B1B", stock:  36, status: "normal" },
-      { id: "AB11", name: "Agua San Luis 625ml", short: "Agua 625ml",   emoji: "💧", category: "bebidas",   price:  1.50, code: "7750025000022", color: "#EFF6FF", accent: "#1D4ED8", stock:  60, status: "normal" },
-      { id: "AB12", name: "Cifrut Naranja 500ml", short: "Cifrut 500ml", emoji: "🍊", category: "bebidas",  price:  2.00, code: "7750025000023", color: "#FFF7ED", accent: "#C2410C", stock:   5, status: "low"      },
-      { id: "AB13", name: "Mortadela San Fernando 100g", short: "Mortadela 100g", emoji: "🥩", category: "abarrotes", price: 3.90, code: "7750025000031", color: "#FEE2E2", accent: "#991B1B", stock:  6, status: "expiring" },
-      { id: "AB14", name: "Atún Florida 170g",           short: "Atún 170g",      emoji: "🐟", category: "abarrotes", price: 4.20, code: "7750025000032", color: "#F0F9FF", accent: "#0369A1", stock:  0, status: "out"      },
-      { id: "AB15", name: "Yogurt Tigo x6 Unid.",        short: "Yogurt x6",      emoji: "🫙", category: "lacteos",   price: 9.50, code: "7750025000033", color: "#FDF4FF", accent: "#7E22CE", stock: 24, status: "promo"    },
-      { id: "AB16", name: "Leche UHT Laive 200ml",       short: "UHT 200ml",      emoji: "🥛", category: "lacteos",   price: 1.90, code: "7750025000034", color: "#E0F2FE", accent: "#0369A1", stock:  9, status: "expiring" },
-      { id: "AB17", name: "Harina Blanca Flor 1kg",      short: "Harina 1kg",     emoji: "🌾", category: "abarrotes", price: 3.50, code: "7750025000035", color: "#FEFCE8", accent: "#A16207", stock:  0, status: "out"      },
+      // ── LÁCTEOS ──────────────────────────────────────────────────
+      {
+        id: "AB01", name: "Leche Gloria 400g", short: "Gloria 400g",
+        emoji: "", category: "lacteos",
+        price: 3.50, code: "7750025000001",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 80, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad",   precio: 3.50 },
+          { id: "caja24", label: "Caja x24", precio: 75.00,
+            precios: [
+              { tipo: "Normal",  valor: 75.00 },
+              { tipo: "Mayoreo", valor: 68.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB02", name: "Leche Gloria 1L", short: "Gloria 1L",
+        emoji: "", category: "lacteos",
+        price: 5.20, code: "7750025000002",
+        color: "#E0F2FE", accent: "#0369A1",
+        stock: 60, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad",   precio: 5.20 },
+          { id: "caja12", label: "Caja x12", precio: 57.00,
+            precios: [
+              { tipo: "Normal",  valor: 57.00 },
+              { tipo: "Mayoreo", valor: 52.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB03", name: "Yogurt Tigo 200g", short: "Yogurt 200g",
+        emoji: "", category: "lacteos",
+        price: 1.80, code: "7750025000003",
+        color: "#FDF4FF", accent: "#7E22CE",
+        stock: 40, status: "normal",
+      },
+      {
+        id: "AB04", name: "Yogurt Tigo x6", short: "Yogurt x6",
+        emoji: "", category: "lacteos",
+        price: 9.50, code: "7750025000004",
+        color: "#FDF4FF", accent: "#7E22CE",
+        stock: 24, status: "promo",
+        presentaciones: [
+          { id: "pack", label: "Pack x6", precio: 9.50,
+            precios: [
+              { tipo: "Normal",    valor: 9.50 },
+              { tipo: "Promoción", valor: 8.50 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB05", name: "Leche UHT Laive 200ml", short: "UHT Laive",
+        emoji: "", category: "lacteos",
+        price: 1.90, code: "7750025000005",
+        color: "#E0F2FE", accent: "#0369A1",
+        stock: 9, status: "expiring",
+      },
+      // ── DESPENSA ─────────────────────────────────────────────────
+      {
+        id: "AB10", name: "Arroz Extra 1kg", short: "Arroz 1kg",
+        emoji: "", category: "despensa",
+        price: 3.80, code: "7750025000010",
+        color: "#FEFCE8", accent: "#A16207",
+        stock: 120, status: "normal",
+        presentaciones: [
+          { id: "kg1",   label: "1 kg",    precio: 3.80 },
+          { id: "saco5", label: "Saco 5kg", precio: 17.00,
+            precios: [
+              { tipo: "Normal",  valor: 17.00 },
+              { tipo: "Mayoreo", valor: 15.50 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB11", name: "Azúcar 1kg", short: "Azúcar 1kg",
+        emoji: "", category: "despensa",
+        price: 3.20, code: "7750025000011",
+        color: "#FFFBEB", accent: "#B45309",
+        stock: 90, status: "normal",
+        presentaciones: [
+          { id: "kg1",   label: "1 kg",    precio: 3.20 },
+          { id: "saco5", label: "Saco 5kg", precio: 14.50,
+            precios: [
+              { tipo: "Normal",  valor: 14.50 },
+              { tipo: "Mayoreo", valor: 13.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB12", name: "Aceite Primor 1L", short: "Primor 1L",
+        emoji: "", category: "despensa",
+        price: 8.50, code: "7750025000012",
+        color: "#FFF7ED", accent: "#C2410C",
+        stock: 35, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad",   precio: 8.50 },
+          { id: "caja12", label: "Caja x12", precio: 92.00,
+            precios: [
+              { tipo: "Normal",  valor: 92.00 },
+              { tipo: "Mayoreo", valor: 85.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB13", name: "Fideos Don Vittorio 500g", short: "Fideos 500g",
+        emoji: "", category: "despensa",
+        price: 2.50, code: "7750025000013",
+        color: "#FEF9C3", accent: "#92400E",
+        stock: 55, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",   precio: 2.50 },
+          { id: "paquete", label: "Paquete x12", precio: 27.00,
+            precios: [
+              { tipo: "Normal",  valor: 27.00 },
+              { tipo: "Mayoreo", valor: 24.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB14", name: "Sal 1kg", short: "Sal 1kg",
+        emoji: "", category: "despensa",
+        price: 1.20, code: "7750025000014",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 70, status: "normal",
+      },
+      {
+        id: "AB15", name: "Harina Blanca Flor 1kg", short: "Harina 1kg",
+        emoji: "", category: "despensa",
+        price: 3.50, code: "7750025000015",
+        color: "#FEFCE8", accent: "#A16207",
+        stock: 0, status: "out",
+      },
+      {
+        id: "AB16", name: "Atún Florida 170g", short: "Atún 170g",
+        emoji: "", category: "despensa",
+        price: 4.20, code: "7750025000016",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 0, status: "out",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",   precio: 4.20 },
+          { id: "caja48",  label: "Caja x48", precio: 175.00,
+            precios: [
+              { tipo: "Normal",  valor: 175.00 },
+              { tipo: "Mayoreo", valor: 160.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB17", name: "Mortadela San Fernando 100g", short: "Mortadela",
+        emoji: "", category: "despensa",
+        price: 3.90, code: "7750025000017",
+        color: "#FEE2E2", accent: "#991B1B",
+        stock: 6, status: "expiring",
+      },
+      // ── BEBIDAS ───────────────────────────────────────────────────
+      {
+        id: "AB20", name: "Inca Kola 1.5L", short: "Inca 1.5L",
+        emoji: "", category: "bebidas",
+        price: 5.50, code: "7750025000020",
+        color: "#FEFCE8", accent: "#A16207",
+        stock: 48, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad",   precio: 5.50 },
+          { id: "paquete", label: "Paquete x6", precio: 30.00,
+            precios: [
+              { tipo: "Normal",  valor: 30.00 },
+              { tipo: "Mayoreo", valor: 27.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB21", name: "Coca-Cola 1.5L", short: "Coca 1.5L",
+        emoji: "", category: "bebidas",
+        price: 5.50, code: "7750025000021",
+        color: "#FEE2E2", accent: "#991B1B",
+        stock: 36, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",    precio: 5.50 },
+          { id: "paquete", label: "Paquete x6", precio: 30.00,
+            precios: [
+              { tipo: "Normal",  valor: 30.00 },
+              { tipo: "Mayoreo", valor: 27.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB22", name: "Agua San Luis 625ml", short: "Agua 625ml",
+        emoji: "", category: "bebidas",
+        price: 1.50, code: "7750025000022",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 60, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",    precio: 1.50 },
+          { id: "paquete", label: "Paquete x12", precio: 15.00,
+            precios: [
+              { tipo: "Normal",  valor: 15.00 },
+              { tipo: "Mayoreo", valor: 13.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB23", name: "Cifrut Naranja 500ml", short: "Cifrut 500ml",
+        emoji: "", category: "bebidas",
+        price: 2.00, code: "7750025000023",
+        color: "#FFF7ED", accent: "#C2410C",
+        stock: 5, status: "low",
+      },
+      // ── LIMPIEZA ──────────────────────────────────────────────────
+      {
+        id: "AB30", name: "Detergente Ariel 360g", short: "Ariel 360g",
+        emoji: "", category: "limpieza",
+        price: 6.50, code: "7750025000030",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 30, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad",   precio: 6.50 },
+          { id: "caja10", label: "Caja x10", precio: 58.00,
+            precios: [
+              { tipo: "Normal",  valor: 58.00 },
+              { tipo: "Mayoreo", valor: 52.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB31", name: "Lejía Clorox 1L", short: "Clorox 1L",
+        emoji: "", category: "limpieza",
+        price: 4.00, code: "7750025000031",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 25, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad",   precio: 4.00 },
+          { id: "caja12", label: "Caja x12", precio: 42.00,
+            precios: [
+              { tipo: "Normal",  valor: 42.00 },
+              { tipo: "Mayoreo", valor: 37.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB32", name: "Jabón Bolivar 200g", short: "Bolivar 200g",
+        emoji: "", category: "limpieza",
+        price: 2.50, code: "7750025000032",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 48, status: "normal",
+        presentaciones: [
+          { id: "unidad",  label: "Unidad",   precio: 2.50 },
+          { id: "paquete", label: "Paquete x12", precio: 26.00,
+            precios: [
+              { tipo: "Normal",  valor: 26.00 },
+              { tipo: "Mayoreo", valor: 23.00 },
+            ]
+          },
+        ],
+      },
+      {
+        id: "AB33", name: "Papel Higiénico Elite x4", short: "Elite x4",
+        emoji: "", category: "limpieza",
+        price: 4.50, code: "7750025000033",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 20, status: "normal",
+        presentaciones: [
+          { id: "paquete4",  label: "Paquete x4",  precio: 4.50 },
+          { id: "paquete12", label: "Paquete x12", precio: 12.00,
+            precios: [
+              { tipo: "Normal",  valor: 12.00 },
+              { tipo: "Mayoreo", valor: 10.50 },
+            ]
+          },
+        ],
+      },
+      // ── SNACKS ────────────────────────────────────────────────────
+      {
+        id: "AB40", name: "Galletas Oreo 117g", short: "Oreo 117g",
+        emoji: "", category: "snacks",
+        price: 3.50, code: "7750025000040",
+        color: "#1f2937", accent: "#f9fafb",
+        stock: 30, status: "normal",
+      },
+      {
+        id: "AB41", name: "Chifles Frito Lay 80g", short: "Chifles 80g",
+        emoji: "", category: "snacks",
+        price: 2.50, code: "7750025000041",
+        color: "#FEF9C3", accent: "#92400E",
+        stock: 20, status: "normal",
+      },
+      {
+        id: "AB42", name: "Caramelos Halls", short: "Halls",
+        emoji: "", category: "snacks",
+        price: 0.50, code: "7750025000042",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 80, status: "normal",
+      },
+      {
+        id: "AB43", name: "Galleta Soda 6pack", short: "Soda x6",
+        emoji: "", category: "snacks",
+        price: 1.50, code: "7750025000043",
+        color: "#FEF9C3", accent: "#92400E",
+        stock: 40, status: "normal",
+        presentaciones: [
+          { id: "paquete",  label: "Paquete x6",  precio: 1.50 },
+          { id: "caja24",   label: "Caja x24",    precio: 32.00,
+            precios: [
+              { tipo: "Normal",  valor: 32.00 },
+              { tipo: "Mayoreo", valor: 28.00 },
+            ]
+          },
+        ],
+      },
     ],
   },
 
