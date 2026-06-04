@@ -1,4 +1,4 @@
-export type Rubro = "abarrotes" | "food-fast" | "panaderia" | "farmacia" | "optica";
+export type Rubro = "abarrotes" | "food-fast" | "panaderia" | "farmacia" | "optica" | "zapateria" | "reparacion" | "celulares";
 
 export interface PrecioTipo {
   tipo:  string;   // "Normal" | "Mayoreo" | "Promoción" | "Libre"
@@ -1399,6 +1399,327 @@ export const RUBROS: Record<Rubro, RubroConfig> = {
             precios: [
               { tipo: "Normal",  valor: 55.00 },
               { tipo: "Mayoreo", valor: 48.00 },
+            ]
+          },
+        ],
+      },
+    ],
+  },
+
+  zapateria: {
+    label:             "Zapatería",
+    description:       "Calzado · Tallas · Accesorios",
+    defaultVisualMode: "visual",
+    defaultPrintFlow:  "solo-comprobante",
+    categories: [
+      { id: "all",        label: "Todo"           },
+      { id: "damas",      label: " Damas"        },
+      { id: "caballeros", label: " Caballeros"   },
+      { id: "ninos",      label: " Niños"        },
+      { id: "accesorios", label: " Accesorios"   },
+    ],
+    catalog: [
+      {
+        id: "ZA01", name: "Zapatilla Damas", short: "Zapatilla D.",
+        emoji: "", category: "damas",
+        price: 65.00, code: "ZAP0001",
+        color: "#FDF4FF", accent: "#7E22CE",
+        stock: 20, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 65.00,
+            precios: [
+              { tipo: "Normal", valor: 65.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "ZA02", name: "Zapatilla Caballeros", short: "Zapatilla C.",
+        emoji: "", category: "caballeros",
+        price: 75.00, code: "ZAP0002",
+        color: "#1f2937", accent: "#f9fafb",
+        stock: 15, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 75.00,
+            precios: [
+              { tipo: "Normal", valor: 75.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "ZA03", name: "Zapatilla Niños", short: "Zapatilla N.",
+        emoji: "", category: "ninos",
+        price: 45.00, code: "ZAP0003",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 18, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 45.00,
+            precios: [
+              { tipo: "Normal", valor: 45.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "ZA04", name: "Sandalia Damas", short: "Sandalia",
+        emoji: "", category: "damas",
+        price: 50.00, code: "ZAP0004",
+        color: "#FFF7ED", accent: "#C2410C",
+        stock: 12, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 50.00,
+            precios: [
+              { tipo: "Normal", valor: 50.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "ZA05", name: "Plantilla", short: "Plantilla",
+        emoji: "", category: "accesorios",
+        price: 8.00, code: "ZAP0005",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 30, status: "normal",
+      },
+      {
+        id: "ZA06", name: "Betún Negro", short: "Betún",
+        emoji: "", category: "accesorios",
+        price: 4.00, code: "ZAP0006",
+        color: "#1f2937", accent: "#f9fafb",
+        stock: 20, status: "normal",
+      },
+    ],
+  },
+
+  reparacion: {
+    label:             "Reparación",
+    description:       "Servicios · Presupuesto · Entrega",
+    defaultVisualMode: "lista",
+    defaultPrintFlow:  "solo-comprobante",
+    categories: [
+      { id: "all",       label: "Todo"            },
+      { id: "servicios", label: " Servicios"    },
+      { id: "repuestos", label: " Repuestos"    },
+      { id: "insumos",   label: " Insumos"      },
+    ],
+    catalog: [
+      {
+        id: "RP01", name: "Diagnóstico", short: "Diagnóstico",
+        emoji: "", category: "servicios",
+        price: 10.00, code: "REP0001",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 10.00,
+            precios: [
+              { tipo: "Normal", valor: 10.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "RP02", name: "Mano de Obra", short: "Mano de Obra",
+        emoji: "", category: "servicios",
+        price: 20.00, code: "REP0002",
+        color: "#FFF7ED", accent: "#C2410C",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 20.00,
+            precios: [
+              { tipo: "Normal", valor: 20.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "RP03", name: "Cambio de Pantalla", short: "Pantalla",
+        emoji: "", category: "servicios",
+        price: 80.00, code: "REP0003",
+        color: "#1f2937", accent: "#f9fafb",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 80.00,
+            precios: [
+              { tipo: "Normal", valor: 80.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "RP04", name: "Cambio de Batería", short: "Batería",
+        emoji: "", category: "servicios",
+        price: 40.00, code: "REP0004",
+        color: "#FEF9C3", accent: "#92400E",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 40.00,
+            precios: [
+              { tipo: "Normal", valor: 40.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "RP05", name: "Limpieza Interna", short: "Limpieza",
+        emoji: "", category: "servicios",
+        price: 25.00, code: "REP0005",
+        color: "#F0FDF4", accent: "#166534",
+        stock: 99, status: "normal",
+      },
+      {
+        id: "RP06", name: "Repuesto Genérico", short: "Repuesto",
+        emoji: "", category: "repuestos",
+        price: 15.00, code: "REP0006",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 20, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 15.00,
+            precios: [
+              { tipo: "Normal", valor: 15.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+    ],
+  },
+
+  celulares: {
+    label:             "Celulares",
+    description:       "Equipos · Accesorios · Suministros",
+    defaultVisualMode: "lista",
+    defaultPrintFlow:  "solo-comprobante",
+    categories: [
+      { id: "all",        label: "Todo"             },
+      { id: "equipos",    label: " Equipos"        },
+      { id: "accesorios", label: " Accesorios"     },
+      { id: "suministros",label: " Suministros"    },
+      { id: "servicios",  label: " Servicios"      },
+    ],
+    catalog: [
+      {
+        id: "CE01", name: "Smartphone Básico", short: "Smartphone",
+        emoji: "", category: "equipos",
+        price: 350.00, code: "CEL0001",
+        color: "#1f2937", accent: "#f9fafb",
+        stock: 5, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 350.00,
+            precios: [
+              { tipo: "Normal", valor: 350.00 },
+              { tipo: "Libre",  valor: 0.00   },
+            ]
+          },
+        ],
+      },
+      {
+        id: "CE02", name: "Audífonos Bluetooth", short: "Audífonos BT",
+        emoji: "", category: "accesorios",
+        price: 35.00, code: "CEL0002",
+        color: "#EFF6FF", accent: "#1D4ED8",
+        stock: 15, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 35.00,
+            precios: [
+              { tipo: "Normal", valor: 35.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "CE03", name: "Audífonos con Cable", short: "Audífonos",
+        emoji: "", category: "accesorios",
+        price: 15.00, code: "CEL0003",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 20, status: "normal",
+      },
+      {
+        id: "CE04", name: "Case Protector", short: "Case",
+        emoji: "", category: "accesorios",
+        price: 12.00, code: "CEL0004",
+        color: "#FDF4FF", accent: "#7E22CE",
+        stock: 30, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 12.00,
+            precios: [
+              { tipo: "Normal", valor: 12.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "CE05", name: "Vidrio Templado", short: "Vidrio",
+        emoji: "", category: "accesorios",
+        price: 8.00, code: "CEL0005",
+        color: "#F0F9FF", accent: "#0369A1",
+        stock: 40, status: "normal",
+      },
+      {
+        id: "CE06", name: "Cargador USB-C", short: "Cargador",
+        emoji: "", category: "suministros",
+        price: 18.00, code: "CEL0006",
+        color: "#FFF7ED", accent: "#C2410C",
+        stock: 25, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 18.00,
+            precios: [
+              { tipo: "Normal", valor: 18.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "CE07", name: "Cable USB-C 1m", short: "Cable USB-C",
+        emoji: "", category: "suministros",
+        price: 10.00, code: "CEL0007",
+        color: "#F8FAFC", accent: "#475467",
+        stock: 35, status: "normal",
+      },
+      {
+        id: "CE08", name: "Power Bank 10000mAh", short: "Power Bank",
+        emoji: "", category: "suministros",
+        price: 55.00, code: "CEL0008",
+        color: "#FEFCE8", accent: "#A16207",
+        stock: 10, status: "normal",
+        presentaciones: [
+          { id: "unidad", label: "Unidad", precio: 55.00,
+            precios: [
+              { tipo: "Normal", valor: 55.00 },
+              { tipo: "Libre",  valor: 0.00  },
+            ]
+          },
+        ],
+      },
+      {
+        id: "CE09", name: "Instalación de App", short: "Inst. App",
+        emoji: "", category: "servicios",
+        price: 5.00, code: "CEL0009",
+        color: "#F0FDF4", accent: "#166534",
+        stock: 99, status: "normal",
+      },
+      {
+        id: "CE10", name: "Configuración de Equipo", short: "Configuración",
+        emoji: "", category: "servicios",
+        price: 15.00, code: "CEL0010",
+        color: "#F0FDF4", accent: "#166534",
+        stock: 99, status: "normal",
+        presentaciones: [
+          { id: "servicio", label: "Servicio", precio: 15.00,
+            precios: [
+              { tipo: "Normal", valor: 15.00 },
+              { tipo: "Libre",  valor: 0.00  },
             ]
           },
         ],

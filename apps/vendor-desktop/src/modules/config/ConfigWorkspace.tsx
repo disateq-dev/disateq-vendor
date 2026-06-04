@@ -9,13 +9,17 @@ import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
 import { loadOpsConfig, saveOpsConfig } from "../../config/ops";
 import { type ConfigSubView } from "../../App";
 
-const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia"];
+const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia", "optica", "zapateria", "reparacion", "celulares"];
 
 const RUBRO_ICONS: Record<Rubro, string> = {
-  abarrotes:   "🛒",
-  "food-fast": "🍔",
-  panaderia:   "🥖",
-  farmacia:    "💊",
+  abarrotes:   "",
+  "food-fast": "",
+  panaderia:   "",
+  farmacia:    "",
+  optica:      "️",
+  zapateria:   "",
+  reparacion:  "",
+  celulares:   "",
 };
 
 const VISUAL_MODES: { id: VisualMode; label: string; desc: string }[] = [
