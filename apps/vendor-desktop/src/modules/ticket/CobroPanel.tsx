@@ -236,11 +236,12 @@ export function CobroPanel() {
     const now      = new Date();
     const p        = (n: number) => String(n).padStart(2, "0");
     const dateTime = `${p(now.getDate())}/${p(now.getMonth() + 1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`;
+    const biz = loadBusinessConfig();
     const receiptData = {
-      businessName:   loadBusinessConfig().nombreComercial,
-      businessRuc:    "20123456789",
-      businessAddr:   "Jr. Comercio 456, Lima",
-      businessPhone:  "01-234-5678",
+      businessName:   biz.nombreComercial,
+      businessRuc:    biz.ruc,
+      businessAddr:   biz.direccion,
+      businessPhone:  biz.telefono,
       docType,
       docSeries:      cfg.series,
       docCorrelative: nextCorrelative,

@@ -2,9 +2,11 @@ const LS_KEY = "disateq.config.business";
 
 export type BusinessConfig = {
   nombreComercial: string;
-  alias: string;
-  ruc: string;
-  razonSocial: string;
+  alias:           string;
+  ruc:             string;
+  razonSocial:     string;
+  direccion:       string;
+  telefono:        string;
 };
 
 const DEFAULTS: BusinessConfig = {
@@ -12,6 +14,8 @@ const DEFAULTS: BusinessConfig = {
   alias:           "Tienda Mercado Central",
   ruc:             "20608399349",
   razonSocial:     "CONSORCIO PEÑA S.A.C.",
+  direccion:       "",
+  telefono:        "",
 };
 
 export function loadBusinessConfig(): BusinessConfig {
@@ -24,6 +28,8 @@ export function loadBusinessConfig(): BusinessConfig {
       alias:           typeof p.alias           === "string" ? p.alias           : DEFAULTS.alias,
       ruc:             typeof p.ruc             === "string" ? p.ruc             : DEFAULTS.ruc,
       razonSocial:     typeof p.razonSocial     === "string" ? p.razonSocial     : DEFAULTS.razonSocial,
+      direccion:       typeof p.direccion       === "string" ? p.direccion       : DEFAULTS.direccion,
+      telefono:        typeof p.telefono        === "string" ? p.telefono        : DEFAULTS.telefono,
     };
   } catch { return DEFAULTS; }
 }
