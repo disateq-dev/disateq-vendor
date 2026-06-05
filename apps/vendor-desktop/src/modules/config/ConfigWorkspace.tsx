@@ -43,11 +43,22 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
 
   // ── NEGOCIO ───────────────────────────────────────────────────
   const [nombreComercial, setNombreComercial] = useState(() => loadBusinessConfig().nombreComercial);
+  const [razonSocial,     setRazonSocial]     = useState(() => loadBusinessConfig().razonSocial);
+  const [ruc,             setRuc]             = useState(() => loadBusinessConfig().ruc);
+  const [direccion,       setDireccion]       = useState(() => loadBusinessConfig().direccion);
+  const [telefono,        setTelefono]        = useState(() => loadBusinessConfig().telefono);
   const [bizSaved,        setBizSaved]        = useState(false);
 
   function handleSaveNegocio() {
     if (!nombreComercial.trim()) return;
-    saveBusinessConfig({ ...loadBusinessConfig(), nombreComercial: nombreComercial.trim() });
+    saveBusinessConfig({
+      nombreComercial: nombreComercial.trim(),
+      razonSocial:     razonSocial.trim(),
+      ruc:             ruc.trim(),
+      direccion:       direccion.trim(),
+      telefono:        telefono.trim(),
+      alias:           loadBusinessConfig().alias,
+    });
     setBizSaved(true);
     setTimeout(() => setBizSaved(false), 2000);
   }
@@ -108,9 +119,9 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
         {configSubView === "negocio" && (
           <div className="flex flex-col gap-4 max-w-lg">
             <p className="text-[11px] text-[#9ca3af]">
-              Nombre que aparece en impresiones, arqueos y comprobantes.
+              Datos que aparecen en impresiones, arqueos y comprobantes.
             </p>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <input
                 type="text"
                 value={nombreComercial}
@@ -120,6 +131,42 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 autoFocus
                 className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
                 placeholder="Nombre comercial"
+              />
+              <input
+                type="text"
+                value={razonSocial}
+                onChange={e => setRazonSocial(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
+                maxLength={80}
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                placeholder="Razón social"
+              />
+              <input
+                type="text"
+                value={ruc}
+                onChange={e => setRuc(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
+                maxLength={11}
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                placeholder="RUC"
+              />
+              <input
+                type="text"
+                value={direccion}
+                onChange={e => setDireccion(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
+                maxLength={100}
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                placeholder="Dirección"
+              />
+              <input
+                type="text"
+                value={telefono}
+                onChange={e => setTelefono(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
+                maxLength={30}
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                placeholder="Teléfono"
               />
               <button
                 onClick={handleSaveNegocio}
