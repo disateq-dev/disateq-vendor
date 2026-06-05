@@ -50,7 +50,9 @@ Contraste documentación vs implementación realizado. Hallazgos principales:
 - `visualMode === "mixto"` renderiza como visual — no implementado, sin decisión documentada.
 - `ticket-calculation.service.ts` calcula IGV pero `CobroPanel` lo calcula inline de forma independiente — duplicidad sin coordinación.
 - Correlativos de despacho (`_dispatchCorrelative`) sin persistencia — se resetean al reiniciar.
-- RUC, dirección y teléfono del negocio hardcodeados en `handleImprimir` — `loadBusinessConfig()` solo conecta `businessName`.
+- Datos de negocio en CobroPanel ✅ resuelto (dd4978d)
+- Correlativos de despacho sin persistencia ⬜ pendiente
+- Status catálogo vs inventario real ⬜ pendiente
 
 **Contradicciones:**
 - Botón COBRAR verde claro cuando no hay turno activo — semánticamente ambiguo contra doctrina de color operacional.
