@@ -250,15 +250,15 @@ export function CobroPanel() {
           },
       lineas: lines.map(l => ({
         id: crypto.randomUUID(),
-        descripcion: l.description,
-        cantidad: l.quantity,
-        valorUnitario: l.unitPrice,
+        descripcion: l.descripcion,
+        cantidad: l.cantidad,
+        valorUnitario: l.valorUnitario,
         subtotal: l.subtotal,
         codigoProductoSUNAT: null,
         tipoAfectacionIGV,
         tasaIGV: tipoAfectacionIGV === "GRAVADO" ? 0.18 : 0,
         montoISC: null,
-        notaLinea: l.note ?? null,
+        notaLinea: l.nota ?? null,
       })),
       subtotal: baseImponible,
       igv,
@@ -305,7 +305,7 @@ export function CobroPanel() {
       printDispatchTicket({
         correlative: _dispatchCorrelative++,
         dateTime:    dt,
-        lines:       lines.map(l => ({ description: l.description, quantity: l.quantity, note: l.note })),
+        lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
         opNumber:    docNumber,
       } satisfies DispatchData);
     }
@@ -320,11 +320,11 @@ export function CobroPanel() {
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
         lineas: lines.map(l => ({
-          description: l.description,
-          quantity:    l.quantity,
-          unitPrice:   l.unitPrice,
+          description: l.descripcion,
+          quantity:    l.cantidad,
+          unitPrice:   l.valorUnitario,
           subtotal:    l.subtotal,
-          note:        l.note ?? null,
+          note:        l.nota ?? null,
         })),
         subtotal:    baseImponible,
         igv:         igv,
@@ -346,8 +346,8 @@ export function CobroPanel() {
     }
     lines.forEach(line => {
       inventoryService.registrarSalida(
-        line.productId,
-        line.quantity,
+        line.hovId,
+        line.cantidad,
         `venta:${docNumber}`
       );
     });
@@ -379,11 +379,11 @@ export function CobroPanel() {
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
         lineas: lines.map(l => ({
-          description: l.description,
-          quantity:    l.quantity,
-          unitPrice:   l.unitPrice,
+          description: l.descripcion,
+          quantity:    l.cantidad,
+          unitPrice:   l.valorUnitario,
           subtotal:    l.subtotal,
-          note:        l.note ?? null,
+          note:        l.nota ?? null,
         })),
         subtotal:    baseImponible,
         igv:         igv,
@@ -426,11 +426,11 @@ export function CobroPanel() {
         dateTime,
         customer,
         lines: lines.map(l => ({
-          description: l.description,
-          quantity:    l.quantity,
-          unitPrice:   l.unitPrice,
+          description: l.descripcion,
+          quantity:    l.cantidad,
+          unitPrice:   l.valorUnitario,
           subtotal:    l.subtotal,
-          note:        l.note,
+          note:        l.nota,
         })),
         baseImponible, igv, discountNum, total, netTotal,
         payMethod, receivedNum, change,
@@ -442,7 +442,7 @@ export function CobroPanel() {
     const dispatchData: DispatchData = {
       correlative: _dispatchCorrelative++,
       dateTime,
-      lines:       lines.map(l => ({ description: l.description, quantity: l.quantity, note: l.note })),
+      lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
       opNumber:    docNumber,
     };
     if (printFlow === "comprobante-despacho") {
@@ -465,8 +465,8 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoTarNum : undefined);
     lines.forEach(line => {
       inventoryService.registrarSalida(
-        line.productId,
-        line.quantity,
+        line.hovId,
+        line.cantidad,
         `venta:${docNumber}`
       );
     });

@@ -7,9 +7,9 @@ export interface TotalesPreVenta {
 }
 
 export const calcularTotalesPreVenta = (
-  lines: LineaPreVenta[]
+  lineas: LineaPreVenta[]
 ): TotalesPreVenta => {
-  const subtotal = lines.reduce(
+  const subtotal = lineas.reduce(
     (accumulator, line) =>
       accumulator + line.subtotal,
     0

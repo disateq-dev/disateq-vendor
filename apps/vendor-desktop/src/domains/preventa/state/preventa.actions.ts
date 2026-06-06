@@ -3,35 +3,42 @@ import { moneyMul } from "../../../lib/money";
 
 export const crearLineaPreVenta = (
   payload: {
-    productId: string;
-    description: string;
+    hovId: string;
+    descripcion: string;
 
-    barcode?: string;
+    codigoBarras?: string;
 
-    quantity: number;
-    unitPrice: number;
+    cantidad: number;
+    valorUnitario: number;
+
+    presentacion?: string;
+    tipoPrecio?: string;
   }
 ): LineaPreVenta => {
-  const subtotal = moneyMul(payload.quantity, payload.unitPrice);
+  const subtotal = moneyMul(payload.cantidad, payload.valorUnitario);
 
   return {
-    lineId: crypto.randomUUID(),
+    lineaId: crypto.randomUUID(),
 
-    productId: payload.productId,
+    hovId: payload.hovId,
 
-    description: payload.description,
+    descripcion: payload.descripcion,
 
-    barcode: payload.barcode,
+    codigoBarras: payload.codigoBarras,
 
-    quantity: payload.quantity,
+    cantidad: payload.cantidad,
 
-    unitPrice: payload.unitPrice,
+    valorUnitario: payload.valorUnitario,
 
     subtotal,
 
+    presentacion: payload.presentacion,
+
+    tipoPrecio: payload.tipoPrecio,
+
     flags: {
-      isManualPrice: false,
-      isRecovered: false,
+      esPrecioManual: false,
+      esRecuperada: false,
     },
   };
 };

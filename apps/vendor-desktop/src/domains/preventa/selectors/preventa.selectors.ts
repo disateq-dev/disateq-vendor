@@ -12,10 +12,10 @@ export const useLineasPreVenta = () =>
   );
 
 export const useLineaPreVentaPorId = (
-  lineId: string
+  lineaId: string
 ) =>
   usePreVentaStore(
-    (state) => state.linesById[lineId]
+    (state) => state.linesById[lineaId]
   );
 
 export const useConteoLineasPreVenta = () =>

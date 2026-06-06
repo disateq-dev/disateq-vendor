@@ -50,8 +50,8 @@ export function PreVentaGrid() {
   // Open note editor when triggered from search zone via abrirNotaLinea()
   useEffect(() => {
     if (!lineaNotaPendienteId) return;
-    const line = lines.find(l => l.lineId === lineaNotaPendienteId);
-    if (line) { setEditingNoteId(lineaNotaPendienteId); setNoteInput(line.note ?? ""); }
+    const line = lines.find(l => l.lineaId === lineaNotaPendienteId);
+    if (line) { setEditingNoteId(lineaNotaPendienteId); setNoteInput(line.nota ?? ""); }
     limpiarNotaPendiente();
   }, [lineaNotaPendienteId, lines, limpiarNotaPendiente]);
 
@@ -62,7 +62,7 @@ export function PreVentaGrid() {
   }, [editingNoteId, noteInput]);
 
   const total      = moneySum(lines.map(l => l.subtotal));
-  const totalUnits = lines.reduce((acc, l) => acc + l.quantity, 0);
+  const totalUnits = lines.reduce((acc, l) => acc + l.cantidad, 0);
 
   return (
     <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
@@ -95,11 +95,11 @@ export function PreVentaGrid() {
             {lines.map((line, idx) => {
               const isSelected    = idx === indiceLineaActiva;
               const isLastLine    = indiceLineaActiva < 0 && idx === lines.length - 1;
-              const isEditingNote = editingNoteId === line.lineId;
+              const isEditingNote = editingNoteId === line.lineaId;
 
               return (
                 <article
-                  key={line.lineId}
+                  key={line.lineaId}
                   onClick={() => setIndiceLineaActiva(isSelected ? -1 : idx)}
                   className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 transition-colors ${
                     isSelected
@@ -114,10 +114,10 @@ export function PreVentaGrid() {
                     <p className={`truncate text-[13px] font-semibold uppercase leading-tight tracking-[0.02em] ${
                       isSelected ? "text-[#2d4f6b]" : "text-[#2F3E46]"
                     }`}>
-                      {line.description}
+                      {line.descripcion}
                     </p>
                     <p className="text-[11px] text-[#9ca3af]">
-                      S/ {line.unitPrice.toFixed(2)}
+                      S/ {line.valorUnitario.toFixed(2)}
                     </p>
                     {isEditingNote ? (
                       <input
@@ -147,12 +147,12 @@ export function PreVentaGrid() {
                         placeholder="anotación..."
                         className="mt-1 w-full border-b border-[#e4e9f0] bg-transparent pb-px text-[10.5px] text-[#374151] outline-none placeholder:text-[#d1d9e1]"
                       />
-                    ) : line.note ? (
+                    ) : line.nota ? (
                       <p
-                        onClick={e => { e.stopPropagation(); setEditingNoteId(line.lineId); setNoteInput(line.note ?? ""); }}
+                        onClick={e => { e.stopPropagation(); setEditingNoteId(line.lineaId); setNoteInput(line.nota ?? ""); }}
                         className="mt-0.5 cursor-text truncate text-[10.5px] text-[#8b95a1]"
                       >
-                        ↳ {line.note}
+                        ↳ {line.nota}
                       </p>
                     ) : null}
                   </div>
@@ -163,7 +163,7 @@ export function PreVentaGrid() {
                       title="Tecla [←]"
                       onClick={e => {
                         e.stopPropagation();
-                        preVentaService.decrementarLinea(line.lineId);
+                        preVentaService.decrementarLinea(line.lineaId);
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-[15px] font-bold text-orange-500 transition hover:bg-orange-100 hover:text-orange-600"
                     >
@@ -172,11 +172,11 @@ export function PreVentaGrid() {
                     <span className={`w-6 text-center text-[13px] font-bold tabular-nums ${
                       isSelected ? "text-[#2d4f6b]" : "text-[#2F3E46]"
                     }`}>
-                      {line.quantity}
+                      {line.cantidad}
                     </span>
                     <button
                       title="Tecla [→]"
-                      onClick={e => { e.stopPropagation(); preVentaService.incrementarLinea(line.lineId); }}
+                      onClick={e => { e.stopPropagation(); preVentaService.incrementarLinea(line.lineaId); }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF3F8] text-[15px] font-bold text-[#4F7396] transition hover:bg-[#e0e9f0] hover:text-[#3d5c7a]"
                     >
                       +
@@ -197,11 +197,11 @@ export function PreVentaGrid() {
                       onClick={e => {
                         e.stopPropagation();
                         setIndiceLineaActiva(idx);
-                        setEditingNoteId(line.lineId);
-                        setNoteInput(line.note ?? "");
+                        setEditingNoteId(line.lineaId);
+                        setNoteInput(line.nota ?? "");
                       }}
                       className={`flex items-center justify-center rounded-lg p-1.5 transition ${
-                        line.note
+                        line.nota
                           ? "text-[#45b356] hover:bg-[#F0FAF1] hover:text-[#3a9348]"
                           : "text-[#8ab8a0] hover:bg-[#F0FAF1] hover:text-[#45b356]"
                       }`}
@@ -210,7 +210,7 @@ export function PreVentaGrid() {
                     </button>
                     <button
                       title="Tecla [Supr]"
-                      onClick={e => { e.stopPropagation(); preVentaService.quitarLinea(line.lineId); }}
+                      onClick={e => { e.stopPropagation(); preVentaService.quitarLinea(line.lineaId); }}
                       className="flex items-center justify-center rounded-lg p-1.5 text-red-400 transition hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 size={12} />

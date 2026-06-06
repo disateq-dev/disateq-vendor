@@ -24,11 +24,11 @@ export const preVentaService = {
   agregarProducto(input: AddProductInput) {
     usePreVentaStore.getState().agregarLinea(
       crearLineaPreVenta({
-        productId:    input.productId,
-        description:  input.description,
-        barcode:      input.barcode,
-        quantity:     1,
-        unitPrice:    input.unitPrice,
+        hovId:         input.productId,
+        descripcion:   input.description,
+        codigoBarras:  input.barcode,
+        cantidad:      1,
+        valorUnitario: input.unitPrice,
         presentacion: input.presentacion,
         tipoPrecio:   input.tipoPrecio,
       }),
@@ -83,30 +83,30 @@ export const preVentaService = {
     _pedidoActivoId = null;
   },
 
-  incrementarLinea(lineId: string) {
+  incrementarLinea(lineaId: string) {
     const state = usePreVentaStore.getState();
-    const line = state.linesById[lineId];
+    const line = state.linesById[lineaId];
     if (!line) return;
-    state.updateQuantity(lineId, line.quantity + 1);
+    state.actualizarCantidad(lineaId, line.cantidad + 1);
   },
 
-  decrementarLinea(lineId: string) {
+  decrementarLinea(lineaId: string) {
     const state = usePreVentaStore.getState();
-    const line = state.linesById[lineId];
-    if (!line || line.quantity <= 1) return;
-    state.updateQuantity(lineId, line.quantity - 1);
+    const line = state.linesById[lineaId];
+    if (!line || line.cantidad <= 1) return;
+    state.actualizarCantidad(lineaId, line.cantidad - 1);
   },
 
-  quitarLinea(lineId: string) {
-    usePreVentaStore.getState().quitarLinea(lineId);
+  quitarLinea(lineaId: string) {
+    usePreVentaStore.getState().quitarLinea(lineaId);
   },
 
-  abrirNotaLinea(lineId: string) {
-    usePreVentaStore.getState().abrirNotaLinea(lineId);
+  abrirNotaLinea(lineaId: string) {
+    usePreVentaStore.getState().abrirNotaLinea(lineaId);
   },
 
-  guardarNotaLinea(lineId: string, note: string) {
-    usePreVentaStore.getState().splitLinea(lineId, note);
+  guardarNotaLinea(lineaId: string, nota: string) {
+    usePreVentaStore.getState().splitLinea(lineaId, nota);
   },
 
   limpiar() {

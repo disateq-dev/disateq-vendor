@@ -17,14 +17,14 @@ interface EstadoPreVenta {
     lineId: string
   ) => void;
 
-  updateQuantity: (
-    lineId: string,
-    quantity: number
+  actualizarCantidad: (
+    lineaId: string,
+    cantidad: number
   ) => void;
 
-  updateNote: (
-    lineId: string,
-    note: string
+  actualizarNota: (
+    lineaId: string,
+    nota: string
   ) => void;
 
   splitLinea: (
@@ -50,26 +50,26 @@ export const usePreVentaStore =
       agregarLinea: (line) =>
         set((state) => {
           // Check by lineId
-          if (state.linesById[line.lineId]) {
-            const ex = state.linesById[line.lineId];
-            ex.quantity += line.quantity;
-            ex.subtotal = moneyMul(ex.quantity, ex.unitPrice);
+          if (state.linesById[line.lineaId]) {
+            const ex = state.linesById[line.lineaId];
+            ex.cantidad += line.cantidad;
+            ex.subtotal = moneyMul(ex.cantidad, ex.valorUnitario);
             state.indiceLineaActiva = -1;
             return;
           }
           // Merge only with lines that have no note — noted lines are individual
           const existingId = state.lineOrder.find(
-            (id) => state.linesById[id]?.productId === line.productId && !state.linesById[id]?.note
+            (id) => state.linesById[id]?.hovId === line.hovId && !state.linesById[id]?.nota
           );
           if (existingId) {
             const ex = state.linesById[existingId];
-            ex.quantity += line.quantity;
-            ex.subtotal = moneyMul(ex.quantity, ex.unitPrice);
+            ex.cantidad += line.cantidad;
+            ex.subtotal = moneyMul(ex.cantidad, ex.valorUnitario);
             state.indiceLineaActiva = -1;
             return;
           }
-          state.linesById[line.lineId] = line;
-          state.lineOrder.push(line.lineId);
+          state.linesById[line.lineaId] = line;
+          state.lineOrder.push(line.lineaId);
           state.indiceLineaActiva = -1;
         }),
 
@@ -82,78 +82,78 @@ export const usePreVentaStore =
           else if (state.indiceLineaActiva >= newLen) state.indiceLineaActiva = newLen - 1;
         }),
 
-      updateQuantity: (
-        lineId,
-        quantity
+      actualizarCantidad: (
+        lineaId,
+        cantidad
       ) =>
         set((state) => {
           const line =
             state.linesById[
-              lineId
+              lineaId
             ];
 
           if (!line) return;
 
-          line.quantity = quantity;
-          line.subtotal = moneyMul(line.quantity, line.unitPrice);
+          line.cantidad = cantidad;
+          line.subtotal = moneyMul(line.cantidad, line.valorUnitario);
         }),
 
-      updateNote: (lineId, note) =>
+      actualizarNota: (lineaId, nota) =>
         set((state) => {
-          const line = state.linesById[lineId];
+          const line = state.linesById[lineaId];
           if (!line) return;
-          if (note) line.note = note;
-          else delete line.note;
+          if (nota) line.nota = nota;
+          else delete line.nota;
         }),
 
-      splitLinea: (lineId, note) =>
+      splitLinea: (lineaId, nota) =>
         set((state) => {
-          const line = state.linesById[lineId];
+          const line = state.linesById[lineaId];
           if (!line) return;
 
-          if (!note) {
+          if (!nota) {
             // Note cleared — try to reverse-merge into an unnoted sibling
-            delete line.note;
+            delete line.nota;
             const siblingId = state.lineOrder.find(
-              id => id !== lineId &&
-                    state.linesById[id]?.productId === line.productId &&
-                    !state.linesById[id]?.note
+              id => id !== lineaId &&
+                    state.linesById[id]?.hovId === line.hovId &&
+                    !state.linesById[id]?.nota
             );
             if (siblingId) {
-              state.linesById[siblingId].quantity += line.quantity;
-              state.linesById[siblingId].subtotal = moneyMul(state.linesById[siblingId].quantity, state.linesById[siblingId].unitPrice);
-              delete state.linesById[lineId];
-              state.lineOrder = state.lineOrder.filter(id => id !== lineId);
+              state.linesById[siblingId].cantidad += line.cantidad;
+              state.linesById[siblingId].subtotal = moneyMul(state.linesById[siblingId].cantidad, state.linesById[siblingId].valorUnitario);
+              delete state.linesById[lineaId];
+              state.lineOrder = state.lineOrder.filter(id => id !== lineaId);
               state.indiceLineaActiva = -1;
             }
             return;
           }
 
-          if (line.quantity <= 1) {
-            line.note = note;
+          if (line.cantidad <= 1) {
+            line.nota = nota;
             return;
           }
 
           // Disaggregate: original keeps qty-1, new line gets qty=1 + note
-          line.quantity -= 1;
-          line.subtotal  = moneyMul(line.quantity, line.unitPrice);
+          line.cantidad -= 1;
+          line.subtotal  = moneyMul(line.cantidad, line.valorUnitario);
 
           const noted: LineaPreVenta = {
-            lineId:      crypto.randomUUID(),
-            productId:   line.productId,
-            description: line.description,
-            barcode:     line.barcode,
-            quantity:    1,
-            unitPrice:   line.unitPrice,
-            subtotal:    line.unitPrice,
-            note,
-            flags:       { isManualPrice: line.flags?.isManualPrice ?? false, isRecovered: false },
+            lineaId:       crypto.randomUUID(),
+            hovId:         line.hovId,
+            descripcion:   line.descripcion,
+            codigoBarras:  line.codigoBarras,
+            cantidad:      1,
+            valorUnitario: line.valorUnitario,
+            subtotal:      line.valorUnitario,
+            nota,
+            flags:         { esPrecioManual: line.flags?.esPrecioManual ?? false, esRecuperada: false },
           };
 
-          const idx = state.lineOrder.indexOf(lineId);
-          state.linesById[noted.lineId] = noted;
-          if (idx >= 0) state.lineOrder.splice(idx + 1, 0, noted.lineId);
-          else          state.lineOrder.push(noted.lineId);
+          const idx = state.lineOrder.indexOf(lineaId);
+          state.linesById[noted.lineaId] = noted;
+          if (idx >= 0) state.lineOrder.splice(idx + 1, 0, noted.lineaId);
+          else          state.lineOrder.push(noted.lineaId);
           state.indiceLineaActiva = -1;
         }),
 

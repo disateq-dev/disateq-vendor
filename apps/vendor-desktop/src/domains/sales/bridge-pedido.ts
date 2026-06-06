@@ -19,36 +19,42 @@ export interface AddProductBridgeInput {
 }
 
 export interface TicketLineBridge {
-  lineId: string
-  productId: string
-  description: string
-  barcode: string
-  quantity: number
-  unitPrice: number
+  lineaId: string
+  hovId: string
+  descripcion: string
+  codigoBarras: string
+  cantidad: number
+  valorUnitario: number
   subtotal: number
   presentacion: string
   tipoPrecio: string
-  hovId: string
   factorConversion: number
   esValorManual: boolean
+  flags?: {
+    esPrecioManual?: boolean
+    esRecuperada?: boolean
+  }
 }
 
 export function traducirATicketLine(
   input: AddProductBridgeInput
 ): TicketLineBridge {
   return {
-    lineId: crypto.randomUUID(),
-    productId: input.hovId,
-    description: input.description,
-    barcode: input.hovId,
-    quantity: input.cantidad,
-    unitPrice: input.unitPrice,
+    lineaId: crypto.randomUUID(),
+    hovId: input.hovId,
+    descripcion: input.description,
+    codigoBarras: input.hovId,
+    cantidad: input.cantidad,
+    valorUnitario: input.unitPrice,
     subtotal: input.unitPrice * input.cantidad,
     presentacion: input.presentacion,
     tipoPrecio: input.requiereValorManual ? 'LIBRE' : 'RESUELTO',
-    hovId: input.hovId,
     factorConversion: input.factorConversion,
     esValorManual: input.requiereValorManual,
+    flags: {
+      esPrecioManual: input.requiereValorManual,
+      esRecuperada: false,
+    },
   }
 }
 

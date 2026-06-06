@@ -334,31 +334,31 @@ export function SalesWorkspace() {
       case "*": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.incrementarLinea(targetLine.lineId);
+        if (targetLine) preVentaService.incrementarLinea(targetLine.lineaId);
         break;
       }
       case "-": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.decrementarLinea(targetLine.lineId);
+        if (targetLine) preVentaService.decrementarLinea(targetLine.lineaId);
         break;
       }
       case "Delete": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.quitarLinea(targetLine.lineId);
+        if (targetLine) preVentaService.quitarLinea(targetLine.lineaId);
         break;
       }
       case "ArrowRight": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.incrementarLinea(targetLine.lineId);
+        if (targetLine) preVentaService.incrementarLinea(targetLine.lineaId);
         break;
       }
       case "ArrowLeft": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.decrementarLinea(targetLine.lineId);
+        if (targetLine) preVentaService.decrementarLinea(targetLine.lineaId);
         break;
       }
       case "Insert":
@@ -366,7 +366,7 @@ export function SalesWorkspace() {
       case "N": {
         if (e.key !== "Insert" && query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.abrirNotaLinea(targetLine.lineId);
+        if (targetLine) preVentaService.abrirNotaLinea(targetLine.lineaId);
         break;
       }
     }
