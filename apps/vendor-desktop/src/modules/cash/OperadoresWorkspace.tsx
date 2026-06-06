@@ -5,8 +5,8 @@ import {
   Users, UserX, Activity, ClipboardList, Hash, Phone, CreditCard,
 } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
-import type { OperatorRecord } from "../../domains/operator/operator.store";
-import { generateAlias, resolveAlias } from "../../domains/operator/operator.store";
+import type { Operador } from "../../domains/operator/operator.store";
+import { generarAlias, resolverAlias } from "../../domains/operator/operator.store";
 import { BLOCK_BASES } from "../../domains/operator/blocks.store";
 
 const BAJA_REASONS = [
@@ -89,16 +89,17 @@ function PanelActivos({ selectedId, onSelect }: {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
 }) {
-  const { operators, cashSession, isOpen, cashBox } = usePOS();
+  const { operators, cashSession } = usePOS();
+  const { isOpen, cashBox } = cashSession;
   // ACTIVO + SUSPENDIDO — INACTIVO/BAJA quedan en HISTÓRICO
-  const visibles    = operators.filter(o => o.status !== "INACTIVO");
-  const activos     = visibles.filter(o => o.status === "ACTIVO");
-  const suspendidos = visibles.filter(o => o.status === "SUSPENDIDO");
+  const visibles    = operators.filter(o => o.estado !== "INACTIVO");
+  const activos     = visibles.filter(o => o.estado === "ACTIVO");
+  const suspendidos = visibles.filter(o => o.estado === "SUSPENDIDO");
 
-  function getState(op: OperatorRecord): "EN_TURNO" | "DISPONIBLE" | "SIN_BLOQUE" {
-    if (op.blockBase === null) return "SIN_BLOQUE";
+  function getState(op: Operador): "EN_TURNO" | "DISPONIBLE" | "SIN_BLOQUE" {
+    if (op.baseBloque === null) return "SIN_BLOQUE";
     const enTurno = isOpen && cashBox !== null && (
-      cashSession.operatorId === op.id || cashBox.code[0] === String(op.blockBase)[0]
+      cashSession.operatorId === op.id || cashBox.code[0] === String(op.baseBloque)[0]
     );
     return enTurno ? "EN_TURNO" : "DISPONIBLE";
   }
@@ -137,7 +138,7 @@ function PanelActivos({ selectedId, onSelect }: {
           <div className="flex flex-col divide-y divide-[#f0f4f8]">
             {visibles.map(op => {
               const isSel       = op.id === selectedId;
-              const isSuspended = op.status === "SUSPENDIDO";
+              const isSuspended = op.estado === "SUSPENDIDO";
               const state       = isSuspended ? null : getState(op);
 
               const stateCfg = state ? {
@@ -180,13 +181,13 @@ function PanelActivos({ selectedId, onSelect }: {
                         ? <span className="text-[9px] font-bold uppercase tracking-wider text-amber-500">SUSPENDIDO</span>
                         : <span className={`text-[9px] font-bold uppercase tracking-wider ${stateCfg?.text ?? ""}`}>{stateCfg?.label}</span>
                       }
-                      {op.blockBase !== null && (
-                        <span className="text-[9px] text-[#b0bac8]">· {op.blockBase}</span>
+                      {op.baseBloque !== null && (
+                        <span className="text-[9px] text-[#b0bac8]">· {op.baseBloque}</span>
                       )}
                     </div>
                   </div>
 
-                  {op.pin === "" && op.status === "ACTIVO" && (
+                  {op.pin === "" && op.estado === "ACTIVO" && (
                     <span className="shrink-0 rounded bg-red-50 px-1 py-0.5 text-[8px] font-bold text-red-400">PIN</span>
                   )}
                   <ChevronRight size={10} className={isSel ? "text-[#2A7CA8]" : "text-[#e4e9f0]"} />
@@ -210,10 +211,11 @@ function PanelGestion({ selectedId, onSelect }: {
   onSelect: (id: string | null) => void;
 }) {
   const {
-    operators, isOpen, cashBox, cashSession, resetOperatorPin,
+    operators, cashSession, resetOperatorPin,
     createOperator, updateOperatorData, setOperatorStatus, releaseOperatorBlock,
     roles,
   } = usePOS();
+  const { isOpen, cashBox } = cashSession;
 
   const [panel,       setPanel]       = useState<GestionPanel>("view");
   const [blockError,  setBlockError]  = useState<string | null>(null);
@@ -229,13 +231,13 @@ function PanelGestion({ selectedId, onSelect }: {
 
   // Auto-generar alias mientras el usuario escribe nombres/apellidos (solo si no lo editó manualmente)
   const existingAliases = useMemo(
-    () => operators.filter(o => o.id !== selectedId && o.status !== "INACTIVO").map(o => o.alias),
+    () => operators.filter(o => o.id !== selectedId && o.estado !== "INACTIVO").map(o => o.alias),
     [operators, selectedId],
   );
   useEffect(() => {
     if (!aliasEdited && panel === "create") {
-      const base = generateAlias(editNombres, editApellidos);
-      if (base) setEditAlias(resolveAlias(base, editApellidos, existingAliases));
+      const base = generarAlias(editNombres, editApellidos);
+      if (base) setEditAlias(resolverAlias(base, editApellidos, existingAliases));
     }
   }, [editNombres, editApellidos, aliasEdited, panel, existingAliases]);
 
@@ -255,9 +257,9 @@ function PanelGestion({ selectedId, onSelect }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  const hasActiveTurno = isOpen && cashBox !== null && selected !== null && selected.blockBase !== null && (
+  const hasActiveTurno = isOpen && cashBox !== null && selected !== null && selected.baseBloque !== null && (
     cashSession.operatorId === selected.id ||
-    cashBox.code[0] === String(selected.blockBase)[0]
+    cashBox.code[0] === String(selected.baseBloque)[0]
   );
 
   function resetForm() {
@@ -282,8 +284,8 @@ function PanelGestion({ selectedId, onSelect }: {
     setAliasEdited(true);
     setEditDni(selected.dni ?? "");
     setEditTelefono(selected.telefono ?? "");
-    setEditRole(selected.roleCode);
-    setEditBlock(selected.blockBase);
+    setEditRole(selected.codigoRol);
+    setEditBlock(selected.baseBloque);
     setPanel("edit"); setBlockError(null);
   }
 
@@ -294,7 +296,7 @@ function PanelGestion({ selectedId, onSelect }: {
     const apellidos = editApellidos.trim().toUpperCase();
     const nombres   = editNombres.trim().toUpperCase();
     const alias     = editAlias.trim().toUpperCase();
-    const roleName  = roles.find(r => r.code === editRole)?.name ?? editRole;
+    const roleName  = roles.find(r => r.codigo === editRole)?.nombre ?? editRole;
     if (panel === "create") {
       try {
         const op = createOperator({
@@ -332,7 +334,7 @@ function PanelGestion({ selectedId, onSelect }: {
     if (!reason.trim()) { setReasonError("Motivo obligatorio"); return; }
     if (!selected || hasActiveTurno) return;
     setOperatorStatus(selected.id, "INACTIVO", reason.trim());
-    const next = operators.filter(o => o.status !== "INACTIVO" && o.id !== selected.id);
+    const next = operators.filter(o => o.estado !== "INACTIVO" && o.id !== selected.id);
     onSelect(next[0]?.id ?? null);
     resetForm();
   }
@@ -340,7 +342,7 @@ function PanelGestion({ selectedId, onSelect }: {
   function handleActivate() {
     if (!selected) return;
     const ok = setOperatorStatus(selected.id, "ACTIVO");
-    if (!ok) setBlockError(`Bloque ${selected.blockBase} ya asignado a otro operador activo`);
+    if (!ok) setBlockError(`Bloque ${selected.baseBloque} ya asignado a otro operador activo`);
   }
 
   function savePinViewMode() {
@@ -381,7 +383,7 @@ function PanelGestion({ selectedId, onSelect }: {
           }`}>
           <Pencil size={10} strokeWidth={2.5} />EDITAR
         </button>
-        {selected?.status === "SUSPENDIDO" ? (
+        {selected?.estado === "SUSPENDIDO" ? (
           <button
             onClick={handleActivate}
             disabled={hasActiveTurno}
@@ -395,9 +397,9 @@ function PanelGestion({ selectedId, onSelect }: {
         ) : (
           <button
             onClick={() => { setPanel("confirm-suspend"); setReason(""); setReasonError(""); }}
-            disabled={!selected || hasActiveTurno || selected?.status !== "ACTIVO"}
+            disabled={!selected || hasActiveTurno || selected?.estado !== "ACTIVO"}
             className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
-              selected && !hasActiveTurno && selected.status === "ACTIVO"
+              selected && !hasActiveTurno && selected.estado === "ACTIVO"
                 ? "bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97]"
                 : "cursor-not-allowed bg-amber-500/[0.15] text-amber-500/40"
             }`}>
@@ -420,10 +422,10 @@ function PanelGestion({ selectedId, onSelect }: {
         {showView && selected && (
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="rounded bg-[#e4e9f0] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#6b7280]">{selected.operatorCode}</span>
+              <span className="rounded bg-[#e4e9f0] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#6b7280]">{selected.codigoOperador}</span>
               <span className="rounded bg-[#2A7CA8] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.alias}</span>
               <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.nombres} {selected.apellidos}</span>
-              {selected.status === "SUSPENDIDO" && (
+              {selected.estado === "SUSPENDIDO" && (
                 <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">SUSP.</span>
               )}
             </div>
@@ -455,17 +457,17 @@ function PanelGestion({ selectedId, onSelect }: {
               <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
                 <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">ROL</span>
                 <p className="text-[11px] font-semibold text-[#374151]">
-                  <span className="mr-1 rounded bg-[#EBF4FA] px-1 py-0.5 text-[9px] font-bold text-[#1a5f7a]">{selected.roleCode}</span>
-                  {roles.find(r => r.code === selected.roleCode)?.name ?? selected.roleCode}
+                  <span className="mr-1 rounded bg-[#EBF4FA] px-1 py-0.5 text-[9px] font-bold text-[#1a5f7a]">{selected.codigoRol}</span>
+                  {roles.find(r => r.codigo === selected.codigoRol)?.nombre ?? selected.codigoRol}
                 </p>
               </div>
               <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
                 <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">BLOQUE</span>
-                {selected.blockBase !== null ? (
+                {selected.baseBloque !== null ? (
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] font-semibold text-[#374151]">
-                      <span className="mr-1 font-bold text-[#2A7CA8]">{selected.blockBase}</span>
-                      –{selected.blockBase + 4}
+                      <span className="mr-1 font-bold text-[#2A7CA8]">{selected.baseBloque}</span>
+                      –{selected.baseBloque + 4}
                     </p>
                     {!hasActiveTurno && (
                       <button onClick={() => releaseOperatorBlock(selected.id)}
@@ -506,7 +508,7 @@ function PanelGestion({ selectedId, onSelect }: {
               />
             )}
 
-            {!hasActiveTurno && selected.status === "ACTIVO" && (
+            {!hasActiveTurno && selected.estado === "ACTIVO" && (
               <div className="border-t border-[#f1f5f9] pt-2.5">
                 <button onClick={() => { setPanel("confirm-baja"); setReason(""); setReasonError(""); }}
                   className="flex w-full items-center gap-1.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-[#9ca3af] transition hover:border-red-200 hover:text-red-500">
@@ -522,7 +524,7 @@ function PanelGestion({ selectedId, onSelect }: {
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2">
               <PauseCircle size={11} strokeWidth={2} className="shrink-0 text-amber-600" />
-              <span className="text-[10px] font-bold uppercase text-amber-700">SUSPENSIÓN · {selected.code}</span>
+              <span className="text-[10px] font-bold uppercase text-amber-700">SUSPENSIÓN · {selected.codigo}</span>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Motivo (obligatorio)</span>
@@ -551,11 +553,11 @@ function PanelGestion({ selectedId, onSelect }: {
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3 py-2">
               <UserX size={11} strokeWidth={2} className="shrink-0 text-red-500" />
-              <span className="text-[10px] font-bold uppercase text-red-600">BAJA · {selected.code}</span>
+              <span className="text-[10px] font-bold uppercase text-red-600">BAJA · {selected.codigo}</span>
             </div>
-            {selected.blockBase !== null && (
+            {selected.baseBloque !== null && (
               <p className="text-[10px] text-amber-700">
-                El bloque {selected.blockBase} quedará disponible.
+                El bloque {selected.baseBloque} quedará disponible.
               </p>
             )}
             <div className="flex flex-col gap-0.5">
@@ -639,7 +641,7 @@ function PanelGestion({ selectedId, onSelect }: {
                 <span className="text-[9px] font-semibold uppercase tracking-widest text-[#b0bac8]">Rol</span>
                 <select value={editRole} onChange={e => setEditRole(e.target.value)}
                   className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#2154d8]">
-                  {roles.filter(r => r.active).map(r => <option key={r.code} value={r.code}>{r.code} — {r.name}</option>)}
+                  {roles.filter(r => r.activo).map(r => <option key={r.codigo} value={r.codigo}>{r.codigo} — {r.nombre}</option>)}
                 </select>
               </div>
               <div className="flex flex-1 flex-col gap-0.5">
@@ -648,7 +650,7 @@ function PanelGestion({ selectedId, onSelect }: {
                   className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#2F3E46] outline-none focus:border-[#2154d8]">
                   <option value="">Sin bloque</option>
                   {BLOCK_BASES.map(b => {
-                    const taken = operators.some(o => o.id !== selectedId && o.blockBase === b && o.status !== "INACTIVO");
+                    const taken = operators.some(o => o.id !== selectedId && o.baseBloque === b && o.estado !== "INACTIVO");
                     return <option key={b} value={b} disabled={taken}>{b}{taken ? " · OCUPADO" : ""}</option>;
                   })}
                 </select>
@@ -688,8 +690,8 @@ function PanelGestion({ selectedId, onSelect }: {
 function PanelHistorico() {
   const { operators, setOperatorStatus } = usePOS();
 
-  const suspendidos = operators.filter(o => o.status === "SUSPENDIDO");
-  const bajas       = operators.filter(o => o.status === "INACTIVO");
+  const suspendidos = operators.filter(o => o.estado === "SUSPENDIDO");
+  const bajas       = operators.filter(o => o.estado === "INACTIVO");
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
@@ -733,11 +735,11 @@ function PanelHistorico() {
                       </span>
                       <span className="truncate text-[11px] font-semibold text-[#374151]">{op.nombres} {op.apellidos}</span>
                     </div>
-                    {op.statusAt && (
-                      <p className="text-[9px] text-[#9ca3af]">Desde {fmtDateShort(op.statusAt)}</p>
+                    {op.fechaEstado && (
+                      <p className="text-[9px] text-[#9ca3af]">Desde {fmtDateShort(op.fechaEstado)}</p>
                     )}
-                    {op.statusReason && (
-                      <p className="truncate text-[9px] text-[#9ca3af]">{op.statusReason}</p>
+                    {op.motivoEstado && (
+                      <p className="truncate text-[9px] text-[#9ca3af]">{op.motivoEstado}</p>
                     )}
                     <button onClick={() => setOperatorStatus(op.id, "ACTIVO")}
                       className="mt-0.5 flex items-center justify-center gap-1 rounded-lg border border-[#2A7CA8]/30 bg-[#f0fdf4] py-1 text-[9px] font-bold uppercase text-[#1a5f7a] transition hover:bg-[#EBF4FA]">
@@ -764,11 +766,11 @@ function PanelHistorico() {
                       </span>
                       <span className="truncate text-[11px] font-semibold text-[#9ca3af]">{op.nombres} {op.apellidos}</span>
                     </div>
-                    {op.statusAt && (
-                      <p className="text-[9px] text-[#b0bac8]">Baja: {fmtDateShort(op.statusAt)}</p>
+                    {op.fechaEstado && (
+                      <p className="text-[9px] text-[#b0bac8]">Baja: {fmtDateShort(op.fechaEstado)}</p>
                     )}
-                    {op.statusReason && (
-                      <p className="truncate text-[9px] text-[#b0bac8]">{op.statusReason}</p>
+                    {op.motivoEstado && (
+                      <p className="truncate text-[9px] text-[#b0bac8]">{op.motivoEstado}</p>
                     )}
                   </div>
                 ))}

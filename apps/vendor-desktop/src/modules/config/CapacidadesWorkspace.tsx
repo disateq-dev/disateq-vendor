@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sliders, Users, ChevronRight } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
-import type { OperatorRecord } from "../../domains/operator/operator.store";
+import type { Operador } from "../../domains/operator/operator.store";
 
 // ── catálogo de capacidades operacionales ────────────────────────────────
 
@@ -67,7 +67,7 @@ function PanelOperadores({ selectedId, onSelect }: {
   onSelect: (id: string) => void;
 }) {
   const { operators, roles } = usePOS();
-  const visibles = operators.filter(o => o.status !== "INACTIVO");
+  const visibles = operators.filter(o => o.estado !== "INACTIVO");
 
   return (
     <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#697387]/40 bg-[#FDFCF9]">
@@ -88,10 +88,10 @@ function PanelOperadores({ selectedId, onSelect }: {
           <div className="flex flex-col divide-y divide-[#f0f4f8]">
             {visibles.map(op => {
               const isSel = op.id === selectedId;
-              const role = roles.find(r => r.code === op.roleCode);
-              const roleCaps = new Set(role?.capabilities ?? []);
-              const indivCaps = (op.capabilities ?? []).filter(c => !roleCaps.has(c));
-              const totalEffective = new Set([...roleCaps, ...(op.capabilities ?? [])]).size;
+              const role = roles.find(r => r.codigo === op.codigoRol);
+              const roleCaps = new Set(role?.capacidades ?? []);
+              const indivCaps = (op.capacidades ?? []).filter(c => !roleCaps.has(c));
+              const totalEffective = new Set([...roleCaps, ...(op.capacidades ?? [])]).size;
 
               return (
                 <div key={op.id} onClick={() => onSelect(op.id)}
@@ -102,16 +102,16 @@ function PanelOperadores({ selectedId, onSelect }: {
                     <div className="flex items-center gap-1.5">
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${
                         isSel ? "bg-[#697387] text-white" : "bg-[#F3F4F6] text-[#697387]"
-                      }`}>{op.code}</span>
+                      }`}>{op.codigo}</span>
                       <span className={`truncate text-[12px] font-semibold ${
-                        isSel ? "text-[#121416]" : op.status === "SUSPENDIDO" ? "text-[#9ca3af]" : "text-[#2F3E46]"
-                      }`}>{op.name}</span>
-                      {op.status === "SUSPENDIDO" && (
+                        isSel ? "text-[#121416]" : op.estado === "SUSPENDIDO" ? "text-[#9ca3af]" : "text-[#2F3E46]"
+                      }`}>{op.nombreCompleto}</span>
+                      {op.estado === "SUSPENDIDO" && (
                         <span className="shrink-0 rounded bg-amber-50 px-1 py-0.5 text-[8px] font-bold text-amber-500">SUSP</span>
                       )}
                     </div>
                     <div className="mt-0.5 flex items-center gap-1">
-                      <span className="text-[9px] text-[#c0cad4]">{role?.name ?? op.roleCode}</span>
+                      <span className="text-[9px] text-[#c0cad4]">{role?.nombre ?? op.codigoRol}</span>
                       {totalEffective > 0 && (
                         <>
                           <span className="text-[#d1d9e1]">·</span>
@@ -136,7 +136,7 @@ function PanelOperadores({ selectedId, onSelect }: {
 
 // ── Panel derecho — capacidades del operador seleccionado ────────────────
 
-function PanelCapacidades({ operator }: { operator: OperatorRecord | null }) {
+function PanelCapacidades({ operator }: { operator: Operador | null }) {
   const { roles, updateOperatorCapabilities } = usePOS();
 
   if (!operator) {
@@ -154,9 +154,9 @@ function PanelCapacidades({ operator }: { operator: OperatorRecord | null }) {
     );
   }
 
-  const role = roles.find(r => r.code === operator.roleCode);
-  const roleCaps = new Set(role?.capabilities ?? []);
-  const indivCaps = new Set((operator.capabilities ?? []).filter(c => !roleCaps.has(c)));
+  const role = roles.find(r => r.codigo === operator.codigoRol);
+  const roleCaps = new Set(role?.capacidades ?? []);
+  const indivCaps = new Set((operator.capacidades ?? []).filter(c => !roleCaps.has(c)));
   const totalEffective = new Set([...roleCaps, ...indivCaps]).size;
 
   function toggleIndividual(capId: string) {
@@ -172,8 +172,8 @@ function PanelCapacidades({ operator }: { operator: OperatorRecord | null }) {
         <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#697387]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAPACIDADES</span>
         <span className="text-[#697387]/30 mx-0.5">·</span>
-        <span className="rounded bg-[#697387] px-1.5 py-0.5 text-[9px] font-bold text-white">{operator.code}</span>
-        <span className="text-[12px] font-semibold text-[#697387]">{operator.name}</span>
+        <span className="rounded bg-[#697387] px-1.5 py-0.5 text-[9px] font-bold text-white">{operator.codigo}</span>
+        <span className="text-[12px] font-semibold text-[#697387]">{operator.nombreCompleto}</span>
         {totalEffective > 0 && (
           <span className="ml-auto rounded-md bg-[#697387]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#697387]">
             {totalEffective} efectiva{totalEffective > 1 ? "s" : ""}
@@ -187,7 +187,7 @@ function PanelCapacidades({ operator }: { operator: OperatorRecord | null }) {
         <div className="flex items-center gap-2 rounded-xl border border-[#e4e9f0] bg-[#f8fafc] px-3 py-2 mb-1">
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Rol asignado</p>
-            <p className="text-[11.5px] font-semibold text-[#374151]">{role?.name ?? operator.roleCode}</p>
+            <p className="text-[11.5px] font-semibold text-[#374151]">{role?.nombre ?? operator.codigoRol}</p>
           </div>
           {roleCaps.size > 0 && (
             <span className="shrink-0 text-[9px] font-semibold text-[#697387]">{roleCaps.size} del rol</span>

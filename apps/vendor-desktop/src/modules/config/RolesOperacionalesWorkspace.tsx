@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Users, Sliders, ChevronRight, AlertCircle } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
-import type { RoleRecord } from "../../domains/operator/roles.store";
+import type { Rol } from "../../domains/operator/roles.store";
 
 // ── catálogo de capacidades (mismo que CapacidadesWorkspace) ─────────────
 
@@ -30,8 +30,8 @@ function PanelRoles({ selectedId, onSelect }: {
   onSelect: (id: string) => void;
 }) {
   const { roles } = usePOS();
-  const activos   = roles.filter(r => r.active).length;
-  const inactivos = roles.filter(r => !r.active).length;
+  const activos   = roles.filter(r => r.activo).length;
+  const inactivos = roles.filter(r => !r.activo).length;
 
   return (
     <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#697387]/40 bg-[#FDFCF9]">
@@ -63,15 +63,15 @@ function PanelRoles({ selectedId, onSelect }: {
                   }`}>
                   <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${
                     isSel ? "bg-[#697387] text-white" : "bg-[#F3F4F6] text-[#697387]"
-                  }`}>{role.code}</span>
+                  }`}>{role.codigo}</span>
                   <div className="min-w-0 flex-1">
                     <p className={`truncate text-[12px] font-semibold ${
-                      isSel ? "text-[#121416]" : role.active ? "text-[#2F3E46]" : "text-[#9ca3af]"
-                    }`}>{role.name}</p>
-                    <p className="text-[9px] text-[#c0cad4]">{role.capabilities.length} capacidades</p>
+                      isSel ? "text-[#121416]" : role.activo ? "text-[#2F3E46]" : "text-[#9ca3af]"
+                    }`}>{role.nombre}</p>
+                    <p className="text-[9px] text-[#c0cad4]">{role.capacidades.length} capacidades</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    {!role.active && (
+                    {!role.activo && (
                       <span className="rounded bg-amber-50 px-1 py-0.5 text-[8px] font-bold uppercase text-amber-600">INACT.</span>
                     )}
                     <ChevronRight size={10} className={isSel ? "text-[#697387]" : "text-[#e4e9f0]"} />
@@ -102,7 +102,7 @@ function PanelDetalle({ selectedId, onSelect }: {
   const [codeError, setCodeError] = useState<string | null>(null);
 
   const selected = roles.find(r => r.id === selectedId) ?? null;
-  const operatorsWithRole = selected ? operators.filter(o => o.roleCode === selected.code && o.status !== "INACTIVO") : [];
+  const operatorsWithRole = selected ? operators.filter(o => o.codigoRol === selected.codigo && o.estado !== "INACTIVO") : [];
   const canSave = editCode.trim().length >= 2 && editName.trim().length >= 2;
 
   function handleNew() {
@@ -112,7 +112,7 @@ function PanelDetalle({ selectedId, onSelect }: {
 
   function handleStartEdit() {
     if (!selected) return;
-    setEditCode(selected.code); setEditName(selected.name); setEditDesc(selected.description);
+    setEditCode(selected.codigo); setEditName(selected.nombre); setEditDesc(selected.descripcion);
     setCodeError(null); setPanel("edit");
   }
 
@@ -135,7 +135,7 @@ function PanelDetalle({ selectedId, onSelect }: {
 
   function toggleCapability(capId: string) {
     if (!selected) return;
-    const current = new Set(selected.capabilities);
+    const current = new Set(selected.capacidades);
     if (current.has(capId)) { current.delete(capId); } else { current.add(capId); }
     updateRoleCapabilities(selected.id, [...current]);
   }
@@ -152,7 +152,7 @@ function PanelDetalle({ selectedId, onSelect }: {
         {selected && (
           <>
             <span className="text-[#697387]/30 mx-0.5">·</span>
-            <span className="rounded bg-[#697387] px-1.5 py-0.5 text-[9px] font-bold text-white">{selected.code}</span>
+            <span className="rounded bg-[#697387] px-1.5 py-0.5 text-[9px] font-bold text-white">{selected.codigo}</span>
           </>
         )}
       </div>
@@ -170,7 +170,7 @@ function PanelDetalle({ selectedId, onSelect }: {
           }`}>
           <Pencil size={10} strokeWidth={2.5} />EDITAR
         </button>
-        {selected?.active ? (
+        {selected?.activo ? (
           <button onClick={() => { setPanel("view"); setRoleActive(selected.id, false); }}
             disabled={operatorsWithRole.length > 0}
             className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
@@ -196,18 +196,18 @@ function PanelDetalle({ selectedId, onSelect }: {
 
             {/* identificación */}
             <div className="flex items-center gap-2.5">
-              <span className="rounded-md bg-[#697387] px-2 py-0.5 text-[11px] font-bold tracking-wider text-white">{selected.code}</span>
-              <span className="text-[13px] font-semibold text-[#2F3E46]">{selected.name}</span>
-              {!selected.active && (
+              <span className="rounded-md bg-[#697387] px-2 py-0.5 text-[11px] font-bold tracking-wider text-white">{selected.codigo}</span>
+              <span className="text-[13px] font-semibold text-[#2F3E46]">{selected.nombre}</span>
+              {!selected.activo && (
                 <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600">INACTIVO</span>
               )}
             </div>
 
-            {selected.description && (
-              <p className="text-[11.5px] text-[#6b7280]">{selected.description}</p>
+            {selected.descripcion && (
+              <p className="text-[11.5px] text-[#6b7280]">{selected.descripcion}</p>
             )}
 
-            {operatorsWithRole.length > 0 && selected.active && (
+            {operatorsWithRole.length > 0 && selected.activo && (
               <div className="flex items-start gap-2 rounded-xl border border-amber-200/60 bg-amber-50/40 px-3 py-2">
                 <AlertCircle size={10} strokeWidth={2} className="mt-0.5 shrink-0 text-amber-500" />
                 <p className="text-[9.5px] font-semibold text-amber-700">
@@ -220,7 +220,7 @@ function PanelDetalle({ selectedId, onSelect }: {
             <div className="flex flex-col gap-1.5">
               <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Capacidades operacionales de este rol</p>
               {CAPABILITIES.map(cap => {
-                const isOn = selected.capabilities.includes(cap.id);
+                const isOn = selected.capacidades.includes(cap.id);
                 const lCfg = LEVEL_CFG[cap.level];
                 return (
                   <button
@@ -257,7 +257,7 @@ function PanelDetalle({ selectedId, onSelect }: {
                 <div className="flex flex-wrap gap-1">
                   {operatorsWithRole.map(op => (
                     <span key={op.id} className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[9px] font-bold text-[#697387]">
-                      {op.code} {op.name}
+                      {op.codigo} {op.nombreCompleto}
                     </span>
                   ))}
                 </div>

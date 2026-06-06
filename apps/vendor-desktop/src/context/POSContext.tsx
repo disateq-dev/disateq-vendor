@@ -4,8 +4,8 @@ import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante } from "../domains/documents/comprobante.types";
 import { comprobanteStore } from "../domains/documents/comprobante.store";
-import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities, nextOperatorCode } from "../domains/operator/operator.store";
-import { type RoleRecord, loadRoles, saveRoles, setRoleCapabilities, isRoleCodeTaken } from "../domains/operator/roles.store";
+import { type Operador, type EstadoOperador, cargarOperadores, verificarPin, cambiarPin, establecerPin, guardarOperadores, estaBloqueOcupado, asignarBloque, liberarBloque, establecerCapacidades, siguienteCodigoOperador } from "../domains/operator/operator.store";
+import { type Rol, cargarRoles, guardarRoles, establecerCapacidadesRol, estaCodigoRolOcupado } from "../domains/operator/roles.store";
 import { blockBoxDefs } from "../domains/operator/blocks.store";
 import { type TurnEvent, type TurnEventType, loadTurnEvents, saveTurnEvents } from "../domains/cash/turn-events.store";
 import { syncCatalogToInventory } from "../domains/inventory/catalog-bridge";
@@ -64,10 +64,10 @@ const BOX_DEFS = blockBoxDefs() as { code: string; type: CashBoxType }[];
 const TERMINAL = "PC-VENTAS01";
 
 // Fallback para recovery: busca en store el operador activo del bloque indicado por el primer dígito del código de caja
-function blockOperatorFallback(ops: OperatorRecord[], boxCode: string): string {
+function blockOperatorFallback(ops: Operador[], boxCode: string): string {
   const prefix = boxCode[0];
-  const op = ops.find(o => o.blockBase !== null && String(o.blockBase)[0] === prefix && o.status === "ACTIVO");
-  return op?.name ?? "Operador";
+  const op = ops.find(o => o.baseBloque !== null && String(o.baseBloque)[0] === prefix && o.estado === "ACTIVO");
+  return op?.nombreCompleto ?? "Operador";
 }
 
 // ── localStorage keys ──────────────────────────────────────────
@@ -389,21 +389,21 @@ interface POSContextValue {
   voidComprobante: (id: string, motivo: string) => void;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
-  operators: OperatorRecord[];
-  activeOperator: OperatorRecord | null;
+  operators: Operador[];
+  activeOperator: Operador | null;
   loginOperator: (id: string, pin: string) => boolean;
   logoutOperator: () => void;
   changeOperatorPin: (currentPin: string, newPin: string) => boolean;
   changeOperatorPinById: (id: string, currentPin: string, newPin: string) => boolean;
   resetOperatorPin: (id: string, newPin: string) => boolean;
-  createOperator: (data: { apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string; roleCode: string; roleName: string; blockBase: number | null }) => OperatorRecord;
+  createOperator: (data: { apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string; roleCode: string; roleName: string; blockBase: number | null }) => Operador;
   updateOperatorData: (id: string, data: { apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string; roleCode: string; roleName: string; blockBase: number | null }) => boolean;
-  setOperatorStatus: (id: string, status: OperatorStatus, reason?: string) => boolean;
+  setOperatorStatus: (id: string, status: EstadoOperador, reason?: string) => boolean;
   assignOperatorBlock: (id: string, blockBase: number) => boolean;
   releaseOperatorBlock: (id: string) => void;
   updateOperatorCapabilities: (id: string, capabilities: string[]) => void;
-  roles: RoleRecord[];
-  createRole: (data: { code: string; name: string; description: string }) => RoleRecord;
+  roles: Rol[];
+  createRole: (data: { code: string; name: string; description: string }) => Rol;
   updateRoleData: (id: string, data: { code: string; name: string; description: string }) => boolean;
   setRoleActive: (id: string, active: boolean) => void;
   updateRoleCapabilities: (id: string, capabilities: string[]) => void;
@@ -494,26 +494,26 @@ export function POSProvider({ children }: { children: ReactNode }) {
     }
   }, [addOpLog]);
 
-  const [operators, setOperators] = useState<OperatorRecord[]>(loadOperators);
+  const [operators, setOperators] = useState<Operador[]>(cargarOperadores);
   const operatorsRef = useRef(operators);
   operatorsRef.current = operators;
-  const [activeOperator, setActiveOperator] = useState<OperatorRecord | null>(null);
-  const activeOperatorRef = useRef<OperatorRecord | null>(null);
+  const [activeOperator, setActiveOperator] = useState<Operador | null>(null);
+  const activeOperatorRef = useRef<Operador | null>(null);
   activeOperatorRef.current = activeOperator;
 
   // Sugerencia de caja acotada al bloque del operador activo — nunca cruza bloques
   const suggestedCashBox = useMemo(() => {
-    const prefix = activeOperator?.blockBase != null ? String(activeOperator.blockBase)[0] : null;
+    const prefix = activeOperator?.baseBloque != null ? String(activeOperator.baseBloque)[0] : null;
     const pool   = prefix ? cashBoxes.filter(b => b.code[0] === prefix) : cashBoxes;
     return pool.find(b => b.available) ?? null;
   }, [cashBoxes, activeOperator]);
 
   const loginOperator = useCallback((id: string, pin: string): boolean => {
-    const ok = checkPin(operators, id, pin);
+    const ok = verificarPin(operators, id, pin);
     if (ok) {
       const op = operators.find(o => o.id === id)!;
       setActiveOperator(op);
-      addOpLog(`[LOGIN] ${op.name} inició sesión`);
+      addOpLog(`[LOGIN] ${op.nombreCompleto} inició sesión`);
     }
     return ok;
   }, [operators, addOpLog]);
@@ -521,73 +521,73 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const logoutOperator = useCallback(() => {
     const op = activeOperatorRef.current;
     setActiveOperator(null);
-    if (op) addOpLog(`[LOGOUT] ${op.name} cerró sesión`);
+    if (op) addOpLog(`[LOGOUT] ${op.nombreCompleto} cerró sesión`);
   }, [addOpLog]);
 
   const changeOperatorPin = useCallback((currentPin: string, newPin: string): boolean => {
     const op = activeOperatorRef.current;
     if (!op) return false;
-    const updated = changePin(operatorsRef.current, op.id, currentPin, newPin);
+    const updated = cambiarPin(operatorsRef.current, op.id, currentPin, newPin);
     if (!updated) return false;
-    saveOperators(updated);
+    guardarOperadores(updated);
     setOperators(updated);
-    addOpLog(`[PIN] ${op.name} actualizó su PIN`);
+    addOpLog(`[PIN] ${op.nombreCompleto} actualizó su PIN`);
     return true;
   }, [addOpLog]);
 
   const changeOperatorPinById = useCallback((id: string, currentPin: string, newPin: string): boolean => {
-    const updated = changePin(operatorsRef.current, id, currentPin, newPin);
+    const updated = cambiarPin(operatorsRef.current, id, currentPin, newPin);
     if (!updated) return false;
-    saveOperators(updated);
+    guardarOperadores(updated);
     setOperators(updated);
     const op = operatorsRef.current.find(o => o.id === id);
-    if (op) addOpLog(`[PIN] ${op.name} actualizó su PIN (login)`);
+    if (op) addOpLog(`[PIN] ${op.nombreCompleto} actualizó su PIN (login)`);
     return true;
   }, [addOpLog]);
 
   const resetOperatorPin = useCallback((id: string, newPin: string): boolean => {
-    const updated = setOperatorPin(operatorsRef.current, id, newPin);
+    const updated = establecerPin(operatorsRef.current, id, newPin);
     if (!updated) return false;
-    saveOperators(updated);
+    guardarOperadores(updated);
     setOperators(updated);
     const op = operatorsRef.current.find(o => o.id === id);
-    if (op) addOpLog(`[PIN] ${op.name} reseteó su PIN`);
+    if (op) addOpLog(`[PIN] ${op.nombreCompleto} reseteó su PIN`);
     return true;
   }, [addOpLog]);
 
   const createOperator = useCallback((data: {
     apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string;
     roleCode: string; roleName: string; blockBase: number | null;
-  }): OperatorRecord => {
-    if (data.blockBase !== null && isBlockTaken(operatorsRef.current, data.blockBase)) {
+  }): Operador => {
+    if (data.blockBase !== null && estaBloqueOcupado(operatorsRef.current, data.blockBase)) {
       throw new Error(`Bloque ${data.blockBase} ya está asignado a otro operador activo`);
     }
     const displayName = `${data.nombres.trim()} ${data.apellidos.trim()}`.trim();
-    const opCode = nextOperatorCode(operatorsRef.current);
-    const op: OperatorRecord = {
+    const opCode = siguienteCodigoOperador(operatorsRef.current);
+    const op: Operador = {
       id: `op${Date.now()}`,
-      operatorCode: opCode,
-      code: data.alias,
+      codigoOperador: opCode,
+      codigo: data.alias,
       alias: data.alias,
       apellidos: data.apellidos,
       nombres: data.nombres,
-      name: displayName,
+      nombreCompleto: displayName,
       dni: data.dni,
       telefono: data.telefono,
-      roleCode: data.roleCode,
-      roleName: data.roleName,
-      blockBase: data.blockBase,
-      blockAssignment: data.blockBase !== null ? { assignedAt: new Date().toISOString() } : undefined,
-      status: "ACTIVO",
+      codigoRol: data.roleCode,
+      nombreRol: data.roleName,
+      baseBloque: data.blockBase,
+      asignacionBloque: data.blockBase !== null ? { assignedAt: new Date().toISOString() } : undefined,
+      estado: "ACTIVO",
       pin: "",
-      capabilities: [],
-      registeredAt: new Date().toISOString(),
-      registeredBy: activeOperatorRef.current?.operatorCode || activeOperatorRef.current?.code || "SISTEMA",
+      capacidades: [],
+      registradoEn: new Date().toISOString(),
+      registradoPor: activeOperatorRef.current?.codigoOperador || activeOperatorRef.current?.codigo || "SISTEMA",
     };
     const updated = [...operatorsRef.current, op];
-    saveOperators(updated);
+    guardarOperadores(updated);
     setOperators(updated);
-    addOpLog(`[OPERADOR] Creado ${op.name} (${op.alias} · ${opCode})${data.blockBase ? ` · BLQ ${data.blockBase}` : ""}`);
+    addOpLog(`[OPERADOR] Creado ${op.nombreCompleto} (${op.alias} · ${opCode})${data.blockBase ? ` · BLQ ${data.blockBase}` : ""}`);
     return op;
   }, [addOpLog]);
 
@@ -597,28 +597,28 @@ export function POSProvider({ children }: { children: ReactNode }) {
   }): boolean => {
     const op = operatorsRef.current.find(o => o.id === id);
     if (!op) return false;
-    if (data.blockBase !== null && isBlockTaken(operatorsRef.current, data.blockBase, id)) return false;
-    const blockChanged = data.blockBase !== op.blockBase;
+    if (data.blockBase !== null && estaBloqueOcupado(operatorsRef.current, data.blockBase, id)) return false;
+    const blockChanged = data.blockBase !== op.baseBloque;
     const displayName = `${data.nombres.trim()} ${data.apellidos.trim()}`.trim();
     const updated = operatorsRef.current.map(o => o.id === id ? {
       ...o,
-      code: data.alias,
+      codigo: data.alias,
       alias: data.alias,
       apellidos: data.apellidos,
       nombres: data.nombres,
-      name: displayName,
+      nombreCompleto: displayName,
       dni: data.dni,
       telefono: data.telefono,
-      roleCode: data.roleCode,
-      roleName: data.roleName,
-      blockBase: data.blockBase,
-      blockAssignment: blockChanged && data.blockBase !== null
+      codigoRol: data.roleCode,
+      nombreRol: data.roleName,
+      baseBloque: data.blockBase,
+      asignacionBloque: blockChanged && data.blockBase !== null
         ? { assignedAt: new Date().toISOString() }
         : (blockChanged && data.blockBase === null)
-        ? (o.blockAssignment ? { ...o.blockAssignment, releasedAt: new Date().toISOString() } : undefined)
-        : o.blockAssignment,
+        ? (o.asignacionBloque ? { ...o.asignacionBloque, releasedAt: new Date().toISOString() } : undefined)
+        : o.asignacionBloque,
     } : o);
-    saveOperators(updated);
+    guardarOperadores(updated);
     setOperators(updated);
     if (blockChanged) {
       addOpLog(data.blockBase !== null
@@ -628,101 +628,100 @@ export function POSProvider({ children }: { children: ReactNode }) {
     return true;
   }, [addOpLog]);
 
-  const setOperatorStatus = useCallback((id: string, status: OperatorStatus, reason?: string): boolean => {
+  const setOperatorStatus = useCallback((id: string, status: EstadoOperador, reason?: string): boolean => {
     const op = operatorsRef.current.find(o => o.id === id);
     if (!op) return false;
-    if (status === "ACTIVO" && op.blockBase !== null && isBlockTaken(operatorsRef.current, op.blockBase, id)) return false;
+    if (status === "ACTIVO" && op.baseBloque !== null && estaBloqueOcupado(operatorsRef.current, op.baseBloque, id)) return false;
     const now = new Date().toISOString();
-    // Baja operacional: liberar bloque automáticamente
-    let updatedOp: typeof op = { ...op, status, statusAt: now, statusReason: reason ?? op.statusReason };
-    if (status === "INACTIVO" && op.blockBase !== null) {
+    let updatedOp: typeof op = { ...op, estado: status, fechaEstado: now, motivoEstado: reason ?? op.motivoEstado };
+    if (status === "INACTIVO" && op.baseBloque !== null) {
       updatedOp = {
         ...updatedOp,
-        blockBase: null,
-        blockAssignment: op.blockAssignment
-          ? { ...op.blockAssignment, releasedAt: now }
+        baseBloque: null,
+        asignacionBloque: op.asignacionBloque
+          ? { ...op.asignacionBloque, releasedAt: now }
           : { assignedAt: now, releasedAt: now },
       };
     }
     const updated = operatorsRef.current.map(o => o.id === id ? updatedOp : o);
-    saveOperators(updated);
+    guardarOperadores(updated);
     setOperators(updated);
     const label = status === "ACTIVO" ? "reactivado" : status === "SUSPENDIDO" ? "suspendido" : "dado de baja";
     const reasonTag = reason ? ` · Motivo: ${reason}` : "";
-    addOpLog(`[OPERADOR] ${op.name} ${label}${reasonTag}`);
+    addOpLog(`[OPERADOR] ${op.nombreCompleto} ${label}${reasonTag}`);
     return true;
   }, [addOpLog]);
 
   const assignOperatorBlock = useCallback((id: string, blockBase: number): boolean => {
-    const updated = assignBlock(operatorsRef.current, id, blockBase);
+    const updated = asignarBloque(operatorsRef.current, id, blockBase);
     if (!updated) return false;
-    saveOperators(updated);
+    guardarOperadores(updated);
     setOperators(updated);
     const op = operatorsRef.current.find(o => o.id === id);
-    if (op) addOpLog(`[OPERADOR] ${op.name} asignado a BLQ ${blockBase}`);
+    if (op) addOpLog(`[OPERADOR] ${op.nombreCompleto} asignado a BLQ ${blockBase}`);
     return true;
   }, [addOpLog]);
 
   const releaseOperatorBlock = useCallback((id: string): void => {
     const op = operatorsRef.current.find(o => o.id === id);
-    if (!op || op.blockBase === null) return;
-    const blk = op.blockBase;
-    const updated = releaseBlock(operatorsRef.current, id);
-    saveOperators(updated);
+    if (!op || op.baseBloque === null) return;
+    const blk = op.baseBloque;
+    const updated = liberarBloque(operatorsRef.current, id);
+    guardarOperadores(updated);
     setOperators(updated);
-    addOpLog(`[OPERADOR] ${op.name} liberó BLQ ${blk}`);
+    addOpLog(`[OPERADOR] ${op.nombreCompleto} liberó BLQ ${blk}`);
   }, [addOpLog]);
 
   const updateOperatorCapabilities = useCallback((id: string, capabilities: string[]): void => {
-    const updated = setCapabilities(operatorsRef.current, id, capabilities);
-    saveOperators(updated);
+    const updated = establecerCapacidades(operatorsRef.current, id, capabilities);
+    guardarOperadores(updated);
     setOperators(updated);
   }, []);
 
-  const [roles, setRoles] = useState<RoleRecord[]>(loadRoles);
+  const [roles, setRoles] = useState<Rol[]>(cargarRoles);
   const rolesRef = useRef(roles);
   rolesRef.current = roles;
 
-  const createRole = useCallback((data: { code: string; name: string; description: string }): RoleRecord => {
+  const createRole = useCallback((data: { code: string; name: string; description: string }): Rol => {
     const code = data.code.trim().toUpperCase();
-    if (isRoleCodeTaken(rolesRef.current, code)) throw new Error(`Código ${code} ya existe`);
-    const role: RoleRecord = {
+    if (estaCodigoRolOcupado(rolesRef.current, code)) throw new Error(`Código ${code} ya existe`);
+    const role: Rol = {
       id: `role-${Date.now()}`,
-      code,
-      name: data.name.trim(),
-      description: data.description.trim(),
-      capabilities: [],
-      active: true,
-      createdAt: new Date().toISOString(),
-      createdBy: activeOperatorRef.current?.name ?? "SISTEMA",
+      codigo: code,
+      nombre: data.name.trim(),
+      descripcion: data.description.trim(),
+      capacidades: [],
+      activo: true,
+      creadoEn: new Date().toISOString(),
+      creadoPor: activeOperatorRef.current?.nombreCompleto ?? "SISTEMA",
     };
     const updated = [...rolesRef.current, role];
-    saveRoles(updated);
+    guardarRoles(updated);
     setRoles(updated);
     return role;
   }, []);
 
   const updateRoleData = useCallback((id: string, data: { code: string; name: string; description: string }): boolean => {
     const code = data.code.trim().toUpperCase();
-    if (isRoleCodeTaken(rolesRef.current, code, id)) return false;
+    if (estaCodigoRolOcupado(rolesRef.current, code, id)) return false;
     const updated = rolesRef.current.map(r => r.id === id
-      ? { ...r, code, name: data.name.trim(), description: data.description.trim() }
+      ? { ...r, codigo: code, nombre: data.name.trim(), descripcion: data.description.trim() }
       : r
     );
-    saveRoles(updated);
+    guardarRoles(updated);
     setRoles(updated);
     return true;
   }, []);
 
   const setRoleActive = useCallback((id: string, active: boolean): void => {
-    const updated = rolesRef.current.map(r => r.id === id ? { ...r, active } : r);
-    saveRoles(updated);
+    const updated = rolesRef.current.map(r => r.id === id ? { ...r, activo: active } : r);
+    guardarRoles(updated);
     setRoles(updated);
   }, []);
 
   const updateRoleCapabilities = useCallback((id: string, capabilities: string[]): void => {
-    const updated = setRoleCapabilities(rolesRef.current, id, capabilities);
-    saveRoles(updated);
+    const updated = establecerCapacidadesRol(rolesRef.current, id, capabilities);
+    guardarRoles(updated);
     setRoles(updated);
   }, []);
 
@@ -939,7 +938,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const isExceptional = !!(exceptionalSkipCodes && exceptionalSkipCodes.length > 0);
     if (isExceptional ? box.used : !box.available) return;
     const activeOp   = activeOperatorRef.current;
-    const operator   = activeOp?.name ?? blockOperatorFallback(operatorsRef.current, boxCode);
+    const operator   = activeOp?.nombreCompleto ?? blockOperatorFallback(operatorsRef.current, boxCode);
     const operatorId = activeOp?.id;
     setSessionStats(NULL_STATS);
     setCashMoves([]);

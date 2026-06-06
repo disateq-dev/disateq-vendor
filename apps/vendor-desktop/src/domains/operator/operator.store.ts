@@ -1,51 +1,51 @@
-export type OperatorStatus = "ACTIVO" | "INACTIVO" | "SUSPENDIDO";
+export type EstadoOperador = "ACTIVO" | "INACTIVO" | "SUSPENDIDO";
 
-export type BlockAssignment = {
+export type AsignacionBloque = {
   assignedAt: string;
   releasedAt?: string;
 };
 
-export type OperatorRecord = {
+export type Operador = {
   id: string;
-  operatorCode: string;   // OP001, OP023... — referencia documental estable, inmutable
-  code: string;
-  alias: string;          // FTEJADA, CRAMIREZ... — representación operacional visible
+  codigoOperador: string;
+  codigo: string;
+  alias: string;
   apellidos: string;
   nombres: string;
-  name: string;           // derivado: "${nombres} ${apellidos}"
+  nombreCompleto: string;
   dni?: string;
   telefono?: string;
-  roleCode: string;
-  roleName: string;
-  blockBase: number | null;
-  blockAssignment?: BlockAssignment;
-  status: OperatorStatus;
-  statusReason?: string;
-  statusAt?: string;
+  codigoRol: string;
+  nombreRol: string;
+  baseBloque: number | null;
+  asignacionBloque?: AsignacionBloque;
+  estado: EstadoOperador;
+  motivoEstado?: string;
+  fechaEstado?: string;
   pin: string;
-  capabilities?: string[];
-  registeredAt: string;
-  registeredBy: string;
+  capacidades?: string[];
+  registradoEn: string;
+  registradoPor: string;
 };
 
-const LS_KEY      = "disateq.pos.operators";
-const LS_V_KEY    = "disateq.pos.operators.v";
+const LS_KEY      = "disateq:operators";
+const LS_V_KEY    = "disateq:operators:v";
 const SEED_VERSION = "4";
 
-const SEED: OperatorRecord[] = [
+const SEED: Operador[] = [
   {
-    id: "op1", operatorCode: "OP001", code: "FTEJADA", alias: "FTEJADA",
-    apellidos: "TEJADA QUEVEDO", nombres: "FERNANDO MIGUEL", name: "FERNANDO MIGUEL TEJADA QUEVEDO",
+    id: "op1", codigoOperador: "OP001", codigo: "FTEJADA", alias: "FTEJADA",
+    apellidos: "TEJADA QUEVEDO", nombres: "FERNANDO MIGUEL", nombreCompleto: "FERNANDO MIGUEL TEJADA QUEVEDO",
     dni: "", telefono: "",
-    roleCode: "SUP", roleName: "Supervisión",
-    blockBase: null,
-    status: "ACTIVO", pin: "",
-    capabilities: ["corregir_arqueos","reaperturar_cierres","regularizar_incidencias","observar_comprobantes_global","anular_comprobantes","observar_continuidad"],
-    registeredAt: "2026-05-31T22:26:30.542Z", registeredBy: "SISTEMA",
+    codigoRol: "SUP", nombreRol: "Supervisión",
+    baseBloque: null,
+    estado: "ACTIVO", pin: "",
+    capacidades: ["corregir_arqueos","reaperturar_cierres","regularizar_incidencias","observar_comprobantes_global","anular_comprobantes","observar_continuidad"],
+    registradoEn: "2026-05-31T22:26:30.542Z", registradoPor: "SISTEMA",
   },
 ];
 
-export function loadOperators(): OperatorRecord[] {
+export function cargarOperadores(): Operador[] {
   try {
     if (localStorage.getItem(LS_V_KEY) !== SEED_VERSION) {
       localStorage.setItem(LS_KEY, JSON.stringify(SEED));
@@ -60,121 +60,109 @@ export function loadOperators(): OperatorRecord[] {
     const arr = JSON.parse(raw) as Array<Record<string, unknown>>;
     if (!Array.isArray(arr) || arr.length === 0) return SEED;
     return arr.map(o => ({
-      id:              typeof o.id           === "string"  ? o.id           : String(Date.now()),
-      operatorCode:    typeof o.operatorCode === "string"  ? o.operatorCode  : "",
-      code:            typeof o.code         === "string"  ? o.code         : "",
-      alias:           typeof o.alias        === "string"  ? o.alias        : (typeof o.code === "string" ? o.code : ""),
-      apellidos:       typeof o.apellidos    === "string"  ? o.apellidos    : "",
-      nombres:         typeof o.nombres      === "string"  ? o.nombres      : (typeof o.name === "string" ? o.name : ""),
-      name:            typeof o.name         === "string"  ? o.name         : "",
-      dni:             typeof o.dni          === "string"  ? o.dni          : undefined,
-      telefono:        typeof o.telefono     === "string"  ? o.telefono     : undefined,
-      roleCode:        typeof o.roleCode === "string"  ? o.roleCode : "VEN",
-      roleName:        typeof o.roleName === "string"  ? o.roleName : "Ventas",
-      blockBase:       typeof o.blockBase === "number" ? o.blockBase : null,
-      blockAssignment: (o.blockAssignment && typeof o.blockAssignment === "object") ? o.blockAssignment as BlockAssignment : undefined,
-      // Migration: if status missing but active present, derive
-      status:          (o.status === "ACTIVO" || o.status === "INACTIVO" || o.status === "SUSPENDIDO")
-                         ? o.status as OperatorStatus
-                         : (o.active === false ? "INACTIVO" : "ACTIVO"),
-      statusReason:    typeof o.statusReason === "string" ? o.statusReason : undefined,
-      statusAt:        typeof o.statusAt     === "string" ? o.statusAt     : undefined,
-      pin:             typeof o.pin === "string" ? o.pin : "",
-      capabilities:    Array.isArray(o.capabilities) ? o.capabilities as string[] : [],
-      registeredAt:    typeof o.registeredAt === "string" ? o.registeredAt : "",
-      registeredBy:    typeof o.registeredBy === "string" ? o.registeredBy : "SISTEMA",
+      id:               typeof o.id === "string" ? o.id : String(Date.now()),
+      codigoOperador:   typeof o.codigoOperador === "string" ? o.codigoOperador : (typeof o.operatorCode === "string" ? o.operatorCode : ""),
+      codigo:           typeof o.codigo === "string" ? o.codigo : (typeof o.code === "string" ? o.code : ""),
+      alias:            typeof o.alias === "string" ? o.alias : (typeof o.codigo === "string" ? o.codigo : (typeof o.code === "string" ? o.code : "")),
+      apellidos:        typeof o.apellidos === "string" ? o.apellidos : "",
+      nombres:          typeof o.nombres === "string" ? o.nombres : (typeof o.name === "string" ? o.name : ""),
+      nombreCompleto:   typeof o.nombreCompleto === "string" ? o.nombreCompleto : (typeof o.name === "string" ? o.name : ""),
+      dni:              typeof o.dni === "string" ? o.dni : undefined,
+      telefono:         typeof o.telefono === "string" ? o.telefono : undefined,
+      codigoRol:        typeof o.codigoRol === "string" ? o.codigoRol : (typeof o.roleCode === "string" ? o.roleCode : "VEN"),
+      nombreRol:        typeof o.nombreRol === "string" ? o.nombreRol : (typeof o.roleName === "string" ? o.roleName : "Ventas"),
+      baseBloque:       typeof o.baseBloque === "number" ? o.baseBloque : (typeof o.blockBase === "number" ? o.blockBase : null),
+      asignacionBloque: (o.asignacionBloque && typeof o.asignacionBloque === "object")
+        ? o.asignacionBloque as AsignacionBloque
+        : ((o.blockAssignment && typeof o.blockAssignment === "object") ? o.blockAssignment as AsignacionBloque : undefined),
+      estado:           (o.estado === "ACTIVO" || o.estado === "INACTIVO" || o.estado === "SUSPENDIDO")
+        ? o.estado as EstadoOperador
+        : ((o.status === "ACTIVO" || o.status === "INACTIVO" || o.status === "SUSPENDIDO")
+          ? o.status as EstadoOperador
+          : (o.active === false ? "INACTIVO" : "ACTIVO")),
+      motivoEstado:     typeof o.motivoEstado === "string" ? o.motivoEstado : (typeof o.statusReason === "string" ? o.statusReason : undefined),
+      fechaEstado:      typeof o.fechaEstado === "string" ? o.fechaEstado : (typeof o.statusAt === "string" ? o.statusAt : undefined),
+      pin:              typeof o.pin === "string" ? o.pin : "",
+      capacidades:      Array.isArray(o.capacidades) ? o.capacidades as string[] : (Array.isArray(o.capabilities) ? o.capabilities as string[] : []),
+      registradoEn:     typeof o.registradoEn === "string" ? o.registradoEn : (typeof o.registeredAt === "string" ? o.registeredAt : ""),
+      registradoPor:    typeof o.registradoPor === "string" ? o.registradoPor : (typeof o.registeredBy === "string" ? o.registeredBy : "SISTEMA"),
     }));
   } catch { return SEED; }
 }
 
-export function saveOperators(ops: OperatorRecord[]): void {
+export function guardarOperadores(ops: Operador[]): void {
   try { localStorage.setItem(LS_KEY, JSON.stringify(ops)); } catch { }
 }
 
-export function checkPin(ops: OperatorRecord[], id: string, pin: string): boolean {
+export function verificarPin(ops: Operador[], id: string, pin: string): boolean {
   const op = ops.find(o => o.id === id);
-  return !!op && op.status === "ACTIVO" && op.pin.length >= 4 && op.pin === pin;
+  return !!op && op.estado === "ACTIVO" && op.pin.length >= 4 && op.pin === pin;
 }
 
-export function changePin(ops: OperatorRecord[], id: string, currentPin: string, newPin: string): OperatorRecord[] | null {
+export function cambiarPin(ops: Operador[], id: string, currentPin: string, newPin: string): Operador[] | null {
   const op = ops.find(o => o.id === id);
-  if (!op || op.status !== "ACTIVO" || op.pin !== currentPin) return null;
+  if (!op || op.estado !== "ACTIVO" || op.pin !== currentPin) return null;
   return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
 }
 
-export function setOperatorPin(ops: OperatorRecord[], id: string, newPin: string): OperatorRecord[] | null {
+export function establecerPin(ops: Operador[], id: string, newPin: string): Operador[] | null {
   const op = ops.find(o => o.id === id);
-  if (!op || op.status === "INACTIVO") return null;
+  if (!op || op.estado === "INACTIVO") return null;
   return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
 }
 
-export function setCapabilities(ops: OperatorRecord[], id: string, capabilities: string[]): OperatorRecord[] {
-  return ops.map(o => o.id === id ? { ...o, capabilities } : o);
+export function establecerCapacidades(ops: Operador[], id: string, capacidades: string[]): Operador[] {
+  return ops.map(o => o.id === id ? { ...o, capacidades } : o);
 }
 
-// Returns true if blockBase is already assigned to another active/suspended operator (excludeId = self)
-export function isBlockTaken(ops: OperatorRecord[], blockBase: number, excludeId?: string): boolean {
+export function estaBloqueOcupado(ops: Operador[], baseBloque: number, excludeId?: string): boolean {
   return ops.some(o =>
     o.id !== excludeId &&
-    o.blockBase === blockBase &&
-    o.status !== "INACTIVO"
+    o.baseBloque === baseBloque &&
+    o.estado !== "INACTIVO"
   );
 }
 
-// Assign blockBase to operator — fails if taken by another active/suspended operator
-export function assignBlock(ops: OperatorRecord[], id: string, blockBase: number): OperatorRecord[] | null {
-  if (isBlockTaken(ops, blockBase, id)) return null;
+export function asignarBloque(ops: Operador[], id: string, baseBloque: number): Operador[] | null {
+  if (estaBloqueOcupado(ops, baseBloque, id)) return null;
   return ops.map(o => o.id === id ? {
     ...o,
-    blockBase,
-    blockAssignment: { assignedAt: new Date().toISOString() },
+    baseBloque,
+    asignacionBloque: { assignedAt: new Date().toISOString() },
   } : o);
 }
 
-// Release block from operator — sets blockAssignment.releasedAt, clears blockBase
-export function releaseBlock(ops: OperatorRecord[], id: string): OperatorRecord[] {
+export function liberarBloque(ops: Operador[], id: string): Operador[] {
   return ops.map(o => o.id === id ? {
     ...o,
-    blockBase: null,
-    blockAssignment: o.blockAssignment
-      ? { ...o.blockAssignment, releasedAt: new Date().toISOString() }
+    baseBloque: null,
+    asignacionBloque: o.asignacionBloque
+      ? { ...o.asignacionBloque, releasedAt: new Date().toISOString() }
       : { assignedAt: new Date().toISOString(), releasedAt: new Date().toISOString() },
   } : o);
 }
 
-// ── código operador ─────────────────────────────────────────────────────────
-
-// Genera el siguiente código operador: OP001, OP002... hasta OP999.
-// Deriva desde el máximo existente — resiliente ante reset de localStorage.
-export function nextOperatorCode(existingOps: OperatorRecord[]): string {
+export function siguienteCodigoOperador(existingOps: Operador[]): string {
   const max = existingOps.reduce((acc, op) => {
-    const m = op.operatorCode.match(/^OP(\d+)$/);
+    const m = op.codigoOperador.match(/^OP(\d+)$/);
     return m ? Math.max(acc, parseInt(m[1], 10)) : acc;
   }, 0);
   return `OP${String(max + 1).padStart(3, "0")}`;
 }
 
-export function isOperatorCodeTaken(ops: OperatorRecord[], operatorCode: string, excludeId?: string): boolean {
-  return ops.some(o => o.id !== excludeId && o.operatorCode === operatorCode && o.operatorCode !== "");
+export function estaCodigoOperadorOcupado(ops: Operador[], codigoOperador: string, excludeId?: string): boolean {
+  return ops.some(o => o.id !== excludeId && o.codigoOperador === codigoOperador && o.codigoOperador !== "");
 }
 
-// ── alias operacional ───────────────────────────────────────────────────────
-
-// Genera alias base: <InicialPrimerNombre><PrimerApellido>
-// Requiere nombres y apellidos separados para derivación correcta.
-// Ejemplo: nombres="Fernando Miguel" apellidos="Tejada Quevedo" → "FTEJADA"
-export function generateAlias(nombres: string, apellidos: string): string {
+export function generarAlias(nombres: string, apellidos: string): string {
   const n = nombres.trim().toUpperCase().split(/\s+/);
   const a = apellidos.trim().toUpperCase().split(/\s+/);
-  const inicial       = n[0]?.[0] ?? "";
+  const inicial        = n[0]?.[0] ?? "";
   const primerApellido = a[0] ?? "";
   return inicial + primerApellido;
 }
 
-// Resuelve colisión usando la inicial del segundo apellido.
-// Si la colisión persiste, devuelve el base — resolución manual requerida.
-// No genera sufijos numéricos: FTEJADA_2 reduce legibilidad operacional.
-export function resolveAlias(
+export function resolverAlias(
   base: string,
   apellidos: string,
   existingAliases: string[],
@@ -189,6 +177,6 @@ export function resolveAlias(
   return base;
 }
 
-export function isAliasTaken(ops: OperatorRecord[], alias: string, excludeId?: string): boolean {
-  return ops.some(o => o.id !== excludeId && o.alias === alias && o.status !== "INACTIVO");
+export function estaAliasOcupado(ops: Operador[], alias: string, excludeId?: string): boolean {
+  return ops.some(o => o.id !== excludeId && o.alias === alias && o.estado !== "INACTIVO");
 }
