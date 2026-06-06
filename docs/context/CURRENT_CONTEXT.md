@@ -3,251 +3,195 @@
 ## Branch activa
 main
 
+## Commit de referencia
+b44c8db — feat: Core operacional completo
+
 ---
 
 ## Situación general — Junio 2026
 
-DISATEQ VENDOR está en estado de **madurez operacional parcial**.
+DISATEQ VENDOR está en estado de **madurez operacional avanzada**.
 
-El runtime está vivo y operativo. El ciclo comercial completo (vender → descontar stock → reabastecer) aún no cierra.
-
-### Lo que está construido y validado
-
-- **Runtime operacional:** AppShell · ContextBar · SubContextBar · ModulesBar estabilizados. Modelo Workspace → SheetWorks como mutación contextual funcionando.
-- **TURNO / CAJA:** dominio más maduro. Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección de arqueos · recovery automático.
-- **FONDO DE CAMBIO:** ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados. fondoEsperado correcto.
-- **VENTAS / COBRO:** ticket con catálogo estático, cobro efectivo/Yape/tarjeta/mixto, comprobantes, correlativos persistentes.
-- **INVENTARIOS CAPA 0+1:** ítems · movimientos causales · disponibilidad derivada · reservas · alertas · CSV · baja lógica.
-- **COMPRAS CAPA 0+1:** recepción parcial incremental · causalidad compra:XXXXXXXX → INVENTARIOS · estados automáticos.
-- **OPERADORES + ROLES:** ciclo de vida completo · PIN · Bloque Operacional · capacidades · roles configurables.
-- **AJUSTES:** BusinessConfig · OpsConfig · rubro · visualMode · printFlow. Hardcode eliminado.
-- **LOGIN:** distinción LOGIN vs Runtime Principal formalizada. Drag funcional. Flash eliminado.
-- **GOVERNANCE IA:** modelo de colaboración Humano→ChatGPT→Claude Code→Codex formalizado en `docs/00-governance/ia-governance.md`.
-
-### Brecha estructural principal
-
-```
-VENTAS ──► catálogo estático (catalogs.ts)   ✗ sin conexión con INVENTARIOS
-COMPRAS ──► INVENTARIOS                       ✅ integrado
-VENTAS ──► INVENTARIOS                        ✅ integrado (8d2918a)
-```
-
-VENTAS consume precios y productos hardcodeados. Una venta no descuenta stock real.
-El puente CATÁLOGO vivo como entidad operacional no existe todavía.
-
-### Tensiones activas
-
-- `POSContext.tsx` (~1000 líneas) concentra sesión, operadores, roles, comprobantes, correlativos, movimientos, opLogs — boundary difuso.
-- Capacidades (capabilities[]) definidas en roles pero sin enforcement en módulos.
-- FONDO DE CAMBIO creciendo en complejidad dentro de CashWorkspace — presión de boundary futura.
-- Documentación operacional parcialmente desactualizada (`03_CURRENT_PHASE.md`, `02_ACTIVE_RUNTIME_CONTEXT.md`) — ~~deprecados Mayo 2026~~, referencia centralizada en este archivo.
-
-### Auditoría Doctrinal VENTAS (Junio 2026)
-
-Contraste documentación vs implementación realizado. Hallazgos principales:
-
-**Desalineaciones activas:**
-- `visualMode === "mixto"` renderiza como visual — no implementado, sin decisión documentada.
-- `ticket-calculation.service.ts` calcula IGV pero `CobroPanel` lo calcula inline de forma independiente — duplicidad sin coordinación.
-- Correlativos de despacho (`_dispatchCorrelative`) sin persistencia — se resetean al reiniciar.
-- Datos de negocio en CobroPanel ✅ resuelto (dd4978d)
-- Correlativos de despacho sin persistencia ⬜ pendiente
-- Status catálogo vs inventario real ⬜ pendiente
-
-**Contradicciones:**
-- Botón COBRAR verde claro cuando no hay turno activo — semánticamente ambiguo contra doctrina de color operacional.
-- `F10` y `F11` invocan la misma función (`confirmEmit`) — botón `Enviar` visualmente distinto pero funcionalmente idéntico a `Guardar`.
-
-**Vacíos reales:**
-- Sin documentación del ciclo de vida del ticket en dominio VENTAS.
-- `CatalogProduct` en `data/catalogs.ts` — estático, sin conexión con `domains/inventory/`. Venta no descuenta stock real. (Brecha ya registrada arriba.)
-- `flags.isManualPrice` modelado en `TicketLineDTO` sin UI ni flujo implementado.
-- `PrintFlow` define 6 tipos; solo `solo-comprobante` y `comprobante-despacho` tienen implementación real.
-- `Enviar` no envía — sin integración externa. Acción visual sin respaldo real.
+El ciclo comercial completo está implementado y validado en runtime:
+BUSCAR → AGREGAR → COBRAR → PEDIDO CONCRETADO → INVENTARIO DESCONTADO → COMPROBANTE EMITIDO
 
 ---
 
-### Posición en el ciclo evolutivo
+## Lo que está construido y validado
 
-```
-operación real          ✅ TURNO · FONDO · COBRO · COMPRAS
-dolor operacional       ✅ VENTAS vs INVENTARIOS identificado
-solución mínima         ✅ VENTAS → INVENTARIOS conectado
-validación runtime      ✅ movimientos de salida confirmados
-reconciliación/control  ⚠ parcial (capacidades sin enforcement)
-sofisticación progresiva
-consolidación
-estabilización
-```
+### Runtime operacional
+AppShell · ContextBar · SubContextBar · ModulesBar estabilizados.
+Modelo Workspace → SheetWorks como mutación contextual funcionando.
+
+### TURNO / CAJA
+Dominio más maduro. Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección de arqueos · recovery automático.
+
+### FONDO DE CAMBIO
+Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados. fondoEsperado correcto.
+
+### VENTAS / COBRO — ACTUALIZADO Junio 2026
+- Catálogo vivo desde HOV · ya no usa catalogs.ts estático
+- Pedido como entidad operacional · reemplaza Ticket doctrinalmente
+- Valor resuelto por contexto · ya no precio hardcodeado
+- Factor de conversión implementado en HOV
+- ClienteBuscador integrado en CobroPanel
+- Comprobante emitido desde dominio documents
+- Ciclo completo validado en runtime real
+
+### INVENTARIOS CAPA 0+1
+ítems · movimientos causales · disponibilidad derivada · reservas · alertas · CSV · baja lógica.
+
+### COMPRAS CAPA 0+1
+Recepción parcial incremental · causalidad compra:XXXXXXXX → INVENTARIOS · estados automáticos.
+
+### OPERADORES + ROLES
+Ciclo de vida completo · PIN · Bloque Operacional · capacidades · roles configurables.
+
+### AJUSTES
+BusinessConfig · OpsConfig · rubro · visualMode · printFlow. Hardcode eliminado.
+
+### LOGIN
+Distinción LOGIN vs Runtime Principal formalizada. Drag funcional. Flash eliminado.
 
 ---
 
-## Descubrimientos Consolidados — Mayo 2026
+## Core Operacional — Implementado Junio 2026
 
-Descubrimientos 1–13 formalizados en `docs/foundations/DESCUBRIMIENTOS_OPERACIONALES.md`.
+### Dominio CATALOG
+src/domains/catalog/
+├── hov.types.ts                ✅
+├── hov.store.ts                ✅
+├── hov.service.ts              ✅
+├── valor-operacional.types.ts  ✅
+├── valor-operacional.store.ts  ✅
+├── valor-operacional.service.ts ✅
+├── valor-operacional.resolver.ts ✅
+├── catalogo.types.ts           ✅
+├── catalogo.service.ts         ✅
+└── bridge-catalogo.ts          ✅
 
-- Descubrimientos 1–8: auditoría inicial (Persistencia, Producto, Turno, Empresa, Identidad histórica, Áreas operacionales, Fenómenos, Método).
-- Descubrimiento 11: Disponibilidad = capacidad operacional efectiva.
-- Descubrimiento 12: Abastecimiento = preservar/recuperar disponibilidad para continuidad.
-- Descubrimiento 13: Bloque Operacional = entidad operacional independiente que agrupa cajas bajo reglas de disponibilidad secuencial y coordina Operadores, Cajas y Turnos.
+### Dominio SALES
+src/domains/sales/
+├── pedido.types.ts             ✅
+├── pedido.store.ts             ✅
+├── pedido.service.ts           ✅
+├── pedido.operations.ts        ✅
+└── bridge-pedido.ts            ✅
+
+### Dominio CLIENTS
+src/domains/clients/
+├── cliente.types.ts            ✅
+├── cliente.store.ts            ✅
+└── cliente.service.ts          ✅
+
+### Dominio DOCUMENTS
+src/domains/documents/
+├── comprobante.types.ts        ✅
+├── comprobante.store.ts        ✅
+├── comprobante.validator.ts    ✅
+├── comprobante.service.ts      ✅
+└── bridge-comprobante.ts       ✅
+
+### Dominio REPORTS
+src/domains/reports/
+├── reporte.types.ts            ✅
+├── reporte.service.ts          ✅
+├── reporte.printer.ts          ✅
+└── reporte.exporter.ts         ✅
+
+---
+
+## Decisiones Arquitectónicas Consolidadas
+
+- PEDIDO reemplaza doctrinalmente a Ticket
+- HOV es entidad Core · factor de conversión vive en HOV
+- El operador selecciona HOV · nunca Producto directamente
+- Catálogo es proyección viva · no maestro de datos
+- Valor Operacional pertenece al contexto · no al Producto ni a la HOV
+- Valor LIBRE opera dentro de rango protegido · nunca por debajo del costo
+- Cliente es identidad externa opcional en el Pedido
+- Comprobante es consecuencia del Pedido · no parte de él
+- Reportes son proyecciones temporales · no almacenan datos
+- Producto vive en INVENTARIOS · VENTAS nunca lo toca directamente
+- Flujo completo: COMPRAS → INVENTARIOS → HOV → CATÁLOGO → PEDIDO → INVENTARIOS
+
+---
+
+## Brecha estructural principal
+ANTES:
+VENTAS ──► catálogo estático (catalogs.ts)   ✗
+AHORA:
+VENTAS ──► CATÁLOGO vivo (HOV + Disponibilidad + Valor)  ✅
+VENTAS ──► INVENTARIOS (factor de conversión)            ✅
+VENTAS ──► COMPROBANTES (dominio documents)              ✅
+VENTAS ──► CLIENTES (ClienteBuscador en CobroPanel)      ✅
+
+---
+
+## Tensiones activas
+
+- POSContext.tsx (~1000 líneas) · boundary difuso · extracción progresiva pendiente
+- Capacidades definidas sin enforcement en módulos
+- visualMode === "mixto" sin implementación
+- Correlativos de despacho sin persistencia
 
 ---
 
 ## Dominios por estado
 
-### Validados
+### Implementados y validados
 - TURNO / CAJA
 - FONDO DE CAMBIO
-- VENTAS / TICKET (catálogo estático)
-- COBRO / COMPROBANTES (sin integración fiscal)
+- VENTAS / PEDIDO / COBRO
 - INVENTARIOS CAPA 0+1
 - COMPRAS CAPA 0+1
 - OPERADORES + ROLES
 - AJUSTES / CONFIG
 - LOGIN
+- HOV · CATÁLOGO · VALOR OPERACIONAL
+- CLIENTES (dominio + CobroPanel)
+- COMPROBANTES
+- REPORTES (dominio · sin UI)
 
-### Parcialmente definidos
-- CATÁLOGO / PRODUCTOS — estático, sin conexión con INVENTARIOS
-- IMPRESIÓN — básica, sin colas ni feedback
+### Pendientes de UI
+- ClientesWorkspace      → módulo de gestión de clientes
+- ComprobantesWorkspace  → historial de documentos
+- ReportesWorkspace      → visualización y exportación
 
-### Faltantes (esperan dolor operacional validado)
-- PROVEEDORES — campo libre en COMPRAS
-- CLIENTES — campo en comprobante
-- CUENTAS POR PAGAR — implícito en COMPRAS, no modelado
-- ENFORCEMENT DE CAPACIDADES — definidas, sin guardas en UI
-- SINCRONIZACIÓN / MULTI-CAJA — solo conceptual en docs
+### Pendientes estructurales
+- Enforcement de capacidades operacionales
+- Extracción progresiva POSContext.tsx
+- Correlativos de despacho con persistencia
+- Alias Operacional en operator.store.ts
+- Código Operador en operator.store.ts
 
----
-
-## Estado previo consolidado
-
-### INVENTARIOS
-- CAPA 0+1 consolidadas y validadas
-- reservas operacionales · reconciliación mínima · temporalidad mínima
-- disponibilidad contextual · UX operacional humanizada
-
-### COMPRAS
-- CAPA 0+1 validadas
-- recepción parcial incremental por línea
-- causalidad explícita por línea (`compra:XXXXXXXX`)
-- estados automáticos: PENDIENTE → LLEGÓ PARCIAL → RECIBIDO
-- DEV·RESET + badge pendientes SubContextBar
-
-### TURNO
-- auditoría operacional completa
-- fix prereq contingencia en recovery (Guard 4)
-- eliminado código muerto (BLOCK_OPERATORS, operatorFromCode, validateCtgAuth)
-- ACTIVIDAD RECIENTE consolidada (`session-history.service.ts`)
-  - hasta 50 entradas · localStorage · señal ok/warn/pendiente
-  - filtro por bloque del operador
-  - columnas: CAJA · FUNCIÓN · APERTURA · CIERRE · ESTADO · reimpresión
-  - `arqueo: ArqueoData` guardado al cerrar
-- layout 3 columnas pre-apertura alineado con turno abierto (320/360/flex-1)
-
-### BLOQUE OPERACIONAL — Auditoría y Formalización (Mayo 2026)
-- Concepto descubierto implícitamente en cinco componentes independientes del sistema
-- Formalizado como Descubrimiento 13
-- Documento doctrinal: `docs/architecture/bloque-operacional.md`
-- Incorporado en `DOMAIN_LANGUAGE.md` como Concepto de Dominio Cash
-- Nomenclatura doctrinal formalizada: Principal · Auxiliar 01 · Auxiliar 02 · Excepcional
-- Inconsistencias identificadas (pendientes de implementación):
-  - `BLOCKS_REF`, `BOX_DEFS` y `MOCK_BLOCKS` divergen — bloque 400 inoperable
-  - `CajasWorkspace` opera sobre `MOCK_BLOCKS` sin efecto en runtime real
-  - `suggestedCashBox` no filtra por bloque del operador activo
-  - `CashSession` no registra bloque explícitamente — se infiere del código de caja
-
-### OPERADOR — Auditoría Doctrinal (Mayo 2026)
-
-**Identidad Operacional**
-- El Operador es la identidad operacional a la que se atribuye responsabilidad y trazabilidad
-- La identidad observable es `op.name` — persiste a través de cambios de PIN, alias, rol y bloque
-- No es: usuario de sistema, empleado, rol, credencial ni Bloque Operacional
-- Puede estar asignado a un Rol Operacional y a un Bloque Operacional
-
-**Ciclo de vida**
-- `ACTIVO` — operación normal · puede autenticarse y operar
-- `SUSPENDIDO` — retención operacional temporal · conserva Bloque Operacional asignado · reversible
-- `INACTIVO` — cierre operacional permanente · libera Bloque Operacional · historial preservado · sin camino de retorno
-
-**Rol Operacional**
-- Función operacional nombrada + plantilla de capacidades
-- No es jerarquía, cargo laboral, nivel de acceso ni gate de módulos
-- Un rol sin capacidades asignadas es válido — nombra función sin ampliar acceso
-
-**Capacidades Operacionales**
-- Capacidades efectivas = capacidades del Rol Operacional + capacidades asignadas directamente al operador
-- Las capacidades son declarativas: el modelo está definido y persistido
-- El enforcement no está activo en módulos operacionales — estado conocido del sistema, no deuda urgente ni inconsistencia doctrinal
-- Ver: `ENFORCEMENT DE CAPACIDADES` en Faltantes
-
-**Alias Operacional — APROBADO**
-- Representación humana operacional del Operador para uso en UI, tickets, comprobantes e impresiones
-- Generación: `<Inicial Primer Nombre><Primer Apellido>` → FTEJADA, CRAMIREZ, MPEREZ
-- Colisiones: `<Inicial Primer Nombre><Primer Apellido>_<Inicial Segundo Apellido>` → FTEJADA_Q
-- Resolución persistente de colisiones: manual — sin sufijos numéricos
-- Editable manualmente tras generación automática inicial
-- Pendiente de implementación en `operator.store.ts`
-
-**Código Operador — APROBADO**
-- Referencia operacional y documental estable: único, inmutable, independiente de nombre/alias/rol/bloque
-- Formato: `OP001`, `OP023`, `OP105`
-- No reemplaza el ID técnico ni el Alias Operacional — separación arquitectónica obligatoria
-- Pendiente de implementación en `operator.store.ts`
-
-### SUPERVISIÓN DE CAJA — Ciclo completo (Junio 2026)
-
-- `CorregirArqueoWorkspace` eliminado como entidad. Reemplazado por `SupervisionCajaWorkspace`.
-- Responsabilidad diferenciada: Supervisor emite autorizaciones · Operador las ejecuta desde `CajasWorkspace`.
-- Ciclo trazado: `Emitida → Ejecutada → Validada` por actor.
-- Múltiples autorizaciones concurrentes por tipo independiente con indicador `1 de N`.
-- Corrección de apertura: formulario con valor anterior, valor corregido y motivo. `recordAperturaCorrection` no altera `closeSignal`.
-- Intervenciones en sesiones correctas (sin diferencias): observación supervisora con tipo seleccionable.
-- Servicio: `supervision-authorization.service.ts`.
-- Layout final 3 columnas: `REGISTROS` (w-480px) · `SUPERVISIÓN DE CAJA` (w-420px) · `TRAZABILIDAD` (flex-1).
-- REGISTROS: ítem en una sola línea — `C{code}` · operador · rango horario · badge. `boxLabel` en `title`.
-- DETALLE eliminado de SUPERVISIÓN DE CAJA — redundante con REGISTROS.
-
-### FONDO DE CAMBIO
-- ciclo RETIRO→REINTEGRO con `refId` y `regularizationStatus`
-- ciclo PRÉSTAMO EXTERNO→DEVOLUCIÓN/INTEGRACIÓN con `sourceType: "externo"`
-- fondoEsperado usa `fondoApertEsp` del servicio de conciliación
-- advertencia no bloqueante en cierre para préstamos pendientes
-- opción "integrar permanentemente al fondo" desde tab DEVOLVER
-
-### AJUSTES
-- CAPA 1 NEGOCIO + OPERACIÓN validada
-- `BusinessConfig` · `OpsConfig` · sub-navegación contextual
-- hardcode `businessName` y `CTG_PIN` eliminados
-- `ConfigSubView`: Negocio · Operación · Rubro · Experiencia
-
-### LOGIN — RUNTIME UX
-- distinción doctrinal LOGIN vs RUNTIME PRINCIPAL formalizada
-- drag funcional · flash inicial eliminado
-- `capabilities/default.json` — `core:window:allow-show` + `core:window:allow-start-dragging`
-- login→app: `setSize → center → show`
+### Pendientes futuros
+- Facturación electrónica · OSE/PSE
+- Sincronización multi-caja
+- Módulo de Fidelización
+- Integración SUNAT
 
 ---
 
-## Layout validado — Gestión Turno
-
-### Pre-apertura (`!isOpen`)
-| Worksheet | Ancho |
-|---|---|
-| APERTURA DE TURNO | 320px fijo |
-| CAJAS DISPONIBLES | 360px fijo |
-| ACTIVIDAD RECIENTE | flex-1 |
-
-### Turno abierto (`isOpen && closingStage === 0`)
-| Worksheet | Ancho |
-|---|---|
-| RESUMEN DEL TURNO | 320px fijo |
-| MOVIMIENTOS | 360px fijo |
-| MOVIMIENTOS DEL TURNO | flex-1 |
+## Posición en el ciclo evolutivo
+operación real           ✅ TURNO · FONDO · COBRO · COMPRAS
+dolor operacional        ✅ identificado y resuelto
+ciclo comercial          ✅ CERRADO y validado en runtime
+core operacional         ✅ implementado · 30 archivos
+integración UI           ⚠ workspaces pendientes
+reconciliación/control   ⚠ capacidades sin enforcement
+sofisticación progresiva ⬜
+consolidación            ⬜
+estabilización           ⬜
 
 ---
 
-## Flujo operacional objetivo
-VENTAS → COMPRAS → INVENTARIOS
+## Flujo operacional validado
+COMPRAS → INVENTARIOS → HOV → CATÁLOGO → PEDIDO → CONCRETADO
+│
+INVENTARIO descontado
+COMPROBANTE emitido
+CLIENTE asociado
 
 ## Validaciones obligatorias
 - runtime real (npm run tauri dev)
@@ -258,140 +202,12 @@ VENTAS → COMPRAS → INVENTARIOS
 - ERPización
 - complejidad prematura
 - duplicación documental
-- prompts gigantes
 - mezcla de contexto temporal con fundaciones
 
 ## Regla UX consolidada
 > "La arquitectura puede ser sofisticada.
 > El lenguaje visible debe ser humano, operacional y contextual."
 
-## Estado Actual de Descubrimiento Operacional
-
-La fase inicial de auditorías operacionales se considera suficientemente madura para continuar con consolidación.
-
-Hallazgos con evidencia fuerte:
-
-- Producto
-- Turno
-- Disponibilidad
-- Bloque Operacional (formalizado Mayo 2026 — ver `docs/architecture/bloque-operacional.md`)
-
-Hallazgos con evidencia significativa:
-
-- Abastecimiento
-- Ventas
-
-Observaciones emergentes (no consolidadas):
-
-- Producción parece contextual al tipo de operación.
-- Comercialización parece orientada a optimizar la captura de valor.
-- Precio muestra señales de comportarse como instrumento de influencia comercial.
-- Cliente muestra señales de representar propósito operacional más que una entidad convencional.
-- Servicio continúa bajo observación.
-
-### Decisión
-
-No abrir nuevas auditorías salvo evidencia operacional relevante.
-
-La siguiente etapa se enfocará en contrastar Vendor contra los descubrimientos consolidados.
-
-Prioridades:
-
-1. Revisar Disponibilidad dentro del modelo actual.
-2. Revisar Abastecimiento contra continuidad operacional.
-3. Revisar Ventas contra captura de valor.
-4. Revisar Turno contra responsabilidad operacional.
-
-La operación real vuelve a ser la principal fuente de descubrimiento.
-
-Las auditorías futuras deberán surgir de evidencia observada durante implementación, validación o uso operacional.
-
-## Descubrimientos Provisionales — Auditoría Dominio VENTAS
-
-### Habilitación Operacional de Venta (HOV)
-
-Se observa una separación clara entre Producto y las modalidades mediante las cuales dicho producto puede ser comercializado.
-
-Producto responde:
-
-¿Qué es?
-
-HOV responde:
-
-¿Cómo puede venderse?
-
-Ejemplos observados:
-
-* Unidad
-* Blister
-* Caja
-* Pack
-* Combo
-* Mayorista
-* VIP
-* Estándar
-
-### Valor Operacional Asociado
-
-Se observa que una misma HOV puede poseer múltiples valores aplicables según contexto.
-
-Ejemplos:
-
-* Normal
-* Oferta
-* Preferencial
-* Mayorista
-* Libre
-
-El valor no forma parte de la identidad del producto ni de la HOV.
-
-### Pedido
-
-Durante la auditoría se cuestiona la centralidad doctrinal de Ticket.
-
-Se observa que múltiples conceptos aparentemente distintos:
-
-* Ticket
-* Precuenta
-* Carrito
-* Preventa
-* Reserva
-
-comparten propiedades operacionales equivalentes.
-
-Hipótesis actual:
-
-Pedido representa mejor la realidad operacional observada.
-
-Propiedades identificadas:
-
-* Mutable
-* Divisible
-* Fusionable
-* Transformable
-* Abandonable
-* Concretable
-
-### Flujo Operacional Observado
-
-Identifico qué necesita el cliente
-↓
-Defino cómo puedo ofrecérselo
-↓
-Reconozco el valor aplicable
-↓
-Construyo el pedido
-↓
-Lo ajusto si es necesario
-↓
-Lo confirmo
-↓
-Lo cobro
-↓
-Lo entrego
-↓
-Lo evidencio
-
-Observación:
-
-VENTAS parece comportarse más como un dominio de construcción, evolución y concreción de pedidos que como un dominio centrado en transacciones.
+## Regla de Oro del Proyecto
+> "¿Estamos fortaleciendo el Core Operacional
+>  o estamos introduciendo una excepción?"
