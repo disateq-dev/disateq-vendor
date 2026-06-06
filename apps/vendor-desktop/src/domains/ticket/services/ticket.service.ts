@@ -1,6 +1,12 @@
 import { createTicketLine } from "../state/ticket.actions";
-
 import { useTicketStore } from "../state/ticket.store";
+import {
+  obtenerPedidoActivoOCrear,
+  sincronizarConcrecion,
+  traducirATicketLine,
+  type AddProductBridgeInput
+} from "../../sales/bridge-pedido";
+import { agregarLinea } from '../../sales/pedido.service'
 
 type AddProductInput = {
   productId:    string;
@@ -11,7 +17,10 @@ type AddProductInput = {
   tipoPrecio?:   string;
 };
 
+let _pedidoActivoId: string | null = null;
+
 export const ticketService = {
+
   addProduct(input: AddProductInput) {
     useTicketStore.getState().addLine(
       createTicketLine({
@@ -26,13 +35,58 @@ export const ticketService = {
     );
   },
 
+  addProductFromHOV(input: AddProductBridgeInput) {
+    if (!_pedidoActivoId) {
+      _pedidoActivoId = obtenerPedidoActivoOCrear(
+        input.contextoOperacionalId,
+        input.identidadOperacionalId,
+        input.operadorId
+      );
+    }
+    if (_pedidoActivoId) {
+      try {
+        agregarLinea({
+          pedidoId: _pedidoActivoId,
+          hovId: input.hovId,
+          cantidad: input.cantidad,
+          contextoOperacionalId: input.contextoOperacionalId,
+          identidadOperacionalId: input.identidadOperacionalId,
+          margenMinimoConfigurable: input.margenMinimoConfigurable,
+          operadorTieneCapacidadLibre: input.operadorTieneCapacidadLibre,
+          operadorId: input.operadorId,
+        });
+      } catch {
+        // fallo silencioso · el ticket visual no se ve afectado
+      }
+    }
+    useTicketStore.getState().addLine(
+      traducirATicketLine(input),
+    );
+  },
+
+  obtenerPedidoActivoOCrear(
+    contextoOperacionalId: string,
+    identidadOperacionalId: string,
+    operadorId: string
+  ): string {
+    if (_pedidoActivoId) return _pedidoActivoId;
+    _pedidoActivoId = obtenerPedidoActivoOCrear(
+      contextoOperacionalId,
+      identidadOperacionalId,
+      operadorId
+    );
+    return _pedidoActivoId;
+  },
+
+  concretarVenta(pedidoId: string): void {
+    sincronizarConcrecion(pedidoId);
+    _pedidoActivoId = null;
+  },
+
   incrementLine(lineId: string) {
     const state = useTicketStore.getState();
-
     const line = state.linesById[lineId];
-
     if (!line) return;
-
     state.updateQuantity(lineId, line.quantity + 1);
   },
 
@@ -57,5 +111,7 @@ export const ticketService = {
 
   clear() {
     useTicketStore.getState().clearTicket();
+    _pedidoActivoId = null;
   },
+
 };

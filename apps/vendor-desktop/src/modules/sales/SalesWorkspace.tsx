@@ -1,12 +1,14 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { ScanLine, Search, CircleCheck, AlertTriangle, CircleX, Tag, Clock } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { ScanLine, Search, CircleCheck, AlertTriangle, CircleX } from "lucide-react";
 import { useTicketStore } from "../../domains/ticket/state/ticket.store";
 import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
 import { ticketService } from "../../domains/ticket/services/ticket.service";
 import { usePOS } from "../../context/POSContext";
-import { RUBROS, type CatalogProduct, type Presentacion, type PrecioTipo } from "../../data/catalogs";
-import { inventoryService } from "../../domains/inventory/service";
-import { PresentacionSheet } from "./PresentacionSheet";
+import {
+  buscarProductos,
+  obtenerProductosBuscables,
+  type ProductoBuscable
+} from "../../domains/catalog/bridge-catalogo";
 
 function Helper({ text }: { text: string }) {
   return (
@@ -19,28 +21,20 @@ function Helper({ text }: { text: string }) {
   );
 }
 
-function statusChip(p: CatalogProduct) {
-  if (p.status === "low")      return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
-  if (p.status === "out")      return <span className="flex items-center gap-0.5 text-red-400"><CircleX size={10} strokeWidth={2} />Sin unidades</span>;
-  if (p.status === "promo")    return <span className="flex items-center gap-0.5 text-orange-500"><Tag size={10} strokeWidth={2} />Oferta</span>;
-  if (p.status === "expiring") return <span className="flex items-center gap-0.5 text-amber-400"><Clock size={10} strokeWidth={2} />Revisar pronto</span>;
+function statusChip(p: ProductoBuscable) {
+  if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
+  if (p.stockStatus === "out") return <span className="flex items-center gap-0.5 text-red-400"><CircleX size={10} strokeWidth={2} />Sin unidades</span>;
   return <span className="flex items-center gap-0.5 text-[#45b356]"><CircleCheck size={10} strokeWidth={2} />Disponible</span>;
 }
 
-function tilePrice(p: CatalogProduct): { prefix: string; cls: string } {
-  switch (p.status) {
-    case "promo":    return { prefix: "% ", cls: "text-emerald-600" };
-    case "expiring": return { prefix: "⏱ ", cls: "text-amber-500"  };
-    case "out":      return { prefix: "",   cls: "text-red-400"     };
-    default:         return { prefix: "",   cls: "text-[#2d4f6b]"   };
-  }
+function tilePrice(p: ProductoBuscable): { prefix: string; cls: string } {
+  if (p.stockStatus === "out") return { prefix: "", cls: "text-red-400" };
+  return { prefix: "", cls: "text-[#2d4f6b]" };
 }
 
-function dotColor(p: CatalogProduct): string {
-  if (p.status === "out")      return "#f87171";
-  if (p.status === "low")      return "#fbbf24";
-  if (p.status === "promo")    return "#fb923c";
-  if (p.status === "expiring") return "#f59e0b";
+function dotColor(p: ProductoBuscable): string {
+  if (p.stockStatus === "out") return "#f87171";
+  if (p.stockStatus === "low") return "#fbbf24";
   return "#34d399";
 }
 
@@ -78,44 +72,56 @@ function normalize(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-function searchCatalog(catalog: CatalogProduct[], query: string): CatalogProduct[] {
+function searchCatalog(
+  productos: ProductoBuscable[],
+  query: string
+): ProductoBuscable[] {
   const q = normalize(query);
-  if (!q) return catalog;
+  if (!q) return productos;
   const tokens = q.split(/\s+/).filter(Boolean);
   const seen = new Set<string>();
-  const results: Product[] = [];
+  const results: ProductoBuscable[] = [];
 
-  for (const p of catalog) {
-    const n = normalize(p.name);
-    if (n.startsWith(q) || normalize(p.id).startsWith(q) || p.code.startsWith(q)) {
+  for (const p of productos) {
+    const n = normalize(p.description);
+    if (n.startsWith(q) || normalize(p.id).startsWith(q)) {
       results.push(p); seen.add(p.id);
     }
   }
-  for (const p of catalog) {
+  for (const p of productos) {
     if (seen.has(p.id)) continue;
-    if (normalize(p.name).split(" ").some(w => w.startsWith(q))) {
+    if (normalize(p.description).split(" ").some(w => w.startsWith(q))) {
       results.push(p); seen.add(p.id);
     }
   }
-  for (const p of catalog) {
+  for (const p of productos) {
     if (seen.has(p.id)) continue;
-    const n = normalize(p.name);
-    if (n.includes(q) || normalize(p.id).includes(q) || p.code.includes(q)) {
+    const n = normalize(p.description);
+    if (n.includes(q) || normalize(p.id).includes(q)) {
       results.push(p); seen.add(p.id);
     }
   }
   if (tokens.length > 1) {
-    for (const p of catalog) {
+    for (const p of productos) {
       if (seen.has(p.id)) continue;
-      const n = normalize(p.name);
-      if (tokens.every(t => n.includes(t))) { results.push(p); seen.add(p.id); }
+      const n = normalize(p.description);
+      if (tokens.every(t => n.includes(t))) {
+        results.push(p); seen.add(p.id);
+      }
     }
   }
-
   return results;
 }
 
 import type { VisualMode } from "../../data/catalogs";
+
+type POSRuntimeContext = ReturnType<typeof usePOS> & {
+  contextoOperacionalId?: string;
+  identidadOperacionalId?: string;
+  operadorActivo?: { id?: string };
+};
+
+void buscarProductos;
 
 const VIEW_OPTS: { id: VisualMode; label: string }[] = [
   { id: "lista",  label: "Lista"   },
@@ -143,7 +149,7 @@ function ViewToggle({ current, onChange }: { current: VisualMode; onChange: (m: 
   );
 }
 
-function TileBadge({ p }: { p: CatalogProduct }) {
+function TileBadge({ p }: { p: ProductoBuscable }) {
   return (
     <div
       className="absolute right-2 top-2 h-2 w-2 rounded-full ring-2 ring-white"
@@ -153,8 +159,9 @@ function TileBadge({ p }: { p: CatalogProduct }) {
 }
 
 export function SalesWorkspace() {
-  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, rubro, visualMode, setVisualMode } = usePOS();
-  const rubroConfig = RUBROS[rubro];
+  const posContext = usePOS() as POSRuntimeContext;
+  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, visualMode, setVisualMode } = posContext;
+  const rubroConfig = { categories: [{ id: "all", label: "Todo" }] };
 
   // "mixto" renders as visual for now — a split layout can be explored in runtime validation
   const view = visualMode === "lista" ? "dense" : "visual";
@@ -163,8 +170,6 @@ export function SalesWorkspace() {
   const [query, setQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [sheetProduct,  setSheetProduct]  = useState<CatalogProduct | null>(null);
-  const [sheetPres,     setSheetPres]     = useState<Presentacion | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
@@ -176,25 +181,34 @@ export function SalesWorkspace() {
     return lastId ? s.linesById[lastId] : null;
   });
 
-  // Reset category filter when rubro changes
+  const catalogoActivo = useMemo(() =>
+    obtenerProductosBuscables(
+      posContext.contextoOperacionalId ?? "default",
+      posContext.identidadOperacionalId ?? "default",
+      posContext.operadorActivo?.id ?? "default"
+    ),
+    [posContext.contextoOperacionalId,
+     posContext.identidadOperacionalId,
+     posContext.operadorActivo?.id]
+  );
+
+  // Reset category filter when catalog changes
   useEffect(() => {
     setVisualCategory("all");
     setQuery("");
     setSearchQuery("");
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rubro]);
-
-  const catalog = rubroConfig.catalog;
+  }, [catalogoActivo]);
 
   const isCalcMode  = /^[0-9+\-*/.]+$/.test(query.trim()) && /[+\-*/]/.test(query.trim());
   const calcResult  = isCalcMode ? safeCalc(query) : null;
 
   const isSearching   = searchQuery.length >= 1;
-  const filtered      = isSearching ? searchCatalog(catalog, searchQuery) : catalog;
-  const visualCatalog = isSearching ? filtered : catalog;
+  const filtered      = isSearching ? searchCatalog(catalogoActivo, searchQuery) : catalogoActivo;
+  const visualCatalog = isSearching ? filtered : catalogoActivo;
   const visualItems   = visualCategory === "all"
     ? visualCatalog
-    : visualCatalog.filter(p => p.category === visualCategory);
+    : visualCatalog;
 
   // Mount — scanner readiness on every runtime re-entry (CASH/CONFIG/COMP → VENTAS)
   // inputRef is stable so [] is correct; fires even when zone/cobroOpen haven't changed value
@@ -247,46 +261,27 @@ export function SalesWorkspace() {
     return () => document.removeEventListener("pos:focusSearch", handler);
   }, [cobroOpen]);
 
-  const addProductToTicket = useCallback((p: CatalogProduct) => {
-    if (p.status === "out") return;
-    if (p.presentaciones && p.presentaciones.length > 0) {
-      if (cobroOpen) closeCobro();
-      setSheetProduct(p);
-      setSheetPres(null);
-      return;
-    }
+  const addProductToTicket = useCallback((p: ProductoBuscable) => {
+    if (p.stockStatus === "out") return;
     if (cobroOpen) closeCobro();
-    ticketService.addProduct({
-      productId:    p.id,
-      description:  p.name,
-      barcode:      p.code,
-      unitPrice:    p.price,
+    ticketService.addProductFromHOV({
+      hovId: p.hovId,
+      description: p.description,
+      cantidad: 1,
+      unitPrice: p.unitPrice,
+      presentacion: p.presentacion,
+      factorConversion: p.factorConversion,
+      requiereValorManual: p.requiereValorManual,
+      contextoOperacionalId: posContext.contextoOperacionalId ?? "default",
+      identidadOperacionalId: posContext.identidadOperacionalId ?? "default",
+      operadorId: posContext.operadorActivo?.id ?? "default",
+      margenMinimoConfigurable: 0.15,
+      operadorTieneCapacidadLibre: false,
     });
     setQuery("");
     setSearchQuery("");
     inputRef.current?.focus();
-  }, [cobroOpen, closeCobro]);
-
-  const confirmPresentacion = useCallback((
-    p: CatalogProduct,
-    pres: Presentacion,
-    precio: number,
-    tipoPrecio?: string,
-  ) => {
-    ticketService.addProduct({
-      productId:    p.id,
-      description:  `${p.name} · ${pres.label}`,
-      barcode:      p.code,
-      unitPrice:    precio,
-      presentacion: pres.label,
-      tipoPrecio,
-    });
-    setSheetProduct(null);
-    setSheetPres(null);
-    setQuery("");
-    setSearchQuery("");
-    inputRef.current?.focus();
-  }, []);
+  }, [cobroOpen, closeCobro, posContext]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (cobroOpen) return;
@@ -379,16 +374,6 @@ export function SalesWorkspace() {
 
   return (
     <>
-      {sheetProduct && (
-        <PresentacionSheet
-          product={sheetProduct}
-          selectedPres={sheetPres}
-          onSelectPres={setSheetPres}
-          onConfirm={confirmPresentacion}
-          onCancel={() => { setSheetProduct(null); setSheetPres(null); inputRef.current?.focus(); }}
-        />
-      )}
-
       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* TOOLBAR — Visual mode */}
@@ -496,7 +481,7 @@ export function SalesWorkspace() {
                   {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                 </p>
                 {filtered.map((product, idx) => {
-                  const isOut = product.status === "out";
+                  const isOut = product.stockStatus === "out";
                   const isSelected = idx === selectedIndex;
 
                   return (
@@ -522,11 +507,11 @@ export function SalesWorkspace() {
                               isSelected ? "text-[#2d4f6b]" : isOut ? "text-[#9ca3af]" : "text-[#2F3E46]"
                             }`}
                           >
-                            {product.name}
+                            {product.description}
                           </div>
                           <div className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold">
                             <span className="tabular-nums text-[#374151]">
-                              {product.id}{!isOut ? ` · ${inventoryService.disponibilidad(product.id)} uds.` : ""}
+                              {product.id}
                             </span>
                             <span className="text-[#d1d9e1]">·</span>
                             {statusChip(product)}
@@ -536,7 +521,7 @@ export function SalesWorkspace() {
 
                       <div className="ml-4 flex shrink-0 items-center gap-3">
                         <span className="text-[14px] font-semibold text-[#2F3E46]">
-                          S/ {product.price.toFixed(2)}
+                          S/ {product.unitPrice.toFixed(2)}
                         </span>
 
                         <button
@@ -582,7 +567,7 @@ export function SalesWorkspace() {
                 </p>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 px-3 pb-3 pt-1">
                   {visualItems.map((product) => {
-                    const isOut  = product.status === "out";
+                    const isOut  = product.stockStatus === "out";
                     const price  = tilePrice(product);
 
                     return (
@@ -598,19 +583,19 @@ export function SalesWorkspace() {
                       >
                         <div
                           className="relative flex items-center justify-center h-[68px]"
-                          style={{ backgroundColor: product.color }}
+                          style={{ backgroundColor: "#F8FAFC" }}
                         >
-                          <span className="text-[38px] leading-none select-none">{product.emoji}</span>
+                          <span className="text-[38px] leading-none select-none" />
                           <TileBadge p={product} />
                         </div>
                         <div className="px-2.5 pt-2 pb-2.5">
                           <p className="line-clamp-2 text-[11px] font-bold uppercase tracking-[0.025em] leading-snug text-[#2F3E46]">
-                            {product.short}
+                            {product.description}
                           </p>
                           <p className={`mt-1.5 text-[13px] font-extrabold tabular-nums ${price.cls}`}>
-                            {price.prefix}S/ {product.price.toFixed(2)}
+                            {price.prefix}S/ {product.unitPrice.toFixed(2)}
                           </p>
-                          {product.status !== "normal" && (
+                          {product.stockStatus !== "normal" && (
                             <div className="mt-1.5 text-[10px] leading-none">{statusChip(product)}</div>
                           )}
                         </div>

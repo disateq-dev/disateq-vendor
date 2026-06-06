@@ -11,6 +11,11 @@ import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptW
 import { toCents, moneySum, moneySub, moneyRound, moneyGt, moneyGte, moneyEq } from "../../lib/money";
 import { loadBusinessConfig } from "../../config/business";
 import { inventoryService } from "../../domains/inventory/service";
+import {
+  emitirComprobante,
+  construirReceiptData
+} from "../../domains/documents/bridge-comprobante";
+import ClienteBuscador from "../sales/ClienteBuscador";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
@@ -204,6 +209,19 @@ export function CobroPanel() {
     };
   }
 
+  function mapearTipoComprobante(docType: string) {
+    if (docType === 'FACTURA' || docType === "factura") return 'FACTURA' as const;
+    if (docType === 'BOLETA' || docType === "boleta") return 'BOLETA' as const;
+    return 'TIQUE_VENTA' as const;
+  }
+
+  function mapearMetodoPago(payMethod: string) {
+    if (payMethod === 'yape')    return 'YAPE' as const;
+    if (payMethod === 'tarjeta') return 'TARJETA' as const;
+    if (payMethod === 'mixto')   return 'MIXTO' as const;
+    return 'EFECTIVO' as const;
+  }
+
   function confirmEmit() {
     if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
     if (!canConfirm) return;
@@ -222,10 +240,53 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoEfeNum : undefined,
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
-    addComprobante(buildComprobanteData(dt));
+    try {
+      const pedidoId = ticketService
+        .obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null;
+      emitirComprobante({
+        tipo: mapearTipoComprobante(docType),
+        serie: cfg.series,
+        lineas: lines.map(l => ({
+          description: l.description,
+          quantity:    l.quantity,
+          unitPrice:   l.unitPrice,
+          subtotal:    l.subtotal,
+          note:        l.note ?? null,
+        })),
+        subtotal:    baseImponible,
+        igv:         igv,
+        isc:         0,
+        total:       total,
+        metodoPago:  mapearMetodoPago(payMethod),
+        mixtoBreakdown: payMethod === 'mixto'
+          ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
+          : undefined,
+        customer:    customer
+          ? { docNumber: customer.docNumber, name: customer.name }
+          : null,
+        emitidoPor:  "default",
+        pedidoId:    pedidoId,
+      });
+    } catch {
+      addComprobante(buildComprobanteData(dt));
+    }
     lines.forEach(line => {
-      inventoryService.registrarSalida(line.productId, line.quantity, `venta:${docNumber}`);
+      inventoryService.registrarSalida(
+        line.productId,
+        line.quantity,
+        `venta:${docNumber}`
+      );
     });
+
+    const pedidoActivo = ticketService.obtenerPedidoActivoOCrear?.(
+      "default",
+      "default",
+      "default"
+    );
+    if (pedidoActivo) {
+      ticketService.concretarVenta(pedidoActivo);
+    }
+
     ticketService.clear();
     closeCobro();
   }
@@ -236,21 +297,72 @@ export function CobroPanel() {
     const now      = new Date();
     const p        = (n: number) => String(n).padStart(2, "0");
     const dateTime = `${p(now.getDate())}/${p(now.getMonth() + 1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`;
-    const biz = loadBusinessConfig();
-    const receiptData = {
-      businessName:   biz.nombreComercial,
-      businessRuc:    biz.ruc,
-      businessAddr:   biz.direccion,
-      businessPhone:  biz.telefono,
-      docType,
-      docSeries:      cfg.series,
-      docCorrelative: nextCorrelative,
-      dateTime,
-      customer,
-      lines: lines.map(l => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, subtotal: l.subtotal, note: l.note })),
-      baseImponible, igv, discountNum, total, netTotal, payMethod, receivedNum, change,
-      mixtoBreakdown: payMethod === "mixto" ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum } : undefined,
-    };
+    let receiptData: Parameters<typeof printTicket>[0];
+    try {
+      const pedidoId = ticketService
+        .obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null;
+      const comprobante = emitirComprobante({
+        tipo: mapearTipoComprobante(docType),
+        serie: cfg.series,
+        lineas: lines.map(l => ({
+          description: l.description,
+          quantity:    l.quantity,
+          unitPrice:   l.unitPrice,
+          subtotal:    l.subtotal,
+          note:        l.note ?? null,
+        })),
+        subtotal:    baseImponible,
+        igv:         igv,
+        isc:         0,
+        total:       total,
+        metodoPago:  mapearMetodoPago(payMethod),
+        mixtoBreakdown: payMethod === 'mixto'
+          ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
+          : undefined,
+        customer:    customer
+          ? { docNumber: customer.docNumber, name: customer.name }
+          : null,
+        emitidoPor:  "default",
+        pedidoId:    pedidoId,
+      });
+      receiptData = construirReceiptData(
+        comprobante,
+        dateTime,
+        baseImponible,
+        discountNum,
+        netTotal,
+        receivedNum,
+        change,
+        payMethod === 'mixto'
+          ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
+          : undefined
+      ) as Parameters<typeof printTicket>[0];
+    } catch {
+      const biz = loadBusinessConfig();
+      receiptData = {
+        businessName:   biz.nombreComercial,
+        businessRuc:    biz.ruc,
+        businessAddr:   biz.direccion,
+        businessPhone:  biz.telefono,
+        docType,
+        docSeries:      cfg.series,
+        docCorrelative: nextCorrelative,
+        dateTime,
+        customer,
+        lines: lines.map(l => ({
+          description: l.description,
+          quantity:    l.quantity,
+          unitPrice:   l.unitPrice,
+          subtotal:    l.subtotal,
+          note:        l.note,
+        })),
+        baseImponible, igv, discountNum, total, netTotal,
+        payMethod, receivedNum, change,
+        mixtoBreakdown: payMethod === 'mixto'
+          ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
+          : undefined,
+      };
+    }
     const dispatchData: DispatchData = {
       correlative: _dispatchCorrelative++,
       dateTime,
@@ -275,10 +387,23 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoEfeNum : undefined,
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
-    addComprobante(buildComprobanteData(dateTime));
     lines.forEach(line => {
-      inventoryService.registrarSalida(line.productId, line.quantity, `venta:${docNumber}`);
+      inventoryService.registrarSalida(
+        line.productId,
+        line.quantity,
+        `venta:${docNumber}`
+      );
     });
+
+    const pedidoActivo = ticketService.obtenerPedidoActivoOCrear?.(
+      "default",
+      "default",
+      "default"
+    );
+    if (pedidoActivo) {
+      ticketService.concretarVenta(pedidoActivo);
+    }
+
     ticketService.clear();
     closeCobro();
   }
@@ -648,141 +773,40 @@ export function CobroPanel() {
         </>
 
       ) : (
-
-        /* ── CLIENT FORM ── */
-        <div className="flex-1 overflow-y-auto flex flex-col px-4 pt-3 pb-3 gap-3">
-
-          <p className="shrink-0 text-[10px] font-bold uppercase tracking-[0.15em] text-[#9ca3af]">
-            {docType === "factura" ? "Datos de facturación" :
-             docType === "boleta"  ? "Datos del cliente" :
-             docType === "cotizacion" ? "Cliente de cotización" : "Cliente"}
-          </p>
-
-          {/* BLOQUE 1 — IDENTIDAD */}
-          <div className="flex flex-col gap-2">
-            {docType === "cotizacion" && (
-              <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5 self-start">
-                {(["dni", "ruc"] as CotizaMode[]).map(m => (
-                  <button
-                    key={m}
-                    onClick={() => { setCotizaMode(m); setCDoc(""); }}
-                    className={`rounded-[5px] px-3 py-1 text-[11px] font-bold uppercase transition ${
-                      cotizaMode === m ? "bg-white text-[#2154d8] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {showDocInput && (
-              <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">
-                  {docLabel}
-                </label>
-                <div className="flex gap-1.5">
-                  <input
-                    autoFocus
-                    type="text"
-                    value={cDoc}
-                    onChange={e => setCDoc(e.target.value.replace(/\D/g, ""))}
-                    placeholder={docPlaceholder}
-                    maxLength={docMaxLen}
-                    className="flex-1 rounded-xl border border-[#e4e9f0] px-3.5 py-2.5 text-[14px] font-bold text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                  />
-                  {docLookupLabel && (
-                    <button className="shrink-0 rounded-xl border border-[#c7d7f4] bg-[#f0f5ff] px-3 text-[11px] font-bold text-[#2154d8] transition hover:bg-[#dbeafe]">
-                      {docLookupLabel}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">
-                {docType === "factura" ? "Razón social *" : "Nombre · opcional"}
-              </label>
-              <input
-                autoFocus={!showDocInput}
-                type="text"
-                value={cName}
-                onChange={e => setCName(e.target.value)}
-                placeholder={docType === "factura" ? "Empresa S.A.C." : "Nombre completo"}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2.5 text-[14px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-              />
-            </div>
-          </div>
-
-          {/* BLOQUE 2 — UBICACIÓN */}
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#c4a87c]">Ubicación</p>
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={cDept}
-                onChange={e => setCDept(e.target.value)}
-                placeholder="Departamento"
-                className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
-              />
-              <input
-                type="text"
-                value={cProvince}
-                onChange={e => setCProvince(e.target.value)}
-                placeholder="Provincia"
-                className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
-              />
-            </div>
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={cDistrict}
-                onChange={e => setCDistrict(e.target.value)}
-                placeholder="Distrito"
-                className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
-              />
-              <input
-                type="text"
-                value={cAddress}
-                onChange={e => setCAddress(e.target.value)}
-                placeholder="Dirección"
-                className="flex-[2] rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
-              />
-            </div>
-          </div>
-
-          {/* BLOQUE 3 — CONTACTO */}
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#c4a87c]">Contacto</p>
-            <div className="flex gap-1.5">
-              <input
-                type="tel"
-                value={cPhone}
-                onChange={e => setCPhone(e.target.value)}
-                placeholder="Teléfono"
-                className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
-              />
-              <input
-                type="email"
-                value={cEmail}
-                onChange={e => setCEmail(e.target.value)}
-                placeholder="Correo-E"
-                className="flex-[1.5] rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8]"
-              />
-            </div>
-          </div>
-
-          {customer && (
-            <button
-              onClick={() => { setCustomer(null); resetForm(); }}
-              className="shrink-0 rounded-xl py-1.5 text-[11px] font-semibold text-[#9ca3af] transition hover:text-red-500"
-            >
-              Quitar cliente
-            </button>
-          )}
-
-        </div>
+        <ClienteBuscador
+          docType={docType}
+          onClienteSeleccionado={(cliente) => {
+            setCustomer({
+              docNumber: cliente.identificacionFiscal.numeroDocumento ?? '',
+              name: cliente.nombre,
+              department: undefined,
+              province: undefined,
+              district: undefined,
+              address: cliente.identificacionFiscal.direccionFiscal ?? undefined,
+              phone: undefined,
+              email: cliente.canales.email ?? undefined,
+            });
+            setCobroView("main");
+          }}
+          onClienteOcasional={(nombre, documento) => {
+            setCustomer(
+              (nombre || documento)
+                ? {
+                    docNumber: documento,
+                    name: nombre || 'VARIOS',
+                    department: undefined,
+                    province: undefined,
+                    district: undefined,
+                    address: undefined,
+                    phone: undefined,
+                    email: undefined,
+                  }
+                : null
+            );
+            setCobroView("main");
+          }}
+          onCancelar={() => setCobroView("main")}
+        />
       )}
 
       {/* FOOTER — condicional por sheet activa */}
