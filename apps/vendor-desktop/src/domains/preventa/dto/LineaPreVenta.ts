@@ -1,4 +1,4 @@
-export interface TicketLineDTO {
+export interface LineaPreVenta {
   lineId:        string;
   productId:     string;
   description:   string;

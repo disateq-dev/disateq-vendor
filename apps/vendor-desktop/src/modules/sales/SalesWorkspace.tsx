@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ScanLine, Search, CircleCheck, AlertTriangle, CircleX } from "lucide-react";
-import { useTicketStore } from "../../domains/ticket/state/ticket.store";
-import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
-import { ticketService } from "../../domains/ticket/services/ticket.service";
+import { usePreVentaStore } from "../../domains/preventa/state/preventa.store";
+import { useLineasPreVenta } from "../../domains/preventa/selectors/preventa.selectors";
+import { preVentaService } from "../../domains/preventa/services/preventa.service";
 import { usePOS } from "../../context/POSContext";
 import {
   buscarProductos,
@@ -173,10 +173,10 @@ export function SalesWorkspace() {
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
-  const lines            = useTicketLines();
-  const activeLineIdx    = useTicketStore(s => s.activeLineIdx);
-  const setActiveLineIdx = useTicketStore(s => s.setActiveLineIdx);
-  const lastLine = useTicketStore(s => {
+  const lines                 = useLineasPreVenta();
+  const indiceLineaActiva     = usePreVentaStore(s => s.indiceLineaActiva);
+  const setIndiceLineaActiva  = usePreVentaStore(s => s.setIndiceLineaActiva);
+  const lastLine = usePreVentaStore(s => {
     const lastId = s.lineOrder[s.lineOrder.length - 1];
     return lastId ? s.linesById[lastId] : null;
   });
@@ -264,7 +264,7 @@ export function SalesWorkspace() {
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
     if (p.stockStatus === "out") return;
     if (cobroOpen) closeCobro();
-    ticketService.addProductFromHOV({
+    preVentaService.agregarProductoDesdeHOV({
       hovId: p.hovId,
       description: p.description,
       cantidad: 1,
@@ -286,7 +286,7 @@ export function SalesWorkspace() {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (cobroOpen) return;
     // Helper: target line for operations — active (navigated) or fallback to last
-    const targetLine = activeLineIdx >= 0 ? lines[activeLineIdx] : lastLine;
+    const targetLine = indiceLineaActiva >= 0 ? lines[indiceLineaActiva] : lastLine;
 
     switch (e.key) {
       case "ArrowDown":
@@ -295,7 +295,7 @@ export function SalesWorkspace() {
           setSelectedIndex(i => i + 1 >= filtered.length ? 0 : i + 1);
         } else if (lines.length > 0) {
           e.preventDefault();
-          setActiveLineIdx(activeLineIdx < 0 ? 0 : activeLineIdx + 1 >= lines.length ? 0 : activeLineIdx + 1);
+          setIndiceLineaActiva(indiceLineaActiva < 0 ? 0 : indiceLineaActiva + 1 >= lines.length ? 0 : indiceLineaActiva + 1);
         }
         break;
       case "ArrowUp":
@@ -304,7 +304,7 @@ export function SalesWorkspace() {
           setSelectedIndex(i => i <= 0 ? filtered.length - 1 : i - 1);
         } else if (lines.length > 0) {
           e.preventDefault();
-          setActiveLineIdx(activeLineIdx <= 0 ? lines.length - 1 : activeLineIdx - 1);
+          setIndiceLineaActiva(indiceLineaActiva <= 0 ? lines.length - 1 : indiceLineaActiva - 1);
         }
         break;
       case "Enter": {
@@ -313,15 +313,15 @@ export function SalesWorkspace() {
           e.preventDefault();
           const product = selectedIndex >= 0 ? filtered[selectedIndex] : filtered[0];
           if (product) addProductToTicket(product);
-        } else if (activeLineIdx >= 0) {
+        } else if (indiceLineaActiva >= 0) {
           e.preventDefault();
-          setActiveLineIdx(-1); // clear ticket navigation, return to search
+          setIndiceLineaActiva(-1); // clear ticket navigation, return to search
         }
         break;
       }
       case "Escape":
         e.preventDefault();
-        setActiveLineIdx(-1);
+        setIndiceLineaActiva(-1);
         setQuery("");
         setSearchQuery("");
         setSelectedIndex(-1);
@@ -334,31 +334,31 @@ export function SalesWorkspace() {
       case "*": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) ticketService.incrementLine(targetLine.lineId);
+        if (targetLine) preVentaService.incrementarLinea(targetLine.lineId);
         break;
       }
       case "-": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) ticketService.decrementLine(targetLine.lineId);
+        if (targetLine) preVentaService.decrementarLinea(targetLine.lineId);
         break;
       }
       case "Delete": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) ticketService.removeLine(targetLine.lineId);
+        if (targetLine) preVentaService.quitarLinea(targetLine.lineId);
         break;
       }
       case "ArrowRight": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) ticketService.incrementLine(targetLine.lineId);
+        if (targetLine) preVentaService.incrementarLinea(targetLine.lineId);
         break;
       }
       case "ArrowLeft": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) ticketService.decrementLine(targetLine.lineId);
+        if (targetLine) preVentaService.decrementarLinea(targetLine.lineId);
         break;
       }
       case "Insert":
@@ -366,11 +366,11 @@ export function SalesWorkspace() {
       case "N": {
         if (e.key !== "Insert" && query !== "") break;
         e.preventDefault();
-        if (targetLine) ticketService.openLineNote(targetLine.lineId);
+        if (targetLine) preVentaService.abrirNotaLinea(targetLine.lineId);
         break;
       }
     }
-  }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, activeLineIdx, setActiveLineIdx, lastLine, cobroOpen]);
+  }, [isSearching, filtered, selectedIndex, addProductToTicket, query, lines, indiceLineaActiva, setIndiceLineaActiva, lastLine, cobroOpen]);
 
   return (
     <>

@@ -1,14 +1,14 @@
-import type { TicketLineDTO } from "../dto/TicketLineDTO";
+import type { LineaPreVenta } from "../dto/LineaPreVenta";
 
-export interface TicketTotals {
+export interface TotalesPreVenta {
   subtotal: number;
   tax: number;
   total: number;
 }
 
-export const calculateTicketTotals = (
-  lines: TicketLineDTO[]
-): TicketTotals => {
+export const calcularTotalesPreVenta = (
+  lines: LineaPreVenta[]
+): TotalesPreVenta => {
   const subtotal = lines.reduce(
     (accumulator, line) =>
       accumulator + line.subtotal,

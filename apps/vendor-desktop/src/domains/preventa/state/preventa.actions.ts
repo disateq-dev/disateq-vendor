@@ -1,7 +1,7 @@
-import type { TicketLineDTO } from "../dto/TicketLineDTO";
+import type { LineaPreVenta } from "../dto/LineaPreVenta";
 import { moneyMul } from "../../../lib/money";
 
-export const createTicketLine = (
+export const crearLineaPreVenta = (
   payload: {
     productId: string;
     description: string;
@@ -11,7 +11,7 @@ export const createTicketLine = (
     quantity: number;
     unitPrice: number;
   }
-): TicketLineDTO => {
+): LineaPreVenta => {
   const subtotal = moneyMul(payload.quantity, payload.unitPrice);
 
   return {

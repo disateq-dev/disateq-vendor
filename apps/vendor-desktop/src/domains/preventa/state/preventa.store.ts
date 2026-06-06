@@ -1,19 +1,19 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 
-import type { TicketLineDTO } from "../dto/TicketLineDTO";
+import type { LineaPreVenta } from "../dto/LineaPreVenta";
 import { moneyMul } from "../../../lib/money";
 
-interface TicketState {
-  linesById: Record<string, TicketLineDTO>;
+interface EstadoPreVenta {
+  linesById: Record<string, LineaPreVenta>;
 
   lineOrder: string[];
 
-  addLine: (
-    line: TicketLineDTO
+  agregarLinea: (
+    line: LineaPreVenta
   ) => void;
 
-  removeLine: (
+  quitarLinea: (
     lineId: string
   ) => void;
 
@@ -27,34 +27,34 @@ interface TicketState {
     note: string
   ) => void;
 
-  splitLine: (
+  splitLinea: (
     lineId: string,
     note: string
   ) => void;
 
-  clearTicket: () => void;
-  pendingNoteLineId: string | null;
-  openNoteFor: (lineId: string) => void;
-  clearPendingNote: () => void;
-  activeLineIdx: number;
-  setActiveLineIdx: (idx: number) => void;
+  limpiarPreVenta: () => void;
+  lineaNotaPendienteId: string | null;
+  abrirNotaLinea: (lineId: string) => void;
+  limpiarNotaPendiente: () => void;
+  indiceLineaActiva: number;
+  setIndiceLineaActiva: (idx: number) => void;
 }
 
-export const useTicketStore =
-  create<TicketState>()(
+export const usePreVentaStore =
+  create<EstadoPreVenta>()(
     immer((set) => ({
       linesById: {},
 
       lineOrder: [],
 
-      addLine: (line) =>
+      agregarLinea: (line) =>
         set((state) => {
           // Check by lineId
           if (state.linesById[line.lineId]) {
             const ex = state.linesById[line.lineId];
             ex.quantity += line.quantity;
             ex.subtotal = moneyMul(ex.quantity, ex.unitPrice);
-            state.activeLineIdx = -1;
+            state.indiceLineaActiva = -1;
             return;
           }
           // Merge only with lines that have no note — noted lines are individual
@@ -65,21 +65,21 @@ export const useTicketStore =
             const ex = state.linesById[existingId];
             ex.quantity += line.quantity;
             ex.subtotal = moneyMul(ex.quantity, ex.unitPrice);
-            state.activeLineIdx = -1;
+            state.indiceLineaActiva = -1;
             return;
           }
           state.linesById[line.lineId] = line;
           state.lineOrder.push(line.lineId);
-          state.activeLineIdx = -1;
+          state.indiceLineaActiva = -1;
         }),
 
-      removeLine: (lineId) =>
+      quitarLinea: (lineId) =>
         set((state) => {
           delete state.linesById[lineId];
           state.lineOrder = state.lineOrder.filter((id) => id !== lineId);
           const newLen = state.lineOrder.length;
-          if (newLen === 0) state.activeLineIdx = -1;
-          else if (state.activeLineIdx >= newLen) state.activeLineIdx = newLen - 1;
+          if (newLen === 0) state.indiceLineaActiva = -1;
+          else if (state.indiceLineaActiva >= newLen) state.indiceLineaActiva = newLen - 1;
         }),
 
       updateQuantity: (
@@ -106,7 +106,7 @@ export const useTicketStore =
           else delete line.note;
         }),
 
-      splitLine: (lineId, note) =>
+      splitLinea: (lineId, note) =>
         set((state) => {
           const line = state.linesById[lineId];
           if (!line) return;
@@ -124,7 +124,7 @@ export const useTicketStore =
               state.linesById[siblingId].subtotal = moneyMul(state.linesById[siblingId].quantity, state.linesById[siblingId].unitPrice);
               delete state.linesById[lineId];
               state.lineOrder = state.lineOrder.filter(id => id !== lineId);
-              state.activeLineIdx = -1;
+              state.indiceLineaActiva = -1;
             }
             return;
           }
@@ -138,7 +138,7 @@ export const useTicketStore =
           line.quantity -= 1;
           line.subtotal  = moneyMul(line.quantity, line.unitPrice);
 
-          const noted: TicketLineDTO = {
+          const noted: LineaPreVenta = {
             lineId:      crypto.randomUUID(),
             productId:   line.productId,
             description: line.description,
@@ -154,24 +154,24 @@ export const useTicketStore =
           state.linesById[noted.lineId] = noted;
           if (idx >= 0) state.lineOrder.splice(idx + 1, 0, noted.lineId);
           else          state.lineOrder.push(noted.lineId);
-          state.activeLineIdx = -1;
+          state.indiceLineaActiva = -1;
         }),
 
-      clearTicket: () =>
+      limpiarPreVenta: () =>
         set((state) => {
           state.linesById = {};
           state.lineOrder = [];
-          state.activeLineIdx = -1;
+          state.indiceLineaActiva = -1;
         }),
 
-      pendingNoteLineId: null,
-      openNoteFor: (lineId) =>
-        set((state) => { state.pendingNoteLineId = lineId; }),
-      clearPendingNote: () =>
-        set((state) => { state.pendingNoteLineId = null; }),
+      lineaNotaPendienteId: null,
+      abrirNotaLinea: (lineId) =>
+        set((state) => { state.lineaNotaPendienteId = lineId; }),
+      limpiarNotaPendiente: () =>
+        set((state) => { state.lineaNotaPendienteId = null; }),
 
-      activeLineIdx: -1,
-      setActiveLineIdx: (idx) =>
-        set((state) => { state.activeLineIdx = idx; }),
+      indiceLineaActiva: -1,
+      setIndiceLineaActiva: (idx) =>
+        set((state) => { state.indiceLineaActiva = idx; }),
     }))
   );

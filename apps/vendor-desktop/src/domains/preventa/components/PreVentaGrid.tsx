@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Pin, Trash2, ClipboardList } from "lucide-react";
 import { moneySum } from "../../../lib/money";
-import { useTicketLines } from "../selectors/ticket.selectors";
-import { useTicketStore } from "../state/ticket.store";
-import { ticketService } from "../services/ticket.service";
+import { useLineasPreVenta } from "../selectors/preventa.selectors";
+import { usePreVentaStore } from "../state/preventa.store";
+import { preVentaService } from "../services/preventa.service";
 import { usePOS } from "../../../context/POSContext";
 
 let _saleCounter = 1;
 
-export function TicketGrid() {
-  const lines             = useTicketLines();
-  const pendingNoteLineId = useTicketStore(s => s.pendingNoteLineId);
-  const clearPendingNote  = useTicketStore(s => s.clearPendingNote);
-  const activeLineIdx     = useTicketStore(s => s.activeLineIdx);
-  const setActiveLineIdx  = useTicketStore(s => s.setActiveLineIdx);
+export function PreVentaGrid() {
+  const lines                 = useLineasPreVenta();
+  const lineaNotaPendienteId  = usePreVentaStore(s => s.lineaNotaPendienteId);
+  const limpiarNotaPendiente  = usePreVentaStore(s => s.limpiarNotaPendiente);
+  const indiceLineaActiva     = usePreVentaStore(s => s.indiceLineaActiva);
+  const setIndiceLineaActiva  = usePreVentaStore(s => s.setIndiceLineaActiva);
   const { openCobro, cashSession } = usePOS();
 
   const [saleNumber] = useState(() => String(_saleCounter++).padStart(6, "0"));
@@ -35,10 +35,10 @@ export function TicketGrid() {
 
   // Auto-scroll active line into view
   useEffect(() => {
-    if (activeLineIdx < 0 || !listRef.current) return;
+    if (indiceLineaActiva < 0 || !listRef.current) return;
     const articles = listRef.current.querySelectorAll("article");
-    articles[activeLineIdx]?.scrollIntoView({ block: "nearest" });
-  }, [activeLineIdx]);
+    articles[indiceLineaActiva]?.scrollIntoView({ block: "nearest" });
+  }, [indiceLineaActiva]);
 
   useEffect(() => {
     if (editingNoteId) {
@@ -47,17 +47,17 @@ export function TicketGrid() {
     }
   }, [editingNoteId]);
 
-  // Open note editor when triggered from search zone via openNoteFor()
+  // Open note editor when triggered from search zone via abrirNotaLinea()
   useEffect(() => {
-    if (!pendingNoteLineId) return;
-    const line = lines.find(l => l.lineId === pendingNoteLineId);
-    if (line) { setEditingNoteId(pendingNoteLineId); setNoteInput(line.note ?? ""); }
-    clearPendingNote();
-  }, [pendingNoteLineId, lines, clearPendingNote]);
+    if (!lineaNotaPendienteId) return;
+    const line = lines.find(l => l.lineId === lineaNotaPendienteId);
+    if (line) { setEditingNoteId(lineaNotaPendienteId); setNoteInput(line.note ?? ""); }
+    limpiarNotaPendiente();
+  }, [lineaNotaPendienteId, lines, limpiarNotaPendiente]);
 
   const saveNote = useCallback(() => {
     if (!editingNoteId) return;
-    ticketService.saveLineNote(editingNoteId, noteInput.trim());
+    preVentaService.guardarNotaLinea(editingNoteId, noteInput.trim());
     setEditingNoteId(null);
   }, [editingNoteId, noteInput]);
 
@@ -93,14 +93,14 @@ export function TicketGrid() {
         ) : (
           <div className="flex flex-col gap-0.5">
             {lines.map((line, idx) => {
-              const isSelected    = idx === activeLineIdx;
-              const isLastLine    = activeLineIdx < 0 && idx === lines.length - 1;
+              const isSelected    = idx === indiceLineaActiva;
+              const isLastLine    = indiceLineaActiva < 0 && idx === lines.length - 1;
               const isEditingNote = editingNoteId === line.lineId;
 
               return (
                 <article
                   key={line.lineId}
-                  onClick={() => setActiveLineIdx(isSelected ? -1 : idx)}
+                  onClick={() => setIndiceLineaActiva(isSelected ? -1 : idx)}
                   className={`flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 transition-colors ${
                     isSelected
                       ? "bg-[#F0FAF1] ring-1 ring-[#45b356]/20"
@@ -163,7 +163,7 @@ export function TicketGrid() {
                       title="Tecla [←]"
                       onClick={e => {
                         e.stopPropagation();
-                        ticketService.decrementLine(line.lineId);
+                        preVentaService.decrementarLinea(line.lineId);
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-[15px] font-bold text-orange-500 transition hover:bg-orange-100 hover:text-orange-600"
                     >
@@ -176,7 +176,7 @@ export function TicketGrid() {
                     </span>
                     <button
                       title="Tecla [→]"
-                      onClick={e => { e.stopPropagation(); ticketService.incrementLine(line.lineId); }}
+                      onClick={e => { e.stopPropagation(); preVentaService.incrementarLinea(line.lineId); }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF3F8] text-[15px] font-bold text-[#4F7396] transition hover:bg-[#e0e9f0] hover:text-[#3d5c7a]"
                     >
                       +
@@ -196,7 +196,7 @@ export function TicketGrid() {
                       title="Tecla [Insert]"
                       onClick={e => {
                         e.stopPropagation();
-                        setActiveLineIdx(idx);
+                        setIndiceLineaActiva(idx);
                         setEditingNoteId(line.lineId);
                         setNoteInput(line.note ?? "");
                       }}
@@ -210,7 +210,7 @@ export function TicketGrid() {
                     </button>
                     <button
                       title="Tecla [Supr]"
-                      onClick={e => { e.stopPropagation(); ticketService.removeLine(line.lineId); }}
+                      onClick={e => { e.stopPropagation(); preVentaService.quitarLinea(line.lineId); }}
                       className="flex items-center justify-center rounded-lg p-1.5 text-red-400 transition hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 size={12} />
@@ -228,7 +228,7 @@ export function TicketGrid() {
 
         {/* LIMPIAR ~30% */}
         <button
-          onClick={() => ticketService.clear()}
+          onClick={() => preVentaService.limpiar()}
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider transition ${
             lines.length === 0

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { useTicketStore } from "../domains/ticket/state/ticket.store";
+import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
 import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
@@ -951,7 +951,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   }, [showNotice]);
 
   const closeCobro = useCallback(() => { setCobroOpen(false); setZone("search"); }, []);
-  const newSale    = useCallback(() => { useTicketStore.getState().clearTicket(); setCobroOpen(false); setZone("search"); }, []);
+  const newSale    = useCallback(() => { usePreVentaStore.getState().limpiarPreVenta(); setCobroOpen(false); setZone("search"); }, []);
 
   const openCashSession = useCallback((
     boxCode: string, apertura: number, motivo?: string, refOp?: string,
@@ -1021,7 +1021,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     // Cleanup operational context
     setCobroOpen(false);
     setZone("search");
-    useTicketStore.getState().clearTicket();
+    usePreVentaStore.getState().limpiarPreVenta();
     setSessionStats(NULL_STATS);
     setCashMoves([]);
     const op = s.operator;

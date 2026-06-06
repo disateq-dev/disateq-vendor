@@ -1,9 +1,9 @@
 import { useShallow } from "zustand/react/shallow";
 
-import { useTicketStore } from "../state/ticket.store";
+import { usePreVentaStore } from "../state/preventa.store";
 
-export const useTicketLines = () =>
-  useTicketStore(
+export const useLineasPreVenta = () =>
+  usePreVentaStore(
     useShallow((state) =>
       state.lineOrder.map(
         (id) => state.linesById[id]
@@ -11,14 +11,14 @@ export const useTicketLines = () =>
     )
   );
 
-export const useTicketLineById = (
+export const useLineaPreVentaPorId = (
   lineId: string
 ) =>
-  useTicketStore(
+  usePreVentaStore(
     (state) => state.linesById[lineId]
   );
 
-export const useTicketLineCount = () =>
-  useTicketStore(
+export const useConteoLineasPreVenta = () =>
+  usePreVentaStore(
     (state) => state.lineOrder.length
   );

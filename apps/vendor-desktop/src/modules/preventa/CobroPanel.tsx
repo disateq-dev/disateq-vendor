@@ -3,8 +3,8 @@ import {
   ArrowLeft, Banknote, Smartphone, CreditCard,
   Printer, Send, Save, User, AlertCircle, Plus,
 } from "lucide-react";
-import { useTicketLines } from "../../domains/ticket/selectors/ticket.selectors";
-import { ticketService } from "../../domains/ticket/services/ticket.service";
+import { useLineasPreVenta } from "../../domains/preventa/selectors/preventa.selectors";
+import { preVentaService } from "../../domains/preventa/services/preventa.service";
 import { usePOS } from "../../context/POSContext";
 import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatch, printDispatchTicket, type DispatchData } from "../../print/printTicket";
 
@@ -71,7 +71,7 @@ const BOLETA_THRESHOLD   = 700;
 const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
-  const lines = useTicketLines();
+  const lines = useLineasPreVenta();
   const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, docCorrelatives, printFlow, sessionStats } = usePOS();
   const { cashBox } = cashSession;
   const isCtg = !!cashBox && cashBox.type !== "normal";
@@ -241,7 +241,7 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
     try {
-      const pedidoId = ticketService
+      const pedidoId = preVentaService
         .obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null;
       emitirComprobante({
         tipo: mapearTipoComprobante(docType),
@@ -278,16 +278,16 @@ export function CobroPanel() {
       );
     });
 
-    const pedidoActivo = ticketService.obtenerPedidoActivoOCrear?.(
+    const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
       "default",
       "default",
       "default"
     );
     if (pedidoActivo) {
-      ticketService.concretarVenta(pedidoActivo);
+      preVentaService.concretarVenta(pedidoActivo);
     }
 
-    ticketService.clear();
+    preVentaService.limpiar();
     closeCobro();
   }
 
@@ -299,7 +299,7 @@ export function CobroPanel() {
     const dateTime = `${p(now.getDate())}/${p(now.getMonth() + 1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`;
     let receiptData: Parameters<typeof printTicket>[0];
     try {
-      const pedidoId = ticketService
+      const pedidoId = preVentaService
         .obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null;
       const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
@@ -395,16 +395,16 @@ export function CobroPanel() {
       );
     });
 
-    const pedidoActivo = ticketService.obtenerPedidoActivoOCrear?.(
+    const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
       "default",
       "default",
       "default"
     );
     if (pedidoActivo) {
-      ticketService.concretarVenta(pedidoActivo);
+      preVentaService.concretarVenta(pedidoActivo);
     }
 
-    ticketService.clear();
+    preVentaService.limpiar();
     closeCobro();
   }
 

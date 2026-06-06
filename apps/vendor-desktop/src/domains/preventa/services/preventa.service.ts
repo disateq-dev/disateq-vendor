@@ -1,5 +1,5 @@
-import { createTicketLine } from "../state/ticket.actions";
-import { useTicketStore } from "../state/ticket.store";
+import { crearLineaPreVenta } from "../state/preventa.actions";
+import { usePreVentaStore } from "../state/preventa.store";
 import {
   obtenerPedidoActivoOCrear,
   sincronizarConcrecion,
@@ -19,11 +19,11 @@ type AddProductInput = {
 
 let _pedidoActivoId: string | null = null;
 
-export const ticketService = {
+export const preVentaService = {
 
-  addProduct(input: AddProductInput) {
-    useTicketStore.getState().addLine(
-      createTicketLine({
+  agregarProducto(input: AddProductInput) {
+    usePreVentaStore.getState().agregarLinea(
+      crearLineaPreVenta({
         productId:    input.productId,
         description:  input.description,
         barcode:      input.barcode,
@@ -35,7 +35,7 @@ export const ticketService = {
     );
   },
 
-  addProductFromHOV(input: AddProductBridgeInput) {
+  agregarProductoDesdeHOV(input: AddProductBridgeInput) {
     if (!_pedidoActivoId) {
       _pedidoActivoId = obtenerPedidoActivoOCrear(
         input.contextoOperacionalId,
@@ -59,7 +59,7 @@ export const ticketService = {
         // fallo silencioso · el ticket visual no se ve afectado
       }
     }
-    useTicketStore.getState().addLine(
+    usePreVentaStore.getState().agregarLinea(
       traducirATicketLine(input),
     );
   },
@@ -83,34 +83,34 @@ export const ticketService = {
     _pedidoActivoId = null;
   },
 
-  incrementLine(lineId: string) {
-    const state = useTicketStore.getState();
+  incrementarLinea(lineId: string) {
+    const state = usePreVentaStore.getState();
     const line = state.linesById[lineId];
     if (!line) return;
     state.updateQuantity(lineId, line.quantity + 1);
   },
 
-  decrementLine(lineId: string) {
-    const state = useTicketStore.getState();
+  decrementarLinea(lineId: string) {
+    const state = usePreVentaStore.getState();
     const line = state.linesById[lineId];
     if (!line || line.quantity <= 1) return;
     state.updateQuantity(lineId, line.quantity - 1);
   },
 
-  removeLine(lineId: string) {
-    useTicketStore.getState().removeLine(lineId);
+  quitarLinea(lineId: string) {
+    usePreVentaStore.getState().quitarLinea(lineId);
   },
 
-  openLineNote(lineId: string) {
-    useTicketStore.getState().openNoteFor(lineId);
+  abrirNotaLinea(lineId: string) {
+    usePreVentaStore.getState().abrirNotaLinea(lineId);
   },
 
-  saveLineNote(lineId: string, note: string) {
-    useTicketStore.getState().splitLine(lineId, note);
+  guardarNotaLinea(lineId: string, note: string) {
+    usePreVentaStore.getState().splitLinea(lineId, note);
   },
 
-  clear() {
-    useTicketStore.getState().clearTicket();
+  limpiar() {
+    usePreVentaStore.getState().limpiarPreVenta();
     _pedidoActivoId = null;
   },
 

@@ -1,12 +1,12 @@
-import { TicketGrid } from "../../domains/ticket/components/TicketGrid";
+import { PreVentaGrid } from "../../domains/preventa/components/PreVentaGrid";
 import { CobroPanel } from "./CobroPanel";
 import { usePOS } from "../../context/POSContext";
 
-export function TicketWorkspace() {
+export function PreVentaWorkspace() {
   const { cobroOpen } = usePOS();
   return (
     <section className="h-full w-[480px]">
-      {cobroOpen ? <CobroPanel /> : <TicketGrid />}
+      {cobroOpen ? <CobroPanel /> : <PreVentaGrid />}
     </section>
   );
 }

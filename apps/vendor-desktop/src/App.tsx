@@ -3,7 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { AppShell } from "./layout/AppShell";
 import { SalesWorkspace } from "./modules/sales/SalesWorkspace";
-import { TicketWorkspace } from "./modules/ticket/TicketWorkspace";
+import { PreVentaWorkspace } from "./modules/preventa/PreVentaWorkspace";
 import { CashWorkspace } from "./modules/cash/CashWorkspace";
 import { ConfigWorkspace } from "./modules/config/ConfigWorkspace";
 import { ComprobantesWorkspace } from "./modules/comprobantes/ComprobantesWorkspace";
@@ -72,7 +72,7 @@ function AppRoot() {
       {activeModule === "sales" && (
         <>
           <SalesWorkspace />
-          <TicketWorkspace />
+          <PreVentaWorkspace />
         </>
       )}
       {activeModule === "cash"         && <CashWorkspace onOpened={() => setActiveModule("sales")} cashSubView={cashSubView} onCashSubViewChange={setCashSubView} />}
