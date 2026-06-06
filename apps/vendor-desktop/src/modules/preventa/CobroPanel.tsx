@@ -15,6 +15,7 @@ import {
   emitirComprobante,
   construirReceiptData
 } from "../../domains/documents/bridge-comprobante";
+import type { Comprobante } from "../../domains/documents/comprobante.types";
 import ClienteBuscador from "../sales/ClienteBuscador";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
@@ -196,16 +197,88 @@ export function CobroPanel() {
     setCobroView("main");
   }, [canEstablecer, cDoc, cName, cDept, cProvince, cDistrict, cAddress, cPhone, cEmail, showNotice]);
 
-  function buildComprobanteData(dt: string) {
+  function buildComprobanteData(_: string): Comprobante {
+    const tipo = mapearTipoComprobante(docType);
+    const metodoPago = mapearMetodoPago(payMethod);
+    const biz = loadBusinessConfig();
+    const tipoAfectacionIGV =
+      affectation === "exonerado-onerosa"
+        ? "EXONERADO"
+        : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
+        ? "INAFECTO"
+        : "GRAVADO";
+    const tipoDocumento =
+      customer?.docNumber?.length === 11
+        ? "RUC"
+        : customer?.docNumber?.length === 8
+        ? "DNI"
+        : "SIN_DOCUMENTO";
+
     return {
-      docType, docSeries: cfg.series, docCorrelative: nextCorrelative, dateTime: dt,
-      lines: lines.map(l => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, subtotal: l.subtotal, note: l.note })),
-      discountAmount: discountNum, grossTotal: total, netTotal,
-      payMethod,
-      cashComponent:    payMethod === "efectivo" ? netTotal : payMethod === "mixto" ? mixtoEfeNum : 0,
-      yapeComponent:    payMethod === "yape"     ? netTotal : payMethod === "mixto" ? mixtoYapNum : 0,
-      tarjetaComponent: payMethod === "tarjeta"  ? netTotal : payMethod === "mixto" ? mixtoTarNum : 0,
-      customer: customer ? { docNumber: customer.docNumber, name: customer.name } : null,
+      id: crypto.randomUUID(),
+      tipo,
+      serie: cfg.series,
+      correlativo: nextCorrelative,
+      codigoUnico: `${cfg.series}-${String(nextCorrelative).padStart(8, "0")}`,
+      esFormal: tipo === "FACTURA" || tipo === "BOLETA",
+      requiereEnvioSUNAT: tipo === "FACTURA" || tipo === "BOLETA",
+      leyendaNoFormal: tipo === "TIQUE_VENTA"
+        ? "ESTE DOCUMENTO NO ES UN COMPROBANTE DE PAGO CON VALOR TRIBUTARIO"
+        : null,
+      pedidoId: preVentaService.obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null,
+      comprobanteReferenciadoId: null,
+      comprobanteOrigenId: null,
+      emisor: {
+        ruc: biz.ruc,
+        razonSocial: biz.razonSocial,
+        direccion: biz.direccion,
+      },
+      receptor: customer === null
+        ? {
+            tipoDocumento: "SIN_DOCUMENTO",
+            numeroDocumento: null,
+            nombre: "VARIOS",
+            direccion: null,
+            esGenerico: true,
+          }
+        : {
+            tipoDocumento,
+            numeroDocumento: customer.docNumber || null,
+            nombre: customer.name,
+            direccion: customer.address ?? null,
+            esGenerico: false,
+          },
+      lineas: lines.map(l => ({
+        id: crypto.randomUUID(),
+        descripcion: l.description,
+        cantidad: l.quantity,
+        valorUnitario: l.unitPrice,
+        subtotal: l.subtotal,
+        codigoProductoSUNAT: null,
+        tipoAfectacionIGV,
+        tasaIGV: tipoAfectacionIGV === "GRAVADO" ? 0.18 : 0,
+        montoISC: null,
+        notaLinea: l.note ?? null,
+      })),
+      subtotal: baseImponible,
+      igv,
+      isc: 0,
+      total: netTotal,
+      moneda: "PEN",
+      metodoPago,
+      tributario: {
+        regimen: "GENERAL",
+        incluyeDetraccion: false,
+        porcentajeDetraccion: null,
+      },
+      estado: "EMITIDO",
+      estadoSUNAT: tipo === "FACTURA" || tipo === "BOLETA" ? "PENDIENTE" : "NO_APLICA",
+      cdr: null,
+      fechaEnvioSUNAT: null,
+      motivoAnulacion: null,
+      emitidoEn: new Date().toISOString(),
+      emitidoPor: "default",
+      enviadoPorCanal: "NINGUNO",
     };
   }
 
@@ -243,7 +316,7 @@ export function CobroPanel() {
     try {
       const pedidoId = preVentaService
         .obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null;
-      emitirComprobante({
+      const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
         lineas: lines.map(l => ({
@@ -267,6 +340,7 @@ export function CobroPanel() {
         emitidoPor:  "default",
         pedidoId:    pedidoId,
       });
+      addComprobante(comprobante);
     } catch {
       addComprobante(buildComprobanteData(dt));
     }
@@ -325,6 +399,7 @@ export function CobroPanel() {
         emitidoPor:  "default",
         pedidoId:    pedidoId,
       });
+      addComprobante(comprobante);
       receiptData = construirReceiptData(
         comprobante,
         dateTime,
@@ -338,6 +413,7 @@ export function CobroPanel() {
           : undefined
       ) as Parameters<typeof printTicket>[0];
     } catch {
+      addComprobante(buildComprobanteData(dateTime));
       const biz = loadBusinessConfig();
       receiptData = {
         businessName:   biz.nombreComercial,

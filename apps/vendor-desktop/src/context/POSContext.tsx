@@ -2,7 +2,8 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo, u
 import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import { moneySub } from "../lib/money";
-import type { Comprobante, ComprobanteLineItem } from "../domains/comprobantes/types/comprobante.types";
+import type { Comprobante } from "../domains/documents/comprobante.types";
+import { comprobanteStore } from "../domains/documents/comprobante.store";
 import { type OperatorRecord, type OperatorStatus, loadOperators, checkPin, changePin, setOperatorPin, saveOperators, isBlockTaken, assignBlock, releaseBlock, setCapabilities, nextOperatorCode } from "../domains/operator/operator.store";
 import { type RoleRecord, loadRoles, saveRoles, setRoleCapabilities, isRoleCodeTaken } from "../domains/operator/roles.store";
 import { blockBoxDefs } from "../domains/operator/blocks.store";
@@ -76,23 +77,17 @@ const LS_USED_DATE    = "disateq.pos.usedDate";
 const LS_MOVES        = "disateq.pos.cashMoves";
 const LS_SESSION_STATS = "disateq.pos.sessionStats";
 const LS_OPLOGS        = "disateq.pos.opLogs";
-const LS_COMPROBANTES  = "disateq.pos.comprobantes";
 const LS_CORRELATIVES  = "disateq.pos.correlatives";
 const LS_RUBRO         = "disateq.pos.rubro";
 const LS_VISUAL_MODE  = "disateq.pos.visualMode";
 const LS_PRINT_FLOW   = "disateq.pos.printFlow";
 
-function loadComprobantes(): Comprobante[] {
-  try {
-    const raw = localStorage.getItem(LS_COMPROBANTES);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-
-function saveComprobantes(list: Comprobante[]): void {
-  try { localStorage.setItem(LS_COMPROBANTES, JSON.stringify(list)); } catch { /* quota */ }
+function cargarComprobantes(): Comprobante[] {
+  return comprobanteStore.getComprobantesPorTipo('TIQUE_VENTA')
+    .concat(comprobanteStore.getComprobantesPorTipo('BOLETA'))
+    .concat(comprobanteStore.getComprobantesPorTipo('FACTURA'))
+    .concat(comprobanteStore.getComprobantesPorTipo('COTIZACION'))
+    .sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn));
 }
 
 // Correlativos: persisten entre sesiones — única fuente de verdad para numeración
@@ -390,12 +385,7 @@ interface POSContextValue {
   turnEvents: TurnEvent[];
   currentSessionEvents: TurnEvent[];
   comprobantes: Comprobante[];
-  addComprobante: (data: {
-    docType: string; docSeries: string; docCorrelative: number; dateTime: string;
-    lines: ComprobanteLineItem[]; discountAmount: number; grossTotal: number; netTotal: number;
-    payMethod: string; cashComponent: number; yapeComponent: number; tarjetaComponent: number;
-    customer?: { docNumber: string; name: string } | null;
-  }) => void;
+  addComprobante: (comprobante: Comprobante) => void;
   voidComprobante: (id: string, motivo: string) => void;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
@@ -457,10 +447,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const cashMovesRef = useRef(cashMoves);
   cashMovesRef.current = cashMoves;
 
-  const [comprobantes, setComprobantes] = useState<Comprobante[]>(loadComprobantes);
-  const comprobantesRef = useRef(comprobantes);
-  comprobantesRef.current = comprobantes;
-  useEffect(() => { saveComprobantes(comprobantes); }, [comprobantes]);
+  const [comprobantes, setComprobantes] = useState<Comprobante[]>(cargarComprobantes);
 
   const [docCorrelatives, setDocCorrelatives] = useState<DocCorrelatives>(loadCorrelatives);
   useEffect(() => { saveCorrelatives(docCorrelatives); }, [docCorrelatives]);
@@ -739,60 +726,49 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setRoles(updated);
   }, []);
 
-  const addComprobante = useCallback((data: {
-    docType: string; docSeries: string; docCorrelative: number; dateTime: string;
-    lines: ComprobanteLineItem[]; discountAmount: number; grossTotal: number; netTotal: number;
-    payMethod: string; cashComponent: number; yapeComponent: number; tarjetaComponent: number;
-    customer?: { docNumber: string; name: string } | null;
-  }) => {
+  const addComprobante = useCallback((comprobante: Comprobante) => {
     const s = cashSessionRef.current;
-    const sessionKey = s.cashBox ? `${s.cashBox.code}-${s.openedAt?.toISOString() ?? ""}` : "";
-    const c: Comprobante = {
-      ...data,
-      customer: data.customer ?? undefined,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      sessionKey,
-      operator:    s.operator,
-      cashBoxCode: s.cashBox?.code ?? "",
-      terminal:    s.terminal,
-      status: "active",
-    };
-    setComprobantes(prev => [...prev, c]);
-    if (sessionKey) {
-      const correlStr = String(data.docCorrelative).padStart(8, "0");
-      addTurnEvent(sessionKey, "comprobante", `Comprobante ${data.docSeries}-${correlStr} generado`);
+    const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
+    comprobanteStore.guardarComprobante(
+      (sk
+        ? { ...comprobante, sessionKey: sk }
+        : comprobante) as Comprobante
+    );
+    setComprobantes(cargarComprobantes());
+    if (sk) {
+      const correlStr = String(comprobante.correlativo).padStart(8, "0");
+      addTurnEvent(sk, "comprobante", `Comprobante ${comprobante.serie}-${correlStr} generado`);
     }
   }, [addTurnEvent]);
 
   const voidComprobante = useCallback((id: string, motivo: string) => {
+    const c = comprobanteStore.getComprobanteById(id);
+    if (!c || c.estado === "ANULADO") return;
     const s = cashSessionRef.current;
-    const c = comprobantesRef.current.find(x => x.id === id);
-    if (!c || c.status === "cancelled") return;
     setSessionStats(prev => ({
       count:     prev.count - 1,
-      total:     moneySub(prev.total,   c.netTotal),
-      cash:      moneySub(prev.cash,    c.cashComponent),
-      yape:      moneySub(prev.yape,    c.yapeComponent),
-      tarjeta:   moneySub(prev.tarjeta, c.tarjetaComponent),
+      total:     moneySub(prev.total, c.total),
+      cash:      prev.cash,
+      yape:      prev.yape,
+      tarjeta:   prev.tarjeta,
       docRanges: prev.docRanges,
       byMethod: {
-        efe: prev.byMethod.efe - (c.payMethod === "efectivo" ? 1 : 0),
-        yap: prev.byMethod.yap - (c.payMethod === "yape"     ? 1 : 0),
-        tar: prev.byMethod.tar - (c.payMethod === "tarjeta"  ? 1 : 0),
-        mix: prev.byMethod.mix - (c.payMethod === "mixto"    ? 1 : 0),
+        efe: prev.byMethod.efe - (c.metodoPago === "EFECTIVO" ? 1 : 0),
+        yap: prev.byMethod.yap - (c.metodoPago === "YAPE"     ? 1 : 0),
+        tar: prev.byMethod.tar - (c.metodoPago === "TARJETA"  ? 1 : 0),
+        mix: prev.byMethod.mix - (c.metodoPago === "MIXTO"    ? 1 : 0),
       },
     }));
-    setComprobantes(prev => prev.map(x => x.id === id ? {
-      ...x,
-      status: "cancelled" as const,
-      cancelledAt:     new Date().toISOString(),
-      cancelledBy:     s.operator,
-      cancelledMotivo: motivo,
-    } : x));
-    const correlStr = String(c.docCorrelative).padStart(8, "0");
-    addOpLog(`${s.operator} anuló ${c.docSeries}-${correlStr} — ${motivo}`);
+    comprobanteStore.guardarComprobante({
+      ...c,
+      estado: "ANULADO",
+      motivoAnulacion: motivo,
+    });
+    setComprobantes(cargarComprobantes());
+    const correlStr = String(c.correlativo).padStart(8, "0");
+    addOpLog(`${s.operator} anuló ${c.serie}-${correlStr} — ${motivo}`);
     const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
-    addTurnEvent(sk, "anulacion", `Comprobante ${c.docSeries}-${correlStr} anulado`);
+    addTurnEvent(sk, "anulacion", `Comprobante ${c.serie}-${correlStr} anulado`);
   }, [addOpLog, addTurnEvent]);
 
   const recordSale = useCallback((

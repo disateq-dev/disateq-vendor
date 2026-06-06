@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X, AlertTriangle } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
-import type { Comprobante } from "../../domains/comprobantes/types/comprobante.types";
+import type { Comprobante } from "../../domains/documents/comprobante.types";
 
 const DOC_LABELS: Record<string, string> = {
-  nota: "NOTA", boleta: "BOL", factura: "FAC", cotizacion: "COT",
+  TIQUE_VENTA: "NOTA", BOLETA: "BOL", FACTURA: "FAC", COTIZACION: "COT",
 };
 
 const METHOD_LABELS: Record<string, string> = {
-  efectivo: "EFE", yape: "YAP", tarjeta: "TAR", mixto: "MIX",
+  EFECTIVO: "EFE", YAPE: "YAP", TARJETA: "TAR", MIXTO: "MIX",
 };
 
 const METHOD_COLORS: Record<string, string> = {
-  efectivo: "bg-emerald-50 text-emerald-700",
-  yape:     "bg-violet-50 text-violet-700",
-  tarjeta:  "bg-blue-50 text-blue-700",
-  mixto:    "bg-amber-50 text-amber-700",
+  EFECTIVO: "bg-emerald-50 text-emerald-700",
+  YAPE:     "bg-violet-50 text-violet-700",
+  TARJETA:  "bg-blue-50 text-blue-700",
+  MIXTO:    "bg-amber-50 text-amber-700",
 };
 
 function formatDateTime(dt: string): string {
@@ -42,17 +42,17 @@ export function ComprobantesWorkspace() {
 
   // Filter: current session only (show all if no session open)
   const sessionDocs = sessionKey
-    ? comprobantes.filter(c => c.sessionKey === sessionKey)
+    ? comprobantes.filter(c => (c as Comprobante & { sessionKey?: string | null }).sessionKey === sessionKey)
     : comprobantes;
 
   // Apply search filter
   const query = search.trim().toLowerCase();
   const filtered: Comprobante[] = query
     ? sessionDocs.filter(c =>
-        `${c.docSeries}-${pad8(c.docCorrelative)}`.toLowerCase().includes(query) ||
-        c.netTotal.toFixed(2).includes(query) ||
-        c.payMethod.toLowerCase().includes(query) ||
-        (c.customer?.name ?? "").toLowerCase().includes(query)
+        `${c.serie}-${pad8(c.correlativo)}`.toLowerCase().includes(query) ||
+        c.total.toFixed(2).includes(query) ||
+        c.metodoPago.toLowerCase().includes(query) ||
+        c.receptor.nombre.toLowerCase().includes(query)
       )
     : sessionDocs;
 
@@ -168,7 +168,7 @@ export function ComprobantesWorkspace() {
             <div className="flex flex-col gap-0.5 pt-1">
               {docs.map(c => {
                 const isSelected = c.id === selectedId;
-                const isCancelled = c.status === "cancelled";
+                const isCancelled = c.estado === "ANULADO";
                 return (
                   <article
                     key={c.id}
@@ -185,29 +185,29 @@ export function ComprobantesWorkspace() {
                     <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest ${
                       isCancelled ? "bg-red-50 text-red-400" : "bg-[#f1f5f9] text-[#374151]"
                     }`}>
-                      {isCancelled ? "ANUL" : (DOC_LABELS[c.docType] ?? c.docType.toUpperCase())}
+                      {isCancelled ? "ANUL" : (DOC_LABELS[c.tipo] ?? c.tipo.toUpperCase())}
                     </span>
 
                     {/* Correlative */}
                     <span className="shrink-0 tabular-nums text-[11px] text-[#374151]">
-                      {c.docSeries}-{pad8(c.docCorrelative)}
+                      {c.serie}-{pad8(c.correlativo)}
                     </span>
 
                     {/* Customer or datetime */}
                     <span className="min-w-0 flex-1 truncate text-[11px] text-[#9ca3af]">
-                      {c.customer?.name || formatDateTime(c.dateTime)}
+                      {c.receptor.nombre || formatDateTime(c.emitidoEn)}
                     </span>
 
                     {/* Method */}
-                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${METHOD_COLORS[c.payMethod] ?? "bg-[#f1f5f9] text-[#374151]"}`}>
-                      {METHOD_LABELS[c.payMethod] ?? c.payMethod.toUpperCase()}
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${METHOD_COLORS[c.metodoPago] ?? "bg-[#f1f5f9] text-[#374151]"}`}>
+                      {METHOD_LABELS[c.metodoPago] ?? c.metodoPago.toUpperCase()}
                     </span>
 
                     {/* Total */}
                     <span className={`shrink-0 w-16 text-right text-[12px] font-bold tabular-nums ${
                       isCancelled ? "text-red-400 line-through" : isSelected ? "text-[#2154d8]" : "text-[#2F3E46]"
                     }`}>
-                      S/ {c.netTotal.toFixed(2)}
+                      S/ {c.total.toFixed(2)}
                     </span>
                   </article>
                 );
@@ -234,24 +234,24 @@ export function ComprobantesWorkspace() {
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Comprobante</p>
                 <p className="text-[14px] font-bold text-[#2F3E46]">
-                  {selected.docSeries}-{pad8(selected.docCorrelative)}
+                  {selected.serie}-{pad8(selected.correlativo)}
                 </p>
-                <p className="text-[11px] text-[#9ca3af]">{selected.docType.toUpperCase()} · {formatDateTime(selected.dateTime)}</p>
+                <p className="text-[11px] text-[#9ca3af]">{selected.tipo.toUpperCase()} · {formatDateTime(selected.emitidoEn)}</p>
               </div>
 
               {/* Operador */}
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Operador</p>
-                <p className="text-[12px] text-[#374151]">{selected.operator || "—"}</p>
+                <p className="text-[12px] text-[#374151]">{selected.emitidoPor || "—"}</p>
               </div>
 
               {/* Cliente */}
-              {selected.customer && (
+              {!selected.receptor.esGenerico && (
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Cliente</p>
-                  <p className="text-[12px] text-[#374151]">{selected.customer.name}</p>
-                  {selected.customer.docNumber && (
-                    <p className="text-[11px] text-[#9ca3af]">{selected.customer.docNumber}</p>
+                  <p className="text-[12px] text-[#374151]">{selected.receptor.nombre}</p>
+                  {selected.receptor.numeroDocumento && (
+                    <p className="text-[11px] text-[#9ca3af]">{selected.receptor.numeroDocumento}</p>
                   )}
                 </div>
               )}
@@ -260,11 +260,11 @@ export function ComprobantesWorkspace() {
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] mb-1">Ítems</p>
                 <div className="flex flex-col gap-0.5">
-                  {selected.lines.map((l, i) => (
+                  {selected.lineas.map((l, i) => (
                     <div key={i} className="flex items-start justify-between gap-2">
                       <span className="min-w-0 flex-1 truncate text-[11px] text-[#374151]">
-                        {l.quantity}× {l.description}
-                        {l.note && <span className="text-[#9ca3af]"> ↳{l.note}</span>}
+                        {l.cantidad}× {l.descripcion}
+                        {l.notaLinea && <span className="text-[#9ca3af]"> ↳{l.notaLinea}</span>}
                       </span>
                       <span className="shrink-0 text-[11px] font-semibold tabular-nums text-[#374151]">
                         S/ {l.subtotal.toFixed(2)}
@@ -276,42 +276,29 @@ export function ComprobantesWorkspace() {
 
               {/* Totales */}
               <div className="rounded-xl bg-[#f4f7fb] px-3 py-2.5 flex flex-col gap-1">
-                {selected.discountAmount > 0 && (
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-[#9ca3af]">Dcto.</span>
-                    <span className="text-red-500 font-semibold">−S/ {selected.discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-[12px] font-bold text-[#374151]">TOTAL</span>
-                  <span className="text-[14px] font-extrabold tabular-nums text-[#111827]">S/ {selected.netTotal.toFixed(2)}</span>
+                  <span className="text-[14px] font-extrabold tabular-nums text-[#111827]">S/ {selected.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span className="text-[#9ca3af]">Método</span>
-                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${METHOD_COLORS[selected.payMethod] ?? ""}`}>
-                    {METHOD_LABELS[selected.payMethod] ?? selected.payMethod.toUpperCase()}
+                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${METHOD_COLORS[selected.metodoPago] ?? ""}`}>
+                    {METHOD_LABELS[selected.metodoPago] ?? selected.metodoPago.toUpperCase()}
                   </span>
                 </div>
-                {selected.payMethod === "mixto" && (
-                  <div className="flex flex-col gap-0.5 pt-0.5 border-t border-[#e4e9f0] mt-0.5">
-                    {selected.cashComponent > 0 && <div className="flex justify-between text-[10px] text-[#9ca3af]"><span>EFE</span><span>S/ {selected.cashComponent.toFixed(2)}</span></div>}
-                    {selected.yapeComponent > 0 && <div className="flex justify-between text-[10px] text-[#9ca3af]"><span>YAP</span><span>S/ {selected.yapeComponent.toFixed(2)}</span></div>}
-                    {selected.tarjetaComponent > 0 && <div className="flex justify-between text-[10px] text-[#9ca3af]"><span>TAR</span><span>S/ {selected.tarjetaComponent.toFixed(2)}</span></div>}
-                  </div>
-                )}
               </div>
 
               {/* Anulación info si ya está anulado */}
-              {selected.status === "cancelled" && (
+              {selected.estado === "ANULADO" && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
                   <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider">ANULADO</p>
-                  <p className="text-[11px] text-red-500 mt-0.5">{selected.cancelledMotivo}</p>
-                  <p className="text-[10px] text-red-400 mt-0.5">{selected.cancelledBy} · {selected.cancelledAt ? new Date(selected.cancelledAt).toLocaleString("es-PE") : ""}</p>
+                  <p className="text-[11px] text-red-500 mt-0.5">{selected.motivoAnulacion}</p>
+                  <p className="text-[10px] text-red-400 mt-0.5">{selected.emitidoPor} · {selected.emitidoEn ? new Date(selected.emitidoEn).toLocaleString("es-PE") : ""}</p>
                 </div>
               )}
 
               {/* Acciones */}
-              {selected.status === "active" && !voidMode && (
+              {selected.estado === "EMITIDO" && !voidMode && (
                 <div className="flex flex-col gap-2 pt-1">
                   <button
                     onClick={handleVoidStart}
@@ -330,7 +317,7 @@ export function ComprobantesWorkspace() {
               )}
 
               {/* Void form */}
-              {selected.status === "active" && voidMode && (
+              {selected.estado === "EMITIDO" && voidMode && (
                 <div className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <AlertTriangle size={12} className="shrink-0 text-red-500" />
