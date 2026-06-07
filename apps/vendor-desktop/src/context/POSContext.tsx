@@ -9,6 +9,7 @@ import { type Rol, cargarRoles, guardarRoles, establecerCapacidadesRol, estaCodi
 import { blockBoxDefs } from "../domains/operator/blocks.store";
 import { type TurnEvent, type TurnEventType, loadTurnEvents, saveTurnEvents } from "../domains/cash/turn-events.store";
 import { useConfigNegocio } from "../hooks/useConfigNegocio";
+import { usePreVentaUX } from "../hooks/usePreVentaUX";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -392,8 +393,14 @@ interface POSContextValue {
 const POSContext = createContext<POSContextValue | null>(null);
 
 export function POSProvider({ children }: { children: ReactNode }) {
-  const [zone, setZone] = useState<FocusZone>("search");
-  const [cobroOpen, setCobroOpen] = useState(false);
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showNotice = useCallback((msg: string) => {
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    setSessionNotice(msg);
+    noticeTimer.current = setTimeout(() => setSessionNotice(null), 2800);
+  }, []);
 
   // Recover consistent state from localStorage — runs once on mount
   const [initState] = useState(recoverOperationalState);
@@ -860,29 +867,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
     printFlow, setPrintFlow,
   } = useConfigNegocio();
 
-  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
-  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showNotice = useCallback((msg: string) => {
-    if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    setSessionNotice(msg);
-    noticeTimer.current = setTimeout(() => setSessionNotice(null), 2800);
-  }, []);
-
-  const enterTicket = useCallback(() => setZone("ticket"), []);
-  const enterSearch = useCallback(() => setZone("search"), []);
-
-  const openCobro = useCallback(() => {
-    if (!cashSessionRef.current.isOpen) {
-      showNotice("Abre el turno para poder cobrar");
-      return;
-    }
-    setCobroOpen(true);
-    setZone("cobro");
-  }, [showNotice]);
-
-  const closeCobro = useCallback(() => { setCobroOpen(false); setZone("search"); }, []);
-  const newSale    = useCallback(() => { usePreVentaStore.getState().limpiarPreVenta(); setCobroOpen(false); setZone("search"); }, []);
+  const {
+    zone, setZone,
+    cobroOpen, setCobroOpen,
+    enterTicket, enterSearch,
+    openCobro, closeCobro, newSale,
+  } = usePreVentaUX({ isTurnoAbierto: cashSession.isOpen, showNotice });
 
   const openCashSession = useCallback((
     boxCode: string, apertura: number, motivo?: string, refOp?: string,
