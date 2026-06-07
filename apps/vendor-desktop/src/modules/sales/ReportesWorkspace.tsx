@@ -229,8 +229,7 @@ export function ReportesWorkspace() {
   }, [reporte, tipoActivo]);
 
   const ventasHourMax = useMemo(() => {
-    if (!reporteVentas) return 0;
-    return Math.max(...reporteVentas.ventasPorHora.map(item => item.totalVendido), 0);
+    return Math.max(...((reporteVentas?.ventasPorHora ?? []).map(item => item?.totalVendido ?? 0)), 0);
   }, [reporteVentas]);
 
   function handleExportar(): void {
@@ -370,16 +369,16 @@ export function ReportesWorkspace() {
       <div className="border-b border-[#e8edf5] bg-[#f8fafc] px-4 py-2">
         {tipoActivo === "VENTAS" && (
           <div className="grid grid-cols-5 gap-2">
-            <StatCard label="Total Vendido" value={reporteVentas ? fmtMonto(reporteVentas.totalVendido) : "S/ 0.00"} accent="text-[#2154d8]" />
-            <StatCard label="Transacciones" value={reporteVentas ? fmtNum(reporteVentas.totalTransacciones) : "0"} />
+            <StatCard label="Total Vendido" value={fmtMonto(reporteVentas?.totalVendido)} accent="text-[#2154d8]" />
+            <StatCard label="Transacciones" value={fmtNum(reporteVentas?.totalTransacciones ?? 0)} />
             <StatCard
               label="Ticket Promedio"
-              value={reporteVentas ? fmtMonto(reporteVentas.totalTransacciones > 0 ? reporteVentas.totalVendido / reporteVentas.totalTransacciones : 0) : "S/ 0.00"}
+              value={fmtMonto((reporteVentas?.totalTransacciones ?? 0) > 0 ? (reporteVentas?.totalVendido ?? 0) / (reporteVentas?.totalTransacciones ?? 0) : 0)}
             />
-            <StatCard label="Efectivo" value={reporteVentas ? fmtMonto(reporteVentas.desglosePago.efectivo.monto) : "S/ 0.00"} accent="text-emerald-700" />
+            <StatCard label="Efectivo" value={fmtMonto(reporteVentas?.desglosePago?.efectivo?.monto ?? 0)} accent="text-emerald-700" />
             <StatCard
               label="Yape / Tarjeta"
-              value={reporteVentas ? `${fmtMonto(reporteVentas.desglosePago.yape.monto)} / ${fmtMonto(reporteVentas.desglosePago.tarjeta.monto)}` : "--"}
+              value={`${fmtMonto(reporteVentas?.desglosePago?.yape?.monto ?? 0)} / ${fmtMonto(reporteVentas?.desglosePago?.tarjeta?.monto ?? 0)}`}
               accent="text-[#374151]"
             />
           </div>
@@ -387,24 +386,24 @@ export function ReportesWorkspace() {
 
         {tipoActivo === "COMPROBANTES" && (
           <div className="grid grid-cols-5 gap-2">
-            <StatCard label="Total Emitido" value={reporteComprobantes ? fmtMonto(reporteComprobantes.totalEmitido) : "S/ 0.00"} accent="text-[#2154d8]" />
+            <StatCard label="Total Emitido" value={fmtMonto(reporteComprobantes?.totalEmitido)} accent="text-[#2154d8]" />
             <StatCard
               label="Boletas"
-              value={reporteComprobantes ? fmtNum(reporteComprobantes.conteoPorTipo.find(item => item.tipo === "BOLETA")?.cantidad ?? 0) : "0"}
+              value={fmtNum((reporteComprobantes?.conteoPorTipo ?? []).find(item => item?.tipo === "BOLETA")?.cantidad ?? 0)}
             />
             <StatCard
               label="Facturas"
-              value={reporteComprobantes ? fmtNum(reporteComprobantes.conteoPorTipo.find(item => item.tipo === "FACTURA")?.cantidad ?? 0) : "0"}
+              value={fmtNum((reporteComprobantes?.conteoPorTipo ?? []).find(item => item?.tipo === "FACTURA")?.cantidad ?? 0)}
             />
             <StatCard
               label="Anulaciones"
-              value={reporteComprobantes ? fmtNum(reporteComprobantes.anulaciones) : "0"}
-              accent={reporteComprobantes && reporteComprobantes.anulaciones > 0 ? "text-red-600" : undefined}
+              value={fmtNum(reporteComprobantes?.anulaciones ?? 0)}
+              accent={(reporteComprobantes?.anulaciones ?? 0) > 0 ? "text-red-600" : undefined}
             />
             <StatCard
               label="Pendientes SUNAT"
-              value={reporteComprobantes ? fmtNum(reporteComprobantes.pendientesSUNAT) : "0"}
-              accent={reporteComprobantes && reporteComprobantes.pendientesSUNAT > 0 ? "text-amber-600" : undefined}
+              value={fmtNum(reporteComprobantes?.pendientesSUNAT ?? 0)}
+              accent={(reporteComprobantes?.pendientesSUNAT ?? 0) > 0 ? "text-amber-600" : undefined}
             />
           </div>
         )}
@@ -413,16 +412,16 @@ export function ReportesWorkspace() {
           <div className="grid grid-cols-4 gap-2">
             <StatCard
               label="En Alerta"
-              value={reporteAbastecimiento ? fmtNum(reporteAbastecimiento.productosEnAlerta.length) : "0"}
+              value={fmtNum((reporteAbastecimiento?.productosEnAlerta ?? []).length)}
               accent="text-amber-600"
             />
             <StatCard
               label="Agotados"
-              value={reporteAbastecimiento ? fmtNum(reporteAbastecimiento.productosEnAlerta.filter(item => item.disponible === 0).length) : "0"}
+              value={fmtNum((reporteAbastecimiento?.productosEnAlerta ?? []).filter(item => (item?.disponible ?? 0) === 0).length)}
               accent="text-red-600"
             />
-            <StatCard label="Compras Período" value={reporteAbastecimiento ? fmtNum(reporteAbastecimiento.comprasDelPeriodo) : "0"} />
-            <StatCard label="Gasto Total" value={reporteAbastecimiento ? fmtMonto(reporteAbastecimiento.gastoTotal) : "S/ 0.00"} accent="text-[#2154d8]" />
+            <StatCard label="Compras Período" value={fmtNum(reporteAbastecimiento?.comprasDelPeriodo ?? 0)} />
+            <StatCard label="Gasto Total" value={fmtMonto(reporteAbastecimiento?.gastoTotal)} accent="text-[#2154d8]" />
           </div>
         )}
 
@@ -430,16 +429,16 @@ export function ReportesWorkspace() {
           <div className="grid grid-cols-3 gap-2">
             <StatCard
               label="Turnos Cerrados"
-              value={reporteTurnos ? fmtNum(reporteTurnos.turnos.filter(turno => turno.estado === "CERRADO").length) : "0"}
+              value={fmtNum((reporteTurnos?.turnos ?? []).filter(turno => turno?.estado === "CERRADO").length)}
             />
             <StatCard
               label="Turnos Abiertos"
-              value={reporteTurnos ? fmtNum(reporteTurnos.turnos.filter(turno => turno.estado === "ABIERTO").length) : "0"}
-              accent={reporteTurnos && reporteTurnos.turnos.some(turno => turno.estado === "ABIERTO") ? "text-amber-600" : undefined}
+              value={fmtNum((reporteTurnos?.turnos ?? []).filter(turno => turno?.estado === "ABIERTO").length)}
+              accent={(reporteTurnos?.turnos ?? []).some(turno => turno?.estado === "ABIERTO") ? "text-amber-600" : undefined}
             />
             <StatCard
               label="Diferencia Total"
-              value={reporteTurnos ? fmtMonto(reporteTurnos.turnos.reduce((acc, turno) => acc + (turno.diferencia ?? 0), 0)) : "S/ 0.00"}
+              value={fmtMonto((reporteTurnos?.turnos ?? []).reduce((acc, turno) => acc + (turno?.diferencia ?? 0), 0))}
               accent="text-[#2154d8]"
             />
           </div>
@@ -474,11 +473,11 @@ export function ReportesWorkspace() {
                     </tr>
                   </thead>
                   <tbody className="text-[#334155]">
-                    {reporteVentas.productosMasVendidos.slice(0, 10).map(item => (
-                      <tr key={item.hovId} className="border-t border-[#eef2f7]">
-                        <td className="py-2">{item.nombre}</td>
-                        <td className="py-2">{fmtNum(item.cantidadVendida)}</td>
-                        <td className="py-2 text-right font-semibold">{fmtMonto(item.totalGenerado)}</td>
+                    {(reporteVentas?.productosMasVendidos ?? []).slice(0, 10).map(item => (
+                      <tr key={item?.hovId ?? `${item?.nombre ?? "item"}-${item?.cantidadVendida ?? 0}`} className="border-t border-[#eef2f7]">
+                        <td className="py-2">{item?.nombre ?? "—"}</td>
+                        <td className="py-2">{fmtNum(item?.cantidadVendida ?? 0)}</td>
+                        <td className="py-2 text-right font-semibold">{fmtMonto(item?.totalGenerado ?? 0)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -496,11 +495,11 @@ export function ReportesWorkspace() {
                     </tr>
                   </thead>
                   <tbody className="text-[#334155]">
-                    {reporteVentas.ventasPorOperador.map(item => (
-                      <tr key={item.operadorId} className="border-t border-[#eef2f7]">
-                        <td className="py-2">{item.nombre}</td>
-                        <td className="py-2">{fmtNum(item.transacciones)}</td>
-                        <td className="py-2 text-right font-semibold">{fmtMonto(item.totalVendido)}</td>
+                    {(reporteVentas?.ventasPorOperador ?? []).map(item => (
+                      <tr key={item?.operadorId ?? `${item?.nombre ?? "operador"}-${item?.transacciones ?? 0}`} className="border-t border-[#eef2f7]">
+                        <td className="py-2">{item?.nombre ?? "—"}</td>
+                        <td className="py-2">{fmtNum(item?.transacciones ?? 0)}</td>
+                        <td className="py-2 text-right font-semibold">{fmtMonto(item?.totalVendido ?? 0)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -510,20 +509,22 @@ export function ReportesWorkspace() {
               <section className="rounded-2xl border border-[#e8edf5] bg-white px-4 py-3">
                 <h3 className="text-[12px] font-black uppercase tracking-wider text-[#1a2d4e]">Actividad por hora</h3>
                 <div className="mt-4 flex items-end gap-[2px]" style={{ minHeight: "56px" }}>
-                  {reporteVentas.ventasPorHora.map(item => {
+                  {(reporteVentas?.ventasPorHora ?? []).map(item => {
+                    const totalVendido = item?.totalVendido ?? 0;
+                    const hora = item?.hora ?? 0;
                     const height = ventasHourMax > 0
-                      ? Math.max(2, (item.totalVendido / ventasHourMax) * 48)
+                      ? Math.max(2, (totalVendido / ventasHourMax) * 48)
                       : 2;
 
                     return (
-                      <div key={item.hora} className="flex flex-col items-center gap-1">
+                      <div key={hora} className="flex flex-col items-center gap-1">
                         <div
-                          title={`${item.hora}:00 · ${fmtMonto(item.totalVendido)}`}
+                          title={`${hora}:00 · ${fmtMonto(totalVendido)}`}
                           className="w-full rounded-sm bg-[#2154d8]/70 transition hover:bg-[#2154d8]"
                           style={{ height: `${height}px`, minHeight: "2px" }}
                         />
                         <span className="text-[9px] text-[#94a3b8]">
-                          {item.hora % 4 === 0 ? item.hora : ""}
+                          {hora % 4 === 0 ? hora : ""}
                         </span>
                       </div>
                     );
@@ -546,11 +547,11 @@ export function ReportesWorkspace() {
                     </tr>
                   </thead>
                   <tbody className="text-[#334155]">
-                    {reporteComprobantes.conteoPorTipo.map(item => (
-                      <tr key={item.tipo} className="border-t border-[#eef2f7]">
-                        <td className="py-2">{item.tipo}</td>
-                        <td className="py-2">{fmtNum(item.cantidad)}</td>
-                        <td className="py-2 text-right font-semibold">{fmtMonto(item.total)}</td>
+                    {(reporteComprobantes?.conteoPorTipo ?? []).map(item => (
+                      <tr key={item?.tipo ?? "tipo"} className="border-t border-[#eef2f7]">
+                        <td className="py-2">{item?.tipo ?? "—"}</td>
+                        <td className="py-2">{fmtNum(item?.cantidad ?? 0)}</td>
+                        <td className="py-2 text-right font-semibold">{fmtMonto(item?.total ?? 0)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -558,14 +559,14 @@ export function ReportesWorkspace() {
               </section>
 
               <div className="flex flex-wrap gap-2">
-                {reporteComprobantes.pendientesSUNAT > 0 && (
+                {(reporteComprobantes?.pendientesSUNAT ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700">
-                    {reporteComprobantes.pendientesSUNAT} pendientes de envío SUNAT
+                    {reporteComprobantes?.pendientesSUNAT ?? 0} pendientes de envío SUNAT
                   </span>
                 )}
-                {reporteComprobantes.anulaciones > 0 && (
+                {(reporteComprobantes?.anulaciones ?? 0) > 0 && (
                   <span className="rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold text-red-600">
-                    {reporteComprobantes.anulaciones} anulaciones en el período
+                    {reporteComprobantes?.anulaciones ?? 0} anulaciones en el período
                   </span>
                 )}
               </div>
@@ -586,18 +587,18 @@ export function ReportesWorkspace() {
                     </tr>
                   </thead>
                   <tbody className="text-[#334155]">
-                    {reporteAbastecimiento.productosEnAlerta.map(item => (
-                      <tr key={item.productoId} className="border-t border-[#eef2f7]">
-                        <td className="py-2">{item.nombre}</td>
-                        <td className="py-2">{fmtNum(item.disponible)}</td>
-                        <td className="py-2">{fmtNum(item.umbralAlerta)}</td>
+                    {(reporteAbastecimiento?.productosEnAlerta ?? []).map(item => (
+                      <tr key={item?.productoId ?? `${item?.nombre ?? "producto"}-${item?.umbralAlerta ?? 0}`} className="border-t border-[#eef2f7]">
+                        <td className="py-2">{item?.nombre ?? "—"}</td>
+                        <td className="py-2">{fmtNum(item?.disponible ?? 0)}</td>
+                        <td className="py-2">{fmtNum(item?.umbralAlerta ?? 0)}</td>
                         <td className="py-2">
                           <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            item.disponible === 0
+                            (item?.disponible ?? 0) === 0
                               ? "bg-red-50 text-red-600"
                               : "bg-amber-50 text-amber-700"
                           }`}>
-                            {item.disponible === 0 ? "ROJO" : "AMBER"}
+                            {(item?.disponible ?? 0) === 0 ? "ROJO" : "AMBER"}
                           </span>
                         </td>
                       </tr>
@@ -617,11 +618,11 @@ export function ReportesWorkspace() {
                     </tr>
                   </thead>
                   <tbody className="text-[#334155]">
-                    {reporteAbastecimiento.resumenProveedores.map(item => (
-                      <tr key={item.proveedor} className="border-t border-[#eef2f7]">
-                        <td className="py-2">{item.proveedor || "Sin proveedor"}</td>
-                        <td className="py-2">{fmtNum(item.cantidadCompras)}</td>
-                        <td className="py-2 text-right font-semibold">{fmtMonto(item.montoTotal)}</td>
+                    {(reporteAbastecimiento?.resumenProveedores ?? []).map(item => (
+                      <tr key={item?.proveedor ?? `proveedor-${item?.cantidadCompras ?? 0}`} className="border-t border-[#eef2f7]">
+                        <td className="py-2">{item?.proveedor || "Sin proveedor"}</td>
+                        <td className="py-2">{fmtNum(item?.cantidadCompras ?? 0)}</td>
+                        <td className="py-2 text-right font-semibold">{fmtMonto(item?.montoTotal ?? 0)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -632,33 +633,33 @@ export function ReportesWorkspace() {
 
           {!generando && reporteTurnos && (
             <div className="flex flex-col gap-3">
-              {reporteTurnos.turnos.map((turno, index) => (
-                <article key={`${turno.cajaId}-${turno.apertura.hora}-${index}`} className="rounded-2xl border border-[#e8edf5] bg-white px-4 py-3">
+              {(reporteTurnos?.turnos ?? []).map((turno, index) => (
+                <article key={`${turno?.cajaId ?? "caja"}-${turno?.apertura?.hora ?? "hora"}-${index}`} className="rounded-2xl border border-[#e8edf5] bg-white px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[13px] font-extrabold text-[#1a2d4e]">Caja {turno.cajaId}</p>
-                      <p className="mt-1 text-[11px] text-[#6b7280]">{turno.operador}</p>
+                      <p className="text-[13px] font-extrabold text-[#1a2d4e]">Caja {turno?.cajaId ?? "—"}</p>
+                      <p className="mt-1 text-[11px] text-[#6b7280]">{turno?.operador ?? "—"}</p>
                     </div>
                     <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${
-                      turno.estado === "CERRADO" ? "bg-slate-100 text-slate-700" : "bg-amber-50 text-amber-700"
+                      turno?.estado === "CERRADO" ? "bg-slate-100 text-slate-700" : "bg-amber-50 text-amber-700"
                     }`}>
-                      {turno.estado}
+                      {turno?.estado ?? "—"}
                     </span>
                   </div>
                   <div className="mt-3 grid grid-cols-1 gap-2 text-[11px] text-[#334155]">
-                    <p><span className="font-semibold">Apertura:</span> {fmtFechaHora(turno.apertura.hora)} · {fmtMonto(turno.apertura.montoInicial)}</p>
+                    <p><span className="font-semibold">Apertura:</span> {fmtFechaHora(turno?.apertura?.hora ?? "")} · {fmtMonto(turno?.apertura?.montoInicial ?? 0)}</p>
                     <p>
                       <span className="font-semibold">Cierre:</span>{" "}
-                      {turno.cierre ? `${fmtFechaHora(turno.cierre.hora)} · ${fmtMonto(turno.cierre.montoCierre)}` : "Abierto"}
+                      {turno?.cierre ? `${fmtFechaHora(turno?.cierre?.hora ?? "")} · ${fmtMonto(turno?.cierre?.montoCierre ?? 0)}` : "Abierto"}
                     </p>
                     <p className={`font-semibold ${
-                      turno.diferencia === null
+                      turno?.diferencia === null
                         ? "text-slate-500"
-                        : turno.diferencia >= 0
+                        : (turno?.diferencia ?? 0) >= 0
                         ? "text-emerald-700"
                         : "text-red-600"
                     }`}>
-                      Diferencia: {turno.diferencia === null ? "S/ 0.00" : fmtMonto(turno.diferencia)}
+                      Diferencia: {turno?.diferencia === null ? "S/ 0.00" : fmtMonto(turno?.diferencia ?? 0)}
                     </p>
                   </div>
                 </article>
