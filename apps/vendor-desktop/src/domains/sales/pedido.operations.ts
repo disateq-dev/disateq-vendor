@@ -1,20 +1,10 @@
+import { generarCodigo } from "./pedido.service";
 import type { Pedido, EventoPedido } from "./pedido.types";
 import { pedidoStore } from "./pedido.store";
 
 interface DivisionResult {
   pedidoOriginal: Pedido;
   pedidoNuevo: Pedido;
-}
-
-function generarCodigo(): string {
-  const todos = pedidoStore.getPedidosAbiertos("").concat(
-    pedidoStore.getPedidosConcretados("")
-  );
-  const max = todos.reduce((acc, p) => {
-    const num = parseInt(p.codigo.replace("P-", ""), 10);
-    return isNaN(num) ? acc : Math.max(acc, num);
-  }, 0);
-  return `P-${String(max + 1).padStart(4, "0")}`;
 }
 
 function crearEvento(

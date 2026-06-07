@@ -266,9 +266,9 @@ export function SalesWorkspace() {
     if (cobroOpen) closeCobro();
     preVentaService.agregarProductoDesdeHOV({
       hovId: p.hovId,
-      description: p.description,
+      descripcion: p.description,
       cantidad: 1,
-      unitPrice: p.unitPrice,
+      valorUnitario: p.unitPrice,
       presentacion: p.presentacion,
       factorConversion: p.factorConversion,
       requiereValorManual: p.requiereValorManual,

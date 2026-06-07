@@ -9,10 +9,10 @@ import {
 import { agregarLinea } from '../../sales/pedido.service'
 
 type AddProductInput = {
-  productId:    string;
-  description:  string;
-  barcode:      string;
-  unitPrice:    number;
+  hovId:         string;
+  descripcion:   string;
+  codigoBarras?: string;
+  valorUnitario: number;
   presentacion?: string;
   tipoPrecio?:   string;
 };
@@ -24,13 +24,13 @@ export const preVentaService = {
   agregarProducto(input: AddProductInput) {
     usePreVentaStore.getState().agregarLinea(
       crearLineaPreVenta({
-        hovId:         input.productId,
-        descripcion:   input.description,
-        codigoBarras:  input.barcode,
+        hovId:         input.hovId,
+        descripcion:   input.descripcion,
+        codigoBarras:  input.codigoBarras ?? '',
         cantidad:      1,
-        valorUnitario: input.unitPrice,
-        presentacion: input.presentacion,
-        tipoPrecio:   input.tipoPrecio,
+        valorUnitario: input.valorUnitario,
+        presentacion:  input.presentacion,
+        tipoPrecio:    input.tipoPrecio,
       }),
     );
   },

@@ -2,12 +2,13 @@ import { pedidoStore } from './pedido.store'
 import { crearPedido, confirmarPedido, iniciarCobro } from './pedido.service'
 import { pedidoOperations } from './pedido.operations'
 import { getHOVById } from '../catalog/hov.store'
+import type { LineaPreVenta } from '../preventa/dto/LineaPreVenta'
 
 export interface AddProductBridgeInput {
   hovId: string
-  description: string
+  descripcion: string
   cantidad: number
-  unitPrice: number
+  valorUnitario: number
   presentacion: string
   factorConversion: number
   requiereValorManual: boolean
@@ -18,39 +19,19 @@ export interface AddProductBridgeInput {
   operadorTieneCapacidadLibre: boolean
 }
 
-export interface TicketLineBridge {
-  lineaId: string
-  hovId: string
-  descripcion: string
-  codigoBarras: string
-  cantidad: number
-  valorUnitario: number
-  subtotal: number
-  presentacion: string
-  tipoPrecio: string
-  factorConversion: number
-  esValorManual: boolean
-  flags?: {
-    esPrecioManual?: boolean
-    esRecuperada?: boolean
-  }
-}
-
 export function traducirATicketLine(
   input: AddProductBridgeInput
-): TicketLineBridge {
+): LineaPreVenta {
   return {
     lineaId: crypto.randomUUID(),
     hovId: input.hovId,
-    descripcion: input.description,
+    descripcion: input.descripcion,
     codigoBarras: input.hovId,
     cantidad: input.cantidad,
-    valorUnitario: input.unitPrice,
-    subtotal: input.unitPrice * input.cantidad,
+    valorUnitario: input.valorUnitario,
+    subtotal: input.valorUnitario * input.cantidad,
     presentacion: input.presentacion,
     tipoPrecio: input.requiereValorManual ? 'LIBRE' : 'RESUELTO',
-    factorConversion: input.factorConversion,
-    esValorManual: input.requiereValorManual,
     flags: {
       esPrecioManual: input.requiereValorManual,
       esRecuperada: false,
