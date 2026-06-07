@@ -14,7 +14,7 @@ function cargarComprobantes(): Comprobante[] {
 interface UseComprobantesDeps {
   cashSessionRef: React.RefObject<CashSession>;
   addOpLog: (text: string) => void;
-  addTurnEvent: (sk: string, type: string, text: string) => void;
+  addTurnEvent: (sk: string, type: import("../domains/cash/turn-events.store").TurnEventType, text: string) => void;
   onAnulacion: (c: Comprobante) => void;
 }
 

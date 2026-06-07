@@ -219,7 +219,7 @@ export function recoverOperationalState(): RecoveredState {
 
 interface UseCajaDeps {
   addOpLog: (text: string) => void;
-  addTurnEvent: (sk: string, type: string, text: string) => void;
+  addTurnEvent: (sk: string, type: import("../domains/cash/turn-events.store").TurnEventType, text: string) => void;
   resetStats: () => void;
   resetOpLogs: () => void;
   sessionStatsRef: React.RefObject<SessionStats>;

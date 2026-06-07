@@ -121,7 +121,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     cobroOpen, setCobroOpen,
     enterTicket, enterSearch,
     openCobro, closeCobro, newSale,
-  } = usePreVentaUX({ isTurnoAbierto: false, showNotice });
+  } = usePreVentaUX({ isTurnoAbierto: cashSession.isOpen, showNotice });
 
   const {
     cashSession, cashSessionRef: cajaCashSessionRef,
@@ -130,7 +130,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addCashMove, updateCashMove, editCashMove,
     openCashSession, closeCashSession, correctAperturaData,
   } = useCaja({
-    addOpLog, addTurnEvent: addTurnEvent as (sk: string, type: string, text: string) => void,
+    addOpLog, addTurnEvent,
     resetStats, resetOpLogs,
     sessionStatsRef,
     activeOperatorRef, operatorsRef,
@@ -150,7 +150,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const { comprobantes, addComprobante, voidComprobante } = useComprobantes({
     cashSessionRef,
     addOpLog,
-    addTurnEvent: addTurnEvent as (sk: string, type: string, text: string) => void,
+    addTurnEvent,
     onAnulacion: revertirVenta,
   });
 
