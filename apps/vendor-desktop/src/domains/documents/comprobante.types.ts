@@ -109,6 +109,7 @@ export interface Comprobante {
   cdr: string | null
   fechaEnvioSUNAT: string | null
   motivoAnulacion: string | null
+  sessionKey?: string | null
   emitidoEn: string
   emitidoPor: string
   enviadoPorCanal: CanalEnvio

@@ -729,9 +729,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const s = cashSessionRef.current;
     const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
     comprobanteStore.guardarComprobante(
-      (sk
-        ? { ...comprobante, sessionKey: sk }
-        : comprobante) as Comprobante
+      sk ? { ...comprobante, sessionKey: sk } : comprobante
     );
     setComprobantes(cargarComprobantes());
     if (sk) {
