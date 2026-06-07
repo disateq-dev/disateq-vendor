@@ -7,21 +7,11 @@ export interface TotalesPreVenta {
 }
 
 export const calcularTotalesPreVenta = (
-  lineas: LineaPreVenta[]
+  lineas: LineaPreVenta[],
+  tasaIGV: number
 ): TotalesPreVenta => {
-  const subtotal = lineas.reduce(
-    (accumulator, line) =>
-      accumulator + line.subtotal,
-    0
-  );
-
-  const tax = subtotal * 0.18;
-
-  const total = subtotal + tax;
-
-  return {
-    subtotal,
-    tax,
-    total,
-  };
+  const subtotal = lineas.reduce((acc, line) => acc + line.subtotal, 0);
+  const tax      = subtotal * tasaIGV;
+  const total    = subtotal + tax;
+  return { subtotal, tax, total };
 };

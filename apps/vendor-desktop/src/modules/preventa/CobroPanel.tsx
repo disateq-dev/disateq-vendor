@@ -76,6 +76,7 @@ export function CobroPanel() {
   const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, docCorrelatives, printFlow, sessionStats } = usePOS();
   const { cashBox } = cashSession;
   const isCtg = !!cashBox && cashBox.type !== "normal";
+  const tasaIGV = loadBusinessConfig().tasaIGV;
 
   // ── main state ──────────────────────────────────────────────────────────────
   const [docType,       setDocType]       = useState<DocType>("nota");
@@ -118,7 +119,7 @@ export function CobroPanel() {
   const discountNum  = Math.min(parseFloat(discount) || 0, total);
   const netTotal     = moneySub(total, discountNum);
   const isGravado    = affectation === "gravado-onerosa" || affectation === "gravado-retiro";
-  const baseImponible = isGravado ? moneyRound(netTotal / 1.18) : netTotal;
+  const baseImponible = isGravado ? moneyRound(netTotal / (1 + tasaIGV)) : netTotal;
   const igv           = isGravado ? moneySub(netTotal, baseImponible) : 0;
   const receivedNum = parseFloat(received) || 0;
   const mixtoEfeNum = parseFloat(mixtoEfe) || 0;
@@ -256,7 +257,7 @@ export function CobroPanel() {
         subtotal: l.subtotal,
         codigoProductoSUNAT: null,
         tipoAfectacionIGV,
-        tasaIGV: tipoAfectacionIGV === "GRAVADO" ? 0.18 : 0,
+        tasaIGV: tipoAfectacionIGV === "GRAVADO" ? tasaIGV : 0,
         montoISC: null,
         notaLinea: l.nota ?? null,
       })),

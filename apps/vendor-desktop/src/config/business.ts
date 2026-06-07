@@ -7,6 +7,7 @@ export type BusinessConfig = {
   razonSocial:     string;
   direccion:       string;
   telefono:        string;
+  tasaIGV:         number;
 };
 
 const DEFAULTS: BusinessConfig = {
@@ -16,6 +17,7 @@ const DEFAULTS: BusinessConfig = {
   razonSocial:     "CONSORCIO PEÑA S.A.C.",
   direccion:       "",
   telefono:        "",
+  tasaIGV:         0.18,
 };
 
 export function loadBusinessConfig(): BusinessConfig {
@@ -30,6 +32,7 @@ export function loadBusinessConfig(): BusinessConfig {
       razonSocial:     typeof p.razonSocial     === "string" ? p.razonSocial     : DEFAULTS.razonSocial,
       direccion:       typeof p.direccion       === "string" ? p.direccion       : DEFAULTS.direccion,
       telefono:        typeof p.telefono        === "string" ? p.telefono        : DEFAULTS.telefono,
+      tasaIGV:         typeof p.tasaIGV         === "number" ? p.tasaIGV         : DEFAULTS.tasaIGV,
     };
   } catch { return DEFAULTS; }
 }
