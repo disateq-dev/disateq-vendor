@@ -4,7 +4,7 @@
 main
 
 ## Commit de referencia
-5991982 — feat: ComprobantesWorkspace completo
+feat: ClientesWorkspace + fix login operador (estado/campos canónicos)
 
 ---
 
@@ -14,9 +14,6 @@ DISATEQ VENDOR está en estado de **madurez operacional avanzada con normalizaci
 
 El ciclo comercial completo está implementado y validado en runtime:
 BUSCAR → AGREGAR → COBRAR → PEDIDO CONCRETADO → INVENTARIO DESCONTADO → COMPROBANTE EMITIDO
-
-La normalización terminológica y estructural (TAREAS 0–8) fue completada en sesión anterior.
-`ComprobantesWorkspace` entregado y validado en esta sesión.
 
 ---
 
@@ -35,6 +32,16 @@ La normalización terminológica y estructural (TAREAS 0–8) fue completada en 
 
 ---
 
+## Fixes aplicados esta sesión
+
+| Archivo | Bug | Fix |
+|---|---|---|
+| `LoginScreen.tsx` | `o.status === "ACTIVO"` — campo legacy inglés | `o.estado === "ACTIVO"` |
+| `LoginScreen.tsx` | `op.operatorCode · op.roleCode` — campos inexistentes | `op.codigoOperador · op.codigoRol` |
+| `operator.store.ts` | SEED con `pin: ""` — login imposible | SEED versión `"5"` con `pin: "1234"` |
+
+---
+
 ## Lo que está construido y validado
 
 ### Runtime operacional
@@ -42,102 +49,95 @@ AppShell · ContextBar · SubContextBar · ModulesBar estabilizados.
 Modelo Workspace → SheetWorks como mutación contextual funcionando.
 
 ### TURNO / CAJA
-Dominio más maduro. Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección de arqueos · recovery automático.
+Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección de arqueos · recovery automático.
 
 ### FONDO DE CAMBIO
-Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados. fondoEsperado correcto.
+Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
 
 ### VENTAS / COBRO
-- Catálogo vivo desde HOV · ya no usa catalogs.ts estático
-- Pedido como entidad operacional · reemplaza Ticket doctrinalmente
-- Valor resuelto por contexto · ya no precio hardcodeado
-- Factor de conversión implementado en HOV
-- ClienteBuscador integrado en CobroPanel
-- Comprobante emitido desde dominio documents
-- Ciclo completo validado en runtime real
+Catálogo vivo · Pedido canónico · Valor por contexto · ClienteBuscador · Comprobante desde documents · Ciclo completo validado en runtime.
 
-### COMPROBANTES — ENTREGADO Junio 2026
-- `ComprobantesWorkspace` completo con dos paneles
-- Vista Sesión / Historial con filtrado por `sessionKey`
-- `StatsBar`: total vendido, EFE, YAP, TAR, anulados
-- Filtros por tipo (NOTA/BOL/FAC/COT) y estado (EMITIDO/ANULADO/REFERENCIADO)
-- `PanelDetalle` con emisor, receptor, líneas, totales tributarios (base + IGV + total)
-- Acción anular con motivo obligatorio
-- Acción convertir a formal (TIQUE/COTIZACION → BOLETA/FACTURA)
-- `sessionKey` formalizado en `Comprobante` (campo canónico, sin cast)
-- `refreshNonce` como mecanismo de recarga post-conversión
+### COMPROBANTES
+`ComprobantesWorkspace` completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir a formal · sessionKey formalizado.
+
+### CLIENTES — ENTREGADO esta sesión
+- `ClientesWorkspace` completo con dos paneles
+- StatsBar: activos · FRECUENTE · CONVENIO · OCASIONAL · suspendidos
+- Filtros por estado y tipo · buscador [F2]
+- PanelDetalle: identidad · fiscal · canales · condiciones · fidelización
+- Acciones: SUSPENDER / REACTIVAR / INACTIVAR con motivo obligatorio
+- Formulario de creación inline en panel derecho
+- Módulo CLIENTES activado en ModulesBar y SubContextBar
+- `getTodos()` agregado a `cliente.store.ts`
+- Identidad cromática: `#1e7e4f`
 
 ### INVENTARIOS CAPA 0+1
-ítems · movimientos causales · disponibilidad derivada · reservas · alertas · CSV · baja lógica.
+Ítems · movimientos causales · disponibilidad derivada · reservas · alertas · CSV · baja lógica.
 
 ### COMPRAS CAPA 0+1
-Recepción parcial incremental · causalidad compra:XXXXXXXX → INVENTARIOS · estados automáticos.
+Recepción parcial incremental · causalidad compra → INVENTARIOS · estados automáticos.
 
 ### OPERADORES + ROLES
 Ciclo de vida completo · PIN · Bloque Operacional · capacidades · roles configurables.
+SEED operador: `FTEJADA / 1234` · codigoRol ADMIN · acceso total · versión `"5"`.
 
 ### AJUSTES
 BusinessConfig (incluye `tasaIGV`) · OpsConfig · rubro · visualMode · printFlow.
 
 ### LOGIN
-Distinción LOGIN vs Runtime Principal formalizada. Drag funcional. Flash eliminado.
+Distinción LOGIN vs Runtime Principal formalizada. Filtro por `o.estado`. Campos canónicos en render.
 
 ---
 
 ## Core Operacional — Estado actual
 
+### Dominio CLIENTS
+src/domains/clients/
+├── cliente.types.ts     ✅ tipos canónicos completos
+├── cliente.store.ts     ✅ getTodos() agregado esta sesión
+└── cliente.service.ts   ✅ crearCliente · suspender · reactivar · inactivar
+
 ### Dominio PREVENTA
-```
 src/domains/preventa/
 ├── README-preventa.md              ✅
-├── dto/LineaPreVenta.ts            ✅ campos canónicos en español
-├── state/preventa.store.ts         ✅ usePreVentaStore · EstadoPreVenta
-├── state/preventa.actions.ts       ✅ crearLineaPreVenta
-├── selectors/preventa.selectors.ts ✅ useLineasPreVenta
-├── services/preventa.service.ts    ✅ preVentaService
-└── services/preventa-calculation.service.ts ✅ calcularTotalesPreVenta(lineas, tasaIGV)
-```
+├── dto/LineaPreVenta.ts            ✅
+├── state/preventa.store.ts         ✅
+├── state/preventa.actions.ts       ✅
+├── selectors/preventa.selectors.ts ✅
+├── services/preventa.service.ts    ✅
+└── services/preventa-calculation.service.ts ✅
 
 ### Dominio SALES
-```
 src/domains/sales/
-├── README-sales.md          ✅
-├── pedido.types.ts          ✅
-├── pedido.store.ts          ✅
-├── pedido.service.ts        ✅ generarCodigo() — fuente única
-├── pedido.operations.ts     ✅
-└── bridge-pedido.ts         ✅ solo traducción
-```
+├── README-sales.md      ✅
+├── pedido.types.ts      ✅
+├── pedido.store.ts      ✅
+├── pedido.service.ts    ✅
+├── pedido.operations.ts ✅
+└── bridge-pedido.ts     ✅
 
 ### Dominio DOCUMENTS
-```
 src/domains/documents/
 ├── README-documents.md      ✅
 ├── comprobante.types.ts     ✅ sessionKey formalizado
 ├── comprobante.store.ts     ✅
 ├── comprobante.validator.ts ✅
-├── comprobante.service.ts   ✅ convertirAFormal integrado en workspace
+├── comprobante.service.ts   ✅
 └── bridge-comprobante.ts    ✅
-```
 
 ### Dominio OPERATOR
-```
 src/domains/operator/
-├── README-operator.md       ✅
-├── operator.store.ts        ✅ Operador · EstadoOperador · AsignacionBloque
-├── roles.store.ts           ✅ Rol · campos en español
-└── blocks.store.ts          ✅
-```
+├── README-operator.md  ✅
+├── operator.store.ts   ✅ SEED v5 · pin 1234 · ADMIN
+├── roles.store.ts      ✅
+└── blocks.store.ts     ✅
 
 ### Otros dominios
-```
 src/domains/catalog/   ✅  HOV · ValorOperacional · CatalogoProyectado
-src/domains/clients/   ✅  Cliente · IdentificacionFiscal
 src/domains/inventory/ ✅  ItemOperacional · MovimientoOperacional
 src/domains/purchases/ ✅  CompraOperacional · LineaCompra
-src/domains/reports/   ✅  Reporte (sin UI)
+src/domains/reports/   ✅  Reporte (sin UI aún)
 src/domains/cash/      ✅  TurnEvent
-```
 
 ---
 
@@ -152,17 +152,15 @@ src/domains/cash/      ✅  TurnEvent
 | Persona que opera | `Operador` | `interface Operador` |
 | Rol operacional | `Rol` | `interface Rol` |
 | Ítem de inventario | `ItemOperacional` | `interface ItemOperacional` |
+| Cliente registrado | `Cliente` | `interface Cliente` |
 
 Ver `docs/00-governance/GLOSARIO.md` para la referencia completa.
 
 ---
 
 ## Regla de idioma consolidada
-
-```
 Dominio del negocio      →  español operacional
 Infraestructura técnica  →  inglés estándar
-```
 
 ---
 
@@ -173,7 +171,7 @@ Infraestructura técnica  →  inglés estándar
 - `visualMode === "mixto"` sin implementación
 - Correlativos de despacho sin persistencia
 - `_pedidoActivoId` en `preventa.service.ts` — estado mutable de módulo · refactor futuro
-- `refreshNonce` en `ComprobantesWorkspace` — temporal hasta que `convertirAFormal` sea reactiva via `POSContext`
+- `refreshNonce` en workspaces — temporal hasta que stores sean reactivos
 
 ---
 
@@ -189,13 +187,12 @@ Infraestructura técnica  →  inglés estándar
 - AJUSTES / CONFIG
 - LOGIN
 - HOV · CATÁLOGO · VALOR OPERACIONAL
-- CLIENTES (dominio + CobroPanel)
+- CLIENTES (dominio + CobroPanel + ClientesWorkspace ✅)
 - COMPROBANTES (documents/ + ComprobantesWorkspace ✅)
 - PREVENTA (normalizado desde ticket)
 
-### Pendientes de UI
-- `ClientesWorkspace`  → módulo de gestión de clientes
-- `ReportesWorkspace`  → visualización y exportación
+### Pendientes de UI — próxima sesión
+- `ReportesWorkspace` → dominio completo, solo falta la pantalla ← **SIGUIENTE**
 
 ### Pendientes estructurales
 - Enforcement de capacidades operacionales
@@ -210,32 +207,37 @@ Infraestructura técnica  →  inglés estándar
 
 ---
 
+## Prioridad acordada para próximas sesiones
+
+ReportesWorkspace        ← SIGUIENTE · dominio listo · solo UI
+Enforcement capacidades  ← cierra ciclo de seguridad
+Extracción POSContext    ← deuda técnica
+Correlativos despacho    ← integridad futura
+
+
+---
+
 ## Flujo operacional validado
-```
 COMPRAS → INVENTARIOS → HOV → CATÁLOGO → PEDIDO → CONCRETADO
-                                                        │
-                                              INVENTARIO descontado
-                                              COMPROBANTE emitido
-                                              CLIENTE asociado
-                                              HISTORIAL consultable
-```
+│
+INVENTARIO descontado
+COMPROBANTE emitido
+CLIENTE asociado
+HISTORIAL consultable
 
 ---
 
 ## Posición en el ciclo evolutivo
-
-```
 operación real            ✅ TURNO · FONDO · COBRO · COMPRAS
 dolor operacional         ✅ identificado y resuelto
 ciclo comercial           ✅ CERRADO y validado en runtime
 core operacional          ✅ implementado y normalizado
 normalización estructural ✅ TAREAS 0–8 completadas
-integración UI            ⚠  ClientesWorkspace · ReportesWorkspace pendientes
+integración UI            ⚠  ReportesWorkspace pendiente
 reconciliación/control    ⚠  capacidades sin enforcement
 sofisticación progresiva  ⬜
 consolidación             ⬜
 estabilización            ⬜
-```
 
 ---
 
