@@ -11,6 +11,7 @@ import { type TurnEvent, type TurnEventType, loadTurnEvents, saveTurnEvents } fr
 import { useConfigNegocio } from "../hooks/useConfigNegocio";
 import { usePreVentaUX } from "../hooks/usePreVentaUX";
 import { useOperadores } from "../hooks/useOperadores";
+import { useNotice } from "../hooks/useNotice";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -394,14 +395,7 @@ interface POSContextValue {
 const POSContext = createContext<POSContextValue | null>(null);
 
 export function POSProvider({ children }: { children: ReactNode }) {
-  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
-  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showNotice = useCallback((msg: string) => {
-    if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    setSessionNotice(msg);
-    noticeTimer.current = setTimeout(() => setSessionNotice(null), 2800);
-  }, []);
+  const { sessionNotice, showNotice } = useNotice();
 
   // Recover consistent state from localStorage — runs once on mount
   const [initState] = useState(recoverOperationalState);
