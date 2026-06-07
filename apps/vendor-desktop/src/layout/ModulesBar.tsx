@@ -16,6 +16,7 @@ const ON: Record<ActiveModule, string> = {
   cash:           `${BASE} border-[#2A7CA8]  bg-[rgba(42,124,168,0.12)]`,
   sales:          `${BASE} border-[#45b356]  bg-[rgba(69,179,86,0.10)]`,
   clientes: `${BASE} border-[#1e7e4f]  bg-[rgba(30,126,79,0.10)]`,
+  reportes: `${BASE} border-[#2154d8]  bg-[rgba(33,84,216,0.10)]`,
   comprobantes:   `${BASE} border-[#C05050]  bg-[rgba(192,80,80,0.10)]`,
   config:         `${BASE} border-[#697387]  bg-[rgba(105,115,135,0.10)]`,
   abastecimiento: `${BASE} border-[#3D8A8A]  bg-[rgba(61,138,138,0.10)]`,
@@ -31,6 +32,7 @@ function Sep() {
 
 export function ModulesBar({ active, display, onChange, onHover }: ModulesBarProps) {
   void active;
+  void PH;
   return (
     <section
       className="flex h-[52px] items-end gap-1 bg-[#F0F2F5] px-3 pb-1"
@@ -61,7 +63,7 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
         <Users size={17} />
         <span>CLIENTES</span>
       </button>
-      <button type="button" title="Próximamente" tabIndex={-1} className={PH}>
+      <button onClick={() => onChange("reportes")} onMouseEnter={() => onHover("reportes")} className={cls("reportes", display)}>
         <BarChart2 size={17} />
         <span>REPORTES</span>
       </button>
