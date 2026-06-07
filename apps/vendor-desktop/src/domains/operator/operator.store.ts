@@ -30,17 +30,23 @@ export type Operador = {
 
 const LS_KEY      = "disateq:operators";
 const LS_V_KEY    = "disateq:operators:v";
-const SEED_VERSION = "4";
+const SEED_VERSION = "5";
 
 const SEED: Operador[] = [
   {
     id: "op1", codigoOperador: "OP001", codigo: "FTEJADA", alias: "FTEJADA",
     apellidos: "TEJADA QUEVEDO", nombres: "FERNANDO MIGUEL", nombreCompleto: "FERNANDO MIGUEL TEJADA QUEVEDO",
     dni: "", telefono: "",
-    codigoRol: "SUP", nombreRol: "Supervisión",
+    codigoRol: "ADMIN", nombreRol: "Administrador",
     baseBloque: null,
-    estado: "ACTIVO", pin: "",
-    capacidades: ["corregir_arqueos","reaperturar_cierres","regularizar_incidencias","observar_comprobantes_global","anular_comprobantes","observar_continuidad"],
+    estado: "ACTIVO", pin: "1234",
+    capacidades: [
+      "corregir_arqueos","reaperturar_cierres","regularizar_incidencias",
+      "observar_comprobantes_global","anular_comprobantes","observar_continuidad",
+      "gestionar_operadores","gestionar_roles","gestionar_capacidades",
+      "gestionar_cajas","gestionar_inventarios","gestionar_compras",
+      "gestionar_clientes","ver_reportes","acceso_total"
+    ],
     registradoEn: "2026-05-31T22:26:30.542Z", registradoPor: "SISTEMA",
   },
 ];
