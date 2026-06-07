@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
-import { moneySub } from "../lib/money";
 import type { Comprobante } from "../domains/documents/comprobante.types";
 import { comprobanteStore } from "../domains/documents/comprobante.store";
 import { type Operador, type EstadoOperador } from "../domains/operator/operator.store";
@@ -13,7 +12,9 @@ import { usePreVentaUX } from "../hooks/usePreVentaUX";
 import { useOperadores } from "../hooks/useOperadores";
 import { useNotice } from "../hooks/useNotice";
 import { useBitacora, type OpLog } from "../hooks/useBitacora";
+import { useSessionStats, type SessionStats, type DocCorrelatives, type DocRange, type ByMethod, NULL_STATS } from "../hooks/useSessionStats";
 export type { OpLog };
+export type { SessionStats, DocCorrelatives, DocRange, ByMethod };
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -78,30 +79,12 @@ const LS_SESSION      = "disateq.pos.cashSession";
 const LS_USED         = "disateq.pos.usedCodes";
 const LS_USED_DATE    = "disateq.pos.usedDate";
 const LS_MOVES        = "disateq.pos.cashMoves";
-const LS_SESSION_STATS = "disateq.pos.sessionStats";
-const LS_CORRELATIVES  = "disateq.pos.correlatives";
 function cargarComprobantes(): Comprobante[] {
   return comprobanteStore.getComprobantesPorTipo('TIQUE_VENTA')
     .concat(comprobanteStore.getComprobantesPorTipo('BOLETA'))
     .concat(comprobanteStore.getComprobantesPorTipo('FACTURA'))
     .concat(comprobanteStore.getComprobantesPorTipo('COTIZACION'))
     .sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn));
-}
-
-// Correlativos: persisten entre sesiones — única fuente de verdad para numeración
-export type DocCorrelatives = Partial<Record<string, number>>;
-
-function loadCorrelatives(): DocCorrelatives {
-  try {
-    const raw = localStorage.getItem(LS_CORRELATIVES);
-    if (!raw) return {};
-    const p = JSON.parse(raw);
-    return (p && typeof p === "object" && !Array.isArray(p)) ? p as DocCorrelatives : {};
-  } catch { return {}; }
-}
-
-function saveCorrelatives(c: DocCorrelatives): void {
-  try { localStorage.setItem(LS_CORRELATIVES, JSON.stringify(c)); } catch { /* quota */ }
 }
 
 const NULL_SESSION: CashSession = {
@@ -205,55 +188,6 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
   });
 }
 
-// ── session stats ───────────────────────────────────────────────
-export type DocRange  = { series: string; first: number; last: number; count: number };
-export type ByMethod = { efe: number; yap: number; tar: number; mix: number };
-export type SessionStats = {
-  count: number; total: number; cash: number; yape: number; tarjeta: number;
-  docRanges: Partial<Record<string, DocRange>>;
-  byMethod: ByMethod;
-};
-const NULL_STATS: SessionStats = {
-  count: 0, total: 0, cash: 0, yape: 0, tarjeta: 0, docRanges: {},
-  byMethod: { efe: 0, yap: 0, tar: 0, mix: 0 },
-};
-
-function loadSessionStats(): SessionStats {
-  try {
-    const raw = localStorage.getItem(LS_SESSION_STATS);
-    if (!raw) return NULL_STATS;
-    const p = JSON.parse(raw) as Partial<SessionStats>;
-    const ranges: Partial<Record<string, DocRange>> = {};
-    if (p.docRanges && typeof p.docRanges === "object") {
-      for (const [k, v] of Object.entries(p.docRanges)) {
-        if (v && typeof v.series === "string" && typeof v.first === "number"
-            && typeof v.last === "number" && typeof v.count === "number") {
-          ranges[k] = v as DocRange;
-        }
-      }
-    }
-    const bm = (p.byMethod && typeof p.byMethod === "object") ? p.byMethod as Partial<ByMethod> : {};
-    return {
-      count:     typeof p.count    === "number" ? p.count    : 0,
-      total:     typeof p.total    === "number" ? p.total    : 0,
-      cash:      typeof p.cash     === "number" ? p.cash     : 0,
-      yape:      typeof p.yape     === "number" ? p.yape     : 0,
-      tarjeta:   typeof p.tarjeta  === "number" ? p.tarjeta  : 0,
-      docRanges: ranges,
-      byMethod: {
-        efe: typeof bm.efe === "number" ? bm.efe : 0,
-        yap: typeof bm.yap === "number" ? bm.yap : 0,
-        tar: typeof bm.tar === "number" ? bm.tar : 0,
-        mix: typeof bm.mix === "number" ? bm.mix : 0,
-      },
-    };
-  } catch { return NULL_STATS; }
-}
-
-function saveSessionStats(s: SessionStats): void {
-  try { localStorage.setItem(LS_SESSION_STATS, JSON.stringify(s)); } catch { /* quota */ }
-}
-
 // ── startup recovery ────────────────────────────────────────────
 
 type RecoveredState = {
@@ -267,14 +201,44 @@ type RecoveredState = {
 function recoverOperationalState(): RecoveredState {
   const session = loadSession();
   const codes   = loadUsedCodes();
-  const stats   = loadSessionStats();
+  const stats   = (() => {
+    try {
+      const raw = localStorage.getItem("disateq.pos.sessionStats");
+      if (!raw) return NULL_STATS;
+      const p = JSON.parse(raw) as Partial<SessionStats>;
+      const ranges: Partial<Record<string, DocRange>> = {};
+      if (p.docRanges && typeof p.docRanges === "object") {
+        for (const [k, v] of Object.entries(p.docRanges)) {
+          if (v && typeof v.series === "string" && typeof v.first === "number"
+              && typeof v.last === "number" && typeof v.count === "number") {
+            ranges[k] = v as DocRange;
+          }
+        }
+      }
+      const bm = (p.byMethod && typeof p.byMethod === "object") ? p.byMethod as Partial<ByMethod> : {};
+      return {
+        count:     typeof p.count   === "number" ? p.count   : 0,
+        total:     typeof p.total   === "number" ? p.total   : 0,
+        cash:      typeof p.cash    === "number" ? p.cash    : 0,
+        yape:      typeof p.yape    === "number" ? p.yape    : 0,
+        tarjeta:   typeof p.tarjeta === "number" ? p.tarjeta : 0,
+        docRanges: ranges,
+        byMethod: {
+          efe: typeof bm.efe === "number" ? bm.efe : 0,
+          yap: typeof bm.yap === "number" ? bm.yap : 0,
+          tar: typeof bm.tar === "number" ? bm.tar : 0,
+          mix: typeof bm.mix === "number" ? bm.mix : 0,
+        },
+      };
+    } catch { return NULL_STATS; }
+  })();
   const moves   = loadMoves();
 
   // Guard 1: session open but box invalid or openedAt missing
   if (session.isOpen && (!session.cashBox || !BOX_DEFS.some(d => d.code === session.cashBox!.code) || !session.openedAt)) {
     try {
       localStorage.setItem(LS_SESSION, JSON.stringify(NULL_SESSION));
-      localStorage.removeItem(LS_SESSION_STATS);
+      localStorage.removeItem("disateq.pos.sessionStats");
       localStorage.removeItem(LS_MOVES);
     } catch { /* ignore */ }
     return {
@@ -287,7 +251,7 @@ function recoverOperationalState(): RecoveredState {
   let resolvedStats = stats;
   if (!session.isOpen && stats.count > 0) {
     resolvedStats = NULL_STATS;
-    try { localStorage.removeItem(LS_SESSION_STATS); } catch { /* ignore */ }
+    try { localStorage.removeItem("disateq.pos.sessionStats"); } catch { /* ignore */ }
   }
 
   // Guard 3: session closed but moves remain (crash during close sequence)
@@ -398,21 +362,19 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
 
-  const [sessionStats, setSessionStats] = useState(() => initState.stats);
-  const [cashMoves,    setCashMoves]    = useState(() => initState.moves);
-  useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
-  useEffect(() => { saveSessionStats(sessionStats); }, [sessionStats]);
+  const {
+    sessionStats, sessionStatsRef,
+    docCorrelatives,
+    recordSale, revertirVenta, resetStats,
+  } = useSessionStats({ initialStats: initState.stats });
 
-  // Refs para correctAperturaData — deben ir DESPUÉS de las declaraciones de estado
-  const sessionStatsRef = useRef(sessionStats);
-  sessionStatsRef.current = sessionStats;
+  const [cashMoves, setCashMoves] = useState(() => initState.moves);
+  useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
+
   const cashMovesRef = useRef(cashMoves);
   cashMovesRef.current = cashMoves;
 
   const [comprobantes, setComprobantes] = useState<Comprobante[]>(cargarComprobantes);
-
-  const [docCorrelatives, setDocCorrelatives] = useState<DocCorrelatives>(loadCorrelatives);
-  useEffect(() => { saveCorrelatives(docCorrelatives); }, [docCorrelatives]);
 
   const {
     opLogs, addOpLog, resetOpLogs,
@@ -467,20 +429,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const c = comprobanteStore.getComprobanteById(id);
     if (!c || c.estado === "ANULADO") return;
     const s = cashSessionRef.current;
-    setSessionStats(prev => ({
-      count:     prev.count - 1,
-      total:     moneySub(prev.total, c.total),
-      cash:      prev.cash,
-      yape:      prev.yape,
-      tarjeta:   prev.tarjeta,
-      docRanges: prev.docRanges,
-      byMethod: {
-        efe: prev.byMethod.efe - (c.metodoPago === "EFECTIVO" ? 1 : 0),
-        yap: prev.byMethod.yap - (c.metodoPago === "YAPE"     ? 1 : 0),
-        tar: prev.byMethod.tar - (c.metodoPago === "TARJETA"  ? 1 : 0),
-        mix: prev.byMethod.mix - (c.metodoPago === "MIXTO"    ? 1 : 0),
-      },
-    }));
+    revertirVenta(c);
     comprobanteStore.guardarComprobante({
       ...c,
       estado: "ANULADO",
@@ -491,50 +440,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addOpLog(`${s.operator} anuló ${c.serie}-${correlStr} — ${motivo}`);
     const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
     addTurnEvent(sk, "anulacion", `Comprobante ${c.serie}-${correlStr} anulado`);
-  }, [addOpLog, addTurnEvent]);
-
-  const recordSale = useCallback((
-    netTotal: number, payMethod: string,
-    docType?: string, docSeries?: string, docCorrelative?: number,
-    cashComponent?: number, mixtoYapComponent?: number, mixtoTarComponent?: number,
-  ) => {
-    setSessionStats(prev => {
-      const ranges = { ...prev.docRanges };
-      if (docType && docSeries && docCorrelative !== undefined) {
-        const existing = ranges[docType];
-        ranges[docType] = existing
-          ? { series: docSeries, first: existing.first, last: docCorrelative, count: existing.count + 1 }
-          : { series: docSeries, first: docCorrelative, last: docCorrelative, count: 1 };
-      }
-      const addCash = payMethod === "efectivo" ? netTotal
-                    : payMethod === "mixto"    ? (cashComponent ?? 0)
-                    : 0;
-      const addYape = payMethod === "yape"    ? netTotal
-                    : payMethod === "mixto"   ? (mixtoYapComponent ?? 0)
-                    : 0;
-      const addTar  = payMethod === "tarjeta" ? netTotal
-                    : payMethod === "mixto"   ? (mixtoTarComponent ?? 0)
-                    : 0;
-      return {
-        count:     prev.count + 1,
-        total:     prev.total + netTotal,
-        cash:      prev.cash    + addCash,
-        yape:      prev.yape    + addYape,
-        tarjeta:   prev.tarjeta + addTar,
-        docRanges: ranges,
-        byMethod: {
-          efe: prev.byMethod.efe + (payMethod === "efectivo" ? 1 : 0),
-          yap: prev.byMethod.yap + (payMethod === "yape"     ? 1 : 0),
-          tar: prev.byMethod.tar + (payMethod === "tarjeta"  ? 1 : 0),
-          mix: prev.byMethod.mix + (payMethod === "mixto"    ? 1 : 0),
-        },
-      };
-    });
-    // Persistir correlativo globalmente — sobrevive cambios de sesión
-    if (docType && docCorrelative !== undefined) {
-      setDocCorrelatives(prev => ({ ...prev, [docType]: docCorrelative }));
-    }
-  }, []);
+  }, [addOpLog, addTurnEvent, revertirVenta]);
 
   const addCashMove = useCallback((
     type: MoveType, amount: number, motivo: string,
@@ -629,7 +535,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const activeOp   = activeOperatorRef.current;
     const operator   = activeOp?.nombreCompleto ?? blockOperatorFallback(operatorsRef.current, boxCode);
     const operatorId = activeOp?.id;
-    setSessionStats(NULL_STATS);
+    resetStats();
     setCashMoves([]);
     resetOpLogs();
     // Marcar cajas previas como omitidas excepcionalmente — previene reapertura posterior
@@ -686,7 +592,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setCobroOpen(false);
     setZone("search");
     usePreVentaStore.getState().limpiarPreVenta();
-    setSessionStats(NULL_STATS);
+    resetStats();
     setCashMoves([]);
     const op = s.operator;
     const sk = s.openedAt ? `${code}-${s.openedAt.toISOString()}` : "";
