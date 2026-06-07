@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { Search, X, AlertTriangle, ChevronRight, FileText, ReceiptText } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
+import { useCapacidad } from "../../hooks/useCapacidad";
 import { convertirAFormal } from "../../domains/documents/comprobante.service";
 import { comprobanteStore } from "../../domains/documents/comprobante.store";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
@@ -110,9 +111,11 @@ type PanelDetalleProps = {
   selected: Comprobante | null;
   onVoid: (motivo: string) => void;
   onConvertir: (tipo: "BOLETA" | "FACTURA") => void;
+  puedeAnular: boolean;
+  puedeConvertir: boolean;
 };
 
-function PanelDetalle({ selected, onVoid, onConvertir }: PanelDetalleProps) {
+function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvertir }: PanelDetalleProps) {
   const [accion, setAccion] = useState<AccionDetalle>("none");
   const [motivo, setMotivo] = useState("");
   const [tipoFormal, setTipoFormal] = useState<"BOLETA" | "FACTURA">("BOLETA");
@@ -261,15 +264,23 @@ function PanelDetalle({ selected, onVoid, onConvertir }: PanelDetalleProps) {
         <div className="flex flex-col gap-2">
           {canConvertir && (
             <button
+              disabled={!puedeConvertir}
               onClick={() => setAccion("convertir")}
-              className="rounded-xl border border-[#dbe6ff] bg-[#edf4ff] px-3 py-2 text-[12px] font-bold text-[#2154d8] transition hover:bg-[#e3efff]"
+              className={`rounded-xl border border-[#dbe6ff] bg-[#edf4ff] px-3 py-2 text-[12px] font-bold text-[#2154d8] transition ${
+                !puedeConvertir ? "cursor-not-allowed opacity-40" : "hover:bg-[#e3efff]"
+              }`}
+              title={!puedeConvertir ? "Sin capacidad para anular comprobantes" : undefined}
             >
               CONVERTIR A FORMAL
             </button>
           )}
           <button
+            disabled={!puedeAnular}
             onClick={() => setAccion("anular")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600 transition hover:bg-red-100"
+            className={`flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600 transition ${
+              !puedeAnular ? "cursor-not-allowed opacity-40" : "hover:bg-red-100"
+            }`}
+            title={!puedeAnular ? "Sin capacidad para anular comprobantes" : undefined}
           >
             <AlertTriangle size={13} />
             ANULAR
@@ -383,6 +394,8 @@ export function ComprobantesWorkspace() {
   const [vista, setVista] = useState<Vista>("sesion");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("TODOS");
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("TODOS");
+  const puedeAnular = useCapacidad("anular_comprobantes");
+  const puedeConvertir = useCapacidad("anular_comprobantes");
   const [refreshNonce, setRefreshNonce] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -640,7 +653,7 @@ export function ComprobantesWorkspace() {
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
-          <PanelDetalle selected={selected} onVoid={handleVoid} onConvertir={handleConvertir} />
+          <PanelDetalle selected={selected} onVoid={handleVoid} onConvertir={handleConvertir} puedeAnular={puedeAnular} puedeConvertir={puedeConvertir} />
         </div>
       </div>
     </section>

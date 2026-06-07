@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { Search, X, ChevronRight, Users, UserPlus } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
+import { useCapacidad } from "../../hooks/useCapacidad";
 import { clienteStore } from "../../domains/clients/cliente.store";
 import { crearCliente, suspenderCliente, reactivarCliente, inactivarCliente } from "../../domains/clients/cliente.service";
 import type { Cliente, EstadoCliente, TipoCliente } from "../../domains/clients/cliente.types";
@@ -92,6 +93,7 @@ function getDocumentoFiscalSugerido(tipoDocumento: TipoDocumentoForm): "BOLETA" 
 
 export function ClientesWorkspace() {
   const { showNotice } = usePOS();
+  const puedeGestionar = useCapacidad("gestionar_clientes");
 
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -348,8 +350,12 @@ export function ClientesWorkspace() {
             {activosCount} ACTIVOS
           </span>
           <button
+            disabled={!puedeGestionar}
             onClick={handleOpenCreate}
-            className="ml-auto flex items-center gap-1.5 rounded-xl bg-[#1e7e4f] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#16663f]"
+            className={`ml-auto flex items-center gap-1.5 rounded-xl bg-[#1e7e4f] px-3 py-2 text-[11px] font-bold text-white transition ${
+              !puedeGestionar ? "cursor-not-allowed opacity-40" : "hover:bg-[#16663f]"
+            }`}
+            title={!puedeGestionar ? "Sin capacidad para gestionar clientes" : undefined}
           >
             <UserPlus size={13} />
             NUEVO CLIENTE
@@ -573,20 +579,28 @@ export function ClientesWorkspace() {
               {accion === "none" && selected.estado === "ACTIVO" && (
                 <div className="flex gap-2">
                   <button
+                    disabled={!puedeGestionar}
                     onClick={() => {
                       setAccion("suspender");
                       setMotivoAccion("");
                     }}
-                    className="flex-1 rounded-xl border border-amber-200 bg-amber-50 py-2 text-[11px] font-bold text-amber-700 transition hover:bg-amber-100"
+                    className={`flex-1 rounded-xl border border-amber-200 bg-amber-50 py-2 text-[11px] font-bold text-amber-700 transition ${
+                      !puedeGestionar ? "cursor-not-allowed opacity-40" : "hover:bg-amber-100"
+                    }`}
+                    title={!puedeGestionar ? "Sin capacidad para gestionar clientes" : undefined}
                   >
                     SUSPENDER
                   </button>
                   <button
+                    disabled={!puedeGestionar}
                     onClick={() => {
                       setAccion("inactivar");
                       setMotivoAccion("");
                     }}
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-100 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-200"
+                    className={`flex-1 rounded-xl border border-slate-200 bg-slate-100 py-2 text-[11px] font-bold text-slate-700 transition ${
+                      !puedeGestionar ? "cursor-not-allowed opacity-40" : "hover:bg-slate-200"
+                    }`}
+                    title={!puedeGestionar ? "Sin capacidad para gestionar clientes" : undefined}
                   >
                     INACTIVAR
                   </button>
@@ -596,17 +610,25 @@ export function ClientesWorkspace() {
               {accion === "none" && selected.estado === "SUSPENDIDO" && (
                 <div className="flex gap-2">
                   <button
+                    disabled={!puedeGestionar}
                     onClick={handleReactivar}
-                    className="flex-1 rounded-xl border border-emerald-200 bg-emerald-50 py-2 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
+                    className={`flex-1 rounded-xl border border-emerald-200 bg-emerald-50 py-2 text-[11px] font-bold text-emerald-700 transition ${
+                      !puedeGestionar ? "cursor-not-allowed opacity-40" : "hover:bg-emerald-100"
+                    }`}
+                    title={!puedeGestionar ? "Sin capacidad para gestionar clientes" : undefined}
                   >
                     REACTIVAR
                   </button>
                   <button
+                    disabled={!puedeGestionar}
                     onClick={() => {
                       setAccion("inactivar");
                       setMotivoAccion("");
                     }}
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-100 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-200"
+                    className={`flex-1 rounded-xl border border-slate-200 bg-slate-100 py-2 text-[11px] font-bold text-slate-700 transition ${
+                      !puedeGestionar ? "cursor-not-allowed opacity-40" : "hover:bg-slate-200"
+                    }`}
+                    title={!puedeGestionar ? "Sin capacidad para gestionar clientes" : undefined}
                   >
                     INACTIVAR
                   </button>
