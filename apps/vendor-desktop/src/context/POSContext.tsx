@@ -82,6 +82,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const [initState] = useState(recoverOperationalState);
   const recoveryLogRef = useRef(initState.recoveryLog);
   const cashSessionRef = useRef<CashSession>(initState.session);
+  const setCobroOpenRef = useRef<(v: boolean) => void>(() => {});
+  const setZoneRef      = useRef<(z: "search" | "ticket" | "cobro") => void>(() => {});
 
   const {
     sessionStats, sessionStatsRef,
@@ -117,13 +119,6 @@ export function POSProvider({ children }: { children: ReactNode }) {
   activeOperatorRef.current = activeOperator;
 
   const {
-    zone, setZone,
-    cobroOpen, setCobroOpen,
-    enterTicket, enterSearch,
-    openCobro, closeCobro, newSale,
-  } = usePreVentaUX({ isTurnoAbierto: cashSession.isOpen, showNotice });
-
-  const {
     cashSession, cashSessionRef: cajaCashSessionRef,
     cashBoxes,
     cashMoves,
@@ -134,12 +129,22 @@ export function POSProvider({ children }: { children: ReactNode }) {
     resetStats, resetOpLogs,
     sessionStatsRef,
     activeOperatorRef, operatorsRef,
-    setCobroOpen, setZone,
+    setCobroOpen: (v: boolean) => setCobroOpenRef.current(v),
+    setZone:      (z: "search" | "ticket" | "cobro") => setZoneRef.current(z),
     initialMoves:     initState.moves,
     initialSession:   initState.session,
     initialUsedCodes: initState.usedCodes,
   });
   cashSessionRef.current = cajaCashSessionRef.current;
+
+  const {
+    zone, setZone,
+    cobroOpen, setCobroOpen,
+    enterTicket, enterSearch,
+    openCobro, closeCobro, newSale,
+  } = usePreVentaUX({ isTurnoAbierto: cashSession.isOpen, showNotice });
+  setCobroOpenRef.current = setCobroOpen;
+  setZoneRef.current      = setZone;
 
   const suggestedCashBox = useMemo(() => {
     const prefix = activeOperator?.baseBloque != null ? String(activeOperator.baseBloque)[0] : null;

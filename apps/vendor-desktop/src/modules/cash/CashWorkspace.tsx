@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect, useRef, useMemo } from "react";
-import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, XCircle, PlusCircle, Wallet, ShoppingCart, RotateCcw, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks, HandCoins } from "lucide-react";
+import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks } from "lucide-react";
 import { type CashSubView } from "../../App";
 import { CajasWorkspace } from "./CajasWorkspace";
 import { SupervisionCajaWorkspace } from "./SupervisionCajaWorkspace";
-import { usePOS, type CashBox, type MoveType, type MoveSource, type CashMove } from "../../context/POSContext";
+import { usePOS, type CashBox, type MoveType, type CashMove } from "../../context/POSContext";
 import type { TurnEvent } from "../../domains/cash/turn-events.store";
 import {
   printCashMoveVoucher, printCashMoveVoucherThermal, type VoucherMoveData,
@@ -223,7 +223,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const {
     cashSession, cashBoxes, suggestedCashBox,
     openCashSession, closeCashSession, correctAperturaData,
-    sessionStats, cashMoves, addCashMove, updateCashMove, editCashMove,
+    sessionStats, cashMoves, addCashMove, updateCashMove,
     showNotice, operators, activeOperator, currentSessionEvents,
   } = usePOS();
   const {
@@ -241,7 +241,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   });
   const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>(() => loadSessionHistory());
   const [selectedCode,    setSelectedCode]    = useState<string>(() => {
-    const principalCode = activeOperator?.blockBase != null ? String(activeOperator.blockBase) : null;
+    const principalCode = activeOperator?.baseBloque != null ? String(activeOperator.baseBloque) : null;
     const principalBox  = principalCode ? cashBoxes.find(b => b.code === principalCode) : null;
     return (principalBox?.available ? principalBox.code : suggestedCashBox?.code) ?? "100";
   });
@@ -339,7 +339,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   useEffect(() => {
     if (!isOpen) {
-      const principalCode = activeOperator?.blockBase != null ? String(activeOperator.blockBase) : null;
+      const principalCode = activeOperator?.baseBloque != null ? String(activeOperator.baseBloque) : null;
       const principalBox  = principalCode ? cashBoxes.find(b => b.code === principalCode) : null;
       const best = principalBox?.available ? principalBox : suggestedCashBox;
       if (best) setSelectedCode(best.code);
@@ -378,36 +378,17 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const prestadoAmountRef = useRef<HTMLInputElement>(null);
   const prestadoMotivoRef = useRef<HTMLInputElement>(null);
 
-  // ── reposición state ──────────────────────────────────────────
-  const [reposingMoveId,  setReposingMoveId]  = useState<string | null>(null);
-  const [repoAmount,      setRepoAmount]      = useState("");
-  const [repoMotivo,      setRepoMotivo]      = useState("");
-  const [repoObservacion, setRepoObservacion] = useState("");
-  const [lastRepoMove,    setLastRepoMove]    = useState<CashMove | null>(null);
-  const repoAmountRef = useRef<HTMLInputElement>(null);
-
-  // ── anulación / edición inline state ─────────────────────────
-  const [confirmAnulId,      setConfirmAnulId]      = useState<string | null>(null);
-  const [editingMoveId,      setEditingMoveId]      = useState<string | null>(null);
-  const [editMotivoInput,    setEditMotivoInput]    = useState("");
-  const [editObsInput,       setEditObsInput]       = useState("");
-  const [resolvingExternoId, setResolvingExternoId] = useState<string | null>(null);
-
   useEffect(() => {
     setMovPanel("vendido");
     setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null);
     setFondoSubTab("retiro"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
     setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
     setPrestadoAmount(""); setPrestadoMotivo(""); setDevolverTargetId(null); setDevolverMotivo("");
-    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
-    setConfirmAnulId(null); setEditingMoveId(null); setEditMotivoInput(""); setEditObsInput("");
-    setResolvingExternoId(null);
   }, [isOpen]);
 
   useEffect(() => {
     if (closingStage > 0) {
-      setReposingMoveId(null); setEditingApertura(false);
-      setConfirmAnulId(null); setEditingMoveId(null);
+      setEditingApertura(false);
     }
   }, [closingStage]);
 
@@ -422,11 +403,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const canCorrectApertura = isOpen && cashMoves.length === 0 && sessionStats.count === 0 && closingStage === 0;
 
   // Bloque del operador activo — usa operador autenticado real
-  const currentOpBlockBase  = activeOperator?.blockBase ?? null;
+  const currentOpBlockBase  = activeOperator?.baseBloque ?? null;
   const operatorBlockPrefix = activeBox?.code[0] ?? (currentOpBlockBase !== null ? String(currentOpBlockBase)[0] : suggestedCashBox?.code[0] ?? "1");
   const operatorBoxes       = cashBoxes.filter(b => b.code[0] === operatorBlockPrefix);
-  const operatorName        = activeOperator?.alias ?? operators.find(o => o.blockBase !== null && String(o.blockBase)[0] === operatorBlockPrefix && o.status === "ACTIVO")?.alias ?? "Operador";
-  const operatorFullName    = activeOperator?.name  ?? operators.find(o => o.blockBase !== null && String(o.blockBase)[0] === operatorBlockPrefix && o.status === "ACTIVO")?.name  ?? "Operador";
+  const operatorName        = activeOperator?.alias ?? operators.find(o => o.baseBloque !== null && String(o.baseBloque)[0] === operatorBlockPrefix && o.estado === "ACTIVO")?.alias ?? "Operador";
+  const operatorFullName    = activeOperator?.nombreCompleto ?? operators.find(o => o.baseBloque !== null && String(o.baseBloque)[0] === operatorBlockPrefix && o.estado === "ACTIVO")?.nombreCompleto ?? "Operador";
 
   useEffect(() => {
     if (!canCorrectApertura) setEditingApertura(false);
@@ -467,7 +448,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   // fondo breakdown — excluye anulados
   const {
-    ingresosTotal, egresosTotal, ingVendido, arqueoOperacional, egApertura, egVendido, fondoApertEsp,
+    ingresosTotal, egresosTotal, ingVendido, arqueoOperacional, egVendido, fondoApertEsp,
   } = calcConciliation(activeMoves, sessionStats.cash, apertura);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
@@ -607,36 +588,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     setLastFondoMove(move);
     setDevolverTargetId(null); setDevolverMotivo("");
     showNotice(`Devolución registrada · S/ ${original.amount.toFixed(2)}`);
-  }
-
-  function closeRepo() {
-    setReposingMoveId(null); setRepoAmount(""); setRepoMotivo(""); setRepoObservacion(""); setLastRepoMove(null);
-  }
-
-  function openRepo(original: CashMove) {
-    setReposingMoveId(original.id);
-    setRepoAmount(original.amount.toFixed(2));
-    setRepoMotivo(`Devolución: ${original.motivo}`);
-    setRepoObservacion("");
-    setTimeout(() => repoAmountRef.current?.focus(), 50);
-  }
-
-  function handleReposicion() {
-    const original = cashMoves.find(m => m.id === reposingMoveId);
-    if (!original) return;
-    if ((repoSumByEgresoId[original.id] ?? 0) > 0) return;
-    const amt = parseFloat(repoAmount) || 0;
-    if (amt <= 0 || !repoMotivo.trim()) return;
-    const fa = original.sourceType === "apertura" ? amt : 0;
-    const fv = original.sourceType === "vendido"  ? amt : 0;
-    const move = addCashMove("ingreso", amt, repoMotivo.trim(), original.sourceType, fa, fv,
-      repoObservacion.trim() || undefined, original.id);
-    if (original.regularizationStatus === "por_regularizar" && moneyGte(amt, original.amount)) {
-      updateCashMove(original.id, "regularizado", "reposicion");
-    }
-    handlePrintVoucher(move);
-    setLastRepoMove(move);
-    showNotice(`Devolución registrada · S/ ${amt.toFixed(2)}`);
   }
 
   async function handlePrintVoucher(move: CashMove) {

@@ -150,7 +150,7 @@ interface SupervisionCajaProps {
 export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaProps = {}) {
   const { activeOperator, operators, cashSession } = usePOS();
 
-  const [history,        setHistory]        = useState<SessionEntry[]>(() => loadSessionHistory());
+  const [history]                      = useState<SessionEntry[]>(() => loadSessionHistory());
   const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
   const [selectedId,     setSelectedId]     = useState<string | null>(null);
   const [motivoPreset,   setMotivoPreset]   = useState("");
@@ -164,10 +164,10 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const [filterFechaDesde,   setFilterFechaDesde]   = useState("");
   const [filterFechaHasta,   setFilterFechaHasta]   = useState("");
 
-  const supervisorName   = activeOperator?.name ?? "Supervisor";
-  const activeOperators  = operators.filter(o => o.status !== "INACTIVO");
-  const selectedFilterOp = activeOperators.find(o => o.operatorCode === filterOperadorCode) ?? null;
-  const filterBlockPrefix = selectedFilterOp?.blockBase != null ? String(selectedFilterOp.blockBase)[0] : "";
+  const supervisorName   = activeOperator?.nombreCompleto ?? "Supervisor";
+  const activeOperators  = operators.filter(o => o.estado !== "INACTIVO");
+  const selectedFilterOp = activeOperators.find(o => o.codigoOperador === filterOperadorCode) ?? null;
+  const filterBlockPrefix = selectedFilterOp?.baseBloque != null ? String(selectedFilterOp.baseBloque)[0] : "";
   const uniqueCajas      = [...new Set(history.map(e => e.boxCode))].sort();
   const cajaOptions      = filterBlockPrefix ? uniqueCajas.filter(c => c[0] === filterBlockPrefix) : uniqueCajas;
 
@@ -307,8 +307,8 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
               className="flex-1 min-w-0 rounded-lg border border-[#e4e9f0] bg-white px-2 py-1 text-[10px] text-[#374151] outline-none focus:border-[#2154d8]">
               <option value="">Todos los operadores</option>
               {activeOperators.map(o => (
-                <option key={o.operatorCode} value={o.operatorCode}>
-                  {o.operatorCode} · {o.roleCode} · {o.alias}{o.blockBase != null ? ` · ${o.blockBase}` : ""} · {o.name}
+                <option key={o.codigoOperador} value={o.codigoOperador}>
+                  {o.codigoOperador} · {o.codigoRol} · {o.alias}{o.baseBloque != null ? ` · ${o.baseBloque}` : ""} · {o.nombreCompleto}
                 </option>
               ))}
             </select>

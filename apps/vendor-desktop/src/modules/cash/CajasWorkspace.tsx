@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User, ShieldCheck, CheckCircle } from "lucide-react";
-import { usePOS } from "../../context/POSContext";
+import { usePOS, type CashSession } from "../../context/POSContext";
 import {
   loadSessionHistory, recordSessionCorrection, recordAperturaCorrection,
   type SessionEntry, type CorrectionRecord,
@@ -145,13 +145,13 @@ function buildSlots(base: number, secCount: SecCount, prev?: CajaSlot[]): CajaSl
 interface POSRef {
   operators: ReturnType<typeof usePOS>["operators"];
   isOpen: boolean;
-  cashBox: ReturnType<typeof usePOS>["cashBox"];
+  cashBox: CashSession["cashBox"];
 }
 
 type BlockStatus = "DISPONIBLE" | "ASIGNADO" | "EN_USO" | "INACTIVO";
 
 function getBlockOperator(operators: POSRef["operators"], blockBase: number) {
-  return operators.find(o => o.blockBase === blockBase && o.status !== "INACTIVO");
+  return operators.find(o => o.baseBloque === blockBase && o.estado !== "INACTIVO");
 }
 
 function getBlockStatus(pos: POSRef, block: OperationalBlock): BlockStatus {
@@ -511,7 +511,7 @@ function PanelGestionCajas({
                     <div className="flex items-center gap-1.5 rounded-lg border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1">
                       <User size={10} strokeWidth={2} className="shrink-0 text-[#2A7CA8]" />
                       <span className="text-[11px] font-semibold text-[#374151]">{blockOp.alias}</span>
-                      <span className="text-[10px] text-[#9ca3af]">· {blockOp.operatorCode}</span>
+                      <span className="text-[10px] text-[#9ca3af]">· {blockOp.codigoOperador}</span>
                     </div>
                   ) : selected.active && (
                     <span className="text-[11px] font-semibold text-[#b0bac8]">Sin operador asignado</span>
@@ -900,9 +900,9 @@ function PanelGestionCajas({
 // ── CajasWorkspace ────────────────────────────────────────────────────────
 
 export function CajasWorkspace() {
-  const { operators, isOpen, cashBox, activeOperator } = usePOS();
-  const pos: POSRef = { operators, isOpen, cashBox };
-  const operatorName = activeOperator?.name ?? "Operador";
+  const { operators, cashSession, activeOperator } = usePOS();
+  const pos: POSRef = { operators, isOpen: cashSession.isOpen, cashBox: cashSession.cashBox };
+  const operatorName = activeOperator?.nombreCompleto ?? "Operador";
 
   const [blocks,         setBlocks]         = useState<OperationalBlock[]>(MOCK_BLOCKS);
   const [selectedId,     setSelectedId]     = useState<string | null>("b100");
