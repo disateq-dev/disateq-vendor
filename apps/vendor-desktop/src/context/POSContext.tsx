@@ -8,7 +8,7 @@ import { type Operador, type EstadoOperador, cargarOperadores, verificarPin, cam
 import { type Rol, cargarRoles, guardarRoles, establecerCapacidadesRol, estaCodigoRolOcupado } from "../domains/operator/roles.store";
 import { blockBoxDefs } from "../domains/operator/blocks.store";
 import { type TurnEvent, type TurnEventType, loadTurnEvents, saveTurnEvents } from "../domains/cash/turn-events.store";
-import { syncCatalogToInventory } from "../domains/inventory/catalog-bridge";
+import { useConfigNegocio } from "../hooks/useConfigNegocio";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -78,10 +78,6 @@ const LS_MOVES        = "disateq.pos.cashMoves";
 const LS_SESSION_STATS = "disateq.pos.sessionStats";
 const LS_OPLOGS        = "disateq.pos.opLogs";
 const LS_CORRELATIVES  = "disateq.pos.correlatives";
-const LS_RUBRO         = "disateq.pos.rubro";
-const LS_VISUAL_MODE  = "disateq.pos.visualMode";
-const LS_PRINT_FLOW   = "disateq.pos.printFlow";
-
 function cargarComprobantes(): Comprobante[] {
   return comprobanteStore.getComprobantesPorTipo('TIQUE_VENTA')
     .concat(comprobanteStore.getComprobantesPorTipo('BOLETA'))
@@ -104,28 +100,6 @@ function loadCorrelatives(): DocCorrelatives {
 
 function saveCorrelatives(c: DocCorrelatives): void {
   try { localStorage.setItem(LS_CORRELATIVES, JSON.stringify(c)); } catch { /* quota */ }
-}
-
-function loadRubro(): Rubro {
-  const raw = localStorage.getItem(LS_RUBRO);
-  if (raw === "abarrotes" || raw === "food-fast" || raw === "panaderia" || raw === "farmacia") return raw;
-  return "panaderia";
-}
-
-function loadVisualMode(): VisualMode {
-  const raw = localStorage.getItem(LS_VISUAL_MODE);
-  if (raw === "lista" || raw === "visual" || raw === "mixto") return raw;
-  return "visual";
-}
-
-function loadPrintFlow(): PrintFlow {
-  const raw = localStorage.getItem(LS_PRINT_FLOW);
-  if (
-    raw === "solo-comprobante"     || raw === "comprobante-despacho" ||
-    raw === "comprobante-comanda"  || raw === "comprobante-precuenta" ||
-    raw === "comprobante-turno"    || raw === "comprobante-embarque"
-  ) return raw as PrintFlow;
-  return "comprobante-despacho";
 }
 
 const NULL_SESSION: CashSession = {
@@ -880,28 +854,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addOpLog(`[EDICIÓN] ${s.operator} — S/${target.amount.toFixed(2)}: ${motivo}`);
   }, [addOpLog]);
 
-  const [rubro, setRubroState] = useState<Rubro>(() => {
-    const r = loadRubro();
-    syncCatalogToInventory(r);
-    return r;
-  });
-  const setRubro = useCallback((r: Rubro) => {
-    setRubroState(r);
-    syncCatalogToInventory(r);
-    try { localStorage.setItem(LS_RUBRO, r); } catch { /* quota */ }
-  }, []);
-
-  const [visualMode, setVisualModeState] = useState<VisualMode>(loadVisualMode);
-  const setVisualMode = useCallback((m: VisualMode) => {
-    setVisualModeState(m);
-    try { localStorage.setItem(LS_VISUAL_MODE, m); } catch { /* quota */ }
-  }, []);
-
-  const [printFlow, setPrintFlowState] = useState<PrintFlow>(loadPrintFlow);
-  const setPrintFlow = useCallback((f: PrintFlow) => {
-    setPrintFlowState(f);
-    try { localStorage.setItem(LS_PRINT_FLOW, f); } catch { /* quota */ }
-  }, []);
+  const {
+    rubro, setRubro,
+    visualMode, setVisualMode,
+    printFlow, setPrintFlow,
+  } = useConfigNegocio();
 
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
