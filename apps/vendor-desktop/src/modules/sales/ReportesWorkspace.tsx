@@ -57,7 +57,8 @@ function hastaDateInput(value: string): string {
   return fecha.toISOString();
 }
 
-function fmtMonto(n: number): string {
+function fmtMonto(n: number | undefined | null): string {
+  if (n === undefined || n === null || !Number.isFinite(n)) return "S/ 0.00";
   return `S/ ${n.toFixed(2)}`;
 }
 
