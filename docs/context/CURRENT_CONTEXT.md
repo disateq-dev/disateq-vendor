@@ -4,7 +4,7 @@
 main
 
 ## Commit de referencia
-e77d48e — feat: enforcement capacidades + doctrina de roles VEN/GES/SOP/ADMIN + useContextoOperacional + ReportesWorkspace estabilizado
+9b36f5b — refactor: extraer useCaja de POSContext — Fase C completa
 
 ---
 
@@ -102,11 +102,30 @@ src/hooks/useCapacidad.ts
 src/hooks/useContextoOperacional.ts
   useContextoOperacional(): "bloque" | "general" | null
 
-Capacidades activas en el sistema:
-  acceso_total · ver_reportes · gestionar_clientes · observar_comprobantes_global
-  gestionar_inventarios · gestionar_operadores · anular_comprobantes · corregir_arqueos
-  reaperturar_cierres · regularizar_incidencias · gestionar_roles · gestionar_capacidades
-  gestionar_cajas · gestionar_compras · observar_continuidad
+src/hooks/useConfigNegocio.ts
+  useConfigNegocio(): { rubro, setRubro, visualMode, setVisualMode, printFlow, setPrintFlow }
+
+src/hooks/usePreVentaUX.ts
+  usePreVentaUX({ isTurnoAbierto, showNotice }): { zone, cobroOpen, enterTicket, enterSearch, openCobro, closeCobro, newSale }
+
+src/hooks/useOperadores.ts
+  useOperadores({ addOpLog }): operators · activeOperator · loginOperator · logoutOperator · changeOperatorPin · changeOperatorPinById · resetOperatorPin · createOperator · updateOperatorData · setOperatorStatus · assignOperatorBlock · releaseOperatorBlock · updateOperatorCapabilities · roles · createRole · updateRoleData · setRoleActive · updateRoleCapabilities
+
+src/hooks/useNotice.ts
+  useNotice(): { sessionNotice, showNotice }
+
+src/hooks/useBitacora.ts
+  useBitacora({ cashSessionRef }): { opLogs, addOpLog, resetOpLogs, turnEvents, addTurnEvent, currentSessionEvents }
+
+src/hooks/useSessionStats.ts
+  useSessionStats({ initialStats? }): { sessionStats, sessionStatsRef, docCorrelatives, recordSale, revertirVenta, resetStats }
+
+src/hooks/useComprobantes.ts
+  useComprobantes({ cashSessionRef, addOpLog, addTurnEvent, onAnulacion }): { comprobantes, addComprobante, voidComprobante }
+
+src/hooks/useCaja.ts
+  useCaja({ addOpLog, addTurnEvent, resetStats, resetOpLogs, sessionStatsRef, activeOperatorRef, operatorsRef, setCobroOpen, setZone, initialMoves, initialSession, initialUsedCodes }): { cashSession, cashSessionRef, cashBoxes, cashMoves, cashMovesRef, addCashMove, updateCashMove, editCashMove, openCashSession, closeCashSession, correctAperturaData }
+  recoverOperationalState(): RecoveredState
 
 ---
 
@@ -121,7 +140,9 @@ Términos canónicos principales:
 
 ## Tensiones activas
 
-- POSContext.tsx (~1000 líneas) · boundary difuso · extracción pendiente
+- POSContext.tsx · Extracción completa — 8 hooks · archivo reducido a ~160 líneas de ensamblaje puro
+- usePreVentaUX recibe isTurnoAbierto: false hardcodeado — debe ser cashSession.isOpen (corrección pendiente)
+- addTurnEvent cast manual en useCaja/useComprobantes — alinear TurnEventType (corrección pendiente)
 - visualMode === "mixto" sin implementación
 - Correlativos de despacho sin persistencia
 - _pedidoActivoId — estado mutable de módulo · refactor futuro
@@ -141,7 +162,7 @@ PREVENTA · REPORTES (dominio + workspace estabilizado)
 ENFORCEMENT CAPACIDADES (hooks + guards + doctrina de roles)
 
 ### Pendientes estructurales
-- Extracción progresiva POSContext.tsx ← SIGUIENTE
+- Correcciones menores post-extracción: isTurnoAbierto + TurnEventType cast ← SIGUIENTE
 - Correlativos de despacho con persistencia
 
 ### Pendientes futuros
@@ -154,7 +175,7 @@ ENFORCEMENT CAPACIDADES (hooks + guards + doctrina de roles)
 
 ## Prioridad próximas sesiones
 
-1. Extracción progresiva POSContext.tsx ← SIGUIENTE
+1. Correcciones menores post-extracción POSContext ← SIGUIENTE
 2. Correlativos de despacho
 3. PDF descarga
 4. UIX general
