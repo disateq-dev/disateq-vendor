@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo, u
 import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import type { Comprobante } from "../domains/documents/comprobante.types";
-import { comprobanteStore } from "../domains/documents/comprobante.store";
 import { type Operador, type EstadoOperador } from "../domains/operator/operator.store";
 import { type Rol } from "../domains/operator/roles.store";
 import { blockBoxDefs } from "../domains/operator/blocks.store";
@@ -15,6 +14,7 @@ import { useBitacora, type OpLog } from "../hooks/useBitacora";
 import { useSessionStats, type SessionStats, type DocCorrelatives, type DocRange, type ByMethod, NULL_STATS } from "../hooks/useSessionStats";
 export type { OpLog };
 export type { SessionStats, DocCorrelatives, DocRange, ByMethod };
+import { useComprobantes } from "../hooks/useComprobantes";
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -79,13 +79,6 @@ const LS_SESSION      = "disateq.pos.cashSession";
 const LS_USED         = "disateq.pos.usedCodes";
 const LS_USED_DATE    = "disateq.pos.usedDate";
 const LS_MOVES        = "disateq.pos.cashMoves";
-function cargarComprobantes(): Comprobante[] {
-  return comprobanteStore.getComprobantesPorTipo('TIQUE_VENTA')
-    .concat(comprobanteStore.getComprobantesPorTipo('BOLETA'))
-    .concat(comprobanteStore.getComprobantesPorTipo('FACTURA'))
-    .concat(comprobanteStore.getComprobantesPorTipo('COTIZACION'))
-    .sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn));
-}
 
 const NULL_SESSION: CashSession = {
   isOpen: false,
@@ -374,8 +367,6 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const cashMovesRef = useRef(cashMoves);
   cashMovesRef.current = cashMoves;
 
-  const [comprobantes, setComprobantes] = useState<Comprobante[]>(cargarComprobantes);
-
   const {
     opLogs, addOpLog, resetOpLogs,
     turnEvents, addTurnEvent,
@@ -399,6 +390,12 @@ export function POSProvider({ children }: { children: ReactNode }) {
     roles,
     createRole, updateRoleData, setRoleActive, updateRoleCapabilities,
   } = useOperadores({ addOpLog });
+  const { comprobantes, addComprobante, voidComprobante } = useComprobantes({
+    cashSessionRef,
+    addOpLog,
+    addTurnEvent,
+    onAnulacion: revertirVenta,
+  });
 
   // Sugerencia de caja acotada al bloque del operador activo — nunca cruza bloques
   const suggestedCashBox = useMemo(() => {
@@ -411,36 +408,6 @@ export function POSProvider({ children }: { children: ReactNode }) {
   operatorsRef.current = operators;
   const activeOperatorRef = useRef<Operador | null>(null);
   activeOperatorRef.current = activeOperator;
-
-  const addComprobante = useCallback((comprobante: Comprobante) => {
-    const s = cashSessionRef.current;
-    const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
-    comprobanteStore.guardarComprobante(
-      sk ? { ...comprobante, sessionKey: sk } : comprobante
-    );
-    setComprobantes(cargarComprobantes());
-    if (sk) {
-      const correlStr = String(comprobante.correlativo).padStart(8, "0");
-      addTurnEvent(sk, "comprobante", `Comprobante ${comprobante.serie}-${correlStr} generado`);
-    }
-  }, [addTurnEvent]);
-
-  const voidComprobante = useCallback((id: string, motivo: string) => {
-    const c = comprobanteStore.getComprobanteById(id);
-    if (!c || c.estado === "ANULADO") return;
-    const s = cashSessionRef.current;
-    revertirVenta(c);
-    comprobanteStore.guardarComprobante({
-      ...c,
-      estado: "ANULADO",
-      motivoAnulacion: motivo,
-    });
-    setComprobantes(cargarComprobantes());
-    const correlStr = String(c.correlativo).padStart(8, "0");
-    addOpLog(`${s.operator} anuló ${c.serie}-${correlStr} — ${motivo}`);
-    const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : "";
-    addTurnEvent(sk, "anulacion", `Comprobante ${c.serie}-${correlStr} anulado`);
-  }, [addOpLog, addTurnEvent, revertirVenta]);
 
   const addCashMove = useCallback((
     type: MoveType, amount: number, motivo: string,
