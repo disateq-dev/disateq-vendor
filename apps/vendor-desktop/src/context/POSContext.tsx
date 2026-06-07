@@ -7,11 +7,13 @@ import { comprobanteStore } from "../domains/documents/comprobante.store";
 import { type Operador, type EstadoOperador } from "../domains/operator/operator.store";
 import { type Rol } from "../domains/operator/roles.store";
 import { blockBoxDefs } from "../domains/operator/blocks.store";
-import { type TurnEvent, type TurnEventType, loadTurnEvents, saveTurnEvents } from "../domains/cash/turn-events.store";
+import { type TurnEvent } from "../domains/cash/turn-events.store";
 import { useConfigNegocio } from "../hooks/useConfigNegocio";
 import { usePreVentaUX } from "../hooks/usePreVentaUX";
 import { useOperadores } from "../hooks/useOperadores";
 import { useNotice } from "../hooks/useNotice";
+import { useBitacora, type OpLog } from "../hooks/useBitacora";
+export type { OpLog };
 
 type FocusZone = "search" | "ticket" | "cobro";
 
@@ -60,8 +62,6 @@ export type CashSession = {
   refOp?: string;
 };
 
-export type OpLog = { id: string; ts: string; text: string };
-
 const BOX_DEFS = blockBoxDefs() as { code: string; type: CashBoxType }[];
 
 const TERMINAL = "PC-VENTAS01";
@@ -79,7 +79,6 @@ const LS_USED         = "disateq.pos.usedCodes";
 const LS_USED_DATE    = "disateq.pos.usedDate";
 const LS_MOVES        = "disateq.pos.cashMoves";
 const LS_SESSION_STATS = "disateq.pos.sessionStats";
-const LS_OPLOGS        = "disateq.pos.opLogs";
 const LS_CORRELATIVES  = "disateq.pos.correlatives";
 function cargarComprobantes(): Comprobante[] {
   return comprobanteStore.getComprobantesPorTipo('TIQUE_VENTA')
@@ -204,19 +203,6 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
     }
     return { ...def, used, available };
   });
-}
-
-function loadOpLogs(): OpLog[] {
-  try {
-    const raw = localStorage.getItem(LS_OPLOGS);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-
-function saveOpLogs(logs: OpLog[]): void {
-  try { localStorage.setItem(LS_OPLOGS, JSON.stringify(logs)); } catch { /* quota or disabled */ }
 }
 
 // ── session stats ───────────────────────────────────────────────
@@ -428,39 +414,11 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const [docCorrelatives, setDocCorrelatives] = useState<DocCorrelatives>(loadCorrelatives);
   useEffect(() => { saveCorrelatives(docCorrelatives); }, [docCorrelatives]);
 
-  const [opLogs, setOpLogs] = useState<OpLog[]>(loadOpLogs);
-  useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
-
-  const [turnEvents, setTurnEvents] = useState<TurnEvent[]>(loadTurnEvents);
-  useEffect(() => { saveTurnEvents(turnEvents); }, [turnEvents]);
-
-  const addTurnEvent = useCallback((sk: string, type: TurnEventType, text: string) => {
-    if (!sk) return;
-    const entry: TurnEvent = {
-      id:         `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      sessionKey: sk,
-      ts:         new Date().toISOString(),
-      type,
-      text,
-    };
-    setTurnEvents(prev => [...prev, entry]);
-  }, []);
-
-  const currentSessionEvents = useMemo(() => {
-    const s = cashSession;
-    if (!s.isOpen || !s.cashBox || !s.openedAt) return [];
-    const sk = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
-    return turnEvents.filter(e => e.sessionKey === sk);
-  }, [turnEvents, cashSession]);
-
-  const addOpLog = useCallback((text: string) => {
-    const entry: OpLog = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      ts: new Date().toISOString(),
-      text,
-    };
-    setOpLogs(prev => [...prev, entry]);
-  }, []);
+  const {
+    opLogs, addOpLog, resetOpLogs,
+    turnEvents, addTurnEvent,
+    currentSessionEvents,
+  } = useBitacora({ cashSessionRef });
 
   // Emit recovery log once if startup found inconsistencies
   useEffect(() => {
@@ -673,7 +631,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     const operatorId = activeOp?.id;
     setSessionStats(NULL_STATS);
     setCashMoves([]);
-    setOpLogs([]);
+    resetOpLogs();
     // Marcar cajas previas como omitidas excepcionalmente — previene reapertura posterior
     if (isExceptional) {
       setUsedCodes(prev => {
