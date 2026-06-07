@@ -366,5 +366,41 @@ Cualquier término nuevo introducido en el sistema debe:
 
 ---
 
+## 10. Roles Operacionales Canónicos
+
+Cuatro roles base. Roles adicionales se crean por necesidad con sus capacidades específicas.
+
+| Código | Nombre | requiereBloque | Contexto |
+|---|---|---|---|
+| VEN | Ventas | true | Bloque siempre — opera caja, vende, cobra, emite |
+| GES | Gestor | false | General normalmente — bloque en emergencia si se asigna |
+| SOP | Soporte | false | General siempre — observación y diagnóstico técnico |
+| ADMIN | Administrador | false | General siempre — acceso total, configura el sistema |
+
+### Doctrina de contexto operacional
+
+**Contexto de bloque:** el operador trabaja sobre su propia caja y turno. TURNO y VENTAS son inherentemente de bloque. El operador no debe ver montos acumulados de otros operadores ni datos globales de la sesión. El cierre de turno es "a ciegas" — el operador no ve el total esperado antes de contar el efectivo.
+
+**Contexto general:** el operador supervisa o gestiona el sistema completo. Ve información de todos los operadores, todas las cajas y todos los períodos. No está atado a una caja específica.
+
+### Regla de contexto para GES
+
+GES normalmente opera en contexto general (sin bloque). En emergencia — cuando no hay operador de Ventas disponible — el Admin puede asignarle un bloque y GES asume el contexto de bloque completo, pudiendo operar la caja como un VEN.
+
+### Capacidades base por rol
+
+VEN: gestionar_clientes
+GES: observar_comprobantes_global · anular_comprobantes · corregir_arqueos · reaperturar_cierres · regularizar_incidencias · observar_continuidad · ver_reportes · gestionar_clientes · gestionar_inventarios · gestionar_compras
+SOP: observar_continuidad
+ADMIN: acceso_total
+
+### Nota de UIX pendiente
+
+El rol VEN opera "a ciegas" — ningún monto acumulado de sesión debe ser visible para Ventas. Los totales de venta, el monto esperado en caja y la diferencia de arqueo son visibles solo para GES y ADMIN. Se implementa en la revisión de UIX.
+
+### Ejemplo de rol adicional
+
+Un rol CONTADOR creado por el Admin con capacidades [observar_comprobantes_global, ver_reportes] y requiereBloque: false tendría acceso solo a COMPROBANTES e INFORMES, sin poder operar ninguna caja ni modificar datos.
+
 *Documento generado por el Comité de Arquitectura — Junio 2026.*
 *Próxima revisión: al completar la normalización estructural (TAREAS 1–8).*

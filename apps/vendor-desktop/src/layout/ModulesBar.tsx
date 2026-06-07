@@ -1,5 +1,7 @@
 import { BarChart2, Boxes, FileText, Package, Settings, ShoppingCart, Users } from "lucide-react";
 import { type ActiveModule } from "../App";
+import { useCapacidad } from "../hooks/useCapacidad";
+import { useContextoOperacional } from "../hooks/useContextoOperacional";
 
 interface ModulesBarProps {
   active: ActiveModule;
@@ -32,7 +34,12 @@ function Sep() {
 
 export function ModulesBar({ active, display, onChange, onHover }: ModulesBarProps) {
   void active;
-  void PH;
+  const puedeVerReportes = useCapacidad("ver_reportes");
+  const puedeVerClientes = useCapacidad("gestionar_clientes");
+  const contexto = useContextoOperacional();
+  const puedeVerComprobantes = contexto !== null;
+  const puedeVerAbastecimiento = useCapacidad("gestionar_inventarios");
+  const puedeVerAjustes = useCapacidad("gestionar_operadores");
   return (
     <section
       className="flex h-[52px] items-end gap-1 bg-[#F0F2F5] px-3 pb-1"
@@ -51,7 +58,12 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
       <Sep />
 
       {/* ── ABASTECIMIENTO ───────────────────────────────────── */}
-      <button onClick={() => onChange("abastecimiento")} onMouseEnter={() => onHover("abastecimiento")} className={cls("abastecimiento", display)}>
+      <button
+        onClick={puedeVerAbastecimiento ? () => onChange("abastecimiento") : undefined}
+        onMouseEnter={puedeVerAbastecimiento ? () => onHover("abastecimiento") : undefined}
+        className={puedeVerAbastecimiento ? cls("abastecimiento", display) : PH}
+        title={puedeVerAbastecimiento ? undefined : "Sin acceso — contacte al administrador"}
+      >
         <Boxes size={17} />
         <span>ABASTECIMIENTO</span>
       </button>
@@ -59,11 +71,21 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
       <Sep />
 
       {/* ── Grupo 3 — Relaciones ─────────────────────────────── */}
-      <button onClick={() => onChange("clientes")} onMouseEnter={() => onHover("clientes")} className={cls("clientes", display)}>
+      <button
+        onClick={puedeVerClientes ? () => onChange("clientes") : undefined}
+        onMouseEnter={puedeVerClientes ? () => onHover("clientes") : undefined}
+        className={puedeVerClientes ? cls("clientes", display) : PH}
+        title={puedeVerClientes ? undefined : "Sin acceso — contacte al administrador"}
+      >
         <Users size={17} />
         <span>CLIENTES</span>
       </button>
-      <button onClick={() => onChange("reportes")} onMouseEnter={() => onHover("reportes")} className={cls("reportes", display)}>
+      <button
+        onClick={puedeVerReportes ? () => onChange("reportes") : undefined}
+        onMouseEnter={puedeVerReportes ? () => onHover("reportes") : undefined}
+        className={puedeVerReportes ? cls("reportes", display) : PH}
+        title={puedeVerReportes ? undefined : "Sin acceso — contacte al administrador"}
+      >
         <BarChart2 size={17} />
         <span>REPORTES</span>
       </button>
@@ -71,7 +93,12 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
       <Sep />
 
       {/* ── Grupo 4 — Capa normativa ─────────────────────────── */}
-      <button onClick={() => onChange("comprobantes")} onMouseEnter={() => onHover("comprobantes")} className={cls("comprobantes", display)}>
+      <button
+        onClick={puedeVerComprobantes ? () => onChange("comprobantes") : undefined}
+        onMouseEnter={puedeVerComprobantes ? () => onHover("comprobantes") : undefined}
+        className={puedeVerComprobantes ? cls("comprobantes", display) : PH}
+        title={puedeVerComprobantes ? undefined : "Sin acceso — contacte al administrador"}
+      >
         <FileText size={17} />
         <span>COMPROBANTES</span>
       </button>
@@ -79,7 +106,12 @@ export function ModulesBar({ active, display, onChange, onHover }: ModulesBarPro
       <Sep />
 
       {/* ── Grupo 5 — Sistema ────────────────────────────────── */}
-      <button onClick={() => onChange("config")} onMouseEnter={() => onHover("config")} className={cls("config", display)}>
+      <button
+        onClick={puedeVerAjustes ? () => onChange("config") : undefined}
+        onMouseEnter={puedeVerAjustes ? () => onHover("config") : undefined}
+        className={puedeVerAjustes ? cls("config", display) : PH}
+        title={puedeVerAjustes ? undefined : "Sin acceso — contacte al administrador"}
+      >
         <Settings size={17} />
         <span>AJUSTES</span>
       </button>

@@ -691,6 +691,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       nombre: data.name.trim(),
       descripcion: data.description.trim(),
       capacidades: [],
+      requiereBloque: false,
       activo: true,
       creadoEn: new Date().toISOString(),
       creadoPor: activeOperatorRef.current?.nombreCompleto ?? "SISTEMA",
