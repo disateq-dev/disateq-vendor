@@ -90,4 +90,8 @@ export const clienteStore = {
     this.guardarCliente(updated)
     return updated
   },
+
+  getTodos(): Cliente[] {
+    return [...store.clientes]
+  },
 }

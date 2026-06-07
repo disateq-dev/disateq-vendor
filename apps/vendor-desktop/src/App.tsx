@@ -7,12 +7,13 @@ import { PreVentaWorkspace } from "./modules/preventa/PreVentaWorkspace";
 import { CashWorkspace } from "./modules/cash/CashWorkspace";
 import { ConfigWorkspace } from "./modules/config/ConfigWorkspace";
 import { ComprobantesWorkspace } from "./modules/comprobantes/ComprobantesWorkspace";
+import { ClientesWorkspace } from "./modules/sales/ClientesWorkspace";
 import { InventoryWorkspace } from "./modules/inventory/InventoryWorkspace";
 import { PurchasesWorkspace } from "./modules/purchases/PurchasesWorkspace";
 import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
-export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento";
+export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes";
 export type CashSubView             = "turno" | "cajas" | "supervision-caja";
 export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "roles" | "capacidades";
@@ -77,6 +78,7 @@ function AppRoot() {
       )}
       {activeModule === "cash"         && <CashWorkspace onOpened={() => setActiveModule("sales")} cashSubView={cashSubView} onCashSubViewChange={setCashSubView} />}
       {activeModule === "comprobantes" && <ComprobantesWorkspace />}
+      {activeModule === "clientes" && <ClientesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}

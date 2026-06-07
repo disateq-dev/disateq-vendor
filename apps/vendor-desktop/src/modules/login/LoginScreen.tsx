@@ -34,7 +34,7 @@ function validatePin(p: string): string | null {
 
 export function LoginScreen() {
   const { operators, loginOperator, cashSession, resetOperatorPin } = usePOS();
-  const activeOps = operators.filter(o => o.status === "ACTIVO");
+  const activeOps = operators.filter(o => o.estado === "ACTIVO");
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
 
@@ -308,7 +308,7 @@ export function LoginScreen() {
                 <option value="" disabled hidden>Seleccione OPERADOR</option>
                 {activeOps.map(op => (
                   <option key={op.id} value={op.id}>
-                    {op.operatorCode} · {op.roleCode} · {op.alias}
+  {op.codigoOperador} · {op.codigoRol} · {op.alias}
                   </option>
                 ))}
               </select>

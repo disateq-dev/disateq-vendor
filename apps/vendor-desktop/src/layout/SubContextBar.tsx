@@ -44,6 +44,7 @@ const ABASTECIMIENTO_MODULES: { key: AbastecimientoSubModule; label: string; isP
 const SHELL: Record<ActiveModule, string> = {
   cash:           "border-t border-[#2A7CA8]/20 bg-[rgba(42,124,168,0.10)]",
   sales:          "border-t border-[#45b356]/20 bg-[rgba(69,179,86,0.08)]",
+  clientes:       "border-t border-[#1e7e4f]/20 bg-[rgba(30,126,79,0.08)]",
   comprobantes:   "border-t border-[#C05050]/20 bg-[rgba(192,80,80,0.08)]",
   config:         "border-t border-[#697387]/20 bg-[rgba(105,115,135,0.08)]",
   abastecimiento: "border-t border-[#3D8A8A]/20 bg-[rgba(61,138,138,0.08)]",
