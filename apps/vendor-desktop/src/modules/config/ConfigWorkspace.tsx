@@ -6,7 +6,9 @@ import { OperadoresWorkspace } from "../cash/OperadoresWorkspace";
 import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
 import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
-import { loadOpsConfig, saveOpsConfig } from "../../config/ops";
+// ops.ts reservado para configuraciones futuras
+import { pinAdminStore } from "../../config/pin-admin.store";
+import { accesosStore } from "../../domains/operator/accesos.store";
 import { type ConfigSubView } from "../../App";
 
 const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia", "optica", "zapateria", "reparacion", "celulares"];
@@ -65,16 +67,31 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   }
 
   // ── OPERACIÓN ─────────────────────────────────────────────────
-  const [ctgPin,    setCtgPin]    = useState(() => loadOpsConfig().ctgPin);
-  const [pinError,  setPinError]  = useState<string | null>(null);
-  const [opsSaved,  setOpsSaved]  = useState(false);
+  const { activeOperator } = usePOS();
+  const [adminConfigured,   setAdminConfigured]   = useState(() => pinAdminStore.estaConfigurado());
+  const [adminMeta,         setAdminMeta]         = useState(() => pinAdminStore.obtenerMeta());
+  const [adminPinNuevo,     setAdminPinNuevo]     = useState("");
+  const [adminPinConfirm,   setAdminPinConfirm]   = useState("");
+  const [adminPinError,     setAdminPinError]     = useState<string | null>(null);
+  const [adminSaved,        setAdminSaved]        = useState(false);
 
-  function handleSaveOps() {
-    if (!/^\d{4,8}$/.test(ctgPin)) { setPinError("4 a 8 dígitos numéricos"); return; }
-    setPinError(null);
-    saveOpsConfig({ ctgPin });
-    setOpsSaved(true);
-    setTimeout(() => setOpsSaved(false), 2000);
+  async function handleSavePinAdmin() {
+    setAdminPinError(null);
+    if (!/^\d{6}$/.test(adminPinNuevo))           { setAdminPinError("Exactamente 6 dígitos numéricos"); return; }
+    if (adminPinNuevo !== adminPinConfirm)         { setAdminPinError("Los PINes no coinciden"); return; }
+    const codigo = activeOperator?.codigoOperador ?? activeOperator?.alias ?? "ADMIN";
+    await pinAdminStore.configurar(adminPinNuevo, codigo);
+    accesosStore.registrar({
+      tipo: "PIN_ADMIN_CONFIGURADO",
+      operadorAlias: codigo,
+      operacion: "Configuración PIN Admin",
+    });
+    setAdminConfigured(true);
+    setAdminMeta(pinAdminStore.obtenerMeta());
+    setAdminPinNuevo("");
+    setAdminPinConfirm("");
+    setAdminSaved(true);
+    setTimeout(() => setAdminSaved(false), 2500);
   }
 
   const SUB_ICONS: Record<ConfigSubView, React.ReactNode> = {
@@ -186,39 +203,103 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
 
         {/* ── OPERACIÓN ── */}
         {configSubView === "operacion" && (
-          <div className="flex flex-col gap-4 max-w-sm">
-            <p className="text-[11px] text-[#9ca3af]">
-              PIN de autorización para apertura de cajas de contingencia.
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="password"
-                value={ctgPin}
-                onChange={e => { setCtgPin(e.target.value.replace(/\D/g, "").slice(0, 8)); setPinError(null); }}
-                onKeyDown={e => e.key === "Enter" && handleSaveOps()}
-                maxLength={8}
-                autoFocus
-                placeholder="4–8 dígitos"
-                className={`w-36 rounded-xl border bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:outline-none focus:ring-1 tracking-[0.3em] ${
-                  pinError
-                    ? "border-[#dc2626]/50 focus:border-[#dc2626]/50 focus:ring-[#dc2626]/20"
-                    : "border-[#E9E4DC] focus:border-[#697387]/40 focus:ring-[#697387]/20"
-                }`}
-              />
+          <div className="flex flex-col gap-5 max-w-sm">
+
+            {/* Estado actual */}
+            <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${
+              adminConfigured
+                ? "border-emerald-200 bg-[#f0fdf4]"
+                : "border-amber-200 bg-amber-50"
+            }`}>
+              <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${adminConfigured ? "bg-emerald-500" : "bg-amber-400"}`} />
+              <div className="flex flex-col gap-0.5">
+                <p className={`text-[11px] font-bold uppercase tracking-wide ${adminConfigured ? "text-emerald-700" : "text-amber-700"}`}>
+                  {adminConfigured ? "PIN Admin configurado" : "PIN Admin no configurado"}
+                </p>
+                {adminConfigured && adminMeta ? (
+                  <p className="text-[10px] text-emerald-600">
+                    Por {adminMeta.configuradoPor} · {new Date(adminMeta.configuradoEn).toLocaleDateString("es-PE")}
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-amber-600 leading-snug">
+                    Las operaciones sensibles del sistema están bloqueadas hasta configurarlo.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Formulario */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
+                {adminConfigured ? "Cambiar PIN Admin" : "Configurar PIN Admin"}
+              </p>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">
+                  Nuevo PIN (6 dígitos)
+                </label>
+                <input
+                  autoFocus
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={adminPinNuevo}
+                  onChange={e => { setAdminPinNuevo(e.target.value.replace(/\D/g, "").slice(0, 6)); setAdminPinError(null); }}
+                  onKeyDown={e => e.key === "Enter" && handleSavePinAdmin()}
+                  placeholder="••••••"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-[18px] font-bold tracking-[0.4em] text-[#1a2d4e] outline-none placeholder:tracking-normal placeholder:font-normal placeholder:text-[13px] placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                    adminPinError
+                      ? "border-red-300 focus:border-red-400 focus:ring-red-200/30"
+                      : "border-[#E9E4DC] focus:border-[#697387]/50 focus:ring-[#697387]/15"
+                  }`}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">
+                  Confirmar PIN
+                </label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={adminPinConfirm}
+                  onChange={e => { setAdminPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6)); setAdminPinError(null); }}
+                  onKeyDown={e => e.key === "Enter" && handleSavePinAdmin()}
+                  placeholder="••••••"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-[18px] font-bold tracking-[0.4em] text-[#1a2d4e] outline-none placeholder:tracking-normal placeholder:font-normal placeholder:text-[13px] placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                    adminPinError
+                      ? "border-red-300 focus:border-red-400 focus:ring-red-200/30"
+                      : "border-[#E9E4DC] focus:border-[#697387]/50 focus:ring-[#697387]/15"
+                  }`}
+                />
+              </div>
+
+              {adminPinError && (
+                <p className="text-[10px] font-semibold text-red-500">{adminPinError}</p>
+              )}
+
               <button
-                onClick={handleSaveOps}
-                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide transition ${
-                  opsSaved
-                    ? "bg-[#45b356]/15 text-[#45b356]"
-                    : "bg-[#697387]/10 text-[#697387] hover:bg-[#697387]/20"
+                onClick={handleSavePinAdmin}
+                disabled={adminPinNuevo.length < 6 || adminPinConfirm.length < 6}
+                className={`flex items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide transition ${
+                  adminSaved
+                    ? "bg-emerald-500/15 text-emerald-600"
+                    : adminPinNuevo.length === 6 && adminPinConfirm.length === 6
+                      ? "bg-[#697387]/10 text-[#697387] hover:bg-[#697387]/20"
+                      : "bg-[#697387]/5 text-[#697387]/30 cursor-not-allowed"
                 }`}
               >
-                {opsSaved ? <><Check size={12} strokeWidth={2.5} /> Aplicado</> : "Aplicar"}
+                {adminSaved
+                  ? <><Check size={12} strokeWidth={2.5} /> PIN Admin guardado</>
+                  : adminConfigured ? "Cambiar PIN Admin" : "Configurar PIN Admin"
+                }
               </button>
             </div>
-            {pinError && <p className="text-[10.5px] text-[#dc2626]">{pinError}</p>}
-            <p className="text-[10px] text-[#b0bac8]">
-              Aplica al reiniciar · el turno activo mantiene el PIN con el que abrió.
+
+            <p className="text-[10px] text-[#b0bac8] leading-relaxed">
+              El PIN Admin autoriza operaciones sensibles en todo el sistema.
+              Solo operadores con acceso total pueden configurarlo.
             </p>
           </div>
         )}

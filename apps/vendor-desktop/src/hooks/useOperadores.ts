@@ -9,6 +9,7 @@ import {
   type Rol,
   cargarRoles, guardarRoles, establecerCapacidadesRol, estaCodigoRolOcupado,
 } from "../domains/operator/roles.store";
+import { accesosStore } from "../domains/operator/accesos.store";
 
 interface UseOperadoresDeps {
   addOpLog: (text: string) => void;
@@ -25,10 +26,22 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
 
   const loginOperator = useCallback((id: string, pin: string): boolean => {
     const ok = verificarPin(operatorsRef.current, id, pin);
-    if (ok) {
-      const op = operatorsRef.current.find(o => o.id === id)!;
+    const op = operatorsRef.current.find(o => o.id === id);
+    if (ok && op) {
       setActiveOperator(op);
       addOpLog(`[LOGIN] ${op.nombreCompleto} inició sesión`);
+      accesosStore.registrar({
+        tipo: "LOGIN_OK",
+        operadorAlias: op.alias,
+        operacion: "Inicio de sesión",
+      });
+    } else {
+      accesosStore.registrar({
+        tipo: "LOGIN_FAIL",
+        operadorAlias: op?.alias ?? id,
+        operacion: "Inicio de sesión",
+        detalle: "PIN incorrecto",
+      });
     }
     return ok;
   }, [addOpLog]);
@@ -60,13 +73,21 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     return true;
   }, [addOpLog]);
 
-  const resetOperatorPin = useCallback((id: string, newPin: string): boolean => {
+  const resetOperatorPin = useCallback((id: string, newPin: string, motivo?: string): boolean => {
     const updated = establecerPin(operatorsRef.current, id, newPin);
     if (!updated) return false;
     guardarOperadores(updated);
     setOperators(updated);
     const op = operatorsRef.current.find(o => o.id === id);
-    if (op) addOpLog(`[PIN] ${op.nombreCompleto} reseteó su PIN`);
+    if (op) {
+      addOpLog(`[PIN] ${op.nombreCompleto} reseteó su PIN${motivo ? ` · ${motivo}` : ""}`);
+      accesosStore.registrar({
+        tipo: "PIN_RESETEADO",
+        operadorAlias: op.alias,
+        operacion: "Reseteo de PIN",
+        detalle: motivo,
+      });
+    }
     return true;
   }, [addOpLog]);
 
