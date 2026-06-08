@@ -1,6 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { SubContextBar } from "./SubContextBar";
-import { ModulesBar } from "./ModulesBar";
+import { ContextBar } from "./OperationalBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
 import { usePOS } from "../context/POSContext";
@@ -57,23 +56,17 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
 
   // hover → preview; leave → back to active; click → permanent (hoveredModule = null, activeModule updated)
   const displayModule = hoveredModule ?? activeModule;
-  const visible = hoveredModule !== null || true; // permanent once active module exists
 
   return (
     <main className="h-screen overflow-hidden bg-[#f7f9fc] text-[#111827]">
       <section className="flex h-full flex-col">
         <header className="border-b border-[#dde4ec]">
           <Topbar />
-          <ModulesBar
+          <ContextBar
             active={activeModule}
             display={displayModule}
             onChange={m => { closeCobro(); onModuleChange(m); setHoveredModule(null); }}
             onHover={setHoveredModule}
-          />
-          <SubContextBar
-            displayModule={displayModule}
-            activeModule={activeModule}
-            visible={visible}
             cashSubView={cashSubView}
             onCashSubViewChange={onCashSubViewChange}
             abastecimientoSubModule={abastecimientoSubModule}

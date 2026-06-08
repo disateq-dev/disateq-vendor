@@ -4,7 +4,7 @@
 main
 
 ## Commit de referencia
-b0d11e2 — fix: errores preexistentes — null guards, tipos, imports no usados, tasaIGV
+Pendiente — feat: Fase B enforcement PIN Admin — CashWorkspace + ComprobantesWorkspace
 
 ---
 
@@ -34,7 +34,7 @@ Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
 Catálogo vivo · Pedido canónico · Valor por contexto · ClienteBuscador · Comprobante desde documents · Ciclo completo validado en runtime.
 
 ### COMPROBANTES
-ComprobantesWorkspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir a formal · guards de capacidad aplicados.
+ComprobantesWorkspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir a formal · guards de capacidad aplicados · PIN Admin requerido en anular y convertir.
 
 ### CLIENTES
 ClientesWorkspace completo · StatsBar · Filtros · buscador F2 · PanelDetalle · Acciones con motivo · Formulario creación inline · guards de capacidad · Identidad cromática #1e7e4f.
@@ -90,6 +90,38 @@ Capacidades operacionales con etiquetas ADICIONAL/REGULARIZACIÓN/SUPERVISIÓN v
 
 ### LOGIN
 Distinción LOGIN vs Runtime Principal formalizada. Filtro por o.estado. Campos canónicos.
+LoginScreen conserva su mecanismo propio (pcAuthCode alfanumérico) para cambio de PIN de operador — no usa useAutorizacion, diseño correcto.
+
+### CORRELATIVOS DE DESPACHO
+Registro autónomo por serie · store propio disateq:documents:correlativos · bootstrap desde historial existente · crearComprobante() y convertirAFormal() migrados · correlativo nunca derivado del historial de documentos · CobroPanel muestra correlativo real desde correlativoStore · emitidoPor usa activeOperator.id · dispatchCorrelative es estado local de sesión sin persistencia.
+
+### SISTEMA DE NIVELES DE PIN — COMPLETO
+PIN Operador 4 dígitos · PIN Admin 6 dígitos único por sistema · hash SHA-256 via Web Crypto · sin default — requiere configuración explícita.
+
+Trazabilidad completa en accesos.store:
+  LOGIN_OK · LOGIN_FAIL · PIN_CAMBIADO · PIN_RESETEADO
+  PIN_ADMIN_USADO · PIN_ADMIN_FALLIDO · PIN_ADMIN_CONFIGURADO
+
+Hook useAutorizacion (src/hooks/useAutorizacion.tsx):
+  solicitarAdmin(operacion, operadorAlias, onAutorizado): void
+  PinAdminModal: React.FC
+  Modal no bloqueante · 3 intentos máx · keypad numérico · SHA-256
+
+Fase B completada — integración useAutorizacion en módulos:
+
+  CashWorkspace:
+    - Avance a stage 5 (punto de no retorno del cierre) → requiere PIN Admin
+    - Corrección de datos de apertura → requiere PIN Admin
+    - Inicio de arqueo (stage 0→1) → libre, reversible, no requiere PIN
+    - <PinAdminModal /> renderizado en raíz del componente
+
+  ComprobantesWorkspace:
+    - Anular comprobante → requiere capacidad anular_comprobantes + PIN Admin
+    - Convertir a formal → requiere capacidad anular_comprobantes + PIN Admin
+    - Guards de capacidad preexistentes conservados intactos
+    - <PinAdminModal /> renderizado en raíz del componente
+
+  LoginScreen → excluida de Fase B · mecanismo propio correcto
 
 ---
 
@@ -127,6 +159,9 @@ src/hooks/useCaja.ts
   useCaja({ addOpLog, addTurnEvent, resetStats, resetOpLogs, sessionStatsRef, activeOperatorRef, operatorsRef, setCobroOpen, setZone, initialMoves, initialSession, initialUsedCodes }): { cashSession, cashSessionRef, cashBoxes, cashMoves, cashMovesRef, addCashMove, updateCashMove, editCashMove, openCashSession, closeCashSession, correctAperturaData }
   recoverOperationalState(): RecoveredState
 
+src/hooks/useAutorizacion.tsx
+  useAutorizacion(): { solicitarAdmin, PinAdminModal }
+
 ---
 
 ## Glosario canónico
@@ -142,9 +177,9 @@ Términos canónicos principales:
 
 - POSContext.tsx · Extracción completa — 8 hooks · archivo reducido a ~160 líneas de ensamblaje puro ✅
 - visualMode === "mixto" sin implementación
-- Correlativos de despacho sin persistencia
+- Correlativos de despacho ✅ resueltos — store autónomo operativo
 - _pedidoActivoId — estado mutable de módulo · refactor futuro
-- operador aparece como "default" en reportes — se normaliza cuando el flujo de login en ventas persista el operadorId correctamente
+- operador en reportes históricos pre-2034f4c aparece como "default" — los nuevos comprobantes ya registran operadorId real
 - PDF para descarga en ReportesWorkspace — pendiente futuro
 - UIX general — revisión pendiente (incluye cierre a ciegas para VEN)
 
@@ -158,9 +193,10 @@ OPERADORES+ROLES · AJUSTES/CONFIG · LOGIN · HOV/CATÁLOGO/VALOR OPERACIONAL
 CLIENTES (dominio + workspace + enforcement) · COMPROBANTES (domain + workspace + enforcement)
 PREVENTA · REPORTES (dominio + workspace estabilizado)
 ENFORCEMENT CAPACIDADES (hooks + guards + doctrina de roles)
+SISTEMA DE NIVELES DE PIN (Fase A + Fase B completas)
 
 ### Pendientes estructurales
-- Correlativos de despacho con persistencia ← SIGUIENTE
+(ninguno)
 
 ### Pendientes futuros
 - PDF descarga ReportesWorkspace
@@ -172,10 +208,9 @@ ENFORCEMENT CAPACIDADES (hooks + guards + doctrina de roles)
 
 ## Prioridad próximas sesiones
 
-1. Pruebas funcionales Alpha ← SIGUIENTE
-2. Correlativos de despacho
-3. PDF descarga
-4. UIX general
+1. Auditoría UIX — SHELL · TURNO · VENTAS ← SIGUIENTE
+2. Pruebas funcionales Alpha (paralelo con UIX)
+3. PDF descarga ReportesWorkspace
 
 ---
 
@@ -187,7 +222,7 @@ ciclo comercial           ✅ cerrado y validado en runtime real
 core operacional          ✅
 normalización estructural ✅ TAREAS 0–8
 integración UI            ✅ ClientesWorkspace · ReportesWorkspace
-reconciliación/control    ✅ enforcement capacidades + doctrina de roles
+reconciliación/control    ✅ enforcement capacidades + doctrina de roles + PIN Admin
 sofisticación progresiva  ⬜
 consolidación             ⬜
 estabilización            ⬜
