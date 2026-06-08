@@ -4,7 +4,7 @@
 main
 
 ## Commit de referencia
-9b36f5b — refactor: extraer useCaja de POSContext — Fase C completa
+b0d11e2 — fix: errores preexistentes — null guards, tipos, imports no usados, tasaIGV
 
 ---
 
@@ -140,9 +140,7 @@ Términos canónicos principales:
 
 ## Tensiones activas
 
-- POSContext.tsx · Extracción completa — 8 hooks · archivo reducido a ~160 líneas de ensamblaje puro
-- usePreVentaUX recibe isTurnoAbierto: false hardcodeado — debe ser cashSession.isOpen (corrección pendiente)
-- addTurnEvent cast manual en useCaja/useComprobantes — alinear TurnEventType (corrección pendiente)
+- POSContext.tsx · Extracción completa — 8 hooks · archivo reducido a ~160 líneas de ensamblaje puro ✅
 - visualMode === "mixto" sin implementación
 - Correlativos de despacho sin persistencia
 - _pedidoActivoId — estado mutable de módulo · refactor futuro
@@ -162,8 +160,7 @@ PREVENTA · REPORTES (dominio + workspace estabilizado)
 ENFORCEMENT CAPACIDADES (hooks + guards + doctrina de roles)
 
 ### Pendientes estructurales
-- Correcciones menores post-extracción: isTurnoAbierto + TurnEventType cast ← SIGUIENTE
-- Correlativos de despacho con persistencia
+- Correlativos de despacho con persistencia ← SIGUIENTE
 
 ### Pendientes futuros
 - PDF descarga ReportesWorkspace
@@ -175,7 +172,7 @@ ENFORCEMENT CAPACIDADES (hooks + guards + doctrina de roles)
 
 ## Prioridad próximas sesiones
 
-1. Correcciones menores post-extracción POSContext ← SIGUIENTE
+1. Pruebas funcionales Alpha ← SIGUIENTE
 2. Correlativos de despacho
 3. PDF descarga
 4. UIX general
