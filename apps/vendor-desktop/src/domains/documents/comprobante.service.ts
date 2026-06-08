@@ -1,4 +1,5 @@
 import { comprobanteStore } from './comprobante.store'
+import { correlativoStore } from './correlativo.store'
 import {
   type Comprobante,
   type CrearComprobanteInput,
@@ -7,6 +8,28 @@ import {
   type TipoComprobante,
 } from './comprobante.types'
 import { validarComprobante } from './comprobante.validator'
+
+// Bootstrap: migración única desde comprobantes existentes
+// Si el store de correlativos está vacío, inicializa desde el historial.
+;(function bootstrapCorrelativos() {
+  const registros = correlativoStore.obtenerRegistros()
+  if (registros.length > 0) return
+
+  const tipos: import('./comprobante.types').TipoComprobante[] = [
+    'TIQUE_VENTA', 'BOLETA', 'FACTURA', 'COTIZACION', 'NOTA_CREDITO', 'NOTA_DEBITO',
+  ]
+  const vistas = new Set<string>()
+  for (const tipo of tipos) {
+    const docs = comprobanteStore.getComprobantesPorTipo(tipo)
+    for (const doc of docs) {
+      if (!vistas.has(doc.serie)) {
+        vistas.add(doc.serie)
+        const max = comprobanteStore.getUltimoCorrelativoPorSerie(doc.serie)
+        correlativoStore.inicializarSerie(doc.serie, tipo, max + 1)
+      }
+    }
+  }
+})()
 
 type ClasificacionComprobante = {
   esFormal: boolean
@@ -81,7 +104,8 @@ export function crearComprobante(
     throw new Error(resultado.errores[0])
   }
 
-  const correlativo = comprobanteStore.getUltimoCorrelativoPorSerie(serie) + 1
+  const correlativo = correlativoStore.obtenerSiguiente(serie)
+  correlativoStore.inicializarSerie(serie, input.tipo, correlativo)
   const clasificacion = clasificarTipo(input.tipo)
   const inputConReferencia = input as CrearComprobanteInputConReferencia
   const subtotal = calcularSubtotal(input.lineas)
@@ -121,7 +145,9 @@ export function crearComprobante(
     enviadoPorCanal: 'NINGUNO',
   }
 
-  return comprobanteStore.guardarComprobante(comprobante)
+  const guardado = comprobanteStore.guardarComprobante(comprobante)
+  correlativoStore.confirmarEmision(serie, correlativo)
+  return guardado
 }
 
 export function anularComprobante(id: string, motivo: string): Comprobante {
@@ -173,7 +199,8 @@ export function convertirAFormal(
     throw new Error('Este comprobante ya fue convertido')
   }
 
-  const correlativo = comprobanteStore.getUltimoCorrelativoPorSerie(serie) + 1
+  const correlativo = correlativoStore.obtenerSiguiente(serie)
+  correlativoStore.inicializarSerie(serie, tipo, correlativo)
   const clasificacion = clasificarTipo(tipo)
   const now = new Date().toISOString()
 
@@ -210,6 +237,7 @@ export function convertirAFormal(
   }
 
   comprobanteStore.guardarComprobante(comprobanteFormal)
+  correlativoStore.confirmarEmision(serie, correlativo)
   comprobanteStore.guardarComprobante({
     ...origen,
     estado: 'REFERENCIADO',
