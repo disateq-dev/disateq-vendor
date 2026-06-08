@@ -26,22 +26,24 @@ interface ContextBarProps {
   onConfigSubViewChange: (sv: ConfigSubView) => void;
 }
 
-// ── Identidad cromática — módulos ─────────────────────────────
-const BASE_MOD = "flex h-11 items-center gap-1.5 rounded-lg border-b-2 px-3 text-[14.5px] font-bold text-[#121416] transition-colors select-none";
-const MOD_OFF  = `${BASE_MOD} border-transparent hover:bg-white/60`;
-const MOD_PH   = `${BASE_MOD} border-transparent opacity-35 cursor-default`;
+// ── Identidad visual — módulos ────────────────────────────────
+// Base: sin cuadros, sin bordes laterales, sin rings
+// Activo: solo línea inferior 3px + fondo sutil del color del módulo
+const BASE_MOD = "flex h-11 items-center gap-1.5 px-3 text-[14.5px] font-bold text-[#121416] transition-all select-none border-b-[3px]";
+const MOD_OFF  = `${BASE_MOD} border-transparent text-[#121416]/70 hover:text-[#121416] hover:border-[#d1d5db]`;
+const MOD_PH   = `${BASE_MOD} border-transparent opacity-30 cursor-default`;
 
 const MOD_ON: Record<ActiveModule, string> = {
-  cash:           `${BASE_MOD} border-[#2A7CA8]  bg-[rgba(42,124,168,0.12)]`,
-  sales:          `${BASE_MOD} border-[#45b356]  bg-[rgba(69,179,86,0.10)]`,
-  clientes:       `${BASE_MOD} border-[#1e7e4f]  bg-[rgba(30,126,79,0.10)]`,
-  reportes:       `${BASE_MOD} border-[#2154d8]  bg-[rgba(33,84,216,0.10)]`,
-  comprobantes:   `${BASE_MOD} border-[#C05050]  bg-[rgba(192,80,80,0.10)]`,
-  config:         `${BASE_MOD} border-[#697387]  bg-[rgba(105,115,135,0.10)]`,
-  abastecimiento: `${BASE_MOD} border-[#3D8A8A]  bg-[rgba(61,138,138,0.10)]`,
+  cash:           `${BASE_MOD} border-[#2A7CA8]  bg-[rgba(42,124,168,0.08)]`,
+  sales:          `${BASE_MOD} border-[#45b356]  bg-[rgba(69,179,86,0.07)]`,
+  clientes:       `${BASE_MOD} border-[#1e7e4f]  bg-[rgba(30,126,79,0.07)]`,
+  reportes:       `${BASE_MOD} border-[#2154d8]  bg-[rgba(33,84,216,0.07)]`,
+  comprobantes:   `${BASE_MOD} border-[#C05050]  bg-[rgba(192,80,80,0.07)]`,
+  config:         `${BASE_MOD} border-[#697387]  bg-[rgba(105,115,135,0.07)]`,
+  abastecimiento: `${BASE_MOD} border-[#3D8A8A]  bg-[rgba(61,138,138,0.07)]`,
 };
 
-// ── Identidad cromática — pills de subtabs ────────────────────
+// ── Identidad visual — pills de subtabs ───────────────────────
 const PILL_ON: Record<ActiveModule, string> = {
   cash:           "bg-[#2A7CA8] text-white",
   sales:          "bg-[#45b356] text-white",
@@ -52,15 +54,16 @@ const PILL_ON: Record<ActiveModule, string> = {
   abastecimiento: "bg-[#3D8A8A] text-white",
 };
 
-// ── Cursor de navegación — ring punteado por módulo ───────────
+// ── Cursor de navegación — línea inferior punteada por módulo ─
+// Mismo patrón que MOD_ON pero con opacidad reducida en la línea
 const NAV_FOCUS: Record<ActiveModule, string> = {
-  cash:           `${BASE_MOD} border-[#2A7CA8]/40 bg-[rgba(42,124,168,0.08)] ring-2 ring-[#2A7CA8]/50 ring-dashed`,
-  sales:          `${BASE_MOD} border-[#45b356]/40  bg-[rgba(69,179,86,0.07)]  ring-2 ring-[#45b356]/50  ring-dashed`,
-  clientes:       `${BASE_MOD} border-[#1e7e4f]/40  bg-[rgba(30,126,79,0.07)]  ring-2 ring-[#1e7e4f]/50  ring-dashed`,
-  reportes:       `${BASE_MOD} border-[#2154d8]/40  bg-[rgba(33,84,216,0.07)]  ring-2 ring-[#2154d8]/50  ring-dashed`,
-  comprobantes:   `${BASE_MOD} border-[#C05050]/40  bg-[rgba(192,80,80,0.07)]  ring-2 ring-[#C05050]/50  ring-dashed`,
-  config:         `${BASE_MOD} border-[#697387]/40  bg-[rgba(105,115,135,0.07)] ring-2 ring-[#697387]/50  ring-dashed`,
-  abastecimiento: `${BASE_MOD} border-[#3D8A8A]/40  bg-[rgba(61,138,138,0.07)] ring-2 ring-[#3D8A8A]/50  ring-dashed`,
+  cash:           `${BASE_MOD} border-[#2A7CA8]/50 bg-[rgba(42,124,168,0.05)]`,
+  sales:          `${BASE_MOD} border-[#45b356]/50  bg-[rgba(69,179,86,0.04)]`,
+  clientes:       `${BASE_MOD} border-[#1e7e4f]/50  bg-[rgba(30,126,79,0.04)]`,
+  reportes:       `${BASE_MOD} border-[#2154d8]/50  bg-[rgba(33,84,216,0.04)]`,
+  comprobantes:   `${BASE_MOD} border-[#C05050]/50  bg-[rgba(192,80,80,0.04)]`,
+  config:         `${BASE_MOD} border-[#697387]/50  bg-[rgba(105,115,135,0.04)]`,
+  abastecimiento: `${BASE_MOD} border-[#3D8A8A]/50  bg-[rgba(61,138,138,0.04)]`,
 };
 
 const PILL_OFF: Record<ActiveModule, string> = {
@@ -122,7 +125,11 @@ export function ContextBar({
   const [navMode, setNavMode] = useState(false);
   const [navIdx, setNavIdx]   = useState(0);
 
-  // Ref de accesibilidad para no perder guardas en closure del handler
+  // Refs — lectura fresca en el handler sin stale closures
+  const stateRef = useRef({ navMode, navIdx, expanded, focusedPillIdx, active });
+  useEffect(() => {
+    stateRef.current = { navMode, navIdx, expanded, focusedPillIdx, active };
+  });
   const accessRef = useRef({ puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes });
   useEffect(() => {
     accessRef.current = { puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes };
@@ -133,70 +140,99 @@ export function ContextBar({
     if (!CON_SUBTABS.has(active)) setExpanded(null);
   }, [active]);
 
-  // ── Shortcuts globales ────────────────────────────────────
+  // Notificar al shell si navMode está activo — para que Escape no interfiera
+  useEffect(() => {
+    document.dispatchEvent(new CustomEvent("pos:navMode", { detail: { active: navMode } }));
+  }, [navMode]);
+
+  // ── Refs de callbacks para evitar stale closures ──────────
+  const onChangeRef                        = useRef(onChange);
+  const onCashSubViewChangeRef             = useRef(onCashSubViewChange);
+  const onConfigSubViewChangeRef           = useRef(onConfigSubViewChange);
+  const onAbastecimientoSubModuleChangeRef = useRef(onAbastecimientoSubModuleChange);
+  useEffect(() => {
+    onChangeRef.current                        = onChange;
+    onCashSubViewChangeRef.current             = onCashSubViewChange;
+    onConfigSubViewChangeRef.current           = onConfigSubViewChange;
+    onAbastecimientoSubModuleChangeRef.current = onAbastecimientoSubModuleChange;
+  });
+
+  // ── Shortcuts globales — handler registrado una sola vez ──
   useEffect(() => {
     function handler(e: KeyboardEvent) {
+      const s   = stateRef.current;
       const acc = accessRef.current;
 
-      // ── Alt+Space — toggle modo navegación ContextBar ──────
-      if (e.altKey && e.key === " ") {
+      function tieneAcceso(m: ActiveModule): boolean {
+        if (m === "abastecimiento") return acc.puedeVerAbastecimiento;
+        if (m === "clientes")       return acc.puedeVerClientes;
+        if (m === "reportes")       return acc.puedeVerReportes;
+        if (m === "comprobantes")   return acc.puedeVerComprobantes;
+        if (m === "config")         return acc.puedeVerAjustes;
+        return true;
+      }
+
+      // ── Shift+Enter — toggle modo navegación ContextBar ────
+      if (e.shiftKey && !e.ctrlKey && !e.altKey && e.code === "Enter") {
         e.preventDefault();
-        if (navMode) {
-          // Salir del modo navegación
+        if (s.navMode) {
           setNavMode(false);
           setNavIdx(0);
-          if (expanded) { setExpanded(null); setFocusedPillIdx(0); }
+          if (s.expanded) { setExpanded(null); setFocusedPillIdx(0); }
         } else {
-          // Entrar al modo navegación — foco en módulo activo actual
-          const currentIdx = MODULES_ORDER.indexOf(active);
+          const currentIdx = MODULES_ORDER.indexOf(s.active);
           setNavIdx(currentIdx >= 0 ? currentIdx : 0);
           setNavMode(true);
         }
         return;
       }
 
-      // ── Escape — salir del modo navegación sin activar ─────
-      if (e.key === "Escape" && navMode) {
-        e.preventDefault();
-        setNavMode(false);
-        setNavIdx(0);
-        return;
+      // ── Escape ─────────────────────────────────────────────
+      // Desde SubContextBar expandida → vuelve a navMode en módulo expandido
+      // Desde navMode → desactiva modo navegación completamente
+      if (e.code === "Escape") {
+        if (s.expanded && !s.navMode) {
+          // Estaba en pills → volver a navMode con foco en el módulo expandido
+          e.preventDefault();
+          const idx = MODULES_ORDER.indexOf(s.expanded);
+          setNavIdx(idx >= 0 ? idx : 0);
+          setExpanded(null);
+          setFocusedPillIdx(0);
+          setNavMode(true);
+          return;
+        }
+        if (s.navMode) {
+          // Estaba en navMode → desactivar completamente
+          e.preventDefault();
+          setNavMode(false);
+          setNavIdx(0);
+          return;
+        }
       }
 
       // ── Navegación en modo ContextBar ──────────────────────
-      if (navMode && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-
-        // Helper — determinar si un módulo es accesible
-        function tieneAcceso(m: ActiveModule): boolean {
-          if (m === "abastecimiento") return acc.puedeVerAbastecimiento;
-          if (m === "clientes")       return acc.puedeVerClientes;
-          if (m === "reportes")       return acc.puedeVerReportes;
-          if (m === "comprobantes")   return acc.puedeVerComprobantes;
-          if (m === "config")         return acc.puedeVerAjustes;
-          return true; // cash y sales siempre accesibles
-        }
-
-        if (e.key === "ArrowRight") {
+      if (s.navMode && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        if (e.code === "ArrowRight") {
           e.preventDefault();
-          let next = (navIdx + 1) % MODULES_ORDER.length;
-          while (!tieneAcceso(MODULES_ORDER[next]) && next !== navIdx)
+          let next = (s.navIdx + 1) % MODULES_ORDER.length;
+          let guard = 0;
+          while (!tieneAcceso(MODULES_ORDER[next]) && guard++ < MODULES_ORDER.length)
             next = (next + 1) % MODULES_ORDER.length;
           setNavIdx(next);
           return;
         }
-
-        if (e.key === "ArrowLeft") {
+        if (e.code === "ArrowLeft") {
           e.preventDefault();
-          let prev = (navIdx - 1 + MODULES_ORDER.length) % MODULES_ORDER.length;
-          while (!tieneAcceso(MODULES_ORDER[prev]) && prev !== navIdx)
+          let prev = (s.navIdx - 1 + MODULES_ORDER.length) % MODULES_ORDER.length;
+          let guard = 0;
+          while (!tieneAcceso(MODULES_ORDER[prev]) && guard++ < MODULES_ORDER.length)
             prev = (prev - 1 + MODULES_ORDER.length) % MODULES_ORDER.length;
           setNavIdx(prev);
           return;
         }
-
-        if (e.key === "Enter") {
+        if (e.code === "Enter") {
           e.preventDefault();
-          const target = MODULES_ORDER[navIdx];
+          const target = MODULES_ORDER[s.navIdx];
           if (!tieneAcceso(target)) return;
           setNavMode(false);
           setNavIdx(0);
@@ -206,49 +242,47 @@ export function ContextBar({
           } else {
             setExpanded(null);
           }
-          onChange(target);
+          onChangeRef.current(target);
           return;
         }
       }
 
       // ── ←→ Enter — navegar pills cuando hay expanded ───────
-      if (!navMode && !e.ctrlKey && !e.altKey && !e.shiftKey && expanded) {
-        const tabs = expanded === "cash"
+      if (!s.navMode && !e.ctrlKey && !e.altKey && !e.shiftKey && s.expanded) {
+        const tabs = s.expanded === "cash"
           ? CASH_TABS
-          : expanded === "config"
+          : s.expanded === "config"
             ? CONFIG_TABS
             : ABAST_TABS.filter(t => !t.placeholder);
 
-        if (e.key === "ArrowRight") {
+        if (e.code === "ArrowRight") {
           e.preventDefault();
           setFocusedPillIdx(i => (i + 1) % tabs.length);
           return;
         }
-        if (e.key === "ArrowLeft") {
+        if (e.code === "ArrowLeft") {
           e.preventDefault();
           setFocusedPillIdx(i => (i - 1 + tabs.length) % tabs.length);
           return;
         }
-        if (e.key === "Enter") {
+        if (e.code === "Enter") {
           e.preventDefault();
-          const tab = tabs[focusedPillIdx];
+          const tab = tabs[s.focusedPillIdx];
           if (!tab) return;
-          if (expanded === "cash")
-            onCashSubViewChange(tab.key as CashSubView);
-          else if (expanded === "config")
-            onConfigSubViewChange(tab.key as ConfigSubView);
-          else if (expanded === "abastecimiento")
-            onAbastecimientoSubModuleChange(tab.key as AbastecimientoSubModule);
+          if (s.expanded === "cash")
+            onCashSubViewChangeRef.current(tab.key as CashSubView);
+          else if (s.expanded === "config")
+            onConfigSubViewChangeRef.current(tab.key as ConfigSubView);
+          else if (s.expanded === "abastecimiento")
+            onAbastecimientoSubModuleChangeRef.current(tab.key as AbastecimientoSubModule);
           return;
         }
       }
     }
+
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [
-    navMode, navIdx, active, expanded, focusedPillIdx, onChange,
-    onCashSubViewChange, onConfigSubViewChange, onAbastecimientoSubModuleChange,
-  ]);
+  }, []); // array vacío — handler registrado una sola vez, lee siempre por refs
 
   // ── Handler de click en módulo ────────────────────────────
   function handleModuleClick(m: ActiveModule, tieneAcceso = true) {
@@ -372,12 +406,12 @@ export function ContextBar({
     >
       <button onClick={() => handleModuleClick("cash")}
         onMouseEnter={() => onHover("cash")}
-        className={navMode && MODULES_ORDER[navIdx] === "cash" ? NAV_FOCUS["cash"] : display === "cash" ? MOD_ON["cash"] : MOD_OFF}>
+        className={navMode && MODULES_ORDER[navIdx] === "cash" ? NAV_FOCUS["cash"] : active === "cash" ? MOD_ON["cash"] : MOD_OFF}>
         <ShoppingCart size={15} /><span>TURNO</span>
       </button>
       <button onClick={() => handleModuleClick("sales")}
         onMouseEnter={() => onHover("sales")}
-        className={navMode && MODULES_ORDER[navIdx] === "sales" ? NAV_FOCUS["sales"] : display === "sales" ? MOD_ON["sales"] : MOD_OFF}>
+        className={navMode && MODULES_ORDER[navIdx] === "sales" ? NAV_FOCUS["sales"] : active === "sales" ? MOD_ON["sales"] : MOD_OFF}>
         <Package size={15} /><span>VENTAS</span>
       </button>
 
@@ -387,7 +421,7 @@ export function ContextBar({
         onClick={() => handleModuleClick("abastecimiento", puedeVerAbastecimiento)}
         onMouseEnter={puedeVerAbastecimiento ? () => onHover("abastecimiento") : undefined}
         title={puedeVerAbastecimiento ? undefined : "Sin acceso"}
-        className={navMode && MODULES_ORDER[navIdx] === "abastecimiento" ? NAV_FOCUS["abastecimiento"] : puedeVerAbastecimiento ? (display === "abastecimiento" ? MOD_ON["abastecimiento"] : MOD_OFF) : MOD_PH}
+        className={navMode && MODULES_ORDER[navIdx] === "abastecimiento" ? NAV_FOCUS["abastecimiento"] : puedeVerAbastecimiento ? (active === "abastecimiento" ? MOD_ON["abastecimiento"] : MOD_OFF) : MOD_PH}
       >
         <Boxes size={15} /><span>ABASTECIMIENTO</span>
       </button>
@@ -398,7 +432,7 @@ export function ContextBar({
         onClick={() => handleModuleClick("clientes", puedeVerClientes)}
         onMouseEnter={puedeVerClientes ? () => onHover("clientes") : undefined}
         title={puedeVerClientes ? undefined : "Sin acceso"}
-        className={navMode && MODULES_ORDER[navIdx] === "clientes" ? NAV_FOCUS["clientes"] : puedeVerClientes ? (display === "clientes" ? MOD_ON["clientes"] : MOD_OFF) : MOD_PH}
+        className={navMode && MODULES_ORDER[navIdx] === "clientes" ? NAV_FOCUS["clientes"] : puedeVerClientes ? (active === "clientes" ? MOD_ON["clientes"] : MOD_OFF) : MOD_PH}
       >
         <Users size={15} /><span>CLIENTES</span>
       </button>
@@ -406,7 +440,7 @@ export function ContextBar({
         onClick={() => handleModuleClick("reportes", puedeVerReportes)}
         onMouseEnter={puedeVerReportes ? () => onHover("reportes") : undefined}
         title={puedeVerReportes ? undefined : "Sin acceso"}
-        className={navMode && MODULES_ORDER[navIdx] === "reportes" ? NAV_FOCUS["reportes"] : puedeVerReportes ? (display === "reportes" ? MOD_ON["reportes"] : MOD_OFF) : MOD_PH}
+        className={navMode && MODULES_ORDER[navIdx] === "reportes" ? NAV_FOCUS["reportes"] : puedeVerReportes ? (active === "reportes" ? MOD_ON["reportes"] : MOD_OFF) : MOD_PH}
       >
         <BarChart2 size={15} /><span>REPORTES</span>
       </button>
@@ -417,7 +451,7 @@ export function ContextBar({
         onClick={() => handleModuleClick("comprobantes", puedeVerComprobantes)}
         onMouseEnter={puedeVerComprobantes ? () => onHover("comprobantes") : undefined}
         title={puedeVerComprobantes ? undefined : "Sin acceso"}
-        className={navMode && MODULES_ORDER[navIdx] === "comprobantes" ? NAV_FOCUS["comprobantes"] : puedeVerComprobantes ? (display === "comprobantes" ? MOD_ON["comprobantes"] : MOD_OFF) : MOD_PH}
+        className={navMode && MODULES_ORDER[navIdx] === "comprobantes" ? NAV_FOCUS["comprobantes"] : puedeVerComprobantes ? (active === "comprobantes" ? MOD_ON["comprobantes"] : MOD_OFF) : MOD_PH}
       >
         <FileText size={15} /><span>COMPROBANTES</span>
       </button>
@@ -428,7 +462,7 @@ export function ContextBar({
         onClick={() => handleModuleClick("config", puedeVerAjustes)}
         onMouseEnter={puedeVerAjustes ? () => onHover("config") : undefined}
         title={puedeVerAjustes ? undefined : "Sin acceso"}
-        className={navMode && MODULES_ORDER[navIdx] === "config" ? NAV_FOCUS["config"] : puedeVerAjustes ? (display === "config" ? MOD_ON["config"] : MOD_OFF) : MOD_PH}
+        className={navMode && MODULES_ORDER[navIdx] === "config" ? NAV_FOCUS["config"] : puedeVerAjustes ? (active === "config" ? MOD_ON["config"] : MOD_OFF) : MOD_PH}
       >
         <Settings size={15} /><span>AJUSTES</span>
       </button>

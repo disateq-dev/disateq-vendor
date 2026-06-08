@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { ContextBar } from "./OperationalBar";
 import { Topbar } from "./Topbar";
 import { ShortcutsBar } from "./ShortcutsBar";
@@ -33,6 +33,15 @@ function OperationalNotice() {
 export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, configSubView, onConfigSubViewChange }: AppShellProps) {
   const { closeCobro, logoutOperator, cobroOpen } = usePOS();
   const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
+  const navModeRef = useRef(false);
+
+  useEffect(() => {
+    function handler(e: Event) {
+      navModeRef.current = (e as CustomEvent<{ active: boolean }>).detail.active;
+    }
+    document.addEventListener("pos:navMode", handler);
+    return () => document.removeEventListener("pos:navMode", handler);
+  }, []);
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -42,10 +51,12 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
     return () => window.removeEventListener("keydown", handler);
   }, [logoutOperator]);
 
-  // Escape global — scanner focus recovery en VENTAS (CobroPanel maneja su propio Escape cuando cobroOpen)
+  // Escape global — scanner focus recovery en VENTAS
+  // Bloqueado cuando navMode de ContextBar está activo
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.key !== "Escape" || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (navModeRef.current) return; // ContextBar maneja este Escape
       if (!cobroOpen && activeModule === "sales") {
         document.dispatchEvent(new CustomEvent("pos:focusSearch"));
       }
