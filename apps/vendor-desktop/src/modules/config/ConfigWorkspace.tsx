@@ -58,6 +58,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
       direccion:       direccion.trim(),
       telefono:        telefono.trim(),
       alias:           loadBusinessConfig().alias,
+      tasaIGV:         loadBusinessConfig().tasaIGV,
     });
     setBizSaved(true);
     setTimeout(() => setBizSaved(false), 2000);

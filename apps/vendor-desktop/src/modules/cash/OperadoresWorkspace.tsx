@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   Plus, Pencil, CircleCheck, PauseCircle, Archive,
   KeyRound, AlertTriangle, ChevronRight, Unlink,
-  Users, UserX, Activity, ClipboardList, Hash, Phone, CreditCard,
+  Users, UserX, Activity, ClipboardList, Phone, CreditCard,
 } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import type { Operador } from "../../domains/operator/operator.store";
@@ -105,7 +105,6 @@ function PanelActivos({ selectedId, onSelect }: {
   }
 
   const enTurnoCount    = activos.filter(o => getState(o) === "EN_TURNO").length;
-  const disponibleCount = activos.filter(o => getState(o) === "DISPONIBLE").length;
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Archive, Trash2 } from "lucide-react";
 import { useInventoryStore, deriveDisponibilidad, deriveEstado, deriveReservado } from "../../domains/inventory/store";
 import { inventoryService } from "../../domains/inventory/service";
-import type { TipoMovimiento, EstadoDisponibilidad, Reserva } from "../../domains/inventory/types";
+import type { TipoMovimiento, EstadoDisponibilidad, ItemOperacional, MovimientoOperacional, ContextoItem, Reserva as ReservaType } from "../../domains/inventory/types";
 import { usePurchasesStore } from "../../domains/purchases/store";
 import type { CompraOperacional } from "../../domains/purchases/types";
 
@@ -180,10 +180,10 @@ function derivePendienteIngreso(compras: CompraOperacional[], itemId: string): n
 function ViewDisponibilidad({
   items, movimientos, contexto, reservas, compras,
 }: {
-  items: ReturnType<typeof useInventoryStore>["items"];
-  movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
-  contexto: ReturnType<typeof useInventoryStore>["contexto"];
-  reservas: ReturnType<typeof useInventoryStore>["reservas"];
+  items: ItemOperacional[];
+  movimientos: MovimientoOperacional[];
+  contexto: ContextoItem[];
+  reservas: ReservaType[];
   compras: CompraOperacional[];
 }) {
   if (items.length === 0) {
@@ -251,7 +251,7 @@ function ViewDisponibilidad({
 function DisponibilidadCard({
   item, existencia, reservado, paraOperar, umbral, cfg, pendienteIngreso, ingresoReciente, ultimaActividad,
 }: {
-  item: ReturnType<typeof useInventoryStore>["items"][number];
+  item: ItemOperacional;
   existencia: number;
   reservado: number;
   paraOperar: number;
@@ -338,8 +338,8 @@ function DisponibilidadCard({
 function ViewMovimientos({
   items, movimientos, defaultItemId,
 }: {
-  items: ReturnType<typeof useInventoryStore>["items"];
-  movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
+  items: ItemOperacional[];
+  movimientos: MovimientoOperacional[];
   defaultItemId?: string | null;
 }) {
   const [itemId,     setItemId]     = useState(defaultItemId ?? items[0]?.itemId ?? "");
@@ -523,8 +523,8 @@ function ViewMovimientos({
 function ViewItems({
   items, contexto,
 }: {
-  items: ReturnType<typeof useInventoryStore>["items"];
-  contexto: ReturnType<typeof useInventoryStore>["contexto"];
+  items: ItemOperacional[];
+  contexto: ContextoItem[];
 }) {
   const [nombre,     setNombre]     = useState("");
   const [unidadBase, setUnidadBase] = useState("unidad");
@@ -626,7 +626,7 @@ function ViewItems({
 }
 
 function ItemRow({ item, umbralMinimo }: {
-  item: ReturnType<typeof useInventoryStore>["items"][number];
+  item: ItemOperacional;
   umbralMinimo: number;
 }) {
   const [editing,     setEditing]     = useState(false);
@@ -694,9 +694,9 @@ function ItemRow({ item, umbralMinimo }: {
 function ViewReservas({
   items, movimientos, reservas, defaultItemId,
 }: {
-  items: ReturnType<typeof useInventoryStore>["items"];
-  movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
-  reservas: Reserva[];
+  items: ItemOperacional[];
+  movimientos: MovimientoOperacional[];
+  reservas: ReservaType[];
   defaultItemId?: string | null;
 }) {
   const [itemId,   setItemId]   = useState(defaultItemId ?? items[0]?.itemId ?? "");
@@ -825,8 +825,8 @@ function ViewReservas({
 function ViewReconciliacion({
   items, movimientos, defaultItemId,
 }: {
-  items: ReturnType<typeof useInventoryStore>["items"];
-  movimientos: ReturnType<typeof useInventoryStore>["movimientos"];
+  items: ItemOperacional[];
+  movimientos: MovimientoOperacional[];
   defaultItemId?: string | null;
 }) {
   const [itemId,    setItemId]    = useState(defaultItemId ?? items[0]?.itemId ?? "");

@@ -162,7 +162,7 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
   function toggleIndividual(capId: string) {
     const next = new Set(indivCaps);
     if (next.has(capId)) { next.delete(capId); } else { next.add(capId); }
-    updateOperatorCapabilities(operator.id, [...next]);
+    if (operator) updateOperatorCapabilities(operator.id, [...next]);
   }
 
   return (

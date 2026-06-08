@@ -53,6 +53,15 @@ export function resolverValor(contexto: ContextoResolucion): ResultadoResolucion
   }
 
   function validarFinal(valorFinal: number, tipo: TipoValorOperacional): ResultadoResolucion {
+    if (!hov) {
+      return {
+        valido: false,
+        valorAplicado: null,
+        tipo: null,
+        requiereAutorizacion: false,
+        error: 'HOV no encontrada',
+      }
+    }
     const costoBase = hov.costoBase
 
     if (valorFinal <= 0) {

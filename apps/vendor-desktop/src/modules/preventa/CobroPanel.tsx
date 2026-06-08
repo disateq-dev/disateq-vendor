@@ -21,7 +21,6 @@ import ClienteBuscador from "../sales/ClienteBuscador";
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
 type CobroView   = "main" | "client";
-type CotizaMode  = "dni" | "ruc";
 type Affectation = "gravado-onerosa" | "exonerado-onerosa" | "inafecto-onerosa" | "gravado-retiro" | "inafecto-retiro";
 
 type CustomerData = {
@@ -73,7 +72,7 @@ const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
   const lines = useLineasPreVenta();
-  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, docCorrelatives, printFlow, sessionStats } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, docCorrelatives, printFlow } = usePOS();
   const { cashBox } = cashSession;
   const isCtg = !!cashBox && cashBox.type !== "normal";
   const tasaIGV = loadBusinessConfig().tasaIGV;
@@ -137,12 +136,6 @@ export function CobroPanel() {
   netTotalRef.current = netTotal;
 
   // client form derived
-  const showDocInput       = docType === "boleta" || docType === "factura" || docType === "cotizacion";
-  const [cotizaMode, setCotizaMode] = useState<CotizaMode>("dni");
-  const docLabel           = docType === "factura" ? "RUC *" : docType === "cotizacion" ? (cotizaMode === "ruc" ? "RUC" : "DNI · opcional") : "DNI · opcional";
-  const docMaxLen          = (docType === "factura" || (docType === "cotizacion" && cotizaMode === "ruc")) ? 11 : 8;
-  const docPlaceholder     = (docType === "factura" || (docType === "cotizacion" && cotizaMode === "ruc")) ? "20xxxxxxxxx" : "xxxxxxxx";
-  const docLookupLabel     = cDoc.length === 11 ? "SUNAT" : cDoc.length === 8 ? "RENIEC" : null;
   const canEstablecer      = cName.trim().length > 0 && (docType !== "factura" || cDoc.trim().length === 11);
 
   // ── customer display ─────────────────────────────────────────────────────────
@@ -170,7 +163,6 @@ export function CobroPanel() {
     setCAddress(customer?.address ?? "");
     setCPhone(customer?.phone ?? "");
     setCEmail(customer?.email ?? "");
-    setCotizaMode("dni");
     setCobroView("client");
   }
 

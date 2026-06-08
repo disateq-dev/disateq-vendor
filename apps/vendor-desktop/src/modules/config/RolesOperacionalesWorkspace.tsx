@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Plus, Pencil, Ban, ToggleRight, Users, Sliders, ChevronRight, AlertCircle } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
-import type { Rol } from "../../domains/operator/roles.store";
-
 // ── catálogo de capacidades (mismo que CapacidadesWorkspace) ─────────────
 
 type ObservabilityLevel = "personal" | "contextual" | "supervisión" | "regularización";
