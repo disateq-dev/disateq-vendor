@@ -15,6 +15,7 @@ import {
   emitirComprobante,
   construirReceiptData
 } from "../../domains/documents/bridge-comprobante";
+import { correlativoStore } from "../../domains/documents/correlativo.store";
 import type { Comprobante } from "../../domains/documents/comprobante.types";
 import ClienteBuscador from "../sales/ClienteBuscador";
 
@@ -45,13 +46,11 @@ function Helper({ text }: { text: string }) {
   );
 }
 
-let _dispatchCorrelative = 1;
-
-const DOC_SERIES: Record<DocType, { series: string; correlative: number }> = {
-  nota:       { series: "T001", correlative: 1253 },
-  boleta:     { series: "B001", correlative:  871 },
-  factura:    { series: "F001", correlative:  450 },
-  cotizacion: { series: "C001", correlative:   22 },
+const DOC_SERIES: Record<DocType, { series: string }> = {
+  nota:       { series: "T001" },
+  boleta:     { series: "B001" },
+  factura:    { series: "F001" },
+  cotizacion: { series: "C001" },
 };
 
 const DOC_SHORT: Record<DocType, string> = {
@@ -72,7 +71,7 @@ const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
 
 export function CobroPanel() {
   const lines = useLineasPreVenta();
-  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, docCorrelatives, printFlow } = usePOS();
+  const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, printFlow, activeOperator } = usePOS();
   const { cashBox } = cashSession;
   const isCtg = !!cashBox && cashBox.type !== "normal";
   const tasaIGV = loadBusinessConfig().tasaIGV;
@@ -87,6 +86,7 @@ export function CobroPanel() {
   const [mixtoEfe, setMixtoEfe] = useState("");
   const [mixtoYap, setMixtoYap] = useState("");
   const [mixtoTar, setMixtoTar] = useState("");
+  const [dispatchCorrelative, setDispatchCorrelative] = useState(1);
 
   // ── committed customer ───────────────────────────────────────────────────────
   const [customer, setCustomer] = useState<CustomerData | null>(null);
@@ -270,7 +270,7 @@ export function CobroPanel() {
       fechaEnvioSUNAT: null,
       motivoAnulacion: null,
       emitidoEn: new Date().toISOString(),
-      emitidoPor: "default",
+      emitidoPor: activeOperator?.id ?? "default",
       enviadoPorCanal: "NINGUNO",
     };
   }
@@ -296,11 +296,12 @@ export function CobroPanel() {
     const dt  = `${p2(now.getDate())}/${p2(now.getMonth() + 1)}/${now.getFullYear()} ${p2(now.getHours())}:${p2(now.getMinutes())}`;
     if (printFlow === "comprobante-despacho") {
       printDispatchTicket({
-        correlative: _dispatchCorrelative++,
+        correlative: dispatchCorrelative,
         dateTime:    dt,
         lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
         opNumber:    docNumber,
       } satisfies DispatchData);
+      setDispatchCorrelative(prev => prev + 1);
     }
     recordSale(netTotal, payMethod, docType, cfg.series, nextCorrelative,
       payMethod === "mixto" ? mixtoEfeNum : undefined,
@@ -330,7 +331,7 @@ export function CobroPanel() {
         customer:    customer
           ? { docNumber: customer.docNumber, name: customer.name }
           : null,
-        emitidoPor:  "default",
+        emitidoPor:  activeOperator?.id ?? "default",
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);
@@ -389,7 +390,7 @@ export function CobroPanel() {
         customer:    customer
           ? { docNumber: customer.docNumber, name: customer.name }
           : null,
-        emitidoPor:  "default",
+        emitidoPor:  activeOperator?.id ?? "default",
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);
@@ -433,11 +434,12 @@ export function CobroPanel() {
       };
     }
     const dispatchData: DispatchData = {
-      correlative: _dispatchCorrelative++,
+      correlative: dispatchCorrelative,
       dateTime,
       lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
       opNumber:    docNumber,
     };
+    setDispatchCorrelative(prev => prev + 1);
     if (printFlow === "comprobante-despacho") {
       try {
         await printTicketWithDispatch("TIQUE", receiptData, dispatchData);
@@ -494,6 +496,7 @@ export function CobroPanel() {
     setMixtoEfe(""); setMixtoYap(""); setMixtoTar("");
     setCustomer(null); setCDoc(""); setCName("");
     setCobroView("main"); setAffectation("gravado-onerosa");
+    setDispatchCorrelative(1);
     const t = setTimeout(() => receivedRef.current?.focus(), 80);
     return () => clearTimeout(t);
   }, [cobroOpen]);
@@ -574,9 +577,7 @@ export function CobroPanel() {
 
   // ── render ───────────────────────────────────────────────────────────────────
   const cfg             = DOC_SERIES[docType];
-  // docCorrelatives: fuente única persistente entre sesiones (no se resetea con NULL_STATS)
-  const lastCorrelative = docCorrelatives[docType] ?? cfg.correlative;
-  const nextCorrelative = lastCorrelative + 1;
+  const nextCorrelative = correlativoStore.obtenerSiguiente(cfg.series);
   const docNumber       = `${cfg.series}-${String(nextCorrelative).padStart(8, "0")}`;
   const customerDisplay = getCustomerDisplay();
   const { text: rowLabel, warn: rowWarn } = getRowLabel();
