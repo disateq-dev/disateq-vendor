@@ -86,6 +86,27 @@ Dependencias: solo `cashSession` de `usePOS()`. Sin `sessionStats`, `cashMoves`,
 
 ---
 
+## Identidad cromática por módulo
+
+| Módulo | Color | Fondo topbar | Borde |
+|---|---|---|---|
+| TURNO / CAJA | `#2A7CA8` | `bg-[#F2F7FA]` | `border-[#2A7CA8]/15` |
+| VENTAS | `#45b356` | `bg-[#F2FAF3]` | `border-[#45b356]/15` |
+| COMPROBANTES | `#C05050` | `bg-[#FBF4F4]` | `border-[#C05050]/15` |
+| CLIENTES | `#1e7e4f` | `bg-[#F0FAF4]` | `border-[#1e7e4f]/15` |
+| REPORTES | `#2154d8` | `bg-[#F0F4FF]` | `border-[#2154d8]/15` |
+| ABASTECIMIENTO | `#3D8A8A` | `bg-[#F0F7F7]` | `border-[#3D8A8A]/15` |
+| CONFIG | `#697387` | `bg-[#F4F5F7]` | `border-[#697387]/15` |
+
+**Reglas irrevocables:**
+- La SheetTopbar solo contiene icono + texto. Sin badges, contadores, toggles ni botones.
+- Tabs, toggles y filtros van en el body, inmediatamente debajo de la topbar.
+- Badges de estado van en el body como contexto, nunca en la topbar.
+- Botones de acción definitiva van en SheetBottomBar, nunca en el body.
+- El color cromático pertenece al módulo, no al estado del sheet.
+
+---
+
 ## Topbar — estado final
 
 - Datos izquierda: `nombreComercial`, `alias`, `ruc`, `razonSocial` — todos de `BusinessConfig`
@@ -117,6 +138,15 @@ Workspace completo · StatsBar · Filtros · F2 · PanelDetalle · Formulario in
 
 ### REPORTES
 Workspace completo · Cuatro tipos · Cuatro períodos · Generación automática · IMPRIMIR · EXCEL.
+
+---
+
+## Workspaces normalizados
+
+- `CashWorkspace` — MOVIMIENTOS: totales ↑↓↩ bajaron al body como mini-stats row
+- `ClientesWorkspace` — CLIENTES: badge activos + botón NUEVO CLIENTE bajaron a StatsBar
+- `ComprobantesWorkspace` — COMPROBANTES: toggle sesión/historial + badge + contador bajaron al body
+- `ReportesWorkspace` — REPORTES: badge tipo activo + spinner bajaron a banda de controles
 
 ### ENFORCEMENT DE CAPACIDADES
 useCapacidad · useCapacidades · useContextoOperacional · Guards en ContextBar y workspaces.
@@ -168,7 +198,6 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 - visualMode "mixto" sin implementación diferenciada en SalesWorkspace
 - rubroConfig hardcodeado en SalesWorkspace
 - Import muerto buscarProductos en SalesWorkspace
-- UIX workspace TURNO — pendiente auditoría
 - UIX cierre a ciegas para rol VEN — pendiente
 - PDF descarga ReportesWorkspace — pendiente
 
@@ -176,9 +205,8 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 ## Prioridad próximas sesiones
 
-1. Auditoría UIX workspace TURNO
-2. Revisión SalesWorkspace (rubroConfig, mixto, import muerto)
-3. PDF descarga ReportesWorkspace
+1. Revisión SalesWorkspace (rubroConfig, mixto, import muerto)
+2. PDF descarga ReportesWorkspace
 
 ---
 
