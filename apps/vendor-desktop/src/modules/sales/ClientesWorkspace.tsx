@@ -34,7 +34,7 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
-function StatsBar({ clientes }: { clientes: Cliente[] }) {
+function StatsBar({ clientes, puedeGestionar, handleOpenCreate }: { clientes: Cliente[]; puedeGestionar: boolean; handleOpenCreate: () => void }) {
   const stats = useMemo(() => {
     return {
       activos: clientes.filter(cliente => cliente.estado === "ACTIVO").length,
@@ -46,7 +46,23 @@ function StatsBar({ clientes }: { clientes: Cliente[] }) {
   }, [clientes]);
 
   return (
-    <div className="shrink-0 px-3 pb-2">
+    <div className="shrink-0 px-3 pb-2 flex flex-col gap-2">
+      <div className="flex items-center gap-2 pt-2">
+        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest text-emerald-700">
+          {stats.activos} ACTIVOS
+        </span>
+        <button
+          disabled={!puedeGestionar}
+          onClick={handleOpenCreate}
+          className={`ml-auto flex items-center gap-1.5 rounded-xl bg-[#1e7e4f] px-3 py-1.5 text-[11px] font-bold text-white transition ${
+            !puedeGestionar ? "cursor-not-allowed opacity-40" : "hover:bg-[#16663f]"
+          }`}
+          title={!puedeGestionar ? "Sin capacidad para gestionar clientes" : undefined}
+        >
+          <UserPlus size={13} />
+          NUEVO CLIENTE
+        </button>
+      </div>
       <div className="grid grid-cols-5 gap-2 rounded-2xl bg-[#f0faf4] p-2">
         <StatCard label="Total activos" value={String(stats.activos)} accent="text-[#1e7e4f]" />
         <StatCard label="Frecuente" value={String(stats.frecuentes)} accent="text-[#1e7e4f]" />
@@ -132,7 +148,6 @@ export function ClientesWorkspace() {
   }, [clientes, filtroEstado, filtroTipo, search]);
 
   const selected = clientes.find(cliente => cliente.id === selectedId) ?? null;
-  const activosCount = useMemo(() => clientes.filter(cliente => cliente.estado === "ACTIVO").length, [clientes]);
 
   useEffect(() => {
     if (selectedId && !clientesFiltrados.some(cliente => cliente.id === selectedId)) {
@@ -344,25 +359,12 @@ export function ClientesWorkspace() {
   return (
     <section className="flex h-full w-full gap-3">
       <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#1e7e4f]/50 bg-[#FDFCF9]">
-        <header className="flex shrink-0 items-center gap-2 border-b border-[#1e7e4f]/15 bg-[#f0faf4] px-4 py-2.5">
-          <span className="text-[14px] font-semibold uppercase tracking-tight leading-none text-[#121416]">CLIENTES</span>
-          <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest text-emerald-700">
-            {activosCount} ACTIVOS
-          </span>
-          <button
-            disabled={!puedeGestionar}
-            onClick={handleOpenCreate}
-            className={`ml-auto flex items-center gap-1.5 rounded-xl bg-[#1e7e4f] px-3 py-2 text-[11px] font-bold text-white transition ${
-              !puedeGestionar ? "cursor-not-allowed opacity-40" : "hover:bg-[#16663f]"
-            }`}
-            title={!puedeGestionar ? "Sin capacidad para gestionar clientes" : undefined}
-          >
-            <UserPlus size={13} />
-            NUEVO CLIENTE
-          </button>
+        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#1e7e4f]/15 bg-[#f0faf4] px-4">
+          <Users size={13} strokeWidth={2} className="shrink-0 text-[#1e7e4f]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">CLIENTES</span>
         </header>
 
-        <StatsBar clientes={clientes} />
+        <StatsBar clientes={clientes} puedeGestionar={puedeGestionar} handleOpenCreate={handleOpenCreate} />
 
         <div className="shrink-0 border-b border-[#e4efe8] px-3 py-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -442,11 +444,9 @@ export function ClientesWorkspace() {
       </div>
 
       <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#1e7e4f]/50 bg-[#FDFCF9]">
-        <header className="flex shrink-0 items-center gap-2 border-b border-[#1e7e4f]/15 bg-[#f0faf4] px-4 py-2.5">
-          <span className="text-[14px] font-semibold uppercase tracking-tight leading-none text-[#121416]">DETALLE</span>
-          {selected && accion !== "crear" && (
-            <span className="truncate text-[11px] font-semibold tabular-nums text-[#5f7668]">{selected.codigo}</span>
-          )}
+        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#1e7e4f]/15 bg-[#f0faf4] px-4">
+          <Users size={13} strokeWidth={2} className="shrink-0 text-[#1e7e4f]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">DETALLE</span>
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
