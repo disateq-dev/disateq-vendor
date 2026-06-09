@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-feat(cash): arqueo a ciegas rol VEN — Stage4 sin esperados; ticket SISTEMA vs OPERADOR
+feat(ventas): flash verde 600ms al agregar producto — dense y visual
 
 ---
 
@@ -133,6 +133,7 @@ Tres modos de búsqueda: nombre/código (4 pasadas priorizadas + normalización 
 Input vacío controla el ticket: ↑↓ navegar líneas · +→ incrementar · −← decrementar · Delete quitar · N nota · Ctrl+Enter cobro.
 Vista Lista (dense): filas con teclado · Vista Visual: grilla de tiles con categorías.
 Modo de vista configurable desde Ajustes → Experiencia — no expuesto en la pantalla de ventas.
+Feedback visual al agregar: flash verde 600ms en fila/tile — previene doble escaneo.
 
 ### COMPROBANTES
 Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir · PIN Admin.
@@ -162,6 +163,9 @@ useCapacidad · useCapacidades · useContextoOperacional · Guards en ContextBar
 177 productos · movimientos causales · disponibilidad derivada · reservas · alertas.
 HOVs: campo `category` en tipo + migración idempotente al arranque (`hov.migration.ts` · `POSContext`).
 Filtro visual por categoría operativo desde próximo arranque de la app.
+Stock inicial: `syncCatalogToInventory` registra entrada `seed-catalogo` desde `CatalogProduct.stock` (idempotente).
+DEV tools → RESET INVENTARIO: limpia `disateq:inventory` y recarga — desbloquea el seed para Alpha.
+Bloqueante Alpha resuelto: ejecutar RESET INVENTARIO en DEV para popular stock inicial.
 
 ### COMPRAS CAPA 0+1
 Recepción parcial incremental · causalidad compra → INVENTARIOS.
@@ -172,6 +176,45 @@ SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
 
 ### SISTEMA DE NIVELES DE PIN
 PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
+
+---
+
+## Deudas técnicas identificadas
+
+### Arquitectura
+
+| # | Deuda | Impacto | Prioridad |
+|---|---|---|---|
+| 1 | `POSContext.tsx` ~1000 líneas — viola SRP, concentra demasiadas responsabilidades | Alto | Alta |
+| 2 | Imports directos de storage en componentes UI — viola DIP | Medio | Media |
+
+### Funcionalidad
+
+| # | Deuda | Impacto | Prioridad |
+|---|---|---|---|
+| 3 | UIX workspace TURNO — auditoría de stages pendiente (SheetTopbar ya normalizada) | Medio | Media |
+| 4 | Historial de búsqueda por sesión — ArrowUp en input vacío podría mostrar últimas búsquedas | Bajo | Baja |
+
+### Seguridad
+
+| # | Deuda | Impacto | Prioridad |
+|---|---|---|---|
+| 5 | PINs de operador en texto plano en localStorage | Alto | Alta antes de distribución |
+| 6 | Sin cifrado de localStorage — datos expuestos con acceso físico al equipo | Alto | Alta antes de distribución |
+| 7 | Sin timeout de inactividad — sesión permanece activa indefinidamente | Medio | Media |
+
+### Regulatorio
+
+| # | Deuda | Impacto | Prioridad |
+|---|---|---|---|
+| 8 | Integración SUNAT real pendiente — comprobantes quedan en estado PENDIENTE sin envío | Alto | Fase futura |
+
+### Normalización GLOSARIO
+
+| # | Deuda | Impacto | Prioridad |
+|---|---|---|---|
+| 9 | `emitidoPor` en `Comprobante` — debería ser `operadorId` según GLOSARIO | Bajo | Baja |
+| 10 | `EstadoDisponibilidad` en minúsculas en `inventory/types.ts` — debería ser `DISPONIBLE/BAJO_STOCK/AGOTADO` | Bajo | Baja |
 
 ---
 
@@ -204,14 +247,16 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 ## Tensiones activas
 
-- Tabla de deudas técnicas — pendiente incorporar al CURRENT_CONTEXT
+- PINs de operador en texto plano — deuda de seguridad antes de distribución
+- POSContext.tsx ~1000 líneas — deuda arquitectónica SRP pendiente de extracción progresiva
 
 ---
 
 ## Prioridad próximas sesiones
 
-1. Tabla de deudas técnicas — incorporar al CURRENT_CONTEXT
-2. POSContext.tsx extracción progresiva (~1000 líneas · viola SRP)
+1. POSContext.tsx — diseño de extracción progresiva
+2. PINs texto plano — hashear antes de distribución real
+3. UIX workspace TURNO — auditoría de stages
 
 ---
 

@@ -133,6 +133,8 @@ export function SalesWorkspace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
+  const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const lastAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
@@ -224,6 +226,13 @@ export function SalesWorkspace() {
     return () => document.removeEventListener("pos:focusSearch", handler);
   }, [cobroOpen]);
 
+  // Limpiar timer lastAdded en unmount
+  useEffect(() => {
+    return () => {
+      if (lastAddedTimerRef.current) clearTimeout(lastAddedTimerRef.current);
+    };
+  }, []);
+
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
     if (p.stockStatus === "out") return;
     if (cobroOpen) closeCobro();
@@ -241,6 +250,9 @@ export function SalesWorkspace() {
       margenMinimoConfigurable: 0.15,
       operadorTieneCapacidadLibre: false,
     });
+    if (lastAddedTimerRef.current) clearTimeout(lastAddedTimerRef.current);
+    setLastAdded(p.hovId);
+    lastAddedTimerRef.current = setTimeout(() => setLastAdded(null), 600);
     setQuery("");
     setSearchQuery("");
     inputRef.current?.focus();
@@ -459,9 +471,11 @@ export function SalesWorkspace() {
                       ref={idx === selectedIndex ? selectedItemRef : null}
                       onClick={() => addProductToTicket(product)}
                       className={`flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition ${
-                        isSelected
-                          ? "bg-[#F0FAF1] ring-1 ring-[#45b356]/20"
-                          : "hover:bg-[#f3faf4]"
+                        lastAdded === product.hovId
+                          ? "bg-[#dcfce7] ring-1 ring-[#45b356]/40"
+                          : isSelected
+                            ? "bg-[#F0FAF1] ring-1 ring-[#45b356]/20"
+                            : "hover:bg-[#f3faf4]"
                       }`}
                       style={isOut ? { opacity: 0.56 } : undefined}
                     >
@@ -547,7 +561,9 @@ export function SalesWorkspace() {
                         className={`overflow-hidden rounded-2xl bg-white text-left transition active:scale-[0.96] ${
                           isOut
                             ? "border border-[#fef2f2] opacity-50 cursor-not-allowed shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
-                            : "border border-[#eef2f8] shadow-[0_1px_4px_rgba(15,23,42,0.07)] hover:border-[#a8d9ac] hover:shadow-[0_4px_14px_rgba(69,179,86,0.10)] cursor-pointer"
+                            : lastAdded === product.hovId
+                              ? "border border-[#45b356]/60 shadow-[0_4px_14px_rgba(69,179,86,0.18)] ring-2 ring-[#45b356]/15 cursor-pointer"
+                              : "border border-[#eef2f8] shadow-[0_1px_4px_rgba(15,23,42,0.07)] hover:border-[#a8d9ac] hover:shadow-[0_4px_14px_rgba(69,179,86,0.10)] cursor-pointer"
                         }`}
                       >
                         <div
