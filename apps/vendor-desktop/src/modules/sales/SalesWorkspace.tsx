@@ -5,21 +5,9 @@ import { useLineasPreVenta } from "../../domains/preventa/selectors/preventa.sel
 import { preVentaService } from "../../domains/preventa/services/preventa.service";
 import { usePOS } from "../../context/POSContext";
 import {
-  buscarProductos,
   obtenerProductosBuscables,
   type ProductoBuscable
 } from "../../domains/catalog/bridge-catalogo";
-
-function Helper({ text }: { text: string }) {
-  return (
-    <span
-      title={text}
-      className="inline-flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full bg-[#e4e9f0] text-[8px] font-bold text-[#9ca3af] transition hover:bg-[#d1d9e1] hover:text-[#6b7280]"
-    >
-      ?
-    </span>
-  );
-}
 
 function statusChip(p: ProductoBuscable) {
   if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
@@ -121,8 +109,6 @@ type POSRuntimeContext = ReturnType<typeof usePOS> & {
   operadorActivo?: { id?: string };
 };
 
-void buscarProductos;
-
 const VIEW_OPTS: { id: VisualMode; label: string }[] = [
   { id: "lista",  label: "Lista"   },
   { id: "visual", label: "Visual"  },
@@ -131,21 +117,21 @@ const VIEW_OPTS: { id: VisualMode; label: string }[] = [
 
 function ViewToggle({ current, onChange }: { current: VisualMode; onChange: (m: VisualMode) => void }) {
   return (
-    <div className="flex items-center gap-px rounded-xl bg-[#f1f5f9] p-1 shrink-0">
+    <>
       {VIEW_OPTS.map(opt => (
         <button
           key={opt.id}
           onClick={() => onChange(opt.id)}
-          className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
+          className={`rounded-[7px] px-2 py-1 text-[10px] font-semibold transition ${
             current === opt.id
-              ? "bg-white text-[#111827] shadow-sm"
+              ? "bg-white text-[#111827]"
               : "text-[#64748b] hover:text-[#111827]"
           }`}
         >
           {opt.label}
         </button>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -376,67 +362,71 @@ export function SalesWorkspace() {
     <>
       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
-      {/* TOOLBAR — Visual mode */}
-      {view === "visual" && (
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#f1f5f9] px-4 py-3">
-          <div className="flex items-center gap-1 flex-wrap">
-            {rubroConfig.categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setVisualCategory(cat.id)}
-                className={`rounded-xl px-3 py-1.5 text-[12px] font-semibold transition ${
-                  visualCategory === cat.id
-                    ? "bg-[#45b356] text-white shadow-[0_2px_8px_rgba(69,179,86,0.20)]"
-                    : "border border-[#e4e7ec] text-[#475467] hover:border-[#d0d5dd] hover:text-[#111827]"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+      {/* SEARCH CONTROL — primera línea del body, sin SheetTopbar */}
+      <div className="shrink-0 px-3 pt-3 pb-0">
+        <div className={`flex items-center gap-2.5 rounded-[14px] border bg-white px-3.5 h-[44px] transition ${
+          cashSession.isOpen
+            ? "border-[#45b356]/40 focus-within:border-[#45b356]/70 focus-within:ring-2 focus-within:ring-[#45b356]/10"
+            : "border-[#e4e9f0] focus-within:border-[#45b356]/40"
+        }`}>
+          <Search size={15} strokeWidth={2} className="shrink-0 text-[#45b356]" />
+
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={e => {
+              const v = e.target.value;
+              setQuery(v);
+              setSearchQuery(v.trim());
+            }}
+            onKeyDown={handleKeyDown}
+            onFocus={() => enterSearch()}
+            placeholder="Buscar producto, código o barra..."
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#b8c4cf]"
+            autoComplete="off"
+          />
+
+          {!cashSession.isOpen && (
+            <span className="flex shrink-0 items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-600">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+              Sin turno
+            </span>
+          )}
+
+          <div className="h-3.5 w-px shrink-0 bg-[#e4e9f0]" />
+
+          <button
+            title="Escanear código de barras"
+            className="flex shrink-0 items-center justify-center rounded-lg p-1 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#6b7280]"
+          >
+            <ScanLine size={15} strokeWidth={2} />
+          </button>
+
+          <div className="flex shrink-0 items-center gap-px rounded-[10px] bg-[#f1f5f9] p-[3px]">
+            <ViewToggle current={visualMode} onChange={setVisualMode} />
           </div>
-          <div className="flex-1" />
-          <ViewToggle current={visualMode} onChange={setVisualMode} />
+        </div>
+      </div>
+
+      {/* CATEGORÍAS RUBRO — solo en modo visual, debajo del control */}
+      {view === "visual" && rubroConfig.categories.length > 1 && (
+        <div className="shrink-0 flex items-center gap-1.5 flex-wrap px-3 pt-2">
+          {rubroConfig.categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setVisualCategory(cat.id)}
+              className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                visualCategory === cat.id
+                  ? "bg-[#45b356]/15 border border-[#45b356]/35 text-[#1e5c2a]"
+                  : "border border-[#e4e7ec] text-[#475467] hover:border-[#d0d5dd] hover:text-[#111827]"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
         </div>
       )}
-
-      {/* SEARCH ROW */}
-      <div className="flex shrink-0 h-[52px] items-center gap-3 border-b border-[#e4e9f0] bg-white px-4">
-        <Search size={17} className="shrink-0 text-[#2154d8]" />
-
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={e => {
-            const v = e.target.value;
-            setQuery(v);
-            setSearchQuery(v.trim());
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => enterSearch()}
-          placeholder="Buscar producto por nombre, código o barra..."
-          className="min-w-0 flex-1 bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#b8c4cf]"
-          autoComplete="off"
-        />
-
-        {!cashSession.isOpen && (
-          <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-500">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-            Sin turno
-          </span>
-        )}
-
-        <div className="h-4 w-px shrink-0 bg-[#eaecf0]" />
-
-        <div className="flex shrink-0 items-center gap-1">
-          <button title="Escanear código de barras" className="rounded-lg p-1.5 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#6b7280]">
-            <ScanLine size={16} />
-          </button>
-          <Helper text="Apunta el escáner al código de barras del producto para agregarlo automáticamente." />
-        </div>
-
-        {view === "dense" && <ViewToggle current={visualMode} onChange={setVisualMode} />}
-      </div>
 
       {/* CALC RESULT — debajo de la barra, como en el cierre */}
       {calcResult !== null && (
@@ -447,7 +437,7 @@ export function SalesWorkspace() {
       )}
 
       {/* RESULTS */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto pt-3">
 
         {/* ── DENSE MODE ── */}
         {view === "dense" && (
