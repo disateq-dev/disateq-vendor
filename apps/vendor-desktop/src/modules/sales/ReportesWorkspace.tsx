@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Download, Printer, BarChart2, RefreshCw } from "lucide-react";
+import { Download, FileText, Printer, BarChart2, RefreshCw } from "lucide-react";
 import type {
   TipoReporte,
   TipoPeriodo,
@@ -20,6 +20,10 @@ import {
   exportarComprobantesExcel,
   exportarTurnosExcel,
   exportarAbastecimientoExcel,
+  exportarVentasPDF,
+  exportarComprobantesPDF,
+  exportarTurnosPDF,
+  exportarAbastecimientoPDF,
 } from "../../domains/reports/reporte.exporter";
 import {
   formatearVentasTermico,
@@ -251,6 +255,16 @@ export function ReportesWorkspace() {
     }
   }
 
+  function handleExportarPDF(): void {
+    if (!reporte) return
+    switch (tipoActivo) {
+      case "VENTAS":        exportarVentasPDF(reporte as ReporteVentas); return
+      case "COMPROBANTES":  exportarComprobantesPDF(reporte as ReporteComprobantes); return
+      case "ABASTECIMIENTO":exportarAbastecimientoPDF(reporte as ReporteAbastecimiento); return
+      case "TURNOS":        exportarTurnosPDF(reporte as ReporteTurnos); return
+    }
+  }
+
   function handleImprimirTermico(): void {
     if (!reporte) return;
 
@@ -354,6 +368,18 @@ export function ReportesWorkspace() {
           >
             <Download size={13} />
             EXCEL
+          </button>
+          <button
+            onClick={handleExportarPDF}
+            disabled={!reporte}
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold ${
+              reporte
+                ? "border border-[#d7e3ff] bg-[#f0f4ff] text-[#2154d8] hover:bg-[#e7efff]"
+                : "cursor-not-allowed border border-[#e5e7eb] bg-[#f8fafc] text-[#9ca3af]"
+            }`}
+          >
+            <FileText size={13} />
+            PDF
           </button>
           <button
             onClick={handleImprimirTermico}

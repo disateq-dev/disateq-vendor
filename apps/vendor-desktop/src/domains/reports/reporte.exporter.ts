@@ -1,4 +1,10 @@
 import * as XLSX from 'xlsx'
+import {
+  formatearVentasA4,
+  formatearComprobantesA4,
+  formatearTurnosA4,
+  formatearAbastecimientoA4,
+} from './reporte.printer'
 
 import type {
   ReporteAbastecimiento,
@@ -115,4 +121,56 @@ export function exportarAbastecimientoExcel(
   } catch {
     return
   }
+}
+
+export function exportarVentasPDF(reporte: ReporteVentas): void {
+  try {
+    const html = formatearVentasA4(reporte)
+    if (!html) return
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { w.print() }, 400)
+  } catch { return }
+}
+
+export function exportarComprobantesPDF(reporte: ReporteComprobantes): void {
+  try {
+    const html = formatearComprobantesA4(reporte)
+    if (!html) return
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { w.print() }, 400)
+  } catch { return }
+}
+
+export function exportarTurnosPDF(reporte: ReporteTurnos): void {
+  try {
+    const html = formatearTurnosA4(reporte)
+    if (!html) return
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { w.print() }, 400)
+  } catch { return }
+}
+
+export function exportarAbastecimientoPDF(reporte: ReporteAbastecimiento): void {
+  try {
+    const html = formatearAbastecimientoA4(reporte)
+    if (!html) return
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { w.print() }, 400)
+  } catch { return }
 }
