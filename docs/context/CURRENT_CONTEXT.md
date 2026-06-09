@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-fix(ventas): isFocused explícito + isSearching excluye calcMode + visualItems filtra por categoría
+refactor(ventas): eliminar visualMode mixto — ViewToggle al body de Ajustes
 
 ---
 
@@ -130,8 +130,8 @@ Catálogo vivo · Pedido canónico · Valor por contexto · ClienteBuscador · C
 SearchControl canónico: caja con borde como primera línea del body — sin SheetTopbar.
 Tres modos de búsqueda: nombre/código (4 pasadas priorizadas + normalización NFD) · calculadora inline (`+−*/`) · escáner.
 Input vacío controla el ticket: ↑↓ navegar líneas · +→ incrementar · −← decrementar · Delete quitar · N nota · Ctrl+Enter cobro.
-Vista Lista (dense): filas con teclado · Vista Visual: grilla de tiles con categorías · Vista Mixto: pendiente de implementación (renderiza como Visual).
-**Tensiones activas:** visualMode "mixto" sin layout propio · rubroConfig hardcodeado.
+Vista Lista (dense): filas con teclado · Vista Visual: grilla de tiles con categorías.
+Modo de vista configurable desde Ajustes → Experiencia — no expuesto en la pantalla de ventas.
 
 ### COMPROBANTES
 Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir · PIN Admin.
@@ -198,18 +198,17 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 ## Tensiones activas
 
-- visualMode "mixto" sin layout propio — renderiza como Visual
-- rubroConfig hardcodeado en SalesWorkspace — categorías no vienen de BusinessConfig
 - UIX cierre a ciegas para rol VEN — pendiente
 - PDF descarga ReportesWorkspace — pendiente
+- HOVs existentes en localStorage sin campo category — filtro visual inactivo hasta recrear HOVs
 
 ---
 
 ## Prioridad próximas sesiones
 
-1. rubroConfig — conectar categorías desde BusinessConfig
-2. visualMode "mixto" — diseñar e implementar layout dividido
-3. PDF descarga ReportesWorkspace
+1. PDF descarga ReportesWorkspace
+2. Migración HOVs existentes — poblar campo category desde catalogs.ts
+3. UIX cierre a ciegas para rol VEN
 
 ---
 
