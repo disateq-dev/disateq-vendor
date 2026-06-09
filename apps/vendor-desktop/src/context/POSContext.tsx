@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
+import { createContext, useCallback, useContext, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { loadBusinessConfig } from "../config/business";
+import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import type { Comprobante } from "../domains/documents/comprobante.types";
 import { type Operador, type EstadoOperador } from "../domains/operator/operator.store";
 import { type Rol } from "../domains/operator/roles.store";
@@ -77,7 +78,19 @@ const POSContext = createContext<POSContextValue | null>(null);
 
 export function POSProvider({ children }: { children: ReactNode }) {
   const { sessionNotice, showNotice } = useNotice();
-  const { rubro, setRubro, visualMode, setVisualMode, printFlow, setPrintFlow } = useConfigNegocio();
+  const { rubro, setRubro, setVisualMode: persistVisualMode, printFlow, setPrintFlow } = useConfigNegocio();
+  const [visualMode, setVisualModeState] = useState<VisualMode>(() => {
+    try {
+      const raw = localStorage.getItem("disateq.pos.visualMode");
+      if (raw === "lista" || raw === "visual" || raw === "mixto") return raw;
+    } catch { /* quota */ }
+    const bc = loadBusinessConfig();
+    return RUBROS[bc.rubro].defaultVisualMode;
+  });
+  const setVisualMode = useCallback((m: VisualMode) => {
+    setVisualModeState(m);
+    persistVisualMode(m);
+  }, [persistVisualMode]);
 
   const [initState] = useState(recoverOperationalState);
   const recoveryLogRef = useRef(initState.recoveryLog);

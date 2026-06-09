@@ -1,3 +1,5 @@
+import type { Rubro } from "../data/catalogs";
+
 const LS_KEY = "disateq.config.business";
 
 export type BusinessConfig = {
@@ -8,6 +10,7 @@ export type BusinessConfig = {
   direccion:       string;
   telefono:        string;
   tasaIGV:         number;
+  rubro:           Rubro;
 };
 
 const DEFAULTS: BusinessConfig = {
@@ -18,6 +21,7 @@ const DEFAULTS: BusinessConfig = {
   direccion:       "",
   telefono:        "",
   tasaIGV:         0.18,
+  rubro:           "abarrotes",
 };
 
 export function loadBusinessConfig(): BusinessConfig {
@@ -33,6 +37,7 @@ export function loadBusinessConfig(): BusinessConfig {
       direccion:       typeof p.direccion       === "string" ? p.direccion       : DEFAULTS.direccion,
       telefono:        typeof p.telefono        === "string" ? p.telefono        : DEFAULTS.telefono,
       tasaIGV:         typeof p.tasaIGV         === "number" ? p.tasaIGV         : DEFAULTS.tasaIGV,
+      rubro:           (p.rubro === "abarrotes" || p.rubro === "food-fast" || p.rubro === "panaderia" || p.rubro === "farmacia" || p.rubro === "optica" || p.rubro === "zapateria" || p.rubro === "reparacion" || p.rubro === "celulares") ? p.rubro as Rubro : DEFAULTS.rubro,
     };
   } catch { return DEFAULTS; }
 }

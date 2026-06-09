@@ -36,6 +36,7 @@ export function crearHOV(input: CrearHOVInput): HOV {
     costoBaseActualizadoEn: now,
     estado: 'ACTIVA',
     contextoOperacionalId: input.contextoOperacionalId,
+    category: input.category,
     creadoEn: now,
     modificadoEn: now,
   }

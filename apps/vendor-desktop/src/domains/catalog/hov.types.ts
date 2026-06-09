@@ -11,6 +11,7 @@ export interface HOV {
   costoBaseActualizadoEn: string
   estado: EstadoHOV
   contextoOperacionalId: string
+  category?: string
   creadoEn: string
   modificadoEn: string
 }
@@ -22,6 +23,7 @@ export interface CrearHOVInput {
   factorConversion: number
   costoBase: number
   contextoOperacionalId: string
+  category?: string
 }
 
 export interface HOVStore {

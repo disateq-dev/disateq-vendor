@@ -59,6 +59,7 @@ export function construirCatalogo(
       requiereAutorizacion: resultado.requiereAutorizacion,
       disponibilidad,
       unidadesDisponibles,
+      category: hov.category,
     }
   })
 

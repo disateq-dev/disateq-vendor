@@ -11,6 +11,7 @@ export interface ProductoBuscable {
   hovId: string
   factorConversion: number
   requiereValorManual: boolean
+  category?: string
 }
 
 function mapearDisponibilidad(
@@ -76,6 +77,7 @@ export function obtenerProductosBuscables(
       hovId: item.hovId,
       factorConversion: item.factorConversion,
       requiereValorManual: item.valorAplicado === null,
+      category: item.category,
     }))
   } catch {
     return []

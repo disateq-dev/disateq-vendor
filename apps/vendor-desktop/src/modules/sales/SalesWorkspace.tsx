@@ -8,6 +8,8 @@ import {
   obtenerProductosBuscables,
   type ProductoBuscable
 } from "../../domains/catalog/bridge-catalogo";
+import { loadBusinessConfig } from "../../config/business";
+import { RUBROS, type VisualMode } from "../../data/catalogs";
 
 function statusChip(p: ProductoBuscable) {
   if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
@@ -101,8 +103,6 @@ function searchCatalog(
   return results;
 }
 
-import type { VisualMode } from "../../data/catalogs";
-
 type POSRuntimeContext = ReturnType<typeof usePOS> & {
   contextoOperacionalId?: string;
   identidadOperacionalId?: string;
@@ -147,7 +147,10 @@ function TileBadge({ p }: { p: ProductoBuscable }) {
 export function SalesWorkspace() {
   const posContext = usePOS() as POSRuntimeContext;
   const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, visualMode, setVisualMode } = posContext;
-  const rubroConfig = { categories: [{ id: "all", label: "Todo" }] };
+  const rubroConfig = useMemo(() => {
+    const bc = loadBusinessConfig();
+    return RUBROS[bc.rubro];
+  }, []);
 
   // "mixto" renders as visual for now — a split layout can be explored in runtime validation
   const view = visualMode === "lista" ? "dense" : "visual";

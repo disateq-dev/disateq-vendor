@@ -22,6 +22,7 @@ export interface ItemCatalogo {
   requiereAutorizacion: boolean
   disponibilidad: DisponibilidadCatalogo
   unidadesDisponibles: number
+  category?: string
 }
 
 export interface CatalogoProyectado {

@@ -15,7 +15,6 @@ const MODULES_ORDER: ActiveModule[] = [
 // ── Props ─────────────────────────────────────────────────────
 interface ContextBarProps {
   active: ActiveModule;
-  display: ActiveModule;
   onChange: (m: ActiveModule) => void;
   onHover: (m: ActiveModule | null) => void;
   cashSubView: CashSubView;
@@ -107,7 +106,7 @@ const ABAST_TABS: { key: AbastecimientoSubModule; label: string; placeholder?: b
 
 // ── CONTEXT BAR ───────────────────────────────────────────────
 export function ContextBar({
-  active, display, onChange, onHover,
+  active, onChange, onHover,
   cashSubView, onCashSubViewChange,
   abastecimientoSubModule, onAbastecimientoSubModuleChange,
   configSubView, onConfigSubViewChange,
