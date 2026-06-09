@@ -28,6 +28,18 @@ export type Operador = {
   registradoPor: string;
 };
 
+export async function hashPinAsync(pin: string): Promise<string> {
+  const data = new TextEncoder().encode(pin + ":disateq-vendor");
+  const buffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function esHash(s: string): boolean {
+  return s.length === 64 && /^[0-9a-f]+$/.test(s);
+}
+
 const LS_KEY      = "disateq:operators";
 const LS_V_KEY    = "disateq:operators:v";
 const SEED_VERSION = "5";
@@ -39,7 +51,7 @@ const SEED: Operador[] = [
     dni: "", telefono: "",
     codigoRol: "ADMIN", nombreRol: "Administrador",
     baseBloque: null,
-    estado: "ACTIVO", pin: "1234",
+    estado: "ACTIVO", pin: "b9776d7ddf459c9ad5b0e1d6ac61e27befb5e99fd62446677600d7472e88a8cc",
     capacidades: [
       "corregir_arqueos","reaperturar_cierres","regularizar_incidencias",
       "observar_comprobantes_global","anular_comprobantes","observar_continuidad",
@@ -89,6 +101,7 @@ export function cargarOperadores(): Operador[] {
       motivoEstado:     typeof o.motivoEstado === "string" ? o.motivoEstado : (typeof o.statusReason === "string" ? o.statusReason : undefined),
       fechaEstado:      typeof o.fechaEstado === "string" ? o.fechaEstado : (typeof o.statusAt === "string" ? o.statusAt : undefined),
       pin:              typeof o.pin === "string" ? o.pin : "",
+      _pinNeedsHash:    typeof o.pin === "string" && !esHash(o.pin) ? true : undefined,
       capacidades:      Array.isArray(o.capacidades) ? o.capacidades as string[] : (Array.isArray(o.capabilities) ? o.capabilities as string[] : []),
       registradoEn:     typeof o.registradoEn === "string" ? o.registradoEn : (typeof o.registeredAt === "string" ? o.registeredAt : ""),
       registradoPor:    typeof o.registradoPor === "string" ? o.registradoPor : (typeof o.registeredBy === "string" ? o.registeredBy : "SISTEMA"),
@@ -100,21 +113,35 @@ export function guardarOperadores(ops: Operador[]): void {
   try { localStorage.setItem(LS_KEY, JSON.stringify(ops)); } catch { }
 }
 
-export function verificarPin(ops: Operador[], id: string, pin: string): boolean {
-  const op = ops.find(o => o.id === id);
-  return !!op && op.estado === "ACTIVO" && op.pin.length >= 4 && op.pin === pin;
+export async function migrarPinsOperadores(ops: Operador[]): Promise<Operador[]> {
+  const sinHash = ops.filter(o => !esHash(o.pin) && o.pin.length > 0);
+  if (sinHash.length === 0) return ops;
+  const migrados = await Promise.all(
+    ops.map(async o => {
+      if (!esHash(o.pin) && o.pin.length > 0) {
+        return { ...o, pin: await hashPinAsync(o.pin) };
+      }
+      return o;
+    })
+  );
+  return migrados;
 }
 
-export function cambiarPin(ops: Operador[], id: string, currentPin: string, newPin: string): Operador[] | null {
+export function verificarPin(ops: Operador[], id: string, pinHash: string): boolean {
   const op = ops.find(o => o.id === id);
-  if (!op || op.estado !== "ACTIVO" || op.pin !== currentPin) return null;
-  return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
+  return !!op && op.estado === "ACTIVO" && op.pin.length === 64 && op.pin === pinHash;
 }
 
-export function establecerPin(ops: Operador[], id: string, newPin: string): Operador[] | null {
+export function cambiarPin(ops: Operador[], id: string, currentPinHash: string, newPinHash: string): Operador[] | null {
+  const op = ops.find(o => o.id === id);
+  if (!op || op.estado !== "ACTIVO" || op.pin !== currentPinHash) return null;
+  return ops.map(o => o.id === id ? { ...o, pin: newPinHash } : o);
+}
+
+export function establecerPin(ops: Operador[], id: string, newPinHash: string): Operador[] | null {
   const op = ops.find(o => o.id === id);
   if (!op || op.estado === "INACTIVO") return null;
-  return ops.map(o => o.id === id ? { ...o, pin: newPin } : o);
+  return ops.map(o => o.id === id ? { ...o, pin: newPinHash } : o);
 }
 
 export function establecerCapacidades(ops: Operador[], id: string, capacidades: string[]): Operador[] {

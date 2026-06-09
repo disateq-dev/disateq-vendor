@@ -1,9 +1,10 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   type Operador, type EstadoOperador,
   cargarOperadores, verificarPin, cambiarPin, establecerPin,
   guardarOperadores, estaBloqueOcupado, asignarBloque, liberarBloque,
   establecerCapacidades, siguienteCodigoOperador,
+  hashPinAsync, migrarPinsOperadores,
 } from "../domains/operator/operator.store";
 import {
   type Rol,
@@ -20,12 +21,25 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
   const operatorsRef = useRef(operators);
   operatorsRef.current = operators;
 
+  // Migración idempotente de PINs en texto plano al montar
+  useEffect(() => {
+    migrarPinsOperadores(operatorsRef.current).then(migrados => {
+      const cambio = migrados.some((o, i) => o.pin !== operatorsRef.current[i]?.pin);
+      if (cambio) {
+        guardarOperadores(migrados);
+        setOperators(migrados);
+      }
+    }).catch(() => { /* migración silenciosa */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [activeOperator, setActiveOperator] = useState<Operador | null>(null);
   const activeOperatorRef = useRef<Operador | null>(null);
   activeOperatorRef.current = activeOperator;
 
-  const loginOperator = useCallback((id: string, pin: string): boolean => {
-    const ok = verificarPin(operatorsRef.current, id, pin);
+  const loginOperator = useCallback(async (id: string, pin: string): Promise<boolean> => {
+    const pinHash = await hashPinAsync(pin);
+    const ok = verificarPin(operatorsRef.current, id, pinHash);
     const op = operatorsRef.current.find(o => o.id === id);
     if (ok && op) {
       setActiveOperator(op);
@@ -52,10 +66,11 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     if (op) addOpLog(`[LOGOUT] ${op.nombreCompleto} cerró sesión`);
   }, [addOpLog]);
 
-  const changeOperatorPin = useCallback((currentPin: string, newPin: string): boolean => {
+  const changeOperatorPin = useCallback(async (currentPin: string, newPin: string): Promise<boolean> => {
     const op = activeOperatorRef.current;
     if (!op) return false;
-    const updated = cambiarPin(operatorsRef.current, op.id, currentPin, newPin);
+    const [currentHash, newHash] = await Promise.all([hashPinAsync(currentPin), hashPinAsync(newPin)]);
+    const updated = cambiarPin(operatorsRef.current, op.id, currentHash, newHash);
     if (!updated) return false;
     guardarOperadores(updated);
     setOperators(updated);
@@ -63,8 +78,9 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     return true;
   }, [addOpLog]);
 
-  const changeOperatorPinById = useCallback((id: string, currentPin: string, newPin: string): boolean => {
-    const updated = cambiarPin(operatorsRef.current, id, currentPin, newPin);
+  const changeOperatorPinById = useCallback(async (id: string, currentPin: string, newPin: string): Promise<boolean> => {
+    const [currentHash, newHash] = await Promise.all([hashPinAsync(currentPin), hashPinAsync(newPin)]);
+    const updated = cambiarPin(operatorsRef.current, id, currentHash, newHash);
     if (!updated) return false;
     guardarOperadores(updated);
     setOperators(updated);
@@ -73,8 +89,9 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     return true;
   }, [addOpLog]);
 
-  const resetOperatorPin = useCallback((id: string, newPin: string, motivo?: string): boolean => {
-    const updated = establecerPin(operatorsRef.current, id, newPin);
+  const resetOperatorPin = useCallback(async (id: string, newPin: string, motivo?: string): Promise<boolean> => {
+    const newHash = await hashPinAsync(newPin);
+    const updated = establecerPin(operatorsRef.current, id, newHash);
     if (!updated) return false;
     guardarOperadores(updated);
     setOperators(updated);

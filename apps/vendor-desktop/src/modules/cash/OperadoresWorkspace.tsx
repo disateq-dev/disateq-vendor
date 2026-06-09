@@ -344,11 +344,12 @@ function PanelGestion({ selectedId, onSelect }: {
     if (!ok) setBlockError(`Bloque ${selected.baseBloque} ya asignado a otro operador activo`);
   }
 
-  function savePinViewMode() {
+  async function savePinViewMode() {
     if (!selected) return;
     if (pinInput.length < 4) { setPinError("Mínimo 4 dígitos"); return; }
     if (pinInput !== pinConfirm) { setPinError("Los PINs no coinciden"); return; }
-    resetOperatorPin(selected.id, pinInput);
+    const ok = await resetOperatorPin(selected.id, pinInput);
+    if (!ok) { setPinError("Operador inválido"); return; }
     setPinOpen(false); setPinInput(""); setPinConfirm(""); setPinError("");
   }
 

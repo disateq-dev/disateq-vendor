@@ -51,11 +51,11 @@ interface POSContextValue {
   showNotice: (msg: string) => void;
   operators: Operador[];
   activeOperator: Operador | null;
-  loginOperator: (id: string, pin: string) => boolean;
+  loginOperator: (id: string, pin: string) => Promise<boolean>;
   logoutOperator: () => void;
-  changeOperatorPin: (currentPin: string, newPin: string) => boolean;
-  changeOperatorPinById: (id: string, currentPin: string, newPin: string) => boolean;
-  resetOperatorPin: (id: string, newPin: string) => boolean;
+  changeOperatorPin: (currentPin: string, newPin: string) => Promise<boolean>;
+  changeOperatorPinById: (id: string, currentPin: string, newPin: string) => Promise<boolean>;
+  resetOperatorPin: (id: string, newPin: string) => Promise<boolean>;
   createOperator: (data: { apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string; roleCode: string; roleName: string; blockBase: number | null }) => Operador;
   updateOperatorData: (id: string, data: { apellidos: string; nombres: string; alias: string; dni?: string; telefono?: string; roleCode: string; roleName: string; blockBase: number | null }) => boolean;
   setOperatorStatus: (id: string, status: EstadoOperador, reason?: string) => boolean;

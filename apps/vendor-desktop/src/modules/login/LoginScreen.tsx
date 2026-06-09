@@ -123,10 +123,10 @@ export function LoginScreen() {
     setTimeout(() => aliasSelectRef.current?.focus(), 0);
   }
 
-  function attemptLogin(p: string) {
+  async function attemptLogin(p: string) {
     const id = selectedIdRef.current;
     if (!id || p.length < 4) return;
-    const ok = loginRef.current(id, p);
+    const ok = await loginRef.current(id, p);
     if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
   }
 
@@ -138,9 +138,9 @@ export function LoginScreen() {
     setPin(next); setError(null);
     if (next.length === 6) {
       const id = selectedIdRef.current;
-      setTimeout(() => {
+      setTimeout(async () => {
         if (!id) return;
-        const ok = loginRef.current(id, next);
+        const ok = await loginRef.current(id, next);
         if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
       }, 0);
     }
@@ -164,9 +164,10 @@ export function LoginScreen() {
     const errNuevo = validatePin(pcPinNuevo);
     if (errNuevo)        { setPcError(`Nuevo PIN: ${errNuevo}`);            pcPinNuevoRef.current?.focus();  return; }
     if (pcPinNuevo !== pcPinConfirm) { setPcError("Los PINes no coinciden"); pcPinConfRef.current?.focus(); return; }
-    const ok = resetOperatorPin(id, pcPinNuevo);
-    if (!ok) { setPcError("Operador inválido"); aliasSelectRef.current?.focus(); return; }
-    setPcSuccess(true);
+    resetOperatorPin(id, pcPinNuevo).then(ok => {
+      if (!ok) { setPcError("Operador inválido"); aliasSelectRef.current?.focus(); return; }
+      setPcSuccess(true);
+    }).catch(() => setPcError("Error al actualizar PIN."));
   }
 
   // ── Keyboard handler global ───────────────────────────────────────
@@ -202,8 +203,9 @@ export function LoginScreen() {
           e.preventDefault();
           const id = selectedIdRef.current; const p = pinStateRef.current;
           if (!id || p.length < 4) return;
-          const ok = loginRef.current(id, p);
-          if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
+          loginRef.current(id, p).then(ok => {
+            if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
+          }).catch(() => { setError("Error al verificar PIN."); setPin(""); });
         }
       }
     }
