@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { usePOS, type DocRange } from "../context/POSContext";
+import { usePOS } from "../context/POSContext";
 
 function useClock() {
   const [now, setNow] = useState(() => new Date());
@@ -25,22 +25,12 @@ function liveTimer(from: Date): string {
   return `${h}h${mn}m`;
 }
 
-function fmtRange(r: DocRange): string {
-  const p = (n: number) => String(n).padStart(4, "0");
-  return `${r.series}·${p(r.first)}→${p(r.last)}`;
-}
-
 const SEP = <span className="mx-[6px] text-[#1e3060]">·</span>;
 
 export function ShortcutsBar() {
-  const { cashSession, sessionStats, cashMoves } = usePOS();
+  const { cashSession, activeOperator } = usePOS();
   const { isOpen, cashBox, terminal, openedAt } = cashSession;
-  const isCtg = !!cashBox && cashBox.type !== "normal";
   const now = useClock();
-
-  const ingTotal = cashMoves.reduce((s, mv) => mv.type === "ingreso" ? s + mv.amount : s, 0);
-  const egTotal  = cashMoves.reduce((s, mv) => mv.type === "egreso"  ? s + mv.amount : s, 0);
-  const hasMoves = cashMoves.length > 0;
 
   const [duration, setDuration] = useState("");
   useEffect(() => {
@@ -51,58 +41,43 @@ export function ShortcutsBar() {
     return () => clearInterval(id);
   }, [openedAt]);
 
-  const ranges = (Object.values(sessionStats.docRanges) as (DocRange | undefined)[])
-    .filter((r): r is DocRange => r != null);
-
   return (
     <div className="flex h-[26px] shrink-0 items-center justify-between bg-[#0a1628] px-5">
 
-      {/* LEFT — telemetría operacional */}
-      <span className="flex items-center select-none text-[9px] font-bold uppercase tracking-[0.13em]">
+      {/* LEFT — estado del turno */}
+      <span className="flex items-center select-none text-[10.5px] font-semibold uppercase tracking-[0.10em] text-white/50">
         {isOpen && cashBox ? (
           <>
             <span className="mr-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#78C487]" />
-            <span className="text-[#78C487]">CAJA {cashBox.code}</span>
-            {isCtg && (
-              <span className="ml-2 inline-flex items-center rounded bg-amber-500/25 px-1.5 py-px text-[7.5px] font-extrabold tracking-widest text-amber-400">
-                CTG
-              </span>
-            )}
+            <span className="text-[#78C487]">TURNO ABIERTO</span>
             {SEP}
-            <span className="text-[#3d5a8a]">{terminal}</span>
-            {duration && <>{SEP}<span className="text-[#3d5a8a]">{duration}</span></>}
+            <span>CAJA {cashBox.code}</span>
             {SEP}
-            <span className="text-[#3d5a8a]">{sessionStats.count}&nbsp;ops</span>
-            {hasMoves && (
+            <span>{activeOperator?.nombreCompleto ?? terminal}</span>
+            {openedAt && (
               <>
                 {SEP}
-                <span className="text-[#4ade80]/70">↑{Math.round(ingTotal)}</span>
-                <span className="ml-1 text-red-400/70">↓{Math.round(egTotal)}</span>
+                <span>{String(openedAt.getHours()).padStart(2,"0")}:{String(openedAt.getMinutes()).padStart(2,"0")}</span>
               </>
             )}
-            {ranges.length > 0 && (
-              <>
-                {SEP}
-                {ranges.map(r => (
-                  <span key={r.series} className="text-[#2d4a7a]">{fmtRange(r)}</span>
-                ))}
-              </>
-            )}
+            {duration && <>{SEP}<span>{duration}</span></>}
           </>
         ) : (
-          <span className="text-[#2d3f5c]">○&nbsp;&nbsp;sin turno operativo</span>
+          <span>○&nbsp;&nbsp;SIN TURNO OPERATIVO</span>
         )}
       </span>
 
-      {/* RIGHT — fecha/hora compacta + versión */}
+      {/* RIGHT — reloj · versión · firma */}
       <div className="flex items-center gap-3 select-none">
-        <span className="tabular-nums text-[9px] font-semibold text-[#3d5280]">
+        <span className="tabular-nums text-[10px] font-semibold text-white">
           {formatFootClock(now)}
         </span>
-        <span className="text-[#1e3060]">|</span>
-        <span className="text-[9px] font-semibold text-[#2d3f5c]">
+        <span className="text-white/30">|</span>
+        <span className="text-[10px] font-semibold text-white">
           DisateQ VENDOR v1.0
         </span>
+        <span className="text-white/30">|</span>
+        <span className="text-[10px] font-bold text-white">@fhertejada™</span>
       </div>
 
     </div>

@@ -5,6 +5,7 @@ import { useCapacidad } from "../../hooks/useCapacidad";
 import { convertirAFormal } from "../../domains/documents/comprobante.service";
 import { comprobanteStore } from "../../domains/documents/comprobante.store";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
+import { useAutorizacion } from "../../hooks/useAutorizacion";
 
 type FiltroTipo = "TODOS" | TipoComprobante;
 type FiltroEstado = "TODOS" | "EMITIDO" | "ANULADO" | "REFERENCIADO";
@@ -396,6 +397,7 @@ export function ComprobantesWorkspace() {
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("TODOS");
   const puedeAnular = useCapacidad("anular_comprobantes");
   const puedeConvertir = useCapacidad("anular_comprobantes");
+  const { solicitarAdmin, PinAdminModal } = useAutorizacion();
   const [refreshNonce, setRefreshNonce] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -471,24 +473,37 @@ export function ComprobantesWorkspace() {
 
   const handleVoid = useCallback((motivo: string) => {
     if (!selectedId || !motivo.trim()) return;
-    voidComprobante(selectedId, motivo.trim());
-    setSelectedId(null);
-  }, [selectedId, voidComprobante]);
+    const alias = selected?.emitidoPor ?? "Operador";
+    solicitarAdmin(
+      "Anular comprobante",
+      alias,
+      () => {
+        voidComprobante(selectedId, motivo.trim());
+        setSelectedId(null);
+      }
+    );
+  }, [selectedId, selected, solicitarAdmin, voidComprobante]);
 
   const handleConvertir = useCallback((tipo: "BOLETA" | "FACTURA") => {
     if (!selected) return;
-
-    try {
-      const serie = tipo === "BOLETA" ? "B001" : "F001";
-      const operador = cashSession.operator || "default";
-      const nuevo = convertirAFormal(selected.id, tipo, serie, selected.receptor, operador);
-      setRefreshNonce(prev => prev + 1);
-      setSelectedId(null);
-      showNotice(`${nuevo.serie}-${pad8(nuevo.correlativo)} generado correctamente`);
-    } catch (error) {
-      showNotice(error instanceof Error ? error.message : "No se pudo convertir el comprobante");
-    }
-  }, [cashSession.operator, selected, showNotice]);
+    const alias = cashSession.operator ?? "Operador";
+    solicitarAdmin(
+      `Convertir a ${tipo}`,
+      alias,
+      () => {
+        try {
+          const serie = tipo === "BOLETA" ? "B001" : "F001";
+          const operador = cashSession.operator || "default";
+          const nuevo = convertirAFormal(selected.id, tipo, serie, selected.receptor, operador);
+          setRefreshNonce(prev => prev + 1);
+          setSelectedId(null);
+          showNotice(`${nuevo.serie}-${pad8(nuevo.correlativo)} generado correctamente`);
+        } catch (error) {
+          showNotice(error instanceof Error ? error.message : "No se pudo convertir el comprobante");
+        }
+      }
+    );
+  }, [cashSession.operator, selected, solicitarAdmin, showNotice]);
 
   const emptyTitle = vista === "sesion"
     ? (cashSession.isOpen ? "Sin comprobantes en esta sesion" : "Sin sesion activa")
@@ -500,38 +515,43 @@ export function ComprobantesWorkspace() {
 
   return (
     <section className="flex h-full w-full gap-3">
+      <PinAdminModal />
       <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C05050]/50 bg-[#FDFCF9]">
-        <header className="flex shrink-0 items-center gap-2 border-b border-[#C05050]/15 bg-[#FBF4F4] px-4 py-2.5">
-          <span className="text-[14px] font-semibold uppercase tracking-tight leading-none text-[#121416]">COMPROBANTES</span>
-          {cashSession.isOpen && (
-            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest text-emerald-700">
-              SESION ACTIVA
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-3">
-            <div className="flex items-center rounded-full border border-[#e4e9f0] bg-white p-1">
-              <button
-                onClick={() => setVista("sesion")}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
-                  vista === "sesion" ? "bg-[#2154d8] text-white" : "text-[#6b7280] hover:text-[#374151]"
-                }`}
-              >
-                <ReceiptText size={12} />
-                Sesion
-              </button>
-              <button
-                onClick={() => setVista("historial")}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
-                  vista === "historial" ? "bg-[#2154d8] text-white" : "text-[#6b7280] hover:text-[#374151]"
-                }`}
-              >
-                <FileText size={12} />
-                Historial
-              </button>
-            </div>
-            <span className="text-[11px] text-[#9ca3af]">{docsFiltrados.length} docs</span>
-          </div>
+        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#C05050]/15 bg-[#FBF4F4] px-4">
+          <ReceiptText size={13} strokeWidth={2} className="shrink-0 text-[#C05050]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">COMPROBANTES</span>
         </header>
+
+        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-[#f0e4e4] px-4 py-2">
+          <div className="flex items-center rounded-full border border-[#e4e9f0] bg-white p-0.5">
+            <button
+              onClick={() => setVista("sesion")}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+                vista === "sesion" ? "bg-[#C05050] text-white" : "text-[#6b7280] hover:text-[#374151]"
+              }`}
+            >
+              <ReceiptText size={11} strokeWidth={2} />
+              Sesión
+            </button>
+            <button
+              onClick={() => setVista("historial")}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+                vista === "historial" ? "bg-[#C05050] text-white" : "text-[#6b7280] hover:text-[#374151]"
+              }`}
+            >
+              <FileText size={11} strokeWidth={2} />
+              Historial
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            {cashSession.isOpen && (
+              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest text-emerald-700">
+                SESIÓN ACTIVA
+              </span>
+            )}
+            <span className="text-[10px] font-semibold text-[#9ca3af] tabular-nums">{docsFiltrados.length} docs</span>
+          </div>
+        </div>
 
         <div className="shrink-0 border-b border-[#f0e4e4] px-3 py-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -643,13 +663,9 @@ export function ComprobantesWorkspace() {
       </div>
 
       <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C05050]/50 bg-[#FDFCF9]">
-        <header className="flex shrink-0 items-center gap-2 border-b border-[#C05050]/15 bg-[#FBF4F4] px-4 py-2.5">
-          <span className="text-[14px] font-semibold uppercase tracking-tight leading-none text-[#121416]">DETALLE</span>
-          {selected && (
-            <span className="truncate text-[11px] font-semibold tabular-nums text-[#6b7280]">
-              {selected.serie}-{pad8(selected.correlativo)}
-            </span>
-          )}
+        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#C05050]/15 bg-[#FBF4F4] px-4">
+          <FileText size={13} strokeWidth={2} className="shrink-0 text-[#C05050]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">DETALLE</span>
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
