@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useState, useEffect, useMemo, u
 import { loadBusinessConfig } from "../config/business";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import type { Comprobante } from "../domains/documents/comprobante.types";
+import { migrarCategoryHOVs } from "../domains/catalog/hov.migration";
 import { type Operador, type EstadoOperador } from "../domains/operator/operator.store";
 import { type Rol } from "../domains/operator/roles.store";
 import { type TurnEvent } from "../domains/cash/turn-events.store";
@@ -111,6 +112,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   } = useBitacora({ cashSessionRef });
 
   useEffect(() => {
+    migrarCategoryHOVs()
     if (recoveryLogRef.current) {
       addOpLog(`[RECOVERY] ${recoveryLogRef.current}`);
       recoveryLogRef.current = null;

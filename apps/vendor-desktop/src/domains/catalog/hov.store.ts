@@ -52,6 +52,10 @@ export function existeHOVActiva(productoId: string, unidadDespacho: string): boo
   )
 }
 
+export function getAllHOVs(): HOV[] {
+  return store.hovs
+}
+
 export function guardarHOV(hov: HOV): HOV {
   const idx = store.hovs.findIndex(item => item.id === hov.id)
   if (idx >= 0) {
