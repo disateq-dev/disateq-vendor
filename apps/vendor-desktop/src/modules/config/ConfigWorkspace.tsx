@@ -7,7 +7,7 @@ import { usePOS } from "../../context/POSContext";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/catalogs";
 import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
 // ops.ts reservado para configuraciones futuras
-import { pinAdminStore } from "../../config/pin-admin.store";
+import { pinAutorizacionStore } from "../../config/pin-autorizacion.store";
 import { accesosStore } from "../../domains/operator/accesos.store";
 import { type ConfigSubView } from "../../App";
 
@@ -68,8 +68,8 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
 
   // ── OPERACIÓN ─────────────────────────────────────────────────
   const { activeOperator } = usePOS();
-  const [adminConfigured,   setAdminConfigured]   = useState(() => pinAdminStore.estaConfigurado());
-  const [adminMeta,         setAdminMeta]         = useState(() => pinAdminStore.obtenerMeta());
+  const [adminConfigured,   setAdminConfigured]   = useState(() => pinAutorizacionStore.estaConfigurado());
+  const [adminMeta,         setAdminMeta]         = useState(() => pinAutorizacionStore.obtenerMeta());
   const [adminPinNuevo,     setAdminPinNuevo]     = useState("");
   const [adminPinConfirm,   setAdminPinConfirm]   = useState("");
   const [adminPinError,     setAdminPinError]     = useState<string | null>(null);
@@ -80,14 +80,14 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     if (!/^\d{6}$/.test(adminPinNuevo))           { setAdminPinError("Exactamente 6 dígitos numéricos"); return; }
     if (adminPinNuevo !== adminPinConfirm)         { setAdminPinError("Los PINes no coinciden"); return; }
     const codigo = activeOperator?.codigoOperador ?? activeOperator?.alias ?? "ADMIN";
-    await pinAdminStore.configurar(adminPinNuevo, codigo);
+    await pinAutorizacionStore.configurar(adminPinNuevo, codigo);
     accesosStore.registrar({
-      tipo: "PIN_ADMIN_CONFIGURADO",
+      tipo: "PIN_AUTORIZACION_CONFIGURADO",
       operadorAlias: codigo,
-      operacion: "Configuración PIN Admin",
+      operacion: "Configuración PIN de Autorización",
     });
     setAdminConfigured(true);
-    setAdminMeta(pinAdminStore.obtenerMeta());
+    setAdminMeta(pinAutorizacionStore.obtenerMeta());
     setAdminPinNuevo("");
     setAdminPinConfirm("");
     setAdminSaved(true);
@@ -214,7 +214,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
               <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${adminConfigured ? "bg-emerald-500" : "bg-amber-400"}`} />
               <div className="flex flex-col gap-0.5">
                 <p className={`text-[11px] font-bold uppercase tracking-wide ${adminConfigured ? "text-emerald-700" : "text-amber-700"}`}>
-                  {adminConfigured ? "PIN Admin configurado" : "PIN Admin no configurado"}
+                  {adminConfigured ? "PIN de Autorización configurado" : "PIN de Autorización no configurado"}
                 </p>
                 {adminConfigured && adminMeta ? (
                   <p className="text-[10px] text-emerald-600">
@@ -231,7 +231,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
             {/* Formulario */}
             <div className="flex flex-col gap-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
-                {adminConfigured ? "Cambiar PIN Admin" : "Configurar PIN Admin"}
+                {adminConfigured ? "Cambiar PIN de Autorización" : "Configurar PIN de Autorización"}
               </p>
 
               <div className="flex flex-col gap-1.5">
@@ -291,14 +291,14 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 }`}
               >
                 {adminSaved
-                  ? <><Check size={12} strokeWidth={2.5} /> PIN Admin guardado</>
-                  : adminConfigured ? "Cambiar PIN Admin" : "Configurar PIN Admin"
+                  ? <><Check size={12} strokeWidth={2.5} /> PIN de Autorización guardado</>
+                  : adminConfigured ? "Cambiar PIN de Autorización" : "Configurar PIN de Autorización"
                 }
               </button>
             </div>
 
             <p className="text-[10px] text-[#b0bac8] leading-relaxed">
-              El PIN Admin autoriza operaciones sensibles en todo el sistema.
+              El PIN de Autorización autoriza operaciones sensibles en todo el sistema.
               Solo operadores con acceso total pueden configurarlo.
             </p>
           </div>

@@ -302,7 +302,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const contadoYapeRef = useRef<HTMLInputElement>(null);
   const contadoTarRef  = useRef<HTMLInputElement>(null);
 
-  const { solicitarAdmin, PinAdminModal } = useAutorizacion();
+  const { solicitarAutorizacion, PinAutorizacionModal } = useAutorizacion();
   const [cierreAutorizado, setCierreAutorizado] = useState(false);
 
   useEffect(() => {
@@ -521,7 +521,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   function handleSaveCorrection() {
     if (!canCorrectApertura) return;
-    solicitarAdmin(
+    solicitarAutorizacion(
       "Corrección de datos de apertura",
       activeOperator?.alias ?? operatorName,
       () => {
@@ -735,7 +735,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
-      <PinAdminModal />
+      <PinAutorizacionModal />
 
       {/* ── LEFT ── */}
       <div className="flex w-[320px] shrink-0 flex-col gap-2">
@@ -1123,7 +1123,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             <>
               <button
                 onClick={() =>
-                  solicitarAdmin(
+                  solicitarAutorizacion(
                     "Confirmar cierre de turno",
                     activeOperator?.alias ?? operatorName,
                     () => setClosingStage(5)

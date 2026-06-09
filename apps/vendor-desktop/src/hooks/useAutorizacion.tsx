@@ -1,13 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 import { Shield, X, AlertTriangle } from "lucide-react";
-import { pinAdminStore } from "../config/pin-admin.store";
+import { pinAutorizacionStore } from "../config/pin-autorizacion.store";
 import { accesosStore } from "../domains/operator/accesos.store";
 
 const MAX_INTENTOS = 3;
 
 interface UseAutorizacionReturn {
-  solicitarAdmin: (operacion: string, operadorAlias: string, onAutorizado: () => void) => void;
-  PinAdminModal: React.FC;
+  solicitarAutorizacion: (operacion: string, operadorAlias: string, onAutorizado: () => void) => void;
+  PinAutorizacionModal: React.FC;
 }
 
 export function useAutorizacion(): UseAutorizacionReturn {
@@ -21,7 +21,7 @@ export function useAutorizacion(): UseAutorizacionReturn {
   const operadorAliasRef = useRef("");
   const onAutorizadoRef  = useRef<() => void>(() => {});
 
-  const solicitarAdmin = useCallback((
+  const solicitarAutorizacion = useCallback((
     operacion: string,
     operadorAlias: string,
     onAutorizado: () => void
@@ -45,14 +45,14 @@ export function useAutorizacion(): UseAutorizacionReturn {
   }, []);
 
   const confirmar = useCallback(async () => {
-    if (!pinAdminStore.estaConfigurado()) {
-      setError("PIN Admin no configurado. Configure en AJUSTES → OPERACIÓN.");
+    if (!pinAutorizacionStore.estaConfigurado()) {
+      setError("PIN de Autorización no configurado. Configure en AJUSTES → OPERACIÓN.");
       return;
     }
-    const ok = await pinAdminStore.verificar(pin);
+    const ok = await pinAutorizacionStore.verificar(pin);
     if (ok) {
       accesosStore.registrar({
-        tipo: "PIN_ADMIN_USADO",
+        tipo: "PIN_AUTORIZACION_USADO",
         operadorAlias: operadorAliasRef.current,
         operacion: operacionRef.current,
       });
@@ -63,21 +63,21 @@ export function useAutorizacion(): UseAutorizacionReturn {
       setIntentos(nuevosIntentos);
       setPin("");
       accesosStore.registrar({
-        tipo: "PIN_ADMIN_FALLIDO",
+        tipo: "PIN_AUTORIZACION_FALLIDO",
         operadorAlias: operadorAliasRef.current,
         operacion: operacionRef.current,
         detalle: `Intento ${nuevosIntentos} de ${MAX_INTENTOS}`,
       });
       if (nuevosIntentos >= MAX_INTENTOS) {
         setAlerta(true);
-        setError(`${MAX_INTENTOS} intentos fallidos. Verifique el PIN Admin.`);
+        setError(`${MAX_INTENTOS} intentos fallidos. Verifique el PIN de Autorización.`);
       } else {
         setError(`PIN incorrecto · intento ${nuevosIntentos} de ${MAX_INTENTOS}`);
       }
     }
   }, [pin, intentos, cerrar]);
 
-  const PinAdminModal: React.FC = useCallback(() => {
+  const PinAutorizacionModal: React.FC = useCallback(() => {
     if (!visible) return null;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
@@ -99,7 +99,7 @@ export function useAutorizacion(): UseAutorizacionReturn {
 
             <p className="text-[11px] text-[#6b7280] leading-snug">
               <span className="font-semibold text-[#374151]">{operacionRef.current}</span>
-              {" "}requiere PIN de administrador.
+              {" "}requiere PIN de Autorización.
             </p>
 
             {alerta && (
@@ -113,7 +113,7 @@ export function useAutorizacion(): UseAutorizacionReturn {
 
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
-                PIN Admin (6 dígitos)
+                PIN Autorización (6 dígitos)
               </span>
               <input
                 autoFocus
@@ -193,5 +193,5 @@ export function useAutorizacion(): UseAutorizacionReturn {
     );
   }, [visible, pin, error, alerta, cerrar, confirmar]) as React.FC;
 
-  return { solicitarAdmin, PinAdminModal };
+  return { solicitarAutorizacion, PinAutorizacionModal };
 }

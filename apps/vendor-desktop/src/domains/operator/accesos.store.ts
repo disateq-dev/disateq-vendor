@@ -6,9 +6,9 @@ export type TipoEventoAcceso =
   | "LOGIN_FAIL"
   | "PIN_CAMBIADO"
   | "PIN_RESETEADO"
-  | "PIN_ADMIN_USADO"
-  | "PIN_ADMIN_FALLIDO"
-  | "PIN_ADMIN_CONFIGURADO";
+  | "PIN_AUTORIZACION_USADO"
+  | "PIN_AUTORIZACION_FALLIDO"
+  | "PIN_AUTORIZACION_CONFIGURADO";
 
 export type EventoAcceso = {
   id: string;

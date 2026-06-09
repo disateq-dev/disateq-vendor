@@ -397,7 +397,7 @@ export function ComprobantesWorkspace() {
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("TODOS");
   const puedeAnular = useCapacidad("anular_comprobantes");
   const puedeConvertir = useCapacidad("anular_comprobantes");
-  const { solicitarAdmin, PinAdminModal } = useAutorizacion();
+  const { solicitarAutorizacion, PinAutorizacionModal } = useAutorizacion();
   const [refreshNonce, setRefreshNonce] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -474,7 +474,7 @@ export function ComprobantesWorkspace() {
   const handleVoid = useCallback((motivo: string) => {
     if (!selectedId || !motivo.trim()) return;
     const alias = selected?.emitidoPor ?? "Operador";
-    solicitarAdmin(
+    solicitarAutorizacion(
       "Anular comprobante",
       alias,
       () => {
@@ -482,12 +482,12 @@ export function ComprobantesWorkspace() {
         setSelectedId(null);
       }
     );
-  }, [selectedId, selected, solicitarAdmin, voidComprobante]);
+  }, [selectedId, selected, solicitarAutorizacion, voidComprobante]);
 
   const handleConvertir = useCallback((tipo: "BOLETA" | "FACTURA") => {
     if (!selected) return;
     const alias = cashSession.operator ?? "Operador";
-    solicitarAdmin(
+    solicitarAutorizacion(
       `Convertir a ${tipo}`,
       alias,
       () => {
@@ -503,7 +503,7 @@ export function ComprobantesWorkspace() {
         }
       }
     );
-  }, [cashSession.operator, selected, solicitarAdmin, showNotice]);
+  }, [cashSession.operator, selected, solicitarAutorizacion, showNotice]);
 
   const emptyTitle = vista === "sesion"
     ? (cashSession.isOpen ? "Sin comprobantes en esta sesion" : "Sin sesion activa")
@@ -515,7 +515,7 @@ export function ComprobantesWorkspace() {
 
   return (
     <section className="flex h-full w-full gap-3">
-      <PinAdminModal />
+      <PinAutorizacionModal />
       <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C05050]/50 bg-[#FDFCF9]">
         <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#C05050]/15 bg-[#FBF4F4] px-4">
           <ReceiptText size={13} strokeWidth={2} className="shrink-0 text-[#C05050]" />
