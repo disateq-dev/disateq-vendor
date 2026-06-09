@@ -284,16 +284,20 @@ export function ReportesWorkspace() {
 
   return (
     <section className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#2154d8]/20 bg-[#FDFCF9]">
-      <header className="flex items-center gap-2 border-b border-[#2154d8]/15 bg-[#f0f4ff] px-4 py-3">
-        <BarChart2 size={18} className="text-[#2154d8]" />
-        <span className="text-[14px] font-black uppercase tracking-widest text-[#1a2d4e]">REPORTES</span>
-        <span className="rounded-full bg-[#2154d8] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-          {tipoActivo}
-        </span>
-        {generando && <RefreshCw size={14} className="animate-spin text-[#2154d8]" />}
+      <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#2154d8]/15 bg-[#f0f4ff] px-4">
+        <BarChart2 size={13} strokeWidth={2} className="shrink-0 text-[#2154d8]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">REPORTES</span>
       </header>
 
       <div className="flex flex-wrap items-center gap-3 border-b border-[#e8edf5] bg-white px-4 py-2.5">
+        <div className="flex items-center gap-2 shrink-0">
+          {generando
+            ? <RefreshCw size={12} strokeWidth={2} className="animate-spin text-[#2154d8]" />
+            : <span className="h-1.5 w-1.5 rounded-full bg-[#2154d8]" />
+          }
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#2154d8]">{tipoActivo}</span>
+        </div>
+        <div className="h-4 w-px bg-[#e0e8f2]" />
         <div className="flex flex-wrap items-center gap-1.5">
           <ControlChip label="VENTAS" active={tipoActivo === "VENTAS"} onClick={() => setTipoActivo("VENTAS")} />
           <ControlChip label="COMPROBANTES" active={tipoActivo === "COMPROBANTES"} onClick={() => setTipoActivo("COMPROBANTES")} />
