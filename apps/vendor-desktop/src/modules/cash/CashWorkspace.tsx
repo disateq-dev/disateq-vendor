@@ -23,6 +23,7 @@ import {
   loadSessionHistory, type SessionEntry,
 } from "./services/session-history.service";
 import { moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
+import { useAutorizacion } from "../../hooks/useAutorizacion";
 
 // ── helpers ────────────────────────────────────────────────────
 
@@ -301,6 +302,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const contadoYapeRef = useRef<HTMLInputElement>(null);
   const contadoTarRef  = useRef<HTMLInputElement>(null);
 
+  const { solicitarAdmin, PinAdminModal } = useAutorizacion();
   const [cierreAutorizado, setCierreAutorizado] = useState(false);
 
   useEffect(() => {
@@ -518,15 +520,21 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   function handleSaveCorrection() {
     if (!canCorrectApertura) return;
-    const amt = parseFloat(editAperturaInput) || 0;
-    correctAperturaData(
-      amt,
-      editMotivo.trim() || undefined,
-      editObservacion.trim() || undefined,
-      editRefOp.trim() || undefined,
+    solicitarAdmin(
+      "Corrección de datos de apertura",
+      activeOperator?.alias ?? operatorName,
+      () => {
+        const amt = parseFloat(editAperturaInput) || 0;
+        correctAperturaData(
+          amt,
+          editMotivo.trim() || undefined,
+          editObservacion.trim() || undefined,
+          editRefOp.trim() || undefined,
+        );
+        setEditingApertura(false);
+        showNotice("Datos de apertura corregidos");
+      }
     );
-    setEditingApertura(false);
-    showNotice("Datos de apertura corregidos");
   }
 
   function cancelEditApertura() {
@@ -720,6 +728,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
+      <PinAdminModal />
 
       {/* ── LEFT ── */}
       <div className="flex w-[320px] shrink-0 flex-col gap-2">
@@ -1106,7 +1115,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
           ) : closingStage === 4 ? (
             <>
               <button
-                onClick={() => setClosingStage(5)}
+                onClick={() =>
+                  solicitarAdmin(
+                    "Confirmar cierre de turno",
+                    activeOperator?.alias ?? operatorName,
+                    () => setClosingStage(5)
+                  )
+                }
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
               >
                 <CheckCircle size={14} strokeWidth={2.5} />
@@ -1850,14 +1865,15 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
               <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
-              {cashMoves.length > 0 && (
-                <div className="ml-auto flex items-center gap-2.5">
-                  {ingVendido > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingVendido.toFixed(2)}</span>}
-                  {egVendido  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egVendido.toFixed(2)}</span>}
-                  {moneyGt(totalPending, 0) && <span className="text-[10px] font-bold text-amber-600 tabular-nums">↩ S/ {totalPending.toFixed(2)}</span>}
-                </div>
-              )}
             </div>
+
+            {(ingVendido > 0 || egVendido > 0 || moneyGt(totalPending, 0)) && (
+              <div className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-[#e8edf3]">
+                {ingVendido > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingVendido.toFixed(2)}</span>}
+                {egVendido  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egVendido.toFixed(2)}</span>}
+                {moneyGt(totalPending, 0) && <span className="text-[10px] font-bold text-amber-600 tabular-nums">↩ S/ {totalPending.toFixed(2)}</span>}
+              </div>
+            )}
 
             {/* Tab switcher — fijo */}
             <div className="shrink-0 px-3 py-2 border-b border-[#e8edf3]">
