@@ -156,6 +156,7 @@ export function SalesWorkspace() {
   const [query, setQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
 
@@ -189,12 +190,12 @@ export function SalesWorkspace() {
   const isCalcMode  = /^[0-9+\-*/.]+$/.test(query.trim()) && /[+\-*/]/.test(query.trim());
   const calcResult  = isCalcMode ? safeCalc(query) : null;
 
-  const isSearching   = searchQuery.length >= 1;
+  const isSearching   = !isCalcMode && searchQuery.length >= 1;
   const filtered      = isSearching ? searchCatalog(catalogoActivo, searchQuery) : catalogoActivo;
   const visualCatalog = isSearching ? filtered : catalogoActivo;
   const visualItems   = visualCategory === "all"
     ? visualCatalog
-    : visualCatalog;
+    : visualCatalog.filter(p => p.category === visualCategory);
 
   // Mount — scanner readiness on every runtime re-entry (CASH/CONFIG/COMP → VENTAS)
   // inputRef is stable so [] is correct; fires even when zone/cobroOpen haven't changed value
@@ -364,11 +365,15 @@ export function SalesWorkspace() {
 
       {/* SEARCH CONTROL — primera línea del body, sin SheetTopbar */}
       <div className="shrink-0 px-3 pt-3 pb-0">
-        <div className={`flex items-center gap-2.5 rounded-[14px] border bg-white px-3.5 h-[44px] transition ${
-          cashSession.isOpen
-            ? "border-[#45b356]/40 focus-within:border-[#45b356]/70 focus-within:ring-2 focus-within:ring-[#45b356]/10"
-            : "border-[#e4e9f0] focus-within:border-[#45b356]/40"
-        }`}>
+        <div
+          className={`flex items-center gap-2.5 rounded-[14px] border bg-white px-3.5 h-[44px] outline-none transition ${
+            isFocused
+              ? "border-[#45b356]/70 ring-2 ring-[#45b356]/10"
+              : cashSession.isOpen
+                ? "border-[#45b356]/40"
+                : "border-[#e4e9f0]"
+          }`}
+        >
           <Search size={15} strokeWidth={2} className="shrink-0 text-[#45b356]" />
 
           <input
@@ -381,7 +386,8 @@ export function SalesWorkspace() {
               setSearchQuery(v.trim());
             }}
             onKeyDown={handleKeyDown}
-            onFocus={() => enterSearch()}
+            onFocus={() => { enterSearch(); setIsFocused(true); }}
+            onBlur={() => setIsFocused(false)}
             placeholder="Buscar producto, código o barra..."
             className="min-w-0 flex-1 bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#b8c4cf]"
             autoComplete="off"
@@ -397,13 +403,14 @@ export function SalesWorkspace() {
           <div className="h-3.5 w-px shrink-0 bg-[#e4e9f0]" />
 
           <button
+            tabIndex={-1}
             title="Escanear código de barras"
             className="flex shrink-0 items-center justify-center rounded-lg p-1 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#6b7280]"
           >
             <ScanLine size={15} strokeWidth={2} />
           </button>
 
-          <div className="flex shrink-0 items-center gap-px rounded-[10px] bg-[#f1f5f9] p-[3px]">
+          <div tabIndex={-1} className="flex shrink-0 items-center gap-px rounded-[10px] bg-[#f1f5f9] p-[3px]">
             <ViewToggle current={visualMode} onChange={setVisualMode} />
           </div>
         </div>
