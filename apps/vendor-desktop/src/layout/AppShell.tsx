@@ -32,7 +32,7 @@ function OperationalNotice() {
 
 export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, configSubView, onConfigSubViewChange }: AppShellProps) {
   const { closeCobro, logoutOperator, cobroOpen } = usePOS();
-  const [hoveredModule, setHoveredModule] = useState<ActiveModule | null>(null);
+  const [, setHoveredModule] = useState<ActiveModule | null>(null);
   const navModeRef = useRef(false);
 
   useEffect(() => {
@@ -65,9 +65,6 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
     return () => window.removeEventListener("keydown", handler);
   }, [cobroOpen, activeModule]);
 
-  // hover → preview; leave → back to active; click → permanent (hoveredModule = null, activeModule updated)
-  const displayModule = hoveredModule ?? activeModule;
-
   return (
     <main className="h-screen overflow-hidden bg-[#f7f9fc] text-[#111827]">
       <section className="flex h-full flex-col">
@@ -75,7 +72,6 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
           <Topbar />
           <ContextBar
             active={activeModule}
-            display={displayModule}
             onChange={m => { closeCobro(); onModuleChange(m); setHoveredModule(null); }}
             onHover={setHoveredModule}
             cashSubView={cashSubView}

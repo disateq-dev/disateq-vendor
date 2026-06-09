@@ -9,7 +9,7 @@ import {
   type ProductoBuscable
 } from "../../domains/catalog/bridge-catalogo";
 import { loadBusinessConfig } from "../../config/business";
-import { RUBROS, type VisualMode } from "../../data/catalogs";
+import { RUBROS } from "../../data/catalogs";
 
 function statusChip(p: ProductoBuscable) {
   if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
@@ -109,32 +109,6 @@ type POSRuntimeContext = ReturnType<typeof usePOS> & {
   operadorActivo?: { id?: string };
 };
 
-const VIEW_OPTS: { id: VisualMode; label: string }[] = [
-  { id: "lista",  label: "Lista"   },
-  { id: "visual", label: "Visual"  },
-  { id: "mixto",  label: "Mixto"   },
-];
-
-function ViewToggle({ current, onChange }: { current: VisualMode; onChange: (m: VisualMode) => void }) {
-  return (
-    <>
-      {VIEW_OPTS.map(opt => (
-        <button
-          key={opt.id}
-          onClick={() => onChange(opt.id)}
-          className={`rounded-[7px] px-2 py-1 text-[10px] font-semibold transition ${
-            current === opt.id
-              ? "bg-white text-[#111827]"
-              : "text-[#64748b] hover:text-[#111827]"
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </>
-  );
-}
-
 function TileBadge({ p }: { p: ProductoBuscable }) {
   return (
     <div
@@ -146,13 +120,12 @@ function TileBadge({ p }: { p: ProductoBuscable }) {
 
 export function SalesWorkspace() {
   const posContext = usePOS() as POSRuntimeContext;
-  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, visualMode, setVisualMode } = posContext;
+  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, visualMode } = posContext;
   const rubroConfig = useMemo(() => {
     const bc = loadBusinessConfig();
     return RUBROS[bc.rubro];
   }, []);
 
-  // "mixto" renders as visual for now — a split layout can be explored in runtime validation
   const view = visualMode === "lista" ? "dense" : "visual";
 
   const [visualCategory, setVisualCategory] = useState<string>("all");
@@ -412,10 +385,6 @@ export function SalesWorkspace() {
           >
             <ScanLine size={15} strokeWidth={2} />
           </button>
-
-          <div tabIndex={-1} className="flex shrink-0 items-center gap-px rounded-[10px] bg-[#f1f5f9] p-[3px]">
-            <ViewToggle current={visualMode} onChange={setVisualMode} />
-          </div>
         </div>
       </div>
 

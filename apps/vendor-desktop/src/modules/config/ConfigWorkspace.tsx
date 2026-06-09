@@ -27,7 +27,6 @@ const RUBRO_ICONS: Record<Rubro, string> = {
 const VISUAL_MODES: { id: VisualMode; label: string; desc: string }[] = [
   { id: "lista",  label: "Lista",   desc: "Scanner · teclado · densidad máxima"    },
   { id: "visual", label: "Visual",  desc: "Tiles · touch/mouse · selección rápida" },
-  { id: "mixto",  label: "Mixto",   desc: "Lista + tiles simultáneos · híbrido"    },
 ];
 
 const PRINT_FLOWS: { id: PrintFlow; label: string; desc: string; ready: boolean }[] = [

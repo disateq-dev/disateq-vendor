@@ -82,7 +82,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const [visualMode, setVisualModeState] = useState<VisualMode>(() => {
     try {
       const raw = localStorage.getItem("disateq.pos.visualMode");
-      if (raw === "lista" || raw === "visual" || raw === "mixto") return raw;
+      if (raw === "lista" || raw === "visual") return raw;
     } catch { /* quota */ }
     const bc = loadBusinessConfig();
     return RUBROS[bc.rubro].defaultVisualMode;

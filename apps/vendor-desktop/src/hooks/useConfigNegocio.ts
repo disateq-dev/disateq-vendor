@@ -16,7 +16,7 @@ function loadRubro(): Rubro {
 
 function loadVisualMode(): VisualMode {
   const raw = localStorage.getItem(LS_VISUAL_MODE);
-  if (raw === "lista" || raw === "visual" || raw === "mixto") return raw;
+  if (raw === "lista" || raw === "visual") return raw;
   return "visual";
 }
 

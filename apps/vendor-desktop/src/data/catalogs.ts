@@ -14,7 +14,7 @@ export interface Presentacion {
 
 export type StockStatus = "normal" | "low" | "out" | "promo" | "expiring";
 
-export type VisualMode = "lista" | "visual" | "mixto";
+export type VisualMode = "lista" | "visual";
 
 export type PrintFlow =
   | "solo-comprobante"
