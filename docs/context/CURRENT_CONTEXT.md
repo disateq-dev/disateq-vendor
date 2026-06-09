@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-feat(ventas): flash verde 600ms al agregar producto — dense y visual
+feat(security): hashear PINs de operador SHA-256 — migración idempotente al montar
 
 ---
 
@@ -136,7 +136,7 @@ Modo de vista configurable desde Ajustes → Experiencia — no expuesto en la p
 Feedback visual al agregar: flash verde 600ms en fila/tile — previene doble escaneo.
 
 ### COMPROBANTES
-Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir · PIN Admin.
+Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir · PIN de Autorización.
 
 ### CLIENTES
 Workspace completo · StatsBar · Filtros · F2 · PanelDetalle · Formulario inline · guards.
@@ -175,7 +175,9 @@ Ciclo de vida completo · PIN · Bloque Operacional · capacidades · roles conf
 SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
 
 ### SISTEMA DE NIVELES DE PIN
-PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
+PIN Operador 4 dígitos SHA-256 · salt `:disateq-vendor` · migración idempotente al montar.
+PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza procedimientos sensibles.
+`hashPinAsync` exportada desde `operator.store.ts` · misma implementación para ambos tipos.
 
 ---
 
@@ -199,7 +201,7 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 5 | PINs de operador en texto plano en localStorage | Alto | Alta antes de distribución |
+| 5 | PINs de operador en texto plano — ✅ Resuelto · SHA-256 + migración idempotente | — | ✅ Cerrada |
 | 6 | Sin cifrado de localStorage — datos expuestos con acceso físico al equipo | Alto | Alta antes de distribución |
 | 7 | Sin timeout de inactividad — sesión permanece activa indefinidamente | Medio | Media |
 
@@ -247,14 +249,13 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 ## Tensiones activas
 
-- PINs de operador en texto plano — deuda de seguridad antes de distribución
+- Sin cifrado de localStorage — datos expuestos con acceso físico al equipo
 
 ---
 
 ## Prioridad próximas sesiones
 
-1. PINs texto plano — hashear antes de distribución real
-2. UIX workspace TURNO — auditoría de stages
+1. UIX workspace TURNO — auditoría de stages
 
 ---
 
