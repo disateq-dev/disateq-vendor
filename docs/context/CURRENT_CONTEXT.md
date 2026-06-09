@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-feat(reportes): PDF descarga — formato A4 con encabezado BusinessConfig · botón PDF
+feat(cash): arqueo a ciegas rol VEN — Stage4 sin esperados; ticket SISTEMA vs OPERADOR
 
 ---
 
@@ -120,7 +120,8 @@ Dependencias: solo `cashSession` de `usePOS()`. Sin `sessionStats`, `cashMoves`,
 
 ### TURNO / CAJA
 Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección · recovery.
-**UIX del workspace pendiente de auditoría.**
+Arqueo a ciegas para rol VEN: Stage 4 oculta esperados del sistema y resultado de conciliación.
+Ticket de cierre incluye sección SISTEMA vs OPERADOR (tú a tú) solo para cierres de rol VEN.
 
 ### FONDO DE CAMBIO
 Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
@@ -159,6 +160,8 @@ useCapacidad · useCapacidades · useContextoOperacional · Guards en ContextBar
 
 ### INVENTARIOS CAPA 0+1
 177 productos · movimientos causales · disponibilidad derivada · reservas · alertas.
+HOVs: campo `category` en tipo + migración idempotente al arranque (`hov.migration.ts` · `POSContext`).
+Filtro visual por categoría operativo desde próximo arranque de la app.
 
 ### COMPRAS CAPA 0+1
 Recepción parcial incremental · causalidad compra → INVENTARIOS.
@@ -201,15 +204,14 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 ## Tensiones activas
 
-- UIX cierre a ciegas para rol VEN — pendiente
-- HOVs existentes en localStorage sin campo category — filtro visual inactivo hasta recrear HOVs
+- Tabla de deudas técnicas — pendiente incorporar al CURRENT_CONTEXT
 
 ---
 
 ## Prioridad próximas sesiones
 
-1. Migración HOVs existentes — poblar campo category desde catalogs.ts
-2. UIX cierre a ciegas para rol VEN
+1. Tabla de deudas técnicas — incorporar al CURRENT_CONTEXT
+2. POSContext.tsx extracción progresiva (~1000 líneas · viola SRP)
 
 ---
 
