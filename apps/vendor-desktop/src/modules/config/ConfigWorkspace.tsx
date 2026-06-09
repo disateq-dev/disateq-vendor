@@ -61,6 +61,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
       telefono:        telefono.trim(),
       alias:           loadBusinessConfig().alias,
       tasaIGV:         loadBusinessConfig().tasaIGV,
+      rubro,
     });
     setBizSaved(true);
     setTimeout(() => setBizSaved(false), 2000);
@@ -317,7 +318,10 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 return (
                   <button
                     key={r}
-                    onClick={() => setRubro(r)}
+                    onClick={() => {
+                      setRubro(r);
+                      saveBusinessConfig({ ...loadBusinessConfig(), rubro: r });
+                    }}
                     className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
                       isActive
                         ? "border-[#697387]/30 bg-[#697387]/8 shadow-[0_2px_6px_rgba(105,115,135,0.10)]"
