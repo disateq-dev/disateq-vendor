@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-fix: Footbar simplificada — estado turno · legibilidad · firma @fhertejada™
+fix(ventas): isFocused explícito + isSearching excluye calcMode + visualItems filtra por categoría
 
 ---
 
@@ -127,8 +127,11 @@ Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
 
 ### VENTAS / COBRO
 Catálogo vivo · Pedido canónico · Valor por contexto · ClienteBuscador · Comprobante.
-Buscador dentro de SheetWork de VENTAS — correcto, no se mueve.
-**Tensiones activas:** visualMode "mixto" sin implementar · rubroConfig hardcodeado · import muerto buscarProductos.
+SearchControl canónico: caja con borde como primera línea del body — sin SheetTopbar.
+Tres modos de búsqueda: nombre/código (4 pasadas priorizadas + normalización NFD) · calculadora inline (`+−*/`) · escáner.
+Input vacío controla el ticket: ↑↓ navegar líneas · +→ incrementar · −← decrementar · Delete quitar · N nota · Ctrl+Enter cobro.
+Vista Lista (dense): filas con teclado · Vista Visual: grilla de tiles con categorías · Vista Mixto: pendiente de implementación (renderiza como Visual).
+**Tensiones activas:** visualMode "mixto" sin layout propio · rubroConfig hardcodeado.
 
 ### COMPROBANTES
 Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir · PIN Admin.
@@ -195,9 +198,8 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 ## Tensiones activas
 
-- visualMode "mixto" sin implementación diferenciada en SalesWorkspace
-- rubroConfig hardcodeado en SalesWorkspace
-- Import muerto buscarProductos en SalesWorkspace
+- visualMode "mixto" sin layout propio — renderiza como Visual
+- rubroConfig hardcodeado en SalesWorkspace — categorías no vienen de BusinessConfig
 - UIX cierre a ciegas para rol VEN — pendiente
 - PDF descarga ReportesWorkspace — pendiente
 
@@ -205,8 +207,9 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 ## Prioridad próximas sesiones
 
-1. Revisión SalesWorkspace (rubroConfig, mixto, import muerto)
-2. PDF descarga ReportesWorkspace
+1. rubroConfig — conectar categorías desde BusinessConfig
+2. visualMode "mixto" — diseñar e implementar layout dividido
+3. PDF descarga ReportesWorkspace
 
 ---
 
