@@ -185,7 +185,7 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 1 | `POSContext.tsx` ~1000 líneas — viola SRP, concentra demasiadas responsabilidades | Alto | Alta |
+| 1 | `POSContext.tsx` — orquestador puro ~185 líneas reales · lógica extraída a hooks · deuda resuelta | — | ✅ Cerrada |
 | 2 | Imports directos de storage en componentes UI — viola DIP | Medio | Media |
 
 ### Funcionalidad
@@ -248,15 +248,13 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 ## Tensiones activas
 
 - PINs de operador en texto plano — deuda de seguridad antes de distribución
-- POSContext.tsx ~1000 líneas — deuda arquitectónica SRP pendiente de extracción progresiva
 
 ---
 
 ## Prioridad próximas sesiones
 
-1. POSContext.tsx — diseño de extracción progresiva
-2. PINs texto plano — hashear antes de distribución real
-3. UIX workspace TURNO — auditoría de stages
+1. PINs texto plano — hashear antes de distribución real
+2. UIX workspace TURNO — auditoría de stages
 
 ---
 
