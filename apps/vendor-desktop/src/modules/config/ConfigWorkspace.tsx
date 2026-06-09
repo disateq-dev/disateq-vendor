@@ -474,6 +474,15 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                   >
                     RESET OPERACIONAL COMPLETO
                   </button>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("disateq:inventory");
+                      window.location.reload();
+                    }}
+                    className="rounded-xl border border-orange-300 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-orange-600 hover:bg-orange-50 transition"
+                  >
+                    RESET INVENTARIO
+                  </button>
                 </div>
                 <p className="text-[9px] text-amber-500 leading-snug">
                   Solo visible en modo DEV · RESET COMPLETO limpia sesión, caja, stats y stages.

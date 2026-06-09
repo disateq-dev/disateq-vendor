@@ -15,5 +15,8 @@ export function syncCatalogToInventory(rubro: Rubro): void {
       nombre:     product.name,
       unidadBase: 'unidad',
     });
+    if (product.stock > 0 && inventoryService.disponibilidad(product.id) === 0) {
+      inventoryService.registrarEntrada(product.id, product.stock, 'seed-catalogo');
+    }
   });
 }
