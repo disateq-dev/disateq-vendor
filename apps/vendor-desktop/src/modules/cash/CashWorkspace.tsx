@@ -398,6 +398,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const configuredCtgPin = useMemo(() => loadOpsConfig().ctgPin, []);
 
   // ── derived ───────────────────────────────────────────────────
+  const esVEN = activeOperator?.codigoRol === "VEN";
   const activeMoves = useMemo(() => cashMoves.filter(m => m.regularizationStatus !== "anulado"), [cashMoves]);
   const selectedBox        = isOpen ? activeBox : (cashBoxes.find(b => b.code === selectedCode) ?? null);
   const openingMode: OpeningMode = isOpen ? "normal" : detectOpeningMode(selectedBox);
@@ -642,6 +643,12 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       diferencia,
       observations:     observations.trim() || undefined,
       zeroMotive:       (moneyIsZero(contadoTotal) && zeroMotive) ? zeroMotive : undefined,
+      sistemaEsperado:  esVEN ? {
+        efe:     arqueoOperacional,
+        yape:    sessionStats.yape,
+        tarjeta: sessionStats.tarjeta,
+        total:   totalEsperado,
+      } : undefined,
     };
     // Persistir snapshot del arqueo antes de destruir la sesión — permite reimprimir si el print falla
     try { localStorage.setItem("disateq.pos.lastArqueo", JSON.stringify(arqueo)); } catch { /* quota */ }
@@ -1655,7 +1662,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                       <div key={label} className="flex items-center px-3.5 py-1.5 gap-2">
                         <span className="w-[68px] shrink-0 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
                         <span className="flex-1 text-right text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
-                        <span className="text-[8.5px] text-[#c0cad4]">esp. {esp.toFixed(2)}</span>
+                        {!esVEN && <span className="text-[8.5px] text-[#c0cad4]">esp. {esp.toFixed(2)}</span>}
                       </div>
                     ))}
                     <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#fffbf0]">
@@ -1664,8 +1671,8 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     </div>
                   </div>
 
-                  {/* Desglose efectivo esperado — visible si hay movimientos caja del día */}
-                  {(moneyGt(ingVendido, 0) || moneyGt(egVendido, 0)) && (
+                  {/* Desglose efectivo esperado — oculto para rol VEN (arqueo a ciegas) */}
+                  {!esVEN && (moneyGt(ingVendido, 0) || moneyGt(egVendido, 0)) && (
                     <div className="flex flex-col gap-0.5 rounded-xl border border-[#f1f5f9] bg-[#f8fafc] px-3.5 py-2">
                       <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Efectivo esperado · cómo se calcula</span>
                       <div className="flex justify-between items-center">
@@ -1691,8 +1698,8 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     </div>
                   )}
 
-                  {/* Conciliación ventas */}
-                  {(() => {
+                  {/* Conciliación ventas — oculta para rol VEN (arqueo a ciegas) */}
+                  {!esVEN && (() => {
                     const cuadrado = moneyIsZero(diferencia);
                     const sobrante = !cuadrado && moneyGt(diferencia, 0);
                     const diffAbs  = Math.abs(diferencia);

@@ -422,6 +422,7 @@ export interface ArqueoData {
   diferencia:       number;
   observations?:    string;
   zeroMotive?:      string;
+  sistemaEsperado?: { efe: number; yape: number; tarjeta: number; total: number };
 }
 
 function buildArqueoHTML(d: ArqueoData): string {
@@ -505,6 +506,34 @@ function buildArqueoHTML(d: ArqueoData): string {
   </div>
 
   <div class="pt-dash"></div>
+
+  ${d.sistemaEsperado ? `
+  <div class="pt-sect">SISTEMA vs OPERADOR</div>
+  <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-bottom:2px;">
+    <span style="min-width:60px;">CONCEPTO</span>
+    <span style="min-width:52px; text-align:right;">SISTEMA</span>
+    <span style="min-width:52px; text-align:right;">OPERADOR</span>
+    <span style="min-width:44px; text-align:right;">DIFER.</span>
+  </div>
+  ${[
+    { label: "Efectivo",  sis: d.sistemaEsperado.efe,     op: d.contadoEfe  },
+    { label: "Yape",      sis: d.sistemaEsperado.yape,    op: d.contadoYape },
+    { label: "Tarjetas",  sis: d.sistemaEsperado.tarjeta, op: d.contadoTar  },
+    { label: "TOTAL",     sis: d.sistemaEsperado.total,   op: d.contadoTotal },
+  ].map(r => {
+    const diff    = Math.round((r.op - r.sis) * 100) / 100;
+    const diffStr = diff === 0 ? "±0.00" : (diff > 0 ? "+" : "−") + Math.abs(diff).toFixed(2);
+    const color   = diff === 0 ? "#065f46" : diff < 0 ? "#991b1b" : "#1d4ed8";
+    const bold    = r.label === "TOTAL" ? "font-weight:bold;" : "";
+    return `<div style="display:flex; justify-content:space-between; font-size:10px; ${bold} margin:1px 0;">
+      <span style="min-width:60px;">${r.label}</span>
+      <span style="min-width:52px; text-align:right;">${r.sis.toFixed(2)}</span>
+      <span style="min-width:52px; text-align:right;">${r.op.toFixed(2)}</span>
+      <span style="min-width:44px; text-align:right; color:${color};">${diffStr}</span>
+    </div>`;
+  }).join("")}
+  <div class="pt-dash"></div>
+  ` : ""}
 
   <div class="pt-sect">DIFERENCIA</div>
   <div class="pt-arq-diff ${diffClass}">
