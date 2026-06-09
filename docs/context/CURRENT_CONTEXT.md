@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-refactor(ventas): eliminar visualMode mixto — ViewToggle al body de Ajustes
+feat(reportes): PDF descarga — formato A4 con encabezado BusinessConfig · botón PDF
 
 ---
 
@@ -140,7 +140,10 @@ Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDet
 Workspace completo · StatsBar · Filtros · F2 · PanelDetalle · Formulario inline · guards.
 
 ### REPORTES
-Workspace completo · Cuatro tipos · Cuatro períodos · Generación automática · IMPRIMIR · EXCEL.
+Workspace completo · Cuatro tipos · Cuatro períodos · Generación automática · IMPRIMIR · EXCEL · PDF.
+PDF descarga: formato A4 con encabezado desde BusinessConfig (nombreComercial, razonSocial, RUC, dirección).
+Cuatro formateadores A4: ventas · comprobantes · turnos · abastecimiento.
+Flujo: window.open → HTML formateado → window.print() → guardar como PDF desde diálogo del OS.
 
 ---
 
@@ -199,16 +202,14 @@ PIN Operador 4 dígitos · PIN Admin 6 dígitos SHA-256 · Fase A + B completas.
 ## Tensiones activas
 
 - UIX cierre a ciegas para rol VEN — pendiente
-- PDF descarga ReportesWorkspace — pendiente
 - HOVs existentes en localStorage sin campo category — filtro visual inactivo hasta recrear HOVs
 
 ---
 
 ## Prioridad próximas sesiones
 
-1. PDF descarga ReportesWorkspace
-2. Migración HOVs existentes — poblar campo category desde catalogs.ts
-3. UIX cierre a ciegas para rol VEN
+1. Migración HOVs existentes — poblar campo category desde catalogs.ts
+2. UIX cierre a ciegas para rol VEN
 
 ---
 
