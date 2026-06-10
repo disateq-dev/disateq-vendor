@@ -297,7 +297,93 @@ Los terminales son la fuente de verdad de último recurso. La pérdida de datos 
 
 ---
 
-## 8. ESTRUCTURA DE CÓDIGO — CAPA SYNC/
+## 8. CONTINGENCIA POR FALLO DE TERMINAL
+
+### Principio
+
+El fallo de un terminal no detiene la operación del negocio ni compromete los datos del Nexo. El impacto está siempre acotado al terminal afectado.
+
+### Escenario A — Fallo con cola ya sincronizada
+
+```
+Terminal falla · cola ya confirmada por el Nexo
+        │
+        ▼
+Cero pérdida de datos
+Se repara o reemplaza el equipo · se instala VENDOR
+El Nexo empuja el estado actualizado al terminal restaurado
+Opera normalmente
+```
+
+Impacto para el negocio: ninguno. Los demás terminales continúan sin enterarse.
+
+### Escenario B — Fallo con cola pendiente
+
+```
+Terminal falla · cola con eventos no sincronizados
+        │
+        ▼
+¿El disco sobrevivió?
+        │
+        ├── SÍ (fallo de OS · corte de luz · pantalla)
+        │       DISATEQ accede remotamente o recupera el perfil
+        │       Extrae localStorage · sube eventos al Nexo manualmente
+        │       Cero pérdida de datos
+        │
+        └── NO (disco muerto · robo · pérdida física)
+                ¿Hay tickets impresos?
+                        │
+                        ├── SÍ → respaldo físico disponible
+                        │        DISATEQ reconstruye desde comprobantes impresos
+                        │
+                        └── NO → pérdida acotada al período sin sync
+                                 los demás terminales no se ven afectados
+```
+
+### Escenario C — Fallo del terminal único (PC única)
+
+```
+PC única falla → operación detenida hasta restaurar
+        │
+        ▼
+DISATEQ evalúa si el disco es recuperable
+        │
+        ├── Disco recuperable → extrae cola · sube al Nexo
+        │
+        └── Disco irrecuperable
+                Si hay equipo de respaldo → VENDOR instalado en < 2 horas
+                Nexo sincroniza estado al nuevo equipo
+                Negocio retoma operación
+```
+
+Este escenario es el argumento principal para recomendar dos equipos desde la preventa.
+
+### Medidas de mitigación incorporadas al diseño
+
+**Frecuencia de sync recomendada:**
+```
+Sync automático cada 5 minutos cuando hay internet
+Sync forzado al cerrar cada turno (antes de apagar el equipo)
+Peor caso de pérdida ante fallo de disco: 5 minutos · una o dos ventas
+```
+
+**Indicador visual en Stage 5 del cierre de turno:**
+```
+Cola sincronizada ✓  →  sin acción requerida
+Cola con pendientes ⚠  →  "Exportar sincronización antes de apagar"
+```
+No bloquea el cierre — informa. El operador decide.
+
+**Identidad de terminal irrecuperable por diseño:**
+Cada instalación genera un `terminalId` único. Si el disco muere, el nuevo equipo recibe un nuevo `terminalId`. El Nexo lo registra como terminal nuevo y marca el anterior como inactivo. Sin confusión de identidad entre equipo viejo y nuevo.
+
+### Argumento de preventa
+
+> "Con un solo equipo, si falla, su negocio se detiene hasta repararlo. Con dos equipos, si uno falla, el otro sigue vendiendo. El segundo equipo no necesita ser nuevo ni potente — puede ser una PC básica de respaldo. Nosotros lo configuramos."
+
+---
+
+## 9. ESTRUCTURA DE CÓDIGO — CAPA SYNC/
 
 Lo que se agrega a VENDOR. No modifica ningún dominio existente.
 
@@ -337,7 +423,7 @@ src/sync/
 
 ---
 
-## 9. PROYECTOS Y FASES
+## 10. PROYECTOS Y FASES
 
 ### PROYECTO 1 — DISATEQ VENDOR (este repositorio)
 
@@ -363,20 +449,21 @@ src/sync/
 
 ---
 
-## 10. DECISIONES IRREVERSIBLES
+## 11. DECISIONES IRREVERSIBLES
 
 1. **Offline-First absoluto** — ninguna operación puede bloquearse por falta de red
 2. **Event-sourcing como mecanismo de sync** — se sincronizan eventos, no estados
 3. **El terminal es el respaldo del Nexo** — la nube es derivable desde las colas locales
 4. **Failover automático y silencioso** — el cliente nunca ve errores de servidor
-5. **Series por terminal** — asignadas por el Nexo · alineadas con SUNAT
-6. **DISATEQ administra el Nexo** — el cliente nunca toca infraestructura
-7. **Soporte 100% remoto** — no hay desplazamiento físico de técnicos
-8. **Dos proyectos separados** — VENDOR y PORTAL tienen ciclos de vida distintos
+5. **El fallo de un terminal es siempre acotado** — no afecta al Nexo ni a otros terminales
+6. **Series por terminal** — asignadas por el Nexo · alineadas con SUNAT
+7. **DISATEQ administra el Nexo** — el cliente nunca toca infraestructura
+8. **Soporte 100% remoto** — no hay desplazamiento físico de técnicos
+9. **Dos proyectos separados** — VENDOR y PORTAL tienen ciclos de vida distintos
 
 ---
 
-## 11. LO QUE NO CAMBIA DE VENDOR HOY
+## 12. LO QUE NO CAMBIA DE VENDOR HOY
 
 La capa `sync/` se agrega encima de lo existente. No se modifica:
 
