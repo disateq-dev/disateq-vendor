@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-docs(arch): arquitectura de sincronización offline-first — decisión consolidada
+docs(arch): contingencia del Nexo — failover automático y recuperación desde terminales
 
 ---
 
@@ -144,18 +144,17 @@ Workspace completo · StatsBar · Filtros · F2 · PanelDetalle · Formulario in
 
 ### REPORTES
 Workspace completo · Cuatro tipos · Cuatro períodos · Generación automática · IMPRIMIR · EXCEL · PDF.
-PDF descarga: formato A4 con encabezado desde BusinessConfig (nombreComercial, razonSocial, RUC, dirección).
+PDF descarga: formato A4 con encabezado desde BusinessConfig.
 
 ### INVENTARIOS CAPA 0+1
 177 productos · movimientos causales · disponibilidad derivada · reservas · alertas.
-HOVs: campo `category` en tipo + migración idempotente al arranque.
-Stock inicial: `syncCatalogToInventory` registra entrada `seed-catalogo` desde `CatalogProduct.stock` (idempotente).
+Stock inicial: `syncCatalogToInventory` registra entrada `seed-catalogo` (idempotente).
 
 ### COMPRAS CAPA 0+1
 Recepción parcial incremental · causalidad compra → INVENTARIOS.
 
 ### OPERADORES + ROLES
-Ciclo de vida completo · PIN · Bloque Operacional · capacidades · roles configurables.
+Ciclo de vida completo · PIN SHA-256 · Bloque Operacional · capacidades · roles configurables.
 SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
 
 ### SISTEMA DE NIVELES DE PIN
@@ -177,7 +176,7 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 3 | UIX Stage 5 cierre — fila diferencia visible para roles no VEN | — | ✅ Cerrada |
+| 3 | UIX Stage 5 cierre — fila diferencia para roles no VEN | — | ✅ Cerrada |
 | 4 | Historial de búsqueda por sesión — ArrowUp en input vacío | Bajo | Baja |
 
 ### Seguridad
@@ -185,7 +184,7 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
 | 5 | PINs de operador en texto plano | — | ✅ Cerrada |
-| 6 | Sin cifrado de localStorage | — | ✅ Resuelta por arquitectura — sync con Nexo hace localStorage temporal |
+| 6 | Sin cifrado de localStorage | — | ✅ Resuelta por arquitectura — localStorage es caché temporal |
 | 7 | Sin timeout de inactividad — sesión permanece activa indefinidamente | Medio | Media |
 
 ### Regulatorio
@@ -207,13 +206,57 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 
 Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
 
-**Modelo:** MSP — DISATEQ como socio tecnológico  
-**Topología:** Edge (terminales) → Nexo DISATEQ (nube) · hasta 5 equipos por cliente en V1  
-**Tres rutas:** internet automático · LAN peer-to-peer · .dsync manual  
-**Conflictos:** event-sourcing · LWW · determinista para correlativos  
-**Correlativos:** series por terminal · store actual ya compatible · asignación desde Nexo en Portal  
-**Contingencia peruana:** cola sin límite temporal · .dsync vía WhatsApp/hotspot (30 segundos)  
+**Modelo:** MSP — DISATEQ como socio tecnológico
+**Topología:** Edge (terminales) → Nexo DISATEQ (primario + secundario) · hasta 5 equipos por cliente en V1
+**Tres rutas:** internet automático · LAN peer-to-peer · .dsync manual
+**Conflictos:** event-sourcing · LWW · determinista para correlativos
+**Correlativos:** series por terminal · store actual ya compatible · asignación desde Nexo en Portal
+**Contingencia peruana:** cola sin límite temporal · .dsync vía WhatsApp/hotspot (30 segundos)
+**Failover:** automático y silencioso · nexo.config.json con endpoints priorizados
+**Recuperación:** terminales son el respaldo del Nexo · reconstrucción desde colas locales
 **Dos proyectos:** VENDOR (sync/ + SUNAT) · PORTAL (Nexo · licencias · actualizaciones · RustDesk)
+
+---
+
+## Estado actual de la capa sync/
+
+Diseño arquitectónico completo y documentado. Listo para iniciar implementación.
+
+### Fase 1 — Cola de eventos (PRÓXIMA)
+
+Archivos a crear:
+```
+src/sync/event-queue.types.ts
+src/sync/event-queue.store.ts
+```
+
+Tipos definidos:
+- `SyncDominio`: pedidos · comprobantes · inventario · clientes · turno · configuracion
+- `SyncOperacion`: CREAR · MODIFICAR · ANULAR · CERRAR · REGISTRAR
+- `SyncEstado`: PENDIENTE · ENVIANDO · CONFIRMADO · FALLIDO
+- `SyncEvent`: id · terminalId · clienteId · dominio · operacion · entidadId · payload · creadoEn · estado · intentos · ultimoIntento · confirmedAt · errorMsg
+- `NexoEndpoint`: url · prioridad · activo
+- `NexoConfig`: clienteId · terminalId · endpoints[] · timeoutMs · retryIntervalMs
+
+API del store:
+- `encolar(dominio, operacion, entidadId, payload): SyncEvent`
+- `marcarEnviando(eventId): void`
+- `confirmar(eventId): void`
+- `registrarFallo(eventId, errorMsg): void`
+- `obtenerPendientes(): SyncEvent[]`
+- `obtenerTodos(): SyncEvent[]`
+- `purgarConfirmados(): void`
+- `resumen(): { pendientes: number; fallidos: number; ultimoSync: string | null }`
+
+Puntos de integración (una línea por dominio):
+- `pedido.store.ts` → encolar tras `concretarPedido()` y `abandonarPedido()`
+- `comprobante.store.ts` → encolar tras `emitirComprobante()` y `anularComprobante()`
+- `CashWorkspace` → encolar tras `closeCashSession()`
+- `cliente.store.ts` → encolar tras crear/modificar cliente
+- `inventory` → encolar tras cada `MovimientoOperacional`
+
+Lo que NO entra en la cola:
+- Estado UI efímero · PreVenta · TurnEvents · configuración de UI local
 
 ---
 
@@ -246,9 +289,9 @@ Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
 
 ## Prioridad próximas sesiones
 
-1. Fase 1 sync — diseño técnico de la cola de eventos robusta (event-queue.store.ts)
-2. Fase 2 sync — sync-agent + integración Nexo DISATEQ (Ruta 1)
-3. Fase 3 sync — exportador .dsync (Ruta 3 · contingencia manual)
+1. Fase 1 sync — implementación cola de eventos (event-queue.types.ts + event-queue.store.ts)
+2. Fase 2 sync — sync-agent + nexo.config.json + failover (Ruta 1)
+3. Fase 3 sync — exportador .dsync + UI en Configuración (Ruta 3)
 4. Fase 4 sync — LAN peer-to-peer (Ruta 2)
 5. Fase 5 sync — bloques de correlativos multi-terminal
 6. Fase 6 — API REST facturación electrónica SUNAT
