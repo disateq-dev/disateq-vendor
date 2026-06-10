@@ -57,6 +57,10 @@ Este principio elimina el 90% de los conflictos de sincronización antes de que 
 
 Cada acción operacional genera un evento firmado (timestamp + terminal ID + hash) que se encola localmente. La cola es persistente y sobrevive reinicios, cortes de luz y fallas de red. Un evento solo se elimina de la cola cuando el Nexo confirma su recepción.
 
+### El terminal ES el respaldo del Nexo
+
+La cola en cada terminal no es solo un mecanismo de envío — es una **copia de seguridad distribuida** de toda la operación. Si el Nexo falla y pierde datos, puede reconstruirse completamente desde las colas de los terminales. Los datos nunca dependen exclusivamente de la nube.
+
 ---
 
 ## 3. TOPOLOGÍA
@@ -94,12 +98,12 @@ PC TERMINAL 4         ──┘
 ### Infraestructura DISATEQ (multi-cliente)
 
 ```
-CLIENTE A: Terminal 1..N ──► Nexo Cliente A ──┐
-CLIENTE B: Terminal 1..N ──► Nexo Cliente B ──┤──► Backbone DISATEQ
-CLIENTE C: Terminal 1..N ──► Nexo Cliente C ──┘    (respaldo · monitoreo · facturación)
+CLIENTE A: Terminal 1..N ──► Nexo Cliente A (primario + secundario) ──┐
+CLIENTE B: Terminal 1..N ──► Nexo Cliente B (primario + secundario) ──┤──► Backbone DISATEQ
+CLIENTE C: Terminal 1..N ──► Nexo Cliente C (primario + secundario) ──┘
 ```
 
-Cada cliente tiene su Nexo aislado. Los datos de un cliente nunca se mezclan con otro.
+Cada cliente tiene su par de Nexos aislado. Los datos de un cliente nunca se mezclan con otro.
 
 ---
 
@@ -116,6 +120,7 @@ Cola local → sync-agent detecta internet → POST al Nexo DISATEQ → confirma
 - Sin intervención del operador
 - Si el envío falla a mitad, la cola no se vacía — reintenta completa en el siguiente ciclo
 - Backoff exponencial en reintentos
+- Failover automático a Nexo secundario si el primario no responde
 
 ### Ruta 2 — Sync LAN peer-to-peer (contingencia automática)
 
@@ -206,7 +211,9 @@ No se implementa HA de datacenter. Se implementa **HA operacional** adecuada al 
 | Corte de internet (días) | Cola acumula · exportar .dsync al cierre de cada turno como hábito | Exportar .dsync periódicamente |
 | Corte de internet (semanas/meses) | Opera con normalidad · sync vía hotspot cuando es posible | Hotspot puntual · .dsync de respaldo |
 | Corte eléctrico | UPS da 15-30 min · cierre limpio de turno · exportar .dsync | Cierre ordenado antes de apagar |
-| Falla del Nexo DISATEQ | Terminales siguen operando · DISATEQ restaura en < 4h · sync automático al restaurar | Ninguna para el cliente |
+| Fallo Nexo primario | VENDOR conmuta a secundario automáticamente · alerta silenciosa a DISATEQ | Ninguna para el cliente |
+| Fallo ambos Nexos | Cola acumula · Ruta 3 disponible · DISATEQ restaura | Ninguna para el cliente |
+| Pérdida total de datos en Nexo | DISATEQ restaura Nexo vacío · terminales re-sincronizan cola completa | Ninguna para el cliente |
 
 ### Recomendaciones de equipamiento (preventa)
 
@@ -219,19 +226,97 @@ No se implementa HA de datacenter. Se implementa **HA operacional** adecuada al 
 
 ---
 
-## 7. ESTRUCTURA DE CÓDIGO — CAPA SYNC/
+## 7. CONTINGENCIA DEL NEXO — FAILOVER Y RECUPERACIÓN
+
+### El principio fundamental
+
+El fallo del Nexo debe ser **invisible para el cliente**. El operador nunca debe ver un error relacionado con el servidor. La operación continúa siempre.
+
+### Configuración de endpoints (nexo.config.json)
+
+Generado por DISATEQ durante la instalación. Nunca editado por el cliente.
+
+```json
+{
+  "clienteId": "abc123",
+  "terminalId": "terminal-01",
+  "endpoints": [
+    {
+      "url": "https://cliente-a.nexo.disateq.com",
+      "prioridad": 1,
+      "activo": true
+    },
+    {
+      "url": "https://cliente-a-backup.nexo.disateq.com",
+      "prioridad": 2,
+      "activo": true
+    }
+  ],
+  "timeoutMs": 10000,
+  "retryIntervalMs": 30000
+}
+```
+
+Si DISATEQ necesita migrar el servidor — cambio de proveedor, mantenimiento, actualización — actualiza este archivo remotamente vía RustDesk o servidor de actualizaciones. VENDOR lo lee en el siguiente ciclo sin reiniciar.
+
+### Lógica de failover en sync-agent
+
+```
+Intenta Nexo primario (prioridad 1)
+        │
+        ├── Responde en < timeoutMs → opera normalmente
+        │
+        └── Timeout o error → intenta Nexo secundario (prioridad 2)
+                │
+                ├── Responde → opera con secundario
+                │             alerta silenciosa a DISATEQ
+                │             cola sigue vaciándose sin interrupción
+                │
+                └── Timeout o error → ningún Nexo disponible
+                                      cola acumula
+                                      reintenta en retryIntervalMs
+                                      Ruta 2 y 3 disponibles
+```
+
+### Sincronización entre Nexos (responsabilidad del Portal)
+
+El Nexo primario y secundario se replican entre sí en tiempo real. Cuando el primario se restaura, el secundario le transfiere los eventos recibidos durante la caída. VENDOR no necesita saber nada de esta sincronización — solo ve endpoints que responden o no responden.
+
+### Recuperación ante pérdida total de datos en el Nexo
+
+```
+1. DISATEQ detecta pérdida (monitoreo del Portal)
+2. DISATEQ restaura Nexo desde último respaldo disponible
+3. DISATEQ solicita re-sincronización a los terminales del cliente
+4. Cada terminal envía su cola completa (incluyendo eventos ya confirmados)
+5. Nexo reconstruye el estado desde los eventos en orden cronológico
+6. Confirmación → colas de terminales se purgan normalmente
+```
+
+Los terminales son la fuente de verdad de último recurso. La pérdida de datos en el Nexo es recuperable siempre que al menos un terminal tenga su cola intacta.
+
+---
+
+## 8. ESTRUCTURA DE CÓDIGO — CAPA SYNC/
 
 Lo que se agrega a VENDOR. No modifica ningún dominio existente.
 
 ```
 src/sync/
+├── event-queue.types.ts
+│     SyncEvent · SyncDominio · SyncOperacion · SyncEstado
+│     NexoEndpoint · NexoConfig
+│
 ├── event-queue.store.ts
 │     Cola persistente de eventos pendientes
 │     Firma cada evento: timestamp + terminalId + hash SHA-256
 │     Nunca elimina un evento sin confirmación del Nexo
+│     API: encolar · marcarEnviando · confirmar · registrarFallo
+│          obtenerPendientes · obtenerTodos · purgarConfirmados · resumen
 │
 ├── sync-agent.ts
 │     Proceso background · se ejecuta cada N segundos configurable
+│     Lee nexo.config.json · resuelve endpoint activo con failover
 │     Detecta conectividad · intenta Ruta 1 · activa Ruta 2 si falla
 │     Backoff exponencial en reintentos · log de intentos
 │
@@ -252,18 +337,16 @@ src/sync/
 
 ---
 
-## 8. PROYECTOS Y FASES
+## 9. PROYECTOS Y FASES
 
 ### PROYECTO 1 — DISATEQ VENDOR (este repositorio)
 
-Incluye la capa `sync/` completa más la integración fiscal.
-
 | Fase | Descripción | Estado |
 |---|---|---|
-| Fase 1 | Cola de eventos robusta | Pendiente |
-| Fase 2 | Sync internet → Nexo DISATEQ (Ruta 1) | Pendiente |
-| Fase 3 | Exportación .dsync (Ruta 3) | Pendiente |
-| Fase 4 | Sync LAN peer-to-peer (Ruta 2) | Pendiente |
+| Fase 1 | Cola de eventos robusta (event-queue.types.ts + event-queue.store.ts) | Pendiente |
+| Fase 2 | Sync internet → Nexo DISATEQ con failover (sync-agent.ts + nexo.config.json) | Pendiente |
+| Fase 3 | Exportación .dsync (dsync-exporter.ts + UI en Configuración) | Pendiente |
+| Fase 4 | Sync LAN peer-to-peer (lan-discovery.ts) | Pendiente |
 | Fase 5 | Bloques de correlativos multi-terminal | Pendiente |
 | Fase 6 | API REST facturación electrónica SUNAT | Pendiente |
 
@@ -271,27 +354,29 @@ Incluye la capa `sync/` completa más la integración fiscal.
 
 | Componente | Descripción |
 |---|---|
-| Nexo en nube | Un Nexo aislado por cliente · recibe eventos de terminales |
-| Portal sync | sync.disateq.com · recibe archivos .dsync · procesa y confirma |
+| Nexo en nube | Un par primario/secundario por cliente · aislado · replicado |
+| Portal sync | sync.disateq.com · recibe .dsync · procesa · confirma |
 | Servidor de licencias | Activación y validación de instalaciones |
-| Servidor de actualizaciones | Distribución de nuevas versiones de VENDOR |
-| RustDesk | Soporte remoto a terminales del cliente |
-| Panel DISATEQ | Monitoreo de Nexos · estado de clientes · alertas |
+| Servidor de actualizaciones | Distribución de nuevas versiones · actualiza nexo.config.json remotamente |
+| RustDesk | Soporte remoto · configuración de endpoints sin visita física |
+| Panel DISATEQ | Monitoreo de Nexos · alertas de failover · estado de clientes |
 
 ---
 
-## 9. DECISIONES IRREVERSIBLES
+## 10. DECISIONES IRREVERSIBLES
 
 1. **Offline-First absoluto** — ninguna operación puede bloquearse por falta de red
 2. **Event-sourcing como mecanismo de sync** — se sincronizan eventos, no estados
-3. **Series por terminal** — asignadas por el Nexo · alineadas con SUNAT
-4. **DISATEQ administra el Nexo** — el cliente nunca toca infraestructura
-5. **Soporte 100% remoto** — no hay desplazamiento físico de técnicos
-6. **Dos proyectos separados** — VENDOR y PORTAL tienen ciclos de vida distintos
+3. **El terminal es el respaldo del Nexo** — la nube es derivable desde las colas locales
+4. **Failover automático y silencioso** — el cliente nunca ve errores de servidor
+5. **Series por terminal** — asignadas por el Nexo · alineadas con SUNAT
+6. **DISATEQ administra el Nexo** — el cliente nunca toca infraestructura
+7. **Soporte 100% remoto** — no hay desplazamiento físico de técnicos
+8. **Dos proyectos separados** — VENDOR y PORTAL tienen ciclos de vida distintos
 
 ---
 
-## 10. LO QUE NO CAMBIA DE VENDOR HOY
+## 11. LO QUE NO CAMBIA DE VENDOR HOY
 
 La capa `sync/` se agrega encima de lo existente. No se modifica:
 
