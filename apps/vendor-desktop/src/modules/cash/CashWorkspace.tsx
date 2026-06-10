@@ -275,16 +275,16 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [closingStage, setClosingStage] = useState<ClosingStage>(() => {
     if (!isOpen) return 0;
     try {
-      const n = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
+      const n = parseInt(localStorage.getItem("disateq:cash:ui:closingStage") ?? "0", 10);
       return ([0,1,2,3,4,5].includes(n) ? n : 0) as ClosingStage;
     } catch { return 0; }
   });
   function loadContadoField(field: string): string {
     if (!isOpen) return "";
     try {
-      const stage = parseInt(localStorage.getItem("disateq.pos.ui.closingStage") ?? "0", 10);
+      const stage = parseInt(localStorage.getItem("disateq:cash:ui:closingStage") ?? "0", 10);
       if (stage >= 1) {
-        const raw = localStorage.getItem("disateq.pos.ui.contado");
+        const raw = localStorage.getItem("disateq:cash:ui:contado");
         if (raw) return (JSON.parse(raw) as Record<string, string>)[field] ?? "";
       }
     } catch {}
@@ -306,17 +306,17 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [cierreAutorizado, setCierreAutorizado] = useState(false);
 
   useEffect(() => {
-    if (closingStage > 0) localStorage.setItem("disateq.pos.ui.closingStage", String(closingStage));
-    else localStorage.removeItem("disateq.pos.ui.closingStage");
+    if (closingStage > 0) localStorage.setItem("disateq:cash:ui:closingStage", String(closingStage));
+    else localStorage.removeItem("disateq:cash:ui:closingStage");
   }, [closingStage]);
 
   useEffect(() => {
     if (closingStage >= 1 && (contadoFondo !== "" || contadoEfe !== "")) {
-      localStorage.setItem("disateq.pos.ui.contado", JSON.stringify({
+      localStorage.setItem("disateq:cash:ui:contado", JSON.stringify({
         fondo: contadoFondo, efe: contadoEfe, yape: contadoYape, tar: contadoTar,
       }));
     } else {
-      localStorage.removeItem("disateq.pos.ui.contado");
+      localStorage.removeItem("disateq:cash:ui:contado");
     }
   }, [closingStage, contadoFondo, contadoEfe, contadoYape, contadoTar]);
 
@@ -330,8 +330,8 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       setClosingStage(0);
       setContadoFondo(""); setContadoEfe(""); setContadoYape(""); setContadoTar("");
       setValidatedAt(null); setObservations(""); setZeroMotive("");
-      localStorage.removeItem("disateq.pos.ui.closingStage");
-      localStorage.removeItem("disateq.pos.ui.contado");
+      localStorage.removeItem("disateq:cash:ui:closingStage");
+      localStorage.removeItem("disateq:cash:ui:contado");
       setAperturaInput(""); setAperturaMotivo(""); setAperturaRefOp("");
       setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
       setEditingApertura(false);
@@ -664,11 +664,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     setContadoEfe(""); setContadoYape(""); setContadoTar("");
     setValidatedAt(null); setObservations(""); setZeroMotive("");
     setCierreAutorizado(false);
-    localStorage.removeItem("disateq.pos.ui.closingStage");
-    localStorage.removeItem("disateq.pos.ui.contado");
-    setTimeout(() => {
-      printArqueoThermal("TIQUE", arqueo).catch(() => printArqueo(arqueo));
-    }, 120);
+    localStorage.removeItem("disateq:cash:ui:closingStage");
+    localStorage.removeItem("disateq:cash:ui:contado");
+    if (closingStage >= 3) {
+      setTimeout(() => {
+        printArqueoThermal("TIQUE", arqueo).catch(() => printArqueo(arqueo));
+      }, 120);
+    }
   }
 
   // ── CTRL+INSERT: corregir apertura ────────────────────────
@@ -786,6 +788,32 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               {openedAt && <InfoRow label="Activo"   value={`${formatTime(openedAt)} · ${duration}`} accent />}
               <InfoRow label="Terminal"     value={terminal} />
               <InfoRow label="Fondo de cambio" value={`S/ ${apertura.toFixed(2)}`} />
+              {closingStage === 0 && (
+                <div className="-mx-1 mt-0.5">
+                  <button
+                    onClick={() => canCorrectApertura ? openEditApertura() : undefined}
+                    disabled={!canCorrectApertura}
+                    title={
+                      !canCorrectApertura && cashMoves.length > 0
+                        ? "No disponible — ya hay movimientos registrados"
+                        : !canCorrectApertura && sessionStats.count > 0
+                          ? "No disponible — ya hay ventas realizadas"
+                          : "Corregir monto de apertura · Ctrl+Insert"
+                    }
+                    className={`flex w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[10px] font-semibold transition ${
+                      canCorrectApertura
+                        ? "text-[#2154d8] hover:bg-[#f0f4ff] cursor-pointer"
+                        : "text-[#c0cad4] cursor-not-allowed"
+                    }`}
+                  >
+                    <Pencil size={10} strokeWidth={2} className="shrink-0" />
+                    <span>Corregir apertura</span>
+                    {canCorrectApertura && (
+                      <span className="ml-auto text-[8.5px] font-bold text-[#c0cad4]">Ctrl+Ins</span>
+                    )}
+                  </button>
+                </div>
+              )}
 
               {sessionStats.count > 0 && closingStage === 0 && (() => {
                 const { efe, yap, tar, mix } = sessionStats.byMethod;
@@ -1210,7 +1238,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               const d = new Date(iso);
               return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
             };
-            const blockEntries = sessionHistory
+            const historialVisible = esVEN
+              ? sessionHistory.filter(s => s.operatorName === operatorName)
+              : sessionHistory;
+            const blockEntries = historialVisible
               .filter(e => e.boxCode[0] === operatorBlockPrefix)
               .slice(0, 20);
             // Para entradas antiguas sin arqueo guardado, usar lastArqueo si coincide la caja
@@ -1222,7 +1253,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                 {/* Header */}
                 <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
                   <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
-                  <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ESTADO DE APERTURAS Y CIERRES</span>
+                  <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">APERTURAS Y CIERRES ANTERIORES</span>
                 </div>
 
                 {blockEntries.length === 0 ? (
@@ -1625,6 +1656,18 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               {/* ── STAGE 4: CONCILIACIÓN ── */}
               {closingStage === 4 && (
                 <>
+                  {validatedAt && (() => {
+                    const vt = new Date(validatedAt);
+                    const hm = `${String(vt.getHours()).padStart(2,"0")}:${String(vt.getMinutes()).padStart(2,"0")}`;
+                    return (
+                      <div className="flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+                        <CheckCircle size={11} strokeWidth={2} className="shrink-0 text-emerald-500" />
+                        <span className="text-[10px] font-semibold text-emerald-700">
+                          Conteos registrados a las {hm}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <p className="text-[11px] text-[#6b7280] leading-relaxed">
                     Revisa los totales y confirma el cierre del turno.
                   </p>
@@ -1746,6 +1789,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
                           Motivo <span className="text-amber-500">*</span>
                         </span>
+                        {moneyIsZero(contadoTotal) && (
+                          <p className="text-[10px] font-semibold text-amber-600 px-0.5">
+                            Declaras S/ 0.00 en caja — indica el motivo para continuar
+                          </p>
+                        )}
                         <select
                           value={zeroMotive}
                           onChange={e => setZeroMotive(e.target.value)}
@@ -2050,10 +2098,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   {/* Mini-selector: RETIRO / REINTEGRO / PRESTADO / DEVOLVER */}
                   <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
                     {([
-                      { tab: "retiro"   as const, label: "RETIRO"    },
-                      { tab: "deposito" as const, label: "REINTEGRO" },
-                      { tab: "prestado" as const, label: "PRESTADO"  },
-                      { tab: "devolver" as const, label: "DEVOLVER"  },
+                      { tab: "retiro"   as const, label: "DI SENCILLO"     },
+                      { tab: "deposito" as const, label: "ME DEVOLVIERON"  },
+                      { tab: "prestado" as const, label: "RECIBÍ SENCILLO" },
+                      { tab: "devolver" as const, label: "YO DEVOLVÍ"      },
                     ]).map(({ tab, label }) => {
                       const active = fondoSubTab === tab;
                       const color =

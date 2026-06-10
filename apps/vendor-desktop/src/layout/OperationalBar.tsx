@@ -82,9 +82,9 @@ function ModSep() {
 
 // ── Definición de subtabs por módulo ─────────────────────────
 const CASH_TABS: { key: CashSubView; label: string }[] = [
-  { key: "turno",            label: "Gestión Turno"      },
-  { key: "cajas",            label: "Gestión Cajas"       },
-  { key: "supervision-caja", label: "Supervisión de Caja" },
+  { key: "turno",            label: "Gestión"      },
+  { key: "cajas",            label: "Cajas"        },
+  { key: "supervision-caja", label: "Supervisión"  },
 ];
 
 const CONFIG_TABS: { key: ConfigSubView; label: string }[] = [
