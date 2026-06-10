@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-feat(security): hashear PINs de operador SHA-256 — migración idempotente al montar
+docs(arch): arquitectura de sincronización offline-first — decisión consolidada
 
 ---
 
@@ -121,19 +121,8 @@ Dependencias: solo `cashSession` de `usePOS()`. Sin `sessionStats`, `cashMoves`,
 ### TURNO / CAJA
 Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección · recovery.
 Arqueo a ciegas para rol VEN: Stage 4 oculta esperados del sistema y resultado de conciliación.
+Stage 5 cierre: fila DIFERENCIA (FALTANTE/SOBRANTE/CUADRADO) visible para roles no VEN.
 Ticket de cierre incluye sección SISTEMA vs OPERADOR (tú a tú) solo para cierres de rol VEN.
-
-**Auditoría UIX stages completada — resultado:**
-- Stage 0 (resumen turno abierto): ✅ correcto
-- Stage 1 (fondo de cambio): ✅ correcto
-- Stage 2 (conteo ventas): ✅ correcto
-- Stage 3 (validación): ✅ correcto
-- Stage 4 (comparar totales): ✅ correcto — arqueo a ciegas VEN aplicado
-- Stage 5 (cierre): ⚠ mejora pendiente — no muestra diferencia final para roles no VEN
-- Timeline y panel derecho: ✅ correcto
-- Movimientos y sucesos del turno: ✅ correcto
-
-**Mejora pendiente Stage 5:** agregar fila DIFERENCIA (FALTANTE/SOBRANTE/CUADRADO) visible solo para roles no VEN, antes del campo de observaciones. Así el operador no VEN tiene confirmación visual en el momento del cierre definitivo.
 
 ### FONDO DE CAMBIO
 Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
@@ -156,28 +145,11 @@ Workspace completo · StatsBar · Filtros · F2 · PanelDetalle · Formulario in
 ### REPORTES
 Workspace completo · Cuatro tipos · Cuatro períodos · Generación automática · IMPRIMIR · EXCEL · PDF.
 PDF descarga: formato A4 con encabezado desde BusinessConfig (nombreComercial, razonSocial, RUC, dirección).
-Cuatro formateadores A4: ventas · comprobantes · turnos · abastecimiento.
-Flujo: window.open → HTML formateado → window.print() → guardar como PDF desde diálogo del OS.
-
----
-
-## Workspaces normalizados
-
-- `CashWorkspace` — MOVIMIENTOS: totales ↑↓↩ bajaron al body como mini-stats row
-- `ClientesWorkspace` — CLIENTES: badge activos + botón NUEVO CLIENTE bajaron a StatsBar
-- `ComprobantesWorkspace` — COMPROBANTES: toggle sesión/historial + badge + contador bajaron al body
-- `ReportesWorkspace` — REPORTES: badge tipo activo + spinner bajaron a banda de controles
-
-### ENFORCEMENT DE CAPACIDADES
-useCapacidad · useCapacidades · useContextoOperacional · Guards en ContextBar y workspaces.
 
 ### INVENTARIOS CAPA 0+1
 177 productos · movimientos causales · disponibilidad derivada · reservas · alertas.
-HOVs: campo `category` en tipo + migración idempotente al arranque (`hov.migration.ts` · `POSContext`).
-Filtro visual por categoría operativo desde próximo arranque de la app.
+HOVs: campo `category` en tipo + migración idempotente al arranque.
 Stock inicial: `syncCatalogToInventory` registra entrada `seed-catalogo` desde `CatalogProduct.stock` (idempotente).
-DEV tools → RESET INVENTARIO: limpia `disateq:inventory` y recarga — desbloquea el seed para Alpha.
-Bloqueante Alpha resuelto: ejecutar RESET INVENTARIO en DEV para popular stock inicial.
 
 ### COMPRAS CAPA 0+1
 Recepción parcial incremental · causalidad compra → INVENTARIOS.
@@ -189,7 +161,6 @@ SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
 ### SISTEMA DE NIVELES DE PIN
 PIN Operador 4 dígitos SHA-256 · salt `:disateq-vendor` · migración idempotente al montar.
 PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza procedimientos sensibles.
-`hashPinAsync` exportada desde `operator.store.ts` · misma implementación para ambos tipos.
 
 ---
 
@@ -199,36 +170,50 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 1 | `POSContext.tsx` — orquestador puro ~185 líneas reales · lógica extraída a hooks · deuda resuelta | — | ✅ Cerrada |
+| 1 | `POSContext.tsx` — orquestador puro · deuda resuelta | — | ✅ Cerrada |
 | 2 | Imports directos de storage en componentes UI — viola DIP | Medio | Media |
 
 ### Funcionalidad
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 3 | UIX Stage 5 cierre — fila diferencia visible para roles no VEN | Bajo | Baja |
-| 4 | Historial de búsqueda por sesión — ArrowUp en input vacío podría mostrar últimas búsquedas | Bajo | Baja |
+| 3 | UIX Stage 5 cierre — fila diferencia visible para roles no VEN | — | ✅ Cerrada |
+| 4 | Historial de búsqueda por sesión — ArrowUp en input vacío | Bajo | Baja |
 
 ### Seguridad
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 5 | PINs de operador en texto plano — ✅ Resuelto · SHA-256 + migración idempotente | — | ✅ Cerrada |
-| 6 | Sin cifrado de localStorage — datos expuestos con acceso físico al equipo | Alto | Alta antes de distribución |
+| 5 | PINs de operador en texto plano | — | ✅ Cerrada |
+| 6 | Sin cifrado de localStorage | — | ✅ Resuelta por arquitectura — sync con Nexo hace localStorage temporal |
 | 7 | Sin timeout de inactividad — sesión permanece activa indefinidamente | Medio | Media |
 
 ### Regulatorio
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 8 | Integración SUNAT real pendiente — comprobantes quedan en estado PENDIENTE sin envío | Alto | Fase futura |
+| 8 | Integración SUNAT real pendiente | Alto | Fase 6 del roadmap sync |
 
 ### Normalización GLOSARIO
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 9 | `emitidoPor` en `Comprobante` — debería ser `operadorId` según GLOSARIO | Bajo | Baja |
-| 10 | `EstadoDisponibilidad` en minúsculas en `inventory/types.ts` — debería ser `DISPONIBLE/BAJO_STOCK/AGOTADO` | Bajo | Baja |
+| 9 | `emitidoPor` en `Comprobante` — debería ser `operadorId` | Bajo | Baja |
+| 10 | `EstadoDisponibilidad` en minúsculas en `inventory/types.ts` | Bajo | Baja |
+
+---
+
+## Arquitectura de sincronización — decisión consolidada
+
+Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
+
+**Modelo:** MSP — DISATEQ como socio tecnológico  
+**Topología:** Edge (terminales) → Nexo DISATEQ (nube) · hasta 5 equipos por cliente en V1  
+**Tres rutas:** internet automático · LAN peer-to-peer · .dsync manual  
+**Conflictos:** event-sourcing · LWW · determinista para correlativos  
+**Correlativos:** series por terminal · store actual ya compatible · asignación desde Nexo en Portal  
+**Contingencia peruana:** cola sin límite temporal · .dsync vía WhatsApp/hotspot (30 segundos)  
+**Dos proyectos:** VENDOR (sync/ + SUNAT) · PORTAL (Nexo · licencias · actualizaciones · RustDesk)
 
 ---
 
@@ -244,7 +229,7 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 | `Enter` | ContextBar expanded | Activar pill |
 | `Escape` | ContextBar expanded | Volver a navMode |
 | `Ctrl+Shift+L` | AppShell | Logout operador |
-| `Escape` | AppShell | Focus búsqueda VENTAS (bloqueado en navMode) |
+| `Escape` | AppShell | Focus búsqueda VENTAS |
 | `F2` | SalesWorkspace | Focus búsqueda |
 | `Ctrl+Enter` | SalesWorkspace | Abrir cobro |
 | `Ctrl+Insert` | CashWorkspace | Corregir apertura |
@@ -259,16 +244,14 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 
 ---
 
-## Tensiones activas
-
-- Sin cifrado de localStorage — datos expuestos con acceso físico al equipo
-
----
-
 ## Prioridad próximas sesiones
 
-1. Stage 5 cierre — agregar fila diferencia para roles no VEN
-2. Sin cifrado de localStorage — evaluar estrategia antes de distribución
+1. Fase 1 sync — diseño técnico de la cola de eventos robusta (event-queue.store.ts)
+2. Fase 2 sync — sync-agent + integración Nexo DISATEQ (Ruta 1)
+3. Fase 3 sync — exportador .dsync (Ruta 3 · contingencia manual)
+4. Fase 4 sync — LAN peer-to-peer (Ruta 2)
+5. Fase 5 sync — bloques de correlativos multi-terminal
+6. Fase 6 — API REST facturación electrónica SUNAT
 
 ---
 
