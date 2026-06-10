@@ -297,7 +297,14 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     return 5;
   })();
   function setClosingStage(n: ClosingStage) {
-    if (n === 0) { setClosingPhase("none"); setCajaStage("conteo"); return; }
+    if (n === 0) {
+      setClosingPhase("none");
+      setCajaStage("conteo");
+      setMotivoFondo("");
+      fondoDiferenciaFinal.current = null;
+      fondoMotivoFinal.current = "";
+      return;
+    }
     if (n === 1) { setClosingPhase("fondo"); return; }
     setClosingPhase("caja");
     if (n === 2) setCajaStage("conteo");
@@ -322,6 +329,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [validatedAt,       setValidatedAt]       = useState<string | null>(null);
   const [observations,      setObservations]      = useState("");
   const [zeroMotive,        setZeroMotive]        = useState("");
+  const [motivoFondo,       setMotivoFondo]       = useState("");
+  const fondoDiferenciaFinal = useRef<number | null>(null);
+  const fondoMotivoFinal = useRef("");
   const contadoFondoRef = useRef<HTMLInputElement>(null);
   const contadoEfeRef  = useRef<HTMLInputElement>(null);
   const contadoYapeRef = useRef<HTMLInputElement>(null);
@@ -360,6 +370,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       setClosingStage(0);
       setContadoFondo(""); setContadoEfe(""); setContadoYape(""); setContadoTar("");
       setValidatedAt(null); setObservations(""); setZeroMotive("");
+      setMotivoFondo(""); fondoDiferenciaFinal.current = null; fondoMotivoFinal.current = "";
       localStorage.removeItem("disateq:cash:ui:closingPhase");
       localStorage.removeItem("disateq:cash:ui:cajaStage");
       localStorage.removeItem("disateq:cash:ui:contado");
@@ -505,6 +516,38 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const contadoTarNum   = numericValue(contadoTar);
   const contadoTotal   = moneySum([contadoEfeNum, contadoYapeNum, contadoTarNum]);
   const diferencia     = moneySub(contadoTotal, totalEsperado);
+  const fondoContadoValue = safeCalc(contadoFondo);
+  const fondoContadoValido = fondoContadoValue !== null && fondoContadoValue >= 0;
+  const diferenciaFondo = fondoContadoValido ? moneySub(fondoContadoValue, fondoEsperado) : null;
+  const requiereMotivoFondo = diferenciaFondo !== null && !moneyIsZero(diferenciaFondo);
+  const canContinueToCaja = fondoContadoValido && (!requiereMotivoFondo || motivoFondo.trim().length >= MIN_MOTIVO_LEN);
+  const progresoCierre: Array<{ label: string; estado: "activo" | "completado" | "pendiente" }> = closingPhase === "none"
+    ? []
+    : [
+        {
+          label: "Arqueo Fondo de Cambio",
+          estado: closingPhase === "fondo" ? "activo" : "completado",
+        },
+        {
+          label: "Arqueo de Caja",
+          estado: closingPhase === "fondo"
+            ? "pendiente"
+            : cajaStage === "cierre"
+              ? "completado"
+              : "activo",
+        },
+        {
+          label: "Confirmar Cierre",
+          estado: closingPhase === "caja" && cajaStage === "cierre" ? "activo" : "pendiente",
+        },
+      ];
+  const pasosCaja = [
+    { key: "conteo" as const, label: "Conteo", color: "#2154d8" },
+    { key: "validacion" as const, label: "Validación", color: "#d97706" },
+    { key: "comparacion" as const, label: "Comparación", color: "#16a34a" },
+    { key: "cierre" as const, label: "Cierre", color: "#C05050" },
+  ];
+  const currentIndex = pasosCaja.findIndex(p => p.key === cajaStage);
   const contadoValid   = contadoEfe !== "";
   const canClose       = moneyGt(contadoTotal, 0) || zeroMotive !== "";
 
@@ -571,6 +614,19 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   function cancelEditApertura() {
     setEditingApertura(false);
+  }
+
+  function handleContinueToCaja() {
+    if (!canContinueToCaja || fondoContadoValue === null || diferenciaFondo === null) return;
+    setContadoFondo(fondoContadoValue.toFixed(2));
+    if (moneyIsZero(diferenciaFondo)) {
+      fondoDiferenciaFinal.current = 0;
+      fondoMotivoFinal.current = "";
+    } else {
+      fondoDiferenciaFinal.current = diferenciaFondo;
+      fondoMotivoFinal.current = motivoFondo.trim();
+    }
+    setClosingStage(2);
   }
 
   function handleAddVendido() {
@@ -720,10 +776,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   useEffect(() => {
     if (!isOpen || closingStage === 0) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Enter" && closingStage === 1 && contadoFondo !== "") {
+      if (e.key === "Enter" && closingStage === 1 && canContinueToCaja) {
         e.preventDefault();
-        const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
-        setClosingStage(2);
+        handleContinueToCaja();
       } else if (e.key === "F9" && closingStage === 2 && contadoValid) {
         e.preventDefault();
         const eR = safeCalc(contadoEfe);  if (eR !== null && eR >= 0) setContadoEfe(eR.toFixed(2));
@@ -746,7 +801,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, closingStage, contadoValid]);
+  }, [isOpen, closingStage, contadoValid, canContinueToCaja, handleContinueToCaja]);
 
   // Refresca historial al volver a Gestión Turno desde Corregir arqueo
   useEffect(() => {
@@ -844,6 +899,26 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                       <span className="ml-auto text-[8.5px] font-bold text-[#c0cad4]">Ctrl+Ins</span>
                     )}
                   </button>
+                </div>
+              )}
+              {closingPhase !== "none" && (
+                <div className="mt-2 space-y-1.5 border-t border-[#eef1f5] pt-2">
+                  <p className="px-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#9aa6b8]">
+                    Progreso
+                  </p>
+                  {progresoCierre.map(({ label, estado }) => (
+                    <div key={label} className="flex items-center gap-2 px-0.5">
+                      {estado === "completado" && <CheckCircle size={12} className="shrink-0 text-emerald-500" />}
+                      {estado === "activo" && <span className="h-2 w-2 shrink-0 rounded-full bg-[#2154d8]" />}
+                      {estado === "pendiente" && <span className="h-2 w-2 shrink-0 rounded-full bg-[#e2e8f0]" />}
+                      <span className={`text-[10.5px] font-semibold ${
+                        estado === "activo" ? "text-[#2154d8]" :
+                        estado === "completado" ? "text-emerald-600" : "text-[#9aa6b8]"
+                      }`}>
+                        {label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -1109,20 +1184,16 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
           ) : closingStage === 1 ? (
             <>
               <button
-                onClick={() => {
-                  if (contadoFondo === "") return;
-                  const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
-                  setClosingStage(2);
-                }}
-                disabled={contadoFondo === ""}
+                onClick={handleContinueToCaja}
+                disabled={!canContinueToCaja}
                 className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
-                  contadoFondo !== ""
+                  canContinueToCaja
                     ? "bg-[#45b356] text-white shadow-[0_4px_14px_rgba(69,179,86,0.24)] hover:bg-[#35994a] active:scale-[0.98]"
                     : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
                 }`}
               >
-                CONFIRMAR FONDO
-                {contadoFondo !== "" && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>}
+                CONTINUAR A ARQUEO DE CAJA
+                {canContinueToCaja && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>}
               </button>
               <button
                 onClick={() => setClosingStage(0)}
@@ -1381,7 +1452,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             {/* Header */}
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
               <ListChecks size={13} strokeWidth={2} className="shrink-0 text-red-400" />
-              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONTEO PARA EL CIERRE</span>
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+                {closingPhase === "fondo"
+                  ? "ARQUEO FONDO DE CAMBIO"
+                  : closingPhase === "caja"
+                    ? "ARQUEO CAJA · CIERRE DE TURNO"
+                    : "CONTEO PARA EL CIERRE"}
+              </span>
               <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
                 {closingStage === 1 ? "FONDO DE CAMBIO"
                  : closingStage === 2 ? "CONTEO VENTAS"
@@ -1393,6 +1470,29 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
             {/* Content por stage */}
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-3">
+              {closingPhase === "caja" && (
+                <div className="mb-2 flex items-center gap-1">
+                  {pasosCaja.map((paso, i) => {
+                    const estado = i < currentIndex ? "completado" : i === currentIndex ? "activo" : "pendiente";
+                    return (
+                      <div
+                        key={paso.key}
+                        className={`flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[9.5px] font-bold uppercase tracking-[0.08em] transition ${
+                          estado === "activo" ? "text-white" :
+                          estado === "completado" ? "" : "bg-[#f4f5f7] text-[#9aa6b8]"
+                        }`}
+                        style={
+                          estado === "activo" ? { backgroundColor: paso.color } :
+                          estado === "completado" ? { backgroundColor: `${paso.color}1f`, color: paso.color } : undefined
+                        }
+                      >
+                        {estado === "completado" && <CheckCircle size={10} />}
+                        {paso.label}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* ── STAGE 1: FONDO DE CAMBIO ── */}
               {closingStage === 1 && (
@@ -1494,33 +1594,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     </div>
                   )}
 
-                  {/* 3. Diferencia fondo */}
-                  {contadoFondo !== "" && (() => {
-                    const diffFondo     = moneySub(contadoFondoNum, fondoEsperado);
-                    const fondoCuadrado = moneyIsZero(diffFondo);
-                    const fondoSobrante = !fondoCuadrado && moneyGt(diffFondo, 0);
-                    const esPendienteReg = !fondoCuadrado && !fondoSobrante && moneyIsZero(moneySub(Math.abs(diffFondo), totalPendienteApertura));
-                    return (
-                      <div className={`flex items-center justify-between rounded-xl border px-3.5 py-2 ${
-                        fondoCuadrado ? "border-emerald-200 bg-[#f0fdf4]"
-                        : esPendienteReg ? "border-amber-200 bg-amber-50"
-                        : "border-red-200 bg-[#fef2f2]"
-                      }`}>
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.10em] ${
-                          fondoCuadrado ? "text-emerald-600" : esPendienteReg ? "text-amber-700" : "text-red-600"
-                        }`}>
-                          {fondoCuadrado ? "✓ FONDO ÍNTEGRO" : fondoSobrante ? "EXCEDENTE FONDO" : esPendienteReg ? "⚠ DINERO POR DEVOLVER" : "FALTANTE FONDO"}
-                        </span>
-                        <span className={`text-[12px] font-bold tabular-nums ${
-                          fondoCuadrado ? "text-emerald-600" : esPendienteReg ? "text-amber-700" : "text-red-600"
-                        }`}>
-                          {fondoCuadrado ? "±S/ 0.00" : `${moneyGte(diffFondo, 0) ? "+" : "−"}S/ ${Math.abs(diffFondo).toFixed(2)}`}
-                        </span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* 4. Fondo contado */}
+                  {/* 3. Fondo contado */}
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">FONDO CONTADO S/</span>
@@ -1531,18 +1605,56 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                       type="text" inputMode="decimal" value={contadoFondo}
                       onChange={e => setContadoFondo(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === "Enter" && contadoFondo !== "") {
+                        if (e.key === "Enter" && canContinueToCaja) {
                           e.preventDefault(); e.stopPropagation();
-                          const fR = safeCalc(contadoFondo); if (fR !== null && fR >= 0) setContadoFondo(fR.toFixed(2));
-                          setClosingStage(2);
+                          handleContinueToCaja();
                         }
                       }}
                       onBlur={() => { if (hasExpr(contadoFondo)) { const r = safeCalc(contadoFondo); if (r !== null && r >= 0) setContadoFondo(r.toFixed(2)); } }}
                       placeholder="0.00"
                       className="w-full rounded-xl border border-[#2154d8]/30 px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] tabular-nums focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                     />
+                    {diferenciaFondo !== null && (
+                      moneyIsZero(diferenciaFondo) ? (
+                        <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                          <CheckCircle size={11} className="shrink-0 text-emerald-500" />
+                          <span className="text-[10px] font-semibold text-emerald-700">
+                            Fondo cuadrado
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className={`flex items-center justify-between rounded-xl border px-3 py-2 ${
+                            diferenciaFondo > 0 ? "border-[#dbeafe] bg-[#eff6ff]" : "border-red-200 bg-[#fef2f2]"
+                          }`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-[0.1em] ${
+                              diferenciaFondo > 0 ? "text-[#2154d8]" : "text-red-600"
+                            }`}>
+                              {diferenciaFondo > 0 ? "SOBRANTE" : "FALTANTE"}
+                            </span>
+                            <span className={`text-[13px] font-bold tabular-nums ${
+                              diferenciaFondo > 0 ? "text-[#2154d8]" : "text-red-600"
+                            }`}>
+                              S/ {Math.abs(diferenciaFondo).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="px-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa6b8]">
+                              Motivo de la diferencia
+                            </label>
+                            <textarea
+                              value={motivoFondo}
+                              onChange={e => setMotivoFondo(e.target.value)}
+                              placeholder="Indica el motivo para continuar..."
+                              className="w-full resize-none rounded-xl border border-[#e2e8f0] px-3 py-2 text-[11px]"
+                              rows={2}
+                            />
+                          </div>
+                        </>
+                      )
+                    )}
                     <p className="text-[10px] text-[#9ca3af]">
-                      <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> confirmar fondo y pasar al conteo de ventas
+                      <span className="font-mono bg-[#f1f5f9] px-1 rounded">ENTER</span> continuar al arqueo de caja
                     </p>
                   </div>
                 </>
