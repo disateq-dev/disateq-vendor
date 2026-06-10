@@ -123,6 +123,18 @@ Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corr
 Arqueo a ciegas para rol VEN: Stage 4 oculta esperados del sistema y resultado de conciliación.
 Ticket de cierre incluye sección SISTEMA vs OPERADOR (tú a tú) solo para cierres de rol VEN.
 
+**Auditoría UIX stages completada — resultado:**
+- Stage 0 (resumen turno abierto): ✅ correcto
+- Stage 1 (fondo de cambio): ✅ correcto
+- Stage 2 (conteo ventas): ✅ correcto
+- Stage 3 (validación): ✅ correcto
+- Stage 4 (comparar totales): ✅ correcto — arqueo a ciegas VEN aplicado
+- Stage 5 (cierre): ⚠ mejora pendiente — no muestra diferencia final para roles no VEN
+- Timeline y panel derecho: ✅ correcto
+- Movimientos y sucesos del turno: ✅ correcto
+
+**Mejora pendiente Stage 5:** agregar fila DIFERENCIA (FALTANTE/SOBRANTE/CUADRADO) visible solo para roles no VEN, antes del campo de observaciones. Así el operador no VEN tiene confirmación visual en el momento del cierre definitivo.
+
 ### FONDO DE CAMBIO
 Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
 
@@ -194,7 +206,7 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 
 | # | Deuda | Impacto | Prioridad |
 |---|---|---|---|
-| 3 | UIX workspace TURNO — auditoría de stages pendiente (SheetTopbar ya normalizada) | Medio | Media |
+| 3 | UIX Stage 5 cierre — fila diferencia visible para roles no VEN | Bajo | Baja |
 | 4 | Historial de búsqueda por sesión — ArrowUp en input vacío podría mostrar últimas búsquedas | Bajo | Baja |
 
 ### Seguridad
@@ -255,7 +267,8 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 
 ## Prioridad próximas sesiones
 
-1. UIX workspace TURNO — auditoría de stages
+1. Stage 5 cierre — agregar fila diferencia para roles no VEN
+2. Sin cifrado de localStorage — evaluar estrategia antes de distribución
 
 ---
 
