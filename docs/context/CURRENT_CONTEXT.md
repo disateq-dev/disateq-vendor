@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-docs(arch): contingencia del Nexo — failover automático y recuperación desde terminales
+docs(arch): contingencia por fallo de terminal — escenarios y mitigaciones
 
 ---
 
@@ -129,12 +129,8 @@ Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
 
 ### VENTAS / COBRO
 Catálogo vivo · Pedido canónico · Valor por contexto · ClienteBuscador · Comprobante.
-SearchControl canónico: caja con borde como primera línea del body — sin SheetTopbar.
-Tres modos de búsqueda: nombre/código (4 pasadas priorizadas + normalización NFD) · calculadora inline (`+−*/`) · escáner.
-Input vacío controla el ticket: ↑↓ navegar líneas · +→ incrementar · −← decrementar · Delete quitar · N nota · Ctrl+Enter cobro.
-Vista Lista (dense): filas con teclado · Vista Visual: grilla de tiles con categorías.
-Modo de vista configurable desde Ajustes → Experiencia — no expuesto en la pantalla de ventas.
-Feedback visual al agregar: flash verde 600ms en fila/tile — previene doble escaneo.
+Tres modos de búsqueda: nombre/código · calculadora inline · escáner.
+Vista Lista y Visual · Feedback verde 600ms al agregar.
 
 ### COMPROBANTES
 Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDetalle · Anular · Convertir · PIN de Autorización.
@@ -143,12 +139,10 @@ Workspace completo · Vista Sesión/Historial · StatsBar · Filtros · PanelDet
 Workspace completo · StatsBar · Filtros · F2 · PanelDetalle · Formulario inline · guards.
 
 ### REPORTES
-Workspace completo · Cuatro tipos · Cuatro períodos · Generación automática · IMPRIMIR · EXCEL · PDF.
-PDF descarga: formato A4 con encabezado desde BusinessConfig.
+Workspace completo · Cuatro tipos · Cuatro períodos · IMPRIMIR · EXCEL · PDF A4.
 
 ### INVENTARIOS CAPA 0+1
 177 productos · movimientos causales · disponibilidad derivada · reservas · alertas.
-Stock inicial: `syncCatalogToInventory` registra entrada `seed-catalogo` (idempotente).
 
 ### COMPRAS CAPA 0+1
 Recepción parcial incremental · causalidad compra → INVENTARIOS.
@@ -156,10 +150,6 @@ Recepción parcial incremental · causalidad compra → INVENTARIOS.
 ### OPERADORES + ROLES
 Ciclo de vida completo · PIN SHA-256 · Bloque Operacional · capacidades · roles configurables.
 SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
-
-### SISTEMA DE NIVELES DE PIN
-PIN Operador 4 dígitos SHA-256 · salt `:disateq-vendor` · migración idempotente al montar.
-PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza procedimientos sensibles.
 
 ---
 
@@ -202,7 +192,7 @@ PIN de Autorización 6 dígitos SHA-256 · configurable por ADMIN · autoriza pr
 
 ---
 
-## Arquitectura de sincronización — decisión consolidada
+## Arquitectura de sincronización — CONSOLIDADA Y DOCUMENTADA
 
 Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
 
@@ -211,8 +201,8 @@ Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
 **Tres rutas:** internet automático · LAN peer-to-peer · .dsync manual
 **Conflictos:** event-sourcing · LWW · determinista para correlativos
 **Correlativos:** series por terminal · store actual ya compatible · asignación desde Nexo en Portal
-**Contingencia peruana:** cola sin límite temporal · .dsync vía WhatsApp/hotspot (30 segundos)
-**Failover:** automático y silencioso · nexo.config.json con endpoints priorizados
+**Contingencia Nexo:** failover automático y silencioso · nexo.config.json con endpoints priorizados
+**Contingencia terminal:** fallo siempre acotado · recuperación desde disco o tickets · terminalId único
 **Recuperación:** terminales son el respaldo del Nexo · reconstrucción desde colas locales
 **Dos proyectos:** VENDOR (sync/ + SUNAT) · PORTAL (Nexo · licencias · actualizaciones · RustDesk)
 
@@ -222,7 +212,7 @@ Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
 
 Diseño arquitectónico completo y documentado. Listo para iniciar implementación.
 
-### Fase 1 — Cola de eventos (PRÓXIMA)
+### Fase 1 — Cola de eventos (PRÓXIMA SESIÓN)
 
 Archivos a crear:
 ```
@@ -230,7 +220,7 @@ src/sync/event-queue.types.ts
 src/sync/event-queue.store.ts
 ```
 
-Tipos definidos:
+Tipos definidos y listos para Codex:
 - `SyncDominio`: pedidos · comprobantes · inventario · clientes · turno · configuracion
 - `SyncOperacion`: CREAR · MODIFICAR · ANULAR · CERRAR · REGISTRAR
 - `SyncEstado`: PENDIENTE · ENVIANDO · CONFIRMADO · FALLIDO
@@ -248,7 +238,7 @@ API del store:
 - `purgarConfirmados(): void`
 - `resumen(): { pendientes: number; fallidos: number; ultimoSync: string | null }`
 
-Puntos de integración (una línea por dominio):
+Puntos de integración (una línea por dominio, tras implementar el store):
 - `pedido.store.ts` → encolar tras `concretarPedido()` y `abandonarPedido()`
 - `comprobante.store.ts` → encolar tras `emitirComprobante()` y `anularComprobante()`
 - `CashWorkspace` → encolar tras `closeCashSession()`
