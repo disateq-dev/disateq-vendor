@@ -94,6 +94,8 @@ function numericValue(v: string): number {
 // ── constants ──────────────────────────────────────────────────
 
 type ClosingStage = 0 | 1 | 2 | 3 | 4 | 5;
+type ClosingPhase = "none" | "fondo" | "caja";
+type CajaStage = "conteo" | "validacion" | "comparacion" | "cierre";
 
 // ── sub-components ─────────────────────────────────────────────
 
@@ -272,18 +274,41 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   }, [openedAt]);
 
   // ── closing state ─────────────────────────────────────────────
-  const [closingStage, setClosingStage] = useState<ClosingStage>(() => {
-    if (!isOpen) return 0;
+  const [closingPhase, setClosingPhase] = useState<ClosingPhase>(() => {
+    if (!isOpen) return "none";
     try {
-      const n = parseInt(localStorage.getItem("disateq:cash:ui:closingStage") ?? "0", 10);
-      return ([0,1,2,3,4,5].includes(n) ? n : 0) as ClosingStage;
-    } catch { return 0; }
+      const p = localStorage.getItem("disateq:cash:ui:closingPhase");
+      return (p === "fondo" || p === "caja") ? p : "none";
+    } catch { return "none"; }
   });
+  const [cajaStage, setCajaStage] = useState<CajaStage>(() => {
+    if (!isOpen) return "conteo";
+    try {
+      const s = localStorage.getItem("disateq:cash:ui:cajaStage");
+      return (s === "conteo" || s === "validacion" || s === "comparacion" || s === "cierre") ? s : "conteo";
+    } catch { return "conteo"; }
+  });
+  const closingStage: ClosingStage = (() => {
+    if (closingPhase === "none") return 0;
+    if (closingPhase === "fondo") return 1;
+    if (cajaStage === "conteo") return 2;
+    if (cajaStage === "validacion") return 3;
+    if (cajaStage === "comparacion") return 4;
+    return 5;
+  })();
+  function setClosingStage(n: ClosingStage) {
+    if (n === 0) { setClosingPhase("none"); setCajaStage("conteo"); return; }
+    if (n === 1) { setClosingPhase("fondo"); return; }
+    setClosingPhase("caja");
+    if (n === 2) setCajaStage("conteo");
+    else if (n === 3) setCajaStage("validacion");
+    else if (n === 4) setCajaStage("comparacion");
+    else setCajaStage("cierre");
+  }
   function loadContadoField(field: string): string {
     if (!isOpen) return "";
     try {
-      const stage = parseInt(localStorage.getItem("disateq:cash:ui:closingStage") ?? "0", 10);
-      if (stage >= 1) {
+      if (closingStage >= 1) {
         const raw = localStorage.getItem("disateq:cash:ui:contado");
         if (raw) return (JSON.parse(raw) as Record<string, string>)[field] ?? "";
       }
@@ -306,9 +331,14 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [cierreAutorizado, setCierreAutorizado] = useState(false);
 
   useEffect(() => {
-    if (closingStage > 0) localStorage.setItem("disateq:cash:ui:closingStage", String(closingStage));
-    else localStorage.removeItem("disateq:cash:ui:closingStage");
-  }, [closingStage]);
+    if (closingPhase !== "none") {
+      localStorage.setItem("disateq:cash:ui:closingPhase", closingPhase);
+      localStorage.setItem("disateq:cash:ui:cajaStage", cajaStage);
+    } else {
+      localStorage.removeItem("disateq:cash:ui:closingPhase");
+      localStorage.removeItem("disateq:cash:ui:cajaStage");
+    }
+  }, [closingPhase, cajaStage]);
 
   useEffect(() => {
     if (closingStage >= 1 && (contadoFondo !== "" || contadoEfe !== "")) {
@@ -330,7 +360,8 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       setClosingStage(0);
       setContadoFondo(""); setContadoEfe(""); setContadoYape(""); setContadoTar("");
       setValidatedAt(null); setObservations(""); setZeroMotive("");
-      localStorage.removeItem("disateq:cash:ui:closingStage");
+      localStorage.removeItem("disateq:cash:ui:closingPhase");
+      localStorage.removeItem("disateq:cash:ui:cajaStage");
       localStorage.removeItem("disateq:cash:ui:contado");
       setAperturaInput(""); setAperturaMotivo(""); setAperturaRefOp("");
       setCtgPin(""); setCtgJustif(""); setCtgPinError(false);
@@ -664,7 +695,8 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     setContadoEfe(""); setContadoYape(""); setContadoTar("");
     setValidatedAt(null); setObservations(""); setZeroMotive("");
     setCierreAutorizado(false);
-    localStorage.removeItem("disateq:cash:ui:closingStage");
+    localStorage.removeItem("disateq:cash:ui:closingPhase");
+    localStorage.removeItem("disateq:cash:ui:cajaStage");
     localStorage.removeItem("disateq:cash:ui:contado");
     if (closingStage >= 3) {
       setTimeout(() => {
@@ -1239,7 +1271,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
             };
             const historialVisible = esVEN
-              ? sessionHistory.filter(s => s.operatorName === operatorName)
+              ? sessionHistory.filter(s => s.operator === operatorName)
               : sessionHistory;
             const blockEntries = historialVisible
               .filter(e => e.boxCode[0] === operatorBlockPrefix)
