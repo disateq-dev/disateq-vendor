@@ -1790,6 +1790,35 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     </div>
                   </div>
 
+                  {!esVEN && (() => {
+                    const cuadrado = moneyIsZero(diferencia);
+                    const sobrante = !cuadrado && moneyGt(diferencia, 0);
+                    const diffAbs  = Math.abs(diferencia);
+                    return (
+                      <div className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 ${
+                        cuadrado
+                          ? "border-emerald-200 bg-[#f0fdf4]"
+                          : sobrante
+                            ? "border-[#dbeafe] bg-[#eff6ff]"
+                            : "border-red-200 bg-[#fef2f2]"
+                      }`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.12em] ${
+                          cuadrado ? "text-emerald-600" : sobrante ? "text-[#2154d8]" : "text-red-600"
+                        }`}>
+                          {cuadrado ? "✓ CUADRADO" : sobrante ? "SOBRANTE" : "FALTANTE"}
+                        </span>
+                        <span className={`text-[13px] font-bold tabular-nums ${
+                          cuadrado ? "text-emerald-600" : sobrante ? "text-[#2154d8]" : "text-red-600"
+                        }`}>
+                          {cuadrado
+                            ? "±S/ 0.00"
+                            : `${moneyGte(diferencia, 0) ? "+" : "−"}S/ ${diffAbs.toFixed(2)}`
+                          }
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Observaciones (opcional)</span>
                     <textarea
