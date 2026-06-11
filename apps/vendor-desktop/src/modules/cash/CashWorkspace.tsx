@@ -394,10 +394,16 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [movPanel, setMovPanel] = useState<"vendido" | "fondo">("vendido");
 
   // ── movements state ── Área 1: CAJA DEL DÍA ──────────────────
-  const [vendidoMoveType, setVendidoMoveType] = useState<MoveType>("egreso");
+  const [vendidoMoveType, setVendidoMoveType] = useState<MoveType>(() => {
+    const { fondoVendidoEsp } = calcConciliation(
+      cashMoves.filter(m => m.regularizationStatus !== "anulado"),
+      sessionStats.cash,
+      apertura,
+    );
+    return moneyGt(fondoVendidoEsp, 0) ? "egreso" : "ingreso";
+  });
   const [vendidoAmount,   setVendidoAmount]   = useState("");
   const [vendidoMotivo,   setVendidoMotivo]   = useState("");
-  const [vendidoObs,      setVendidoObs]      = useState("");
   const [lastVendidoMove, setLastVendidoMove] = useState<CashMove | null>(null);
   const vendidoAmountRef = useRef<HTMLInputElement>(null);
   const vendidoMotivoRef = useRef<HTMLInputElement>(null);
@@ -405,10 +411,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [fondoSubTab,   setFondoSubTab]   = useState<"retiro" | "deposito" | "prestado" | "devolver">("retiro");
   const [fondoAmount,   setFondoAmount]   = useState("");
   const [fondoMotivo,   setFondoMotivo]   = useState("");
-  const [fondoObs,      setFondoObs]      = useState("");
   const [lastFondoMove, setLastFondoMove] = useState<CashMove | null>(null);
   const fondoAmountRef = useRef<HTMLInputElement>(null);
   const fondoMotivoRef = useRef<HTMLInputElement>(null);
+  const [showFondoMotivoSugerencias, setShowFondoMotivoSugerencias] = useState(false);
   // ── reintegro state (ciclo RETIRO → REINTEGRO) ────────────────
   const [reintegroTargetId, setReintegroTargetId] = useState<string | null>(null);
   const [reintegroAmount,   setReintegroAmount]   = useState("");
@@ -421,13 +427,14 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [devolverMotivo,    setDevolverMotivo]    = useState("");
   const prestadoAmountRef = useRef<HTMLInputElement>(null);
   const prestadoMotivoRef = useRef<HTMLInputElement>(null);
+  const [showPrestadoMotivoSugerencias, setShowPrestadoMotivoSugerencias] = useState(false);
 
   useEffect(() => {
     setMovPanel("vendido");
-    setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null);
-    setFondoSubTab("retiro"); setFondoAmount(""); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null);
+    setVendidoMoveType("egreso"); setVendidoAmount(""); setVendidoMotivo(""); setLastVendidoMove(null);
+    setFondoSubTab("retiro"); setFondoAmount(""); setFondoMotivo(""); setLastFondoMove(null); setShowFondoMotivoSugerencias(false);
     setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
-    setPrestadoAmount(""); setPrestadoMotivo(""); setDevolverTargetId(null); setDevolverMotivo("");
+    setPrestadoAmount(""); setPrestadoMotivo(""); setShowPrestadoMotivoSugerencias(false); setDevolverTargetId(null); setDevolverMotivo("");
   }, [isOpen]);
 
   useEffect(() => {
@@ -466,35 +473,17 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const prestadoTotalAmt = parseFloat(prestadoAmount) || 0;
   const canAddPrestado   = validateCanAddMove(prestadoTotalAmt, prestadoMotivo);
 
-  // repos vinculadas por egreso (de activos, usando refId)
-  const repoSumByEgresoId = useMemo(() => {
-    const result: Record<string, number> = {};
-    for (const m of activeMoves) {
-      if (m.refId) result[m.refId] = moneyAdd(result[m.refId] ?? 0, m.amount);
-    }
-    return result;
-  }, [activeMoves]);
-
-  // pendientes: solo egresos con repos parciales (derivado de refId, sin flag stored)
-  const pendingByEgresoId = useMemo(() => {
-    const result: Record<string, number> = {};
-    for (const m of activeMoves) {
-      if (m.type === "egreso") {
-        const repoSum = repoSumByEgresoId[m.id] ?? 0;
-        if (moneyGt(repoSum, 0)) {
-          const pending = moneySub(m.amount, repoSum);
-          if (moneyGt(pending, 0)) result[m.id] = pending;
-        }
-      }
-    }
-    return result;
-  }, [activeMoves, repoSumByEgresoId]);
-  const totalPending = moneySum(Object.values(pendingByEgresoId));
-
   // fondo breakdown — excluye anulados
   const {
-    ingresosTotal, egresosTotal, ingVendido, arqueoOperacional, egVendido, fondoApertEsp,
+    ingresosTotal, egresosTotal, ingVendido, arqueoOperacional, egVendido, fondoApertEsp, fondoVendidoEsp,
   } = calcConciliation(activeMoves, sessionStats.cash, apertura);
+  const exceedsFondoVendido = vendidoMoveType === "egreso" && moneyGt(vendidoTotalAmt, fondoVendidoEsp);
+  const canSubmitVendido = canAddVendido && (vendidoMoveType === "ingreso" || !exceedsFondoVendido);
+  useEffect(() => {
+    if (!moneyGt(fondoVendidoEsp, 0) && vendidoMoveType === "egreso") {
+      setVendidoMoveType("ingreso");
+    }
+  }, [fondoVendidoEsp, vendidoMoveType]);
   // ventasDescomp: total de ventas por método (informativo, para pantalla de contexto)
   const ventasDescomp  = moneySum([sessionStats.cash, sessionStats.yape, sessionStats.tarjeta]);
   // préstamos externos pendientes de resolver (por_regularizar)
@@ -595,21 +584,15 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   function handleSaveCorrection() {
     if (!canCorrectApertura) return;
-    solicitarAutorizacion(
-      "Corrección de datos de apertura",
-      activeOperator?.alias ?? operatorName,
-      () => {
-        const amt = parseFloat(editAperturaInput) || 0;
-        correctAperturaData(
-          amt,
-          editMotivo.trim() || undefined,
-          editObservacion.trim() || undefined,
-          editRefOp.trim() || undefined,
-        );
-        setEditingApertura(false);
-        showNotice("Datos de apertura corregidos");
-      }
+    const amt = parseFloat(editAperturaInput) || 0;
+    correctAperturaData(
+      amt,
+      editMotivo.trim() || undefined,
+      editObservacion.trim() || undefined,
+      editRefOp.trim() || undefined,
     );
+    setEditingApertura(false);
+    showNotice("Datos de apertura corregidos");
   }
 
   function cancelEditApertura() {
@@ -630,12 +613,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   }
 
   function handleAddVendido() {
-    if (!canAddVendido) return;
+    if (!canSubmitVendido) return;
     const amt = vendidoTotalAmt;
-    const obs = vendidoObs.trim() || undefined;
-    const move = addCashMove(vendidoMoveType, amt, vendidoMotivo.trim(), "vendido", 0, amt, obs);
+    const move = addCashMove(vendidoMoveType, amt, vendidoMotivo.trim(), "vendido", 0, amt, undefined);
     setLastVendidoMove(move);
-    setVendidoAmount(""); setVendidoMotivo(""); setVendidoObs("");
+    setVendidoAmount(""); setVendidoMotivo("");
     showNotice(`${vendidoMoveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => vendidoAmountRef.current?.focus(), 10);
   }
@@ -643,10 +625,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   function handleAddFondo() {
     if (!canAddFondo || fondoSubTab !== "retiro") return;
     const amt = fondoTotalAmt;
-    const obs = fondoObs.trim() || undefined;
-    const move = addCashMove("egreso", amt, fondoMotivo.trim(), "apertura", amt, 0, obs, undefined, "por_regularizar");
+    const move = addCashMove("egreso", amt, fondoMotivo.trim(), "apertura", amt, 0, undefined, undefined, "por_regularizar");
     setLastFondoMove(move);
-    setFondoAmount(""); setFondoMotivo(""); setFondoObs("");
+    setFondoAmount(""); setFondoMotivo(""); setShowFondoMotivoSugerencias(false);
     showNotice(`Retiro del fondo registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => fondoAmountRef.current?.focus(), 10);
   }
@@ -658,7 +639,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     if (amt <= 0 || reintegroMotivo.trim().length < MIN_MOTIVO_LEN) return;
     const move = addCashMove("ingreso", amt, reintegroMotivo.trim(), "apertura", amt, 0, undefined, original.id);
     if (moneyGte(amt, original.amount)) updateCashMove(original.id, "regularizado", "reposicion");
-    handlePrintVoucher(move);
     setLastFondoMove(move);
     setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
     showNotice(`Reintegro registrado · S/ ${amt.toFixed(2)}`);
@@ -668,7 +648,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     if (!canAddPrestado) return;
     const move = addCashMove("ingreso", prestadoTotalAmt, prestadoMotivo.trim(), "externo", 0, 0, undefined, undefined, "por_regularizar");
     setLastFondoMove(move);
-    setPrestadoAmount(""); setPrestadoMotivo("");
+    setPrestadoAmount(""); setPrestadoMotivo(""); setShowPrestadoMotivoSugerencias(false);
     showNotice(`Préstamo recibido registrado · S/ ${prestadoTotalAmt.toFixed(2)}`);
     setTimeout(() => prestadoAmountRef.current?.focus(), 10);
   }
@@ -680,7 +660,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     // Egreso de auditoría — fromApertura/fromVendido=0 para no afectar fondoApertEsp
     const move = addCashMove("egreso", original.amount, devolverMotivo.trim(), "externo", 0, 0, undefined, original.id);
     updateCashMove(original.id, "regularizado", "reposicion");
-    handlePrintVoucher(move);
     setLastFondoMove(move);
     setDevolverTargetId(null); setDevolverMotivo("");
     showNotice(`Devolución registrada · S/ ${original.amount.toFixed(2)}`);
@@ -881,11 +860,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     onClick={() => canCorrectApertura ? openEditApertura() : undefined}
                     disabled={!canCorrectApertura}
                     title={
-                      !canCorrectApertura && cashMoves.length > 0
-                        ? "No disponible — ya hay movimientos registrados"
-                        : !canCorrectApertura && sessionStats.count > 0
-                          ? "No disponible — ya hay ventas realizadas"
-                          : "Corregir monto de apertura · Ctrl+Insert"
+                      canCorrectApertura
+                        ? "Sujeta a turno sin operaciones · TECLA [Ctrl + Insert]"
+                        : cashMoves.length > 0
+                          ? "No disponible — ya hay movimientos registrados"
+                          : sessionStats.count > 0
+                            ? "No disponible — ya hay ventas realizadas"
+                            : "No disponible — sujeta a turno sin operaciones"
                     }
                     className={`flex w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[10px] font-semibold transition ${
                       canCorrectApertura
@@ -894,10 +875,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     }`}
                   >
                     <Pencil size={10} strokeWidth={2} className="shrink-0" />
-                    <span>Corregir apertura</span>
-                    {canCorrectApertura && (
-                      <span className="ml-auto text-[8.5px] font-bold text-[#c0cad4]">Ctrl+Ins</span>
-                    )}
+                    <span>Corregir fondo de cambio</span>
                   </button>
                 </div>
               )}
@@ -1124,21 +1102,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   Guardar corrección
                 </button>
               </div>
-            ) : (
-              <>
-                <button
-                  onClick={openEditApertura}
-                  title="Tecla [Ctrl + Insert]"
-                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#2154d8] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#1a44be] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#2154d8]/60"
-                >
-                  <Pencil size={14} strokeWidth={2} />
-                  Corregir fondo de cambio
-                </button>
-                <span className="inline-flex items-center gap-1.5 self-start rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
-                  PODRÁ CORREGIR CON TURNO SIN OPERACIONES
-                </span>
-              </>
-            )
+            ) : null
           ) : null
         )}
 
@@ -2095,14 +2059,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
             </div>
 
-            {(ingVendido > 0 || egVendido > 0 || moneyGt(totalPending, 0)) && (
-              <div className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-[#e8edf3]">
-                {ingVendido > 0 && <span className="text-[10px] font-bold text-emerald-600 tabular-nums">↑ S/ {ingVendido.toFixed(2)}</span>}
-                {egVendido  > 0 && <span className="text-[10px] font-bold text-red-500 tabular-nums">↓ S/ {egVendido.toFixed(2)}</span>}
-                {moneyGt(totalPending, 0) && <span className="text-[10px] font-bold text-amber-600 tabular-nums">↩ S/ {totalPending.toFixed(2)}</span>}
-              </div>
-            )}
-
             {/* Tab switcher — fijo */}
             <div className="shrink-0 px-3 py-2 border-b border-[#e8edf3]">
               <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
@@ -2136,14 +2092,21 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               }`}>
                 <div className="flex flex-col gap-2.5 px-4 py-4">
 
-                  <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
-                    {(["egreso", "ingreso"] as MoveType[]).map(t => (
+                <div className="flex gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+                  {(["egreso", "ingreso"] as MoveType[]).map(t => (
                       <button key={t}
-                        onClick={() => { setVendidoMoveType(t); setVendidoMotivo(""); setVendidoObs(""); setLastVendidoMove(null); }}
+                        onClick={() => {
+                          if (t === "egreso" && !moneyGt(fondoVendidoEsp, 0)) return;
+                          setVendidoMoveType(t); setVendidoMotivo(""); setLastVendidoMove(null);
+                        }}
+                        disabled={t === "egreso" && !moneyGt(fondoVendidoEsp, 0)}
+                        title={t === "egreso" && !moneyGt(fondoVendidoEsp, 0) ? "No disponible — no hay saldo en Caja del Día" : undefined}
                         className={`flex-1 rounded-[9px] py-1.5 text-[11px] font-bold uppercase tracking-wide transition ${
                           vendidoMoveType === t
                             ? t === "ingreso" ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white shadow-sm"
-                            : "text-[#9ca3af] hover:text-[#374151]"
+                            : t === "egreso" && !moneyGt(fondoVendidoEsp, 0)
+                              ? "cursor-not-allowed text-[#c0cad4]"
+                              : "text-[#9ca3af] hover:text-[#374151]"
                         }`}
                       >
                         {t === "ingreso" ? "↑ INGRESAR" : "↓ SACAR"}
@@ -2169,32 +2132,28 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                       }`}
                     />
                   </div>
+                  {exceedsFondoVendido && (
+                    <p className="px-0.5 text-[10px] font-semibold text-red-500">
+                      Excede el saldo disponible (S/ {fondoVendidoEsp.toFixed(2)})
+                    </p>
+                  )}
 
                   <input
                     ref={vendidoMotivoRef}
                     type="text"
                     value={vendidoMotivo}
                     onChange={e => setVendidoMotivo(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && canAddVendido) handleAddVendido(); }}
+                    onKeyDown={e => { if (e.key === "Enter" && canSubmitVendido) handleAddVendido(); }}
                     placeholder={vendidoMoveType === "egreso" ? "Ej: Pago mototaxi, pago proveedor..." : "Ej: Depósito, ajuste de caja..."}
                     maxLength={120}
                     className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                   />
 
-                  <input
-                    type="text"
-                    value={vendidoObs}
-                    onChange={e => setVendidoObs(e.target.value)}
-                    placeholder="Anotación (opcional)"
-                    maxLength={200}
-                    className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                  />
-
                   <button
                     onClick={handleAddVendido}
-                    disabled={!canAddVendido}
+                    disabled={!canSubmitVendido}
                     className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
-                      canAddVendido
+                      canSubmitVendido
                         ? vendidoMoveType === "ingreso"
                           ? "bg-[#45b356] text-white shadow-sm hover:bg-[#35994a] active:scale-[0.98]"
                           : "bg-red-500 text-white shadow-sm hover:bg-red-600 active:scale-[0.98]"
@@ -2205,11 +2164,19 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   </button>
 
                   {lastVendidoMove && (
-                    <div className="flex flex-col gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2.5">
+                    <div className={`flex flex-col gap-1.5 rounded-xl border bg-white px-3 py-2.5 ${
+                      lastVendidoMove.type === "ingreso" ? "border-emerald-200" : "border-red-200"
+                    }`}>
                       <div className="flex items-center gap-2">
-                        <CheckCircle size={11} className="shrink-0 text-emerald-500" />
+                        <CheckCircle size={11} className={`shrink-0 ${
+                          lastVendidoMove.type === "ingreso" ? "text-emerald-500" : "text-red-500"
+                        }`} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Registrado</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-wide ${
+                            lastVendidoMove.type === "ingreso" ? "text-emerald-700" : "text-red-700"
+                          }`}>
+                            {lastVendidoMove.type === "ingreso" ? "INGRESO REGISTRADO" : "RETIRO REGISTRADO"}
+                          </p>
                           <p className="truncate text-[10px] text-[#9ca3af]">
                             {lastVendidoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastVendidoMove.amount.toFixed(2)} · {lastVendidoMove.motivo}
                           </p>
@@ -2258,7 +2225,14 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                           ? externosPendientes.length : 0;
                       return (
                         <button key={tab}
-                          onClick={() => { setFondoSubTab(tab); setFondoMotivo(""); setFondoObs(""); setLastFondoMove(null); }}
+                          onClick={() => {
+                            setFondoSubTab(tab);
+                            setFondoMotivo("");
+                            setShowFondoMotivoSugerencias(false);
+                            setPrestadoMotivo("");
+                            setShowPrestadoMotivoSugerencias(false);
+                            setLastFondoMove(null);
+                          }}
                           className={`relative flex-1 rounded-[9px] py-1.5 text-[9.5px] font-bold uppercase tracking-wide transition ${
                             active ? `${color} text-white shadow-sm` : "text-[#9ca3af] hover:text-[#374151]"
                           }`}
@@ -2281,18 +2255,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         Retiro del fondo de cambio · quedará pendiente de reintegro
                       </p>
 
-                      <div className="flex flex-wrap gap-1">
-                        {["Préstamo temporal","Cambio para otra caja","Compra operacional menor","Contingencia","Retiro autorizado"].map(chip => (
-                          <button key={chip} onClick={() => setFondoMotivo(chip)}
-                            className={`rounded-full border px-2 py-0.5 text-[9.5px] font-semibold transition ${
-                              fondoMotivo === chip
-                                ? "border-amber-400 bg-amber-50 text-amber-700"
-                                : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#c0cad4] hover:text-[#374151]"
-                            }`}
-                          >{chip}</button>
-                        ))}
-                      </div>
-
                       <div className="flex items-center gap-1.5">
                         <span className="shrink-0 text-[13px] font-bold text-amber-500">S/</span>
                         <input ref={fondoAmountRef} type="number" value={fondoAmount}
@@ -2305,17 +2267,32 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
                       <input ref={fondoMotivoRef} type="text" value={fondoMotivo}
                         onChange={e => setFondoMotivo(e.target.value)}
+                        onFocus={() => { if (!fondoMotivo.trim()) setShowFondoMotivoSugerencias(true); }}
+                        onBlur={() => { setTimeout(() => setShowFondoMotivoSugerencias(false), 150); }}
                         onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
                         placeholder="Ej: Préstamo temporal, sencillo para cambio..."
                         maxLength={120}
                         className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                       />
 
-                      <input type="text" value={fondoObs}
-                        onChange={e => setFondoObs(e.target.value)}
-                        placeholder="Anotación (opcional)" maxLength={200}
-                        className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[11px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
-                      />
+                      {showFondoMotivoSugerencias && (
+                        <div className="flex flex-wrap gap-1.5 pt-1.5">
+                          {["Préstamo temporal", "Cambio para otra caja", "Compra operacional menor", "Contingencia", "Retiro autorizado"].map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onMouseDown={e => e.preventDefault()}
+                              onClick={() => {
+                                setFondoMotivo(s);
+                                setShowFondoMotivoSugerencias(false);
+                              }}
+                              className="rounded-full border border-[#e2e8f0] bg-white px-2.5 py-1 text-[10px] font-medium text-[#697387] transition hover:border-[#2154d8]/30 hover:text-[#2154d8]"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       <button onClick={handleAddFondo} disabled={!canAddFondo}
                         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
@@ -2425,18 +2402,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         Préstamo recibido al fondo · quedará pendiente de devolución
                       </p>
 
-                      <div className="flex flex-wrap gap-1">
-                        {["Monedas operación","Fondo contingencia","Sencillo extra","Billete cambio"].map(chip => (
-                          <button key={chip} onClick={() => setPrestadoMotivo(chip)}
-                            className={`rounded-full border px-2 py-0.5 text-[9.5px] font-semibold transition ${
-                              prestadoMotivo === chip
-                                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                                : "border-[#e4e9f0] bg-white text-[#9ca3af] hover:border-[#c0cad4] hover:text-[#374151]"
-                            }`}
-                          >{chip}</button>
-                        ))}
-                      </div>
-
                       <div className="flex items-center gap-1.5">
                         <span className="shrink-0 text-[13px] font-bold text-emerald-600">S/</span>
                         <input ref={prestadoAmountRef} type="number" value={prestadoAmount}
@@ -2449,11 +2414,32 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
                       <input ref={prestadoMotivoRef} type="text" value={prestadoMotivo}
                         onChange={e => setPrestadoMotivo(e.target.value)}
+                        onFocus={() => { if (!prestadoMotivo.trim()) setShowPrestadoMotivoSugerencias(true); }}
+                        onBlur={() => { setTimeout(() => setShowPrestadoMotivoSugerencias(false), 150); }}
                         onKeyDown={e => { if (e.key === "Enter" && canAddPrestado) handleAddPrestado(); }}
                         placeholder="Ej: Monedas prestadas para dar vuelto..."
                         maxLength={120}
                         className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                       />
+
+                      {showPrestadoMotivoSugerencias && (
+                        <div className="flex flex-wrap gap-1.5 pt-1.5">
+                          {["Monedas operación", "Fondo contingencia", "Sencillo extra", "Billete cambio"].map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onMouseDown={e => e.preventDefault()}
+                              onClick={() => {
+                                setPrestadoMotivo(s);
+                                setShowPrestadoMotivoSugerencias(false);
+                              }}
+                              className="rounded-full border border-[#e2e8f0] bg-white px-2.5 py-1 text-[10px] font-medium text-[#697387] transition hover:border-[#2154d8]/30 hover:text-[#2154d8]"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       <button onClick={handleAddPrestado} disabled={!canAddPrestado}
                         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
@@ -2569,15 +2555,17 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         <div className="min-w-0 flex-1">
                           <p className={`text-[10px] font-bold uppercase tracking-wide ${lastFondoMove.type === "egreso" ? "text-amber-700" : "text-emerald-700"}`}>
                             {lastFondoMove.type === "egreso" && lastFondoMove.sourceType === "externo"
-                            ? "Devolución registrada · préstamo regularizado"
-                            : lastFondoMove.type === "egreso"
-                              ? "Retiro registrado · pendiente de reintegro"
-                              : lastFondoMove.sourceType === "externo" && lastFondoMove.regularizationMode === "integracion_fondo"
-                                ? "Préstamo integrado al fondo · suma permanente"
-                                : lastFondoMove.sourceType === "externo"
-                                  ? "Préstamo recibido · pendiente de devolución"
-                                  : "Reintegro registrado · retiro regularizado"
-                          }
+                              ? "DEVOLUCIÓN REGISTRADA"
+                              : lastFondoMove.type === "egreso"
+                                ? "RETIRO REGISTRADO"
+                                : lastFondoMove.sourceType === "externo" && lastFondoMove.regularizationMode === "integracion_fondo"
+                                  ? "PRÉSTAMO INTEGRADO AL FONDO · SUMA PERMANENTE"
+                                  : lastFondoMove.sourceType === "externo"
+                                    ? "PRÉSTAMO REGISTRADO · PENDIENTE DE DEVOLUCIÓN"
+                                    : lastFondoMove.refId
+                                      ? "REINTEGRO REGISTRADO"
+                                      : "INGRESO REGISTRADO"
+                            }
                           </p>
                           <p className="truncate text-[10px] text-[#9ca3af]">
                             {lastFondoMove.type === "ingreso" ? "↑" : "↓"} S/ {lastFondoMove.amount.toFixed(2)} · {lastFondoMove.motivo}
