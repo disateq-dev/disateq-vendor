@@ -337,7 +337,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const contadoYapeRef = useRef<HTMLInputElement>(null);
   const contadoTarRef  = useRef<HTMLInputElement>(null);
 
-  const { solicitarAutorizacion, PinAutorizacionModal } = useAutorizacion();
+  const { PinAutorizacionModal } = useAutorizacion();
   const [cierreAutorizado, setCierreAutorizado] = useState(false);
 
   useEffect(() => {
@@ -810,14 +810,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
         {/* Status / pre-open card */}
         {isOpen ? (
-          <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
-            closingStage > 0 ? "border-red-200" : "border-[#2A7CA8]/50"
-          }`}>
-            <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
-              closingStage > 0 ? "bg-[#FEF5F5] border-red-100" : "bg-[#F2F7FA] border-[#2A7CA8]/15"
-            }`}>
+          <div className="flex flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#F2F7FA] border-[#2A7CA8]/15">
               {closingStage > 0
-                ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-red-400" />
+                ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
                 : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               }
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
@@ -879,27 +875,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   </button>
                 </div>
               )}
-              {closingPhase !== "none" && (
-                <div className="mt-2 space-y-1.5 border-t border-[#eef1f5] pt-2">
-                  <p className="px-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#9aa6b8]">
-                    Progreso
-                  </p>
-                  {progresoCierre.map(({ label, estado }) => (
-                    <div key={label} className="flex items-center gap-2 px-0.5">
-                      {estado === "completado" && <CheckCircle size={12} className="shrink-0 text-emerald-500" />}
-                      {estado === "activo" && <span className="h-2 w-2 shrink-0 rounded-full bg-[#2154d8]" />}
-                      {estado === "pendiente" && <span className="h-2 w-2 shrink-0 rounded-full bg-[#e2e8f0]" />}
-                      <span className={`text-[10.5px] font-semibold ${
-                        estado === "activo" ? "text-[#2154d8]" :
-                        estado === "completado" ? "text-emerald-600" : "text-[#9aa6b8]"
-                      }`}>
-                        {label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
               {sessionStats.count > 0 && closingStage === 0 && (() => {
                 const { efe, yap, tar, mix } = sessionStats.byMethod;
                 const breakdown = [
@@ -1110,6 +1085,35 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
+          {isOpen && closingStage > 0 ? (
+            <div className="flex flex-col gap-1 rounded-[20px] border border-[#2A7CA8]/20 bg-white px-4 py-3.5">
+              <p className="px-0.5 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa6b8]">
+                PROGRESO
+              </p>
+              {progresoCierre.map(({ label, estado }, idx) => (
+                <div key={label} className="flex items-start gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                      estado === "completado" ? "bg-emerald-500 text-white" :
+                      estado === "activo" ? "bg-[#2154d8] text-white" :
+                      "bg-[#e2e8f0] text-[#9aa6b8]"
+                    }`}>
+                      {estado === "completado" ? <CheckCircle size={14} strokeWidth={2.5} /> : idx + 1}
+                    </div>
+                    {idx < progresoCierre.length - 1 && (
+                      <div className={`w-[2px] flex-1 ${estado === "completado" ? "bg-emerald-300" : "bg-[#e2e8f0]"}`} style={{ minHeight: "20px" }} />
+                    )}
+                  </div>
+                  <div className={`flex-1 pb-3 pt-0.5 text-[12px] font-semibold ${
+                    estado === "activo" ? "text-[#2154d8]" :
+                    estado === "completado" ? "text-emerald-600" : "text-[#9aa6b8]"
+                  }`}>
+                    {label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {!isOpen ? (
             <>
               <button
@@ -1145,122 +1149,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               </button>
             </>
 
-          ) : closingStage === 1 ? (
-            <>
-              <button
-                onClick={handleContinueToCaja}
-                disabled={!canContinueToCaja}
-                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
-                  canContinueToCaja
-                    ? "bg-[#45b356] text-white shadow-[0_4px_14px_rgba(69,179,86,0.24)] hover:bg-[#35994a] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
-                }`}
-              >
-                CONTINUAR A ARQUEO DE CAJA
-                {canContinueToCaja && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>}
-              </button>
-              <button
-                onClick={() => setClosingStage(0)}
-                className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
-              >
-                CANCELAR
-              </button>
-            </>
-
-          ) : closingStage === 2 ? (
-            <>
-              <button
-                onClick={() => {
-                  if (!contadoValid) return;
-                  const eR = safeCalc(contadoEfe);  if (eR !== null && eR >= 0) setContadoEfe(eR.toFixed(2));
-                  const yR = safeCalc(contadoYape); if (yR !== null && yR >= 0) setContadoYape(yR.toFixed(2));
-                  const tR = safeCalc(contadoTar);  if (tR !== null && tR >= 0) setContadoTar(tR.toFixed(2));
-                  setValidatedAt(new Date().toISOString());
-                  setClosingStage(3);
-                }}
-                disabled={!contadoValid}
-                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
-                  contadoValid
-                    ? "bg-[#2154d8] text-white shadow-[0_4px_14px_rgba(33,84,216,0.24)] hover:bg-[#1a44be] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-[#2154d8]/[0.15] text-[#2154d8]/50"
-                }`}
-              >
-                GUARDAR CONTEO
-                <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F9</span>
-              </button>
-              <button
-                onClick={() => setClosingStage(0)}
-                className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
-              >
-                CANCELAR
-              </button>
-            </>
-
-          ) : closingStage === 3 ? (
-            <>
-              <button
-                onClick={() => setClosingStage(4)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#c2410c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(194,65,12,0.24)] transition hover:bg-[#9a3412] active:scale-[0.98]"
-              >
-                COMPARAR TOTALES
-                <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F10</span>
-              </button>
-              <button
-                onClick={() => { setValidatedAt(null); setClosingStage(2); }}
-                className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
-              >
-                RECONTAR
-                <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[#9ca3af]">F4</span>
-              </button>
-            </>
-
-          ) : closingStage === 4 ? (
-            <>
-              <button
-                onClick={() =>
-                  solicitarAutorizacion(
-                    "Confirmar cierre de turno",
-                    activeOperator?.alias ?? operatorName,
-                    () => setClosingStage(5)
-                  )
-                }
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
-              >
-                <CheckCircle size={14} strokeWidth={2.5} />
-                CONFIRMAR CIERRE
-              </button>
-              <button
-                onClick={() => { setValidatedAt(null); setClosingStage(2); }}
-                className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
-              >
-                RECONTAR
-                <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[#9ca3af]">F4</span>
-              </button>
-            </>
-
-          ) : /* stage 5 */ (
-            <>
-              <button
-                onClick={handleConfirmClose}
-                disabled={!canClose}
-                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
-                  canClose
-                    ? "bg-[#b91c1c] text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] hover:bg-[#991b1b] active:scale-[0.98]"
-                    : "cursor-not-allowed bg-[#dc2626]/[0.15] text-[#dc2626]/50"
-                }`}
-              >
-                <CheckCircle size={14} strokeWidth={2.5} />
-                {cierreAutorizado ? "CIERRE AUTORIZADO" : "CERRAR TURNO"}
-                {canClose && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+↵</span>}
-              </button>
-              <button
-                onClick={() => setClosingStage(0)}
-                className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
-              >
-                CANCELAR
-              </button>
-            </>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -1410,9 +1299,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         <>
 
           {/* ── SHEET 2: ARQUEO FONDO DE CAMBIO (30%) ── */}
-          <div className="flex min-h-0 w-[30%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-red-200 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
-              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-red-400" />
+          <div className="flex min-h-0 w-[30%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
+              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 ARQUEO FONDO DE CAMBIO
               </span>
@@ -1644,12 +1533,34 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                 </>
               )}
             </div>
+            {closingStage === 1 && (
+              <div className="shrink-0 flex flex-col gap-2 px-4 pb-4 pt-2">
+                <button
+                  onClick={handleContinueToCaja}
+                  disabled={!canContinueToCaja}
+                  className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
+                    canContinueToCaja
+                      ? "bg-[#45b356] text-white shadow-[0_4px_14px_rgba(69,179,86,0.24)] hover:bg-[#35994a] active:scale-[0.98]"
+                      : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
+                  }`}
+                >
+                  CONTINUAR A ARQUEO DE CAJA
+                  {canContinueToCaja && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>}
+                </button>
+                <button
+                  onClick={() => setClosingStage(0)}
+                  className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ── SHEET 3: ARQUEO CAJA · CIERRE DE TURNO (40%) ── */}
-          <div className="flex min-h-0 w-[40%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-red-200 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
-              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-red-400" />
+          <div className="flex min-h-0 w-[40%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
+              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 ARQUEO CAJA · CIERRE DE TURNO
               </span>
@@ -2070,6 +1981,95 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               )}
 
             </div>
+            {closingPhase === "caja" && (
+              <div className="shrink-0 flex flex-col gap-2 px-4 pb-4 pt-2">
+                {closingStage === 2 ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (!contadoValid) return;
+                        const eR = safeCalc(contadoEfe);  if (eR !== null && eR >= 0) setContadoEfe(eR.toFixed(2));
+                        const yR = safeCalc(contadoYape); if (yR !== null && yR >= 0) setContadoYape(yR.toFixed(2));
+                        const tR = safeCalc(contadoTar);  if (tR !== null && tR >= 0) setContadoTar(tR.toFixed(2));
+                        setValidatedAt(new Date().toISOString());
+                        setClosingStage(3);
+                      }}
+                      disabled={!contadoValid}
+                      className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
+                        contadoValid
+                          ? "bg-[#2154d8] text-white shadow-[0_4px_14px_rgba(33,84,216,0.24)] hover:bg-[#1a44be] active:scale-[0.98]"
+                          : "cursor-not-allowed bg-[#2154d8]/[0.15] text-[#2154d8]/50"
+                      }`}
+                    >
+                      GUARDAR CONTEO
+                      <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F9</span>
+                    </button>
+                    <button
+                      onClick={() => setClosingStage(0)}
+                      className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
+                    >
+                      CANCELAR
+                    </button>
+                  </>
+                ) : closingStage === 3 ? (
+                  <>
+                    <button
+                      onClick={() => setClosingStage(4)}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#c2410c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(194,65,12,0.24)] transition hover:bg-[#9a3412] active:scale-[0.98]"
+                    >
+                      COMPARAR TOTALES
+                      <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">F10</span>
+                    </button>
+                    <button
+                      onClick={() => { setValidatedAt(null); setClosingStage(2); }}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
+                    >
+                      RECONTAR
+                      <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[#9ca3af]">F4</span>
+                    </button>
+                  </>
+                ) : closingStage === 4 ? (
+                  <>
+                    <button
+                      onClick={() => setClosingStage(5)}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b91c1c] py-3.5 text-[13px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] transition hover:bg-[#991b1b] active:scale-[0.98]"
+                    >
+                      <CheckCircle size={14} strokeWidth={2.5} />
+                      CONFIRMAR CIERRE
+                    </button>
+                    <button
+                      onClick={() => { setValidatedAt(null); setClosingStage(2); }}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
+                    >
+                      RECONTAR
+                      <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[#9ca3af]">F4</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleConfirmClose}
+                      disabled={!canClose}
+                      className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[13px] font-bold uppercase tracking-widest transition ${
+                        canClose
+                          ? "bg-[#b91c1c] text-white shadow-[0_4px_12px_rgba(185,28,28,0.20)] hover:bg-[#991b1b] active:scale-[0.98]"
+                          : "cursor-not-allowed bg-[#dc2626]/[0.15] text-[#dc2626]/50"
+                      }`}
+                    >
+                      <CheckCircle size={14} strokeWidth={2.5} />
+                      {cierreAutorizado ? "CIERRE AUTORIZADO" : "CERRAR TURNO"}
+                      {canClose && <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">CTRL+↵</span>}
+                    </button>
+                    <button
+                      onClick={() => setClosingStage(0)}
+                      className="flex w-full items-center justify-center rounded-2xl border border-[#e4e9f0] bg-white py-2.5 text-[12px] font-semibold text-[#374151] hover:bg-[#f8fafd]"
+                    >
+                      CANCELAR
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </>
 

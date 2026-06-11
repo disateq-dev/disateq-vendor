@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-fix(cash): eliminar wrapper extra que rompía proporciones 30/30/40 en vista turno abierto (5f38a74)
+fix(cash): reestructurar cierre de turno en 3 sheets 30/30/40, eliminar panel PROCESO (86745e7)
 
 ---
 
@@ -203,7 +203,69 @@ Los tres sheets (30/30/40) quedan completos para todos los estados de
 | `closingStage === 1` (fondo) | CIERRE DE TURNO + PROGRESO | Arqueo activo | Placeholder pendiente |
 | `closingStage === 2-5` (caja) | CIERRE DE TURNO + PROGRESO | Resumen validado | pasosCaja activo + stage |
 
-**Pendiente:** commit de estos cambios (no realizado durante esta sesión).
+Commit `86745e7`.
+
+---
+
+## Sesión 2026-06-11 (ronda 2) — 4 ajustes finos a CIERRE DE TURNO tras evaluación de Fernando
+
+Tras el commit `86745e7`, Fernando evaluó la UI resultante como ADMIN y como
+operador VEN, confirmando que el arqueo a ciegas funciona correctamente para
+VEN (oculta "Esperado ventas"/conciliación). 4 hallazgos adicionales,
+resueltos en 4 prompts atómicos, cada uno verificado vía filesystem MCP.
+
+### Hallazgos y resolución
+
+1. **Botones de acción → a su sheet correspondiente**: los botones de cada
+   stage del cierre (CONTINUAR A ARQUEO DE CAJA, GUARDAR CONTEO, COMPARAR
+   TOTALES, CONFIRMAR CIERRE, CERRAR TURNO, CANCELAR/RECONTAR) vivían en el
+   panel "Actions" de Sheet 1, operando sobre contenido de Sheet 2/Sheet 3.
+   Movidos (no duplicados):
+   - Stage 1 (CONTINUAR A ARQUEO DE CAJA + CANCELAR) → footer de Sheet 2.
+   - Stages 2-5 (GUARDAR CONTEO/CANCELAR · COMPARAR TOTALES/RECONTAR ·
+     CONFIRMAR CIERRE/RECONTAR · CERRAR TURNO/CANCELAR) → footer único de
+     Sheet 3, con sub-rama según `closingStage`, visible solo si
+     `closingPhase === "caja"`.
+   - Panel "Actions" de Sheet 1 para `closingStage > 0` queda sin botones de
+     stage (solo conserva "CIERRE DE TURNO" para `closingStage === 0`).
+
+2. **PIN de autorización eliminado del cierre normal**: "CONFIRMAR CIERRE"
+   (stage 4→5) ya no usa `solicitarAutorizacion(...)` — ahora
+   `onClick={() => setClosingStage(5)}` directo. El PIN de autorización queda
+   reservado exclusivamente para reapertura/corrección vía
+   `SupervisionCajaWorkspace`/`cierreAutorizado` (sin cambios). Como
+   consecuencia, `solicitarAutorizacion` quedó sin uso — se eliminó de la
+   destructuración (`const { PinAutorizacionModal } = useAutorizacion();`).
+   `PinAutorizacionModal` y `cierreAutorizado` siguen en uso sin cambios.
+
+3. **PROGRESO con estilo timeline conectado**: el bloque PROGRESO (antes una
+   lista simple con punto/check + label dentro del status card, bajo
+   `closingPhase !== "none"`) fue eliminado de ahí y reconstruido con estilo
+   timeline (círculos numerados, ✓ en completados, líneas verticales
+   conectoras) en el espacio que liberaron los botones movidos, dentro del
+   panel "Actions" de Sheet 1. Mantiene el nombre "PROGRESO" y las 3 etapas
+   de `progresoCierre` (Arqueo Fondo de Cambio · Arqueo de Caja · Confirmar
+   Cierre) sin cambios. Visible solo si `isOpen && closingStage > 0`.
+
+4. **Identidad cromática TURNO restaurada**: las 3 sheets del flujo de cierre
+   (status card de Sheet 1, Sheet 2, Sheet 3) volvieron al tema TURNO
+   (`border-[#2A7CA8]/50`, header `bg-[#F2F7FA] border-[#2A7CA8]/15`, íconos
+   `text-[#1a5f7a]`), reemplazando el tema rojo del contenedor completo. El
+   énfasis "cierre/crítico" en rojo permanece en elementos internos: badge
+   `{closingStage}/5`, círculo `bg-[#f4f7fb] text-[#b91c1c]`, texto "CERRANDO
+   TURNO · X/5" (`text-red-500`), badges SOBRANTE/FALTANTE, botones CONFIRMAR
+   CIERRE/CERRAR TURNO.
+
+`npx tsc -b` pasó sin errores nuevos (incluye fix de `solicitarAutorizacion`
+sin uso).
+
+### Pendiente
+
+- Commit de los 4 prompts de esta ronda + actualización de este documento.
+- Auditoría de la **impresión del ticket de cierre**: Fernando señaló que
+  "Esperado ventas"/conciliación SISTEMA vs OPERADOR es contenido de
+  impresión, no de pantalla — pendiente revisión específica de ese flujo en
+  una sesión futura, antes de retomar VENTAS.
 
 ---
 
