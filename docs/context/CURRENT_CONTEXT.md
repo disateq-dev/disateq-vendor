@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-docs(arch): contingencia por fallo de terminal — escenarios y mitigaciones
+fix(cash): eliminar wrapper extra que rompía proporciones 30/30/40 en vista turno abierto (5f38a74)
 
 ---
 
@@ -14,6 +14,165 @@ DISATEQ VENDOR está en estado de madurez operacional avanzada con normalizació
 
 El ciclo comercial completo está implementado y validado en runtime:
 BUSCAR → AGREGAR → COBRAR → PEDIDO CONCRETADO → INVENTARIO DESCONTADO → COMPROBANTE EMITIDO
+
+---
+
+## RECORRIDO SISTEMÁTICO POR DOMINIOS — estado
+
+Auditoría módulo por módulo bajo formato de cuatro dimensiones
+(orientación · densidad de información · flujos de acción · consistencia de shell)
+con severidad 🔴 Crítico / 🟡 Importante / 🟢 Menor / ⚪ OK.
+
+| Módulo | Estado |
+|---|---|
+| LOGIN | ✅ Auditado |
+| TURNO / CAJA | 🟡 Auditado (commit b2a6fea) — refinamiento de cierre de turno y layout en curso (ver sesión 2026-06-10) |
+| VENTAS | ⬜ Pendiente — siguiente en el recorrido |
+| COMPROBANTES | ⬜ Pendiente |
+| CLIENTES | ⬜ Pendiente |
+| REPORTES | ⬜ Pendiente |
+| INVENTARIOS | ⬜ Pendiente |
+| COMPRAS | ⬜ Pendiente |
+| OPERADORES / ROLES | ⬜ Pendiente |
+| CONFIG / AJUSTES | ⬜ Pendiente |
+
+**Nota de prioridad:** la capa sync/ (Fase 1 en adelante) queda en stand-by
+hasta completar el recorrido de módulos. Diseño arquitectónico ya documentado
+en `ARQUITECTURA_SYNC.md` — no se pierde, solo espera. Razón: sin Portal/Nexo
+aún no hay extremo-a-extremo que probar; el recorrido de módulos tiene impacto
+inmediato en distribución.
+
+---
+
+## Sesión 2026-06-10 — Refinamiento CIERRE DE TURNO + fix de layout
+
+Continuación del audit TURNO (commit b2a6fea). Trabajo sobre `CashWorkspace.tsx`,
+commits `46a2048`, `f8429e0`, `5f38a74`.
+
+### Completado y commiteado
+
+- **Cierre de turno reestructurado en 3 sheets** dentro del panel izquierdo (30%):
+  - Sheet 1 — sección "PROGRESO" (3 pasos derivados de `closingPhase`/`cajaStage`
+    vía `progresoCierre`): Arqueo Fondo de Cambio · Arqueo de Caja · Confirmar Cierre.
+  - Sheet 2 — "ARQUEO FONDO DE CAMBIO" (`closingPhase==="fondo"`): comparación
+    `contadoFondo` vs `fondoEsperado`, bloque SOBRANTE/FALTANTE/Fondo cuadrado,
+    `motivoFondo` obligatorio si difiere, botón "CONTINUAR A ARQUEO DE CAJA".
+  - Sheet 3 — "ARQUEO CAJA · CIERRE DE TURNO" (`closingPhase==="caja"`): barra de
+    4 pasos con color (`pasosCaja`: Conteo #2154d8 / Validación #d97706 /
+    Comparación #16a34a / Cierre #C05050, `currentIndex` desde `cajaStage`).
+  - Tipos nuevos: `ClosingPhase = "none"|"fondo"|"caja"`, `CajaStage =
+    "conteo"|"validacion"|"comparacion"|"cierre"`. `ClosingStage` (0-5) queda
+    como valor DERIVADO + `setClosingStage()` como setter de compatibilidad —
+    código legacy (F9/F10/F4/Enter/Ctrl+Enter, `loadContadoField`) sigue
+    funcionando sin reescritura.
+  - Panel "PROCESO" (timeline decorativo de 5 pasos, 152px) **queda sin cambios
+    estructurales** — Codex lo omitió por riesgo, ver pendientes.
+
+- **Saldo de CAJA DEL DÍA validado**:
+  - Tab "SACAR" deshabilitado si `fondoVendidoEsp <= 0` → fallback automático a
+    "INGRESAR". Tooltip: "No disponible — no hay saldo en Caja del Día".
+  - Monto de retiro no puede exceder `fondoVendidoEsp` — botón "SACAR DINERO"
+    deshabilitado + mensaje "Excede el saldo disponible (S/ X.XX)".
+  - INGRESAR permanece sin restricciones en todo momento (puede ser primera
+    operación del turno: cobro de deuda pendiente, etc.).
+
+- **Tarjetas de confirmación con impresión bajo demanda** — patrón unificado en
+  las 6 operaciones de movimientos (CAJA DEL DÍA ingreso/egreso vía
+  `lastVendidoMove`; FONDO DE CAMBIO — DI SENCILLO/ME DEVOLVIERON/RECIBÍ
+  SENCILLO/YO DEVOLVÍ — vía `lastFondoMove`, título dinámico según
+  `move.sourceType`/`refId`/`type`). Cada tarjeta: botón IMPRIMIR (llama
+  `handlePrintVoucher` on-demand) + botón ✕ (descarta). Reemplazó el patrón
+  anterior de impresión automática + checkbox "Imprimir comprobante"
+  (implementado y luego revertido en la misma sesión).
+
+- **UI de movimientos simplificada**:
+  - Eliminado indicador "↑ S/ X ↓ S/ Y" duplicado bajo header MOVIMIENTOS (ya
+    visible en RESUMEN DEL TURNO).
+  - Eliminado campo "Anotación (opcional)" de los 6 formularios (`vendidoObs`/
+    `fondoObs` removidos, `addCashMove` recibe `undefined`).
+  - Chips de motivo (DI SENCILLO y RECIBÍ SENCILLO — los únicos que los tenían)
+    convertidos de permanentes a sugerencias contextuales on-focus
+    (`showFondoMotivoSugerencias`/`showPrestadoMotivoSugerencias`, ocultas con
+    onBlur delay 150ms o al seleccionar).
+
+- **"Corregir fondo de cambio"** (antes "Corregir apertura"):
+  - Botón grande azul preexistente ("CORREGIR FONDO DE CAMBIO" + mensaje fijo)
+    eliminado — era redundante con el link discreto.
+  - Link discreto renombrado "Corregir apertura" → "Corregir fondo de cambio".
+  - Badge visual permanente "Ctrl+ins" eliminado del layout.
+  - Tooltip único, sin redundancia: si `canCorrectApertura` → "Sujeta a turno
+    sin operaciones · TECLA [Ctrl + Insert]"; si no, mensaje específico según
+    causa (movimientos registrados / ventas realizadas / turno con
+    operaciones).
+  - **PIN de autorización removido** de este flujo específico — operación de
+    bajo riesgo (ventana acotada por `canCorrectApertura`: cero movimientos,
+    cero ventas, antes de cualquier operación). Trazabilidad vía
+    `correctAperturaData`/`recordAperturaCorrection` se mantiene intacta.
+    El resto del sistema de PIN de autorización (`useAutorizacion`) NO fue
+    tocado.
+
+- **Bug estructural de layout resuelto** (el más relevante de la sesión):
+  En la vista turno abierto (`closingStage === 0`), MOVIMIENTOS y SUCESOS DEL
+  TURNO estaban envueltos en un `<div className="flex min-h-0 flex-1 gap-2">`
+  adicional dentro de `<section>` — sus `w-[30%]`/`w-[40%]` se calculaban sobre
+  ese wrapper (~70% del total tras restar el panel izquierdo de 30%), no sobre
+  el 100% de `<section>`. Proporciones reales resultantes: ~37.5% / ~25.8% /
+  ~34.5% en vez de 30/30/40. Corregido reemplazando el wrapper por un fragment
+  `<>...</>` — mismo patrón que ya usaba la vista `!isOpen` (CAJAS
+  DISPONIBLES/APERTURAS Y CIERRES, que sí estaba correcta desde el principio).
+  Verificado visualmente: proporciones 30/30/40 ahora consistentes en
+  pre-apertura y turno abierto.
+
+- **`pr-2` agregado a `<section>` raíz** — alinea el margen derecho de
+  APERTURAS Y CIERRES ANTERIORES / SUCESOS DEL TURNO con el resto del shell,
+  consistente en las tres vistas (pre-apertura, turno abierto, cierre).
+
+### Pendiente para próxima sesión
+
+- **Reestructuración de CIERRE DE TURNO (`closingStage > 0`) en 3 sheets fijas**,
+  consistente con el resto de vistas (30/30/40):
+  - Sheet 1 (30%) — "CIERRE DE TURNO" (ya existe, con sección PROGRESO).
+  - Sheet 2 (30%) — "ARQUEO FONDO DE CAMBIO" (contenido hoy en stage 1).
+  - Sheet 3 (40%) — "ARQUEO CAJA · CIERRE DE TURNO" (contenido hoy en stages
+    2-5 + barra de 4 pasos).
+  - Eliminar el panel "PROCESO" (timeline decorativo de 152px) — su función
+    queda cubierta por PROGRESO (Sheet 1) + barra de 4 pasos (Sheet 3).
+  - Diseño pendiente de definir: comportamiento de cada sheet cuando su fase
+    no está activa (ej. Sheet 2 en modo solo-lectura/resumen una vez
+    completada la fase FONDO; Sheet 3 en placeholder "pendiente" mientras la
+    fase activa es FONDO).
+  - Decisión tomada: hacerlo con calma en sesión fresca, no al final de una
+    sesión larga — alto riesgo de romper JSX en un bloque de ~600 líneas
+    (ya ocurrieron 2 roturas de fragment/wrapper esta sesión, ambas resueltas).
+- Revisión menor: confirmar que no quedó código muerto del botón
+  "CORREGIR FONDO DE CAMBIO" eliminado (handler compartido reutilizado por el
+  link discreto).
+- Continuar recorrido sistemático: módulo VENTAS (siguiente).
+
+### Nota operativa — gestión de modelo Codex
+
+Codex CLI alcanzó rate limit durante la sesión; cambio a `gpt-5.4-mini` para
+tareas mecánicas simples (clases de ancho, renombres de texto) funcionó bien.
+Recomendación: modelo pequeño para tareas mecánicas sin ambigüedad, modelo
+grande para lógica/estado/JSX estructural complejo.
+
+---
+
+## Resumen del audit TURNO — 9 hallazgos resueltos (commit b2a6fea)
+
+| # | Hallazgo | Resolución |
+|---|---|---|
+| 1 | Sub-tabs FONDO DE CAMBIO con terminología técnica | Renombrados a "DI SENCILLO" · "ME DEVOLVIERON" · "RECIBÍ SENCILLO" · "YO DEVOLVÍ" |
+| 2 | Historial pre-apertura mostraba sesiones de otros operadores a VEN | Filtrado por operadorId para rol VEN |
+| 3 | Corrección de apertura sin elemento visible | Botón visible con estado activo/inactivo + tooltip explicativo (refinado en sesión 2026-06-10) |
+| 4 | Campo zeroMotive sin guía contextual | Texto "Declaras S/ 0.00 en caja — indica el motivo para continuar" |
+| 5 | Transición Stage 3→4 sin confirmación visual | Indicador "✓ Conteos registrados a las HH:MM" usando validatedAt |
+| 6 | Imprimir arqueo disponible antes del conteo completo | Habilitado solo desde Stage 3 (validatedAt !== null) |
+| 7 | SubViews TURNO sin identidad en ContextBar | Pills expandidas: Gestión · Cajas · Supervisión (CASH_TABS en OperationalBar.tsx) |
+| 8 | Storage keys UI con separador legacy `.` | Renombradas a `disateq:cash:ui:closingPhase`/`cajaStage` y `disateq:cash:ui:contado` |
+| 9 | "ESTADO DE APERTURA Y CIERRES" impreciso | Renombrado a "APERTURAS Y CIERRES ANTERIORES" |
+
+Archivos modificados: `CashWorkspace.tsx`, `OperationalBar.tsx`
 
 ---
 
@@ -44,7 +203,7 @@ Archivo: `src/layout/AppShell.tsx` — monta `Topbar` + `ContextBar`
 **Expansión inline:**
 - Click en módulo con subtabs → expande, muestra pills inline, oculta resto
 - Click en anchor → colapsa, vuelve vista global
-- Módulos con subtabs: `cash`, `abastecimiento`, `config`
+- Módulos con subtabs: `cash` (Gestión · Cajas · Supervisión), `abastecimiento`, `config`
 - Módulos sin subtabs: navegan directamente
 
 **Navegación keyboard-first:**
@@ -118,14 +277,21 @@ Dependencias: solo `cashSession` de `usePOS()`. Sin `sessionStats`, `cashMoves`,
 
 ## Lo que está construido y validado
 
-### TURNO / CAJA
+### TURNO / CAJA — AUDITADO ✅ (refinamiento en curso)
 Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección · recovery.
 Arqueo a ciegas para rol VEN: Stage 4 oculta esperados del sistema y resultado de conciliación.
 Stage 5 cierre: fila DIFERENCIA (FALTANTE/SOBRANTE/CUADRADO) visible para roles no VEN.
 Ticket de cierre incluye sección SISTEMA vs OPERADOR (tú a tú) solo para cierres de rol VEN.
+Lenguaje operacional en FONDO DE CAMBIO · historial filtrado por operador para VEN ·
+corrección de apertura visible (sin PIN, ventana acotada) · guías contextuales ·
+pills Gestión/Cajas/Supervisión · cierre de turno en 3 sheets (Sheet "Cierre de turno" 3
+pendiente de reestructuración — ver sesión 2026-06-10) · proporciones 30/30/40
+verificadas en pre-apertura y turno abierto.
 
 ### FONDO DE CAMBIO
-Ciclo RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN/INTEGRACIÓN validados.
+Ciclo "DI SENCILLO" → "ME DEVOLVIERON" y "RECIBÍ SENCILLO" → "YO DEVOLVÍ" validados.
+(Antes: RETIRO→REINTEGRO y PRÉSTAMO→DEVOLUCIÓN — misma lógica, lenguaje operacional nuevo)
+Tarjetas de confirmación con impresión bajo demanda en las 4 operaciones.
 
 ### VENTAS / COBRO
 Catálogo vivo · Pedido canónico · Valor por contexto · ClienteBuscador · Comprobante.
@@ -168,6 +334,7 @@ SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
 |---|---|---|---|
 | 3 | UIX Stage 5 cierre — fila diferencia para roles no VEN | — | ✅ Cerrada |
 | 4 | Historial de búsqueda por sesión — ArrowUp en input vacío | Bajo | Baja |
+| 11 | CIERRE DE TURNO (closingStage > 0) — reestructurar en 3 sheets 30/30/40, eliminar panel PROCESO | Medio | Alta — próxima sesión |
 
 ### Seguridad
 
@@ -192,7 +359,7 @@ SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
 
 ---
 
-## Arquitectura de sincronización — CONSOLIDADA Y DOCUMENTADA
+## Arquitectura de sincronización — CONSOLIDADA Y DOCUMENTADA (en stand-by)
 
 Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
 
@@ -206,13 +373,11 @@ Documento completo: `docs/03-arquitectura/ARQUITECTURA_SYNC.md`
 **Recuperación:** terminales son el respaldo del Nexo · reconstrucción desde colas locales
 **Dos proyectos:** VENDOR (sync/ + SUNAT) · PORTAL (Nexo · licencias · actualizaciones · RustDesk)
 
----
+**Estado:** diseño completo, Fase 1 (cola de eventos) especificada y lista para Codex.
+En stand-by hasta completar el recorrido sistemático de módulos — ver sección de arriba.
+Tipos y API del store quedan documentados a continuación para no perder el trabajo.
 
-## Estado actual de la capa sync/
-
-Diseño arquitectónico completo y documentado. Listo para iniciar implementación.
-
-### Fase 1 — Cola de eventos (PRÓXIMA SESIÓN)
+### Fase 1 — Cola de eventos (especificación lista, en espera)
 
 Archivos a crear:
 ```
@@ -265,7 +430,7 @@ Lo que NO entra en la cola:
 | `Escape` | AppShell | Focus búsqueda VENTAS |
 | `F2` | SalesWorkspace | Focus búsqueda |
 | `Ctrl+Enter` | SalesWorkspace | Abrir cobro |
-| `Ctrl+Insert` | CashWorkspace | Corregir apertura |
+| `Ctrl+Insert` | CashWorkspace | Corregir fondo de cambio (sin PIN, link discreto, ventana acotada) |
 | `F9` | CashWorkspace stage 2 | Guardar conteo |
 | `F4` | CashWorkspace stages 3/4 | Recontar |
 | `F10` | CashWorkspace stage 3 | Comparar totales |
@@ -279,12 +444,12 @@ Lo que NO entra en la cola:
 
 ## Prioridad próximas sesiones
 
-1. Fase 1 sync — implementación cola de eventos (event-queue.types.ts + event-queue.store.ts)
-2. Fase 2 sync — sync-agent + nexo.config.json + failover (Ruta 1)
-3. Fase 3 sync — exportador .dsync + UI en Configuración (Ruta 3)
-4. Fase 4 sync — LAN peer-to-peer (Ruta 2)
-5. Fase 5 sync — bloques de correlativos multi-terminal
-6. Fase 6 — API REST facturación electrónica SUNAT
+1. **CIERRE DE TURNO en 3 sheets (30/30/40)** + eliminación panel PROCESO —
+   sesión fresca, alto cuidado con JSX (ver "Pendiente para próxima sesión" arriba).
+2. **Recorrido sistemático — VENTAS** (siguiente módulo en el audit de cuatro dimensiones)
+3. Recorrido sistemático — COMPROBANTES, CLIENTES, REPORTES, INVENTARIOS, COMPRAS, OPERADORES/ROLES, CONFIG
+4. (En stand-by) Fase 1 sync — cola de eventos — retomar al completar el recorrido
+5. (En stand-by) Fases 2-6 sync — dependen de Fase 1 y del Portal
 
 ---
 
