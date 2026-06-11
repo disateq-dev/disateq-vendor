@@ -26,7 +26,7 @@ con severidad 🔴 Crítico / 🟡 Importante / 🟢 Menor / ⚪ OK.
 | Módulo | Estado |
 |---|---|
 | LOGIN | ✅ Auditado |
-| TURNO / CAJA | 🟡 Auditado (commit b2a6fea) — refinamiento de cierre de turno y layout en curso (ver sesión 2026-06-10) |
+| TURNO / CAJA | ✅ Auditado (commit b2a6fea) — cierre de turno reestructurado en 3 sheets 30/30/40 (ver sesión 2026-06-11) |
 | VENTAS | ⬜ Pendiente — siguiente en el recorrido |
 | COMPROBANTES | ⬜ Pendiente |
 | CLIENTES | ⬜ Pendiente |
@@ -158,6 +158,55 @@ grande para lógica/estado/JSX estructural complejo.
 
 ---
 
+## Sesión 2026-06-11 — CIERRE DE TURNO reestructurado en 3 sheets (30/30/40)
+
+Continuación de la deuda #11 (sesión 2026-06-10). Trabajo sobre `CashWorkspace.tsx`,
+3 prompts atómicos a Codex, cada uno verificado vía filesystem MCP contra el archivo
+real antes de avanzar al siguiente.
+
+### Completado
+
+- **Prompt 1 — reestructuración base**: el contenedor único de `closingStage > 0`
+  (panel flujo flex-1 + panel PROCESO 152px) fue reemplazado por un Fragment con
+  dos sheets hermanos, replicando el patrón 30/30/40 ya usado en `!isOpen`:
+  - **Sheet 2 (30%, "ARQUEO FONDO DE CAMBIO")**: contenido íntegro de Stage 1
+    (~168 líneas movidas).
+  - **Sheet 3 (40%, "ARQUEO CAJA · CIERRE DE TURNO")**: barra `pasosCaja` +
+    Stages 2-5 íntegros (~87+50+119+114 líneas movidas).
+  - Panel PROCESO (timeline decorativo de 5 pasos + snapshot TURNO) eliminado
+    por completo — su información ya está cubierta por PROGRESO en Sheet 1.
+  - Sin código huérfano (`idx`, `w-[152px]`, referencias a PROCESO).
+
+- **Prompt 2 — Sheet 2, rama "completado"**: cuando `closingPhase === "caja"`
+  (closingStage 2-5), Sheet 2 muestra resumen de solo lectura del arqueo de
+  fondo ya validado: badge "Fondo de cambio validado", FONDO ESPERADO vs
+  FONDO CONTADO, y SOBRANTE/FALTANTE/Fondo cuadrado + motivo registrado
+  (usando `fondoDiferenciaFinal.current` / `fondoMotivoFinal.current`, sin
+  inputs ni handlers nuevos).
+
+- **Prompt 3 — Sheet 3, rama "pendiente"**: cuando `closingPhase === "fondo"`
+  (closingStage 1), Sheet 3 muestra placeholder: barra `pasosCaja` en gris
+  fijo (sin `currentIndex`) + empty state ("Completa el arqueo de fondo de
+  cambio para continuar" / "El conteo de caja se habilitará al finalizar
+  este paso"), mismo patrón visual que el empty state de APERTURAS Y CIERRES
+  ANTERIORES.
+
+`npx tsc -b` pasó sin errores nuevos en los tres prompts.
+
+### Resultado
+
+Los tres sheets (30/30/40) quedan completos para todos los estados de
+`closingStage > 0`:
+
+| Estado | Sheet 1 (30%) | Sheet 2 (30%) | Sheet 3 (40%) |
+|---|---|---|---|
+| `closingStage === 1` (fondo) | CIERRE DE TURNO + PROGRESO | Arqueo activo | Placeholder pendiente |
+| `closingStage === 2-5` (caja) | CIERRE DE TURNO + PROGRESO | Resumen validado | pasosCaja activo + stage |
+
+**Pendiente:** commit de estos cambios (no realizado durante esta sesión).
+
+---
+
 ## Resumen del audit TURNO — 9 hallazgos resueltos (commit b2a6fea)
 
 | # | Hallazgo | Resolución |
@@ -277,16 +326,18 @@ Dependencias: solo `cashSession` de `usePOS()`. Sin `sessionStats`, `cashMoves`,
 
 ## Lo que está construido y validado
 
-### TURNO / CAJA — AUDITADO ✅ (refinamiento en curso)
+### TURNO / CAJA — AUDITADO ✅
 Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección · recovery.
 Arqueo a ciegas para rol VEN: Stage 4 oculta esperados del sistema y resultado de conciliación.
 Stage 5 cierre: fila DIFERENCIA (FALTANTE/SOBRANTE/CUADRADO) visible para roles no VEN.
 Ticket de cierre incluye sección SISTEMA vs OPERADOR (tú a tú) solo para cierres de rol VEN.
 Lenguaje operacional en FONDO DE CAMBIO · historial filtrado por operador para VEN ·
 corrección de apertura visible (sin PIN, ventana acotada) · guías contextuales ·
-pills Gestión/Cajas/Supervisión · cierre de turno en 3 sheets (Sheet "Cierre de turno" 3
-pendiente de reestructuración — ver sesión 2026-06-10) · proporciones 30/30/40
-verificadas en pre-apertura y turno abierto.
+pills Gestión/Cajas/Supervisión · cierre de turno reestructurado en 3 sheets 30/30/40
+(Sheet 1 CIERRE DE TURNO + PROGRESO · Sheet 2 ARQUEO FONDO DE CAMBIO · Sheet 3 ARQUEO
+CAJA · CIERRE DE TURNO, con ramas activa/completada/pendiente según fase — ver sesión
+2026-06-11) · panel PROCESO eliminado · proporciones 30/30/40 verificadas en
+pre-apertura, turno abierto y cierre de turno.
 
 ### FONDO DE CAMBIO
 Ciclo "DI SENCILLO" → "ME DEVOLVIERON" y "RECIBÍ SENCILLO" → "YO DEVOLVÍ" validados.
@@ -334,7 +385,7 @@ SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
 |---|---|---|---|
 | 3 | UIX Stage 5 cierre — fila diferencia para roles no VEN | — | ✅ Cerrada |
 | 4 | Historial de búsqueda por sesión — ArrowUp en input vacío | Bajo | Baja |
-| 11 | CIERRE DE TURNO (closingStage > 0) — reestructurar en 3 sheets 30/30/40, eliminar panel PROCESO | Medio | Alta — próxima sesión |
+| 11 | CIERRE DE TURNO (closingStage > 0) — reestructurar en 3 sheets 30/30/40, eliminar panel PROCESO | — | ✅ Cerrada (sesión 2026-06-11) |
 
 ### Seguridad
 
@@ -444,12 +495,10 @@ Lo que NO entra en la cola:
 
 ## Prioridad próximas sesiones
 
-1. **CIERRE DE TURNO en 3 sheets (30/30/40)** + eliminación panel PROCESO —
-   sesión fresca, alto cuidado con JSX (ver "Pendiente para próxima sesión" arriba).
-2. **Recorrido sistemático — VENTAS** (siguiente módulo en el audit de cuatro dimensiones)
-3. Recorrido sistemático — COMPROBANTES, CLIENTES, REPORTES, INVENTARIOS, COMPRAS, OPERADORES/ROLES, CONFIG
-4. (En stand-by) Fase 1 sync — cola de eventos — retomar al completar el recorrido
-5. (En stand-by) Fases 2-6 sync — dependen de Fase 1 y del Portal
+1. **Recorrido sistemático — VENTAS** (siguiente módulo en el audit de cuatro dimensiones)
+2. Recorrido sistemático — COMPROBANTES, CLIENTES, REPORTES, INVENTARIOS, COMPRAS, OPERADORES/ROLES, CONFIG
+3. (En stand-by) Fase 1 sync — cola de eventos — retomar al completar el recorrido
+4. (En stand-by) Fases 2-6 sync — dependen de Fase 1 y del Portal
 
 ---
 

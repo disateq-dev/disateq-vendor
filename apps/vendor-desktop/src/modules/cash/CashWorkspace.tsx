@@ -802,7 +802,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   // ── render ────────────────────────────────────────────────────
 
   return (
-    <section className="flex min-h-0 flex-1 gap-2">
+    <section className="flex min-h-0 flex-1 gap-2 pr-2">
       <PinAutorizacionModal />
 
       {/* ── LEFT ── */}
@@ -1407,56 +1407,17 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
       ) : closingStage > 0 ? (
 
-        /* CLOSING FLOW — layout: flujo (izq) + timeline (der) */
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[28px] border border-red-200 bg-[#FDFCF9]">
+        <>
 
-          {/* ── Panel izquierdo: flujo operacional ── */}
-          <div className="flex min-h-0 flex-1 flex-col border-r border-[#fef2f2]">
-
-            {/* Header */}
+          {/* ── SHEET 2: ARQUEO FONDO DE CAMBIO (30%) ── */}
+          <div className="flex min-h-0 w-[30%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-red-200 bg-[#FDFCF9]">
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
               <ListChecks size={13} strokeWidth={2} className="shrink-0 text-red-400" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-                {closingPhase === "fondo"
-                  ? "ARQUEO FONDO DE CAMBIO"
-                  : closingPhase === "caja"
-                    ? "ARQUEO CAJA · CIERRE DE TURNO"
-                    : "CONTEO PARA EL CIERRE"}
-              </span>
-              <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400">
-                {closingStage === 1 ? "FONDO DE CAMBIO"
-                 : closingStage === 2 ? "CONTEO VENTAS"
-                 : closingStage === 3 ? "VALIDACIÓN"
-                 : closingStage === 4 ? "COMPARAR TOTALES"
-                 : "CIERRE"}
+                ARQUEO FONDO DE CAMBIO
               </span>
             </div>
-
-            {/* Content por stage */}
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-3">
-              {closingPhase === "caja" && (
-                <div className="mb-2 flex items-center gap-1">
-                  {pasosCaja.map((paso, i) => {
-                    const estado = i < currentIndex ? "completado" : i === currentIndex ? "activo" : "pendiente";
-                    return (
-                      <div
-                        key={paso.key}
-                        className={`flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[9.5px] font-bold uppercase tracking-[0.08em] transition ${
-                          estado === "activo" ? "text-white" :
-                          estado === "completado" ? "" : "bg-[#f4f5f7] text-[#9aa6b8]"
-                        }`}
-                        style={
-                          estado === "activo" ? { backgroundColor: paso.color } :
-                          estado === "completado" ? { backgroundColor: `${paso.color}1f`, color: paso.color } : undefined
-                        }
-                      >
-                        {estado === "completado" && <CheckCircle size={10} />}
-                        {paso.label}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
 
               {/* ── STAGE 1: FONDO DE CAMBIO ── */}
               {closingStage === 1 && (
@@ -1622,6 +1583,126 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     </p>
                   </div>
                 </>
+              )}
+
+              {/* ── FONDO DE CAMBIO — resumen validado (solo lectura) ── */}
+              {closingPhase === "caja" && (
+                <>
+                  <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-[#f0fdf4] px-3.5 py-2.5">
+                    <CheckCircle size={15} className="text-emerald-500 shrink-0" />
+                    <p className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">
+                      Fondo de cambio validado
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+                    <div className="flex justify-between items-center px-3.5 py-2">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">FONDO ESPERADO</span>
+                      <span className="text-[12px] font-bold tabular-nums text-[#374151]">S/ {fondoEsperado.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#f8fafd]">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">FONDO CONTADO</span>
+                      <span className="text-[13px] font-bold tabular-nums text-[#374151]">S/ {contadoFondoNum.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {fondoDiferenciaFinal.current === 0 || fondoDiferenciaFinal.current === null ? (
+                    <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                      <CheckCircle size={11} className="shrink-0 text-emerald-500" />
+                      <span className="text-[10px] font-semibold text-emerald-700">
+                        Fondo cuadrado
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={`flex items-center justify-between rounded-xl border px-3 py-2 ${
+                        fondoDiferenciaFinal.current > 0 ? "border-[#dbeafe] bg-[#eff6ff]" : "border-red-200 bg-[#fef2f2]"
+                      }`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.1em] ${
+                          fondoDiferenciaFinal.current > 0 ? "text-[#2154d8]" : "text-red-600"
+                        }`}>
+                          {fondoDiferenciaFinal.current > 0 ? "SOBRANTE" : "FALTANTE"}
+                        </span>
+                        <span className={`text-[13px] font-bold tabular-nums ${
+                          fondoDiferenciaFinal.current > 0 ? "text-[#2154d8]" : "text-red-600"
+                        }`}>
+                          S/ {Math.abs(fondoDiferenciaFinal.current).toFixed(2)}
+                        </span>
+                      </div>
+                      {fondoMotivoFinal.current && (
+                        <div className="space-y-1">
+                          <span className="px-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[#9aa6b8]">
+                            Motivo registrado
+                          </span>
+                          <p className="rounded-xl border border-[#e2e8f0] bg-[#fafbfc] px-3 py-2 text-[11px] text-[#374151]">
+                            {fondoMotivoFinal.current}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* ── SHEET 3: ARQUEO CAJA · CIERRE DE TURNO (40%) ── */}
+          <div className="flex min-h-0 w-[40%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-red-200 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF5F5] border-b border-red-100">
+              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-red-400" />
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+                ARQUEO CAJA · CIERRE DE TURNO
+              </span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-3">
+              {/* ── PLACEHOLDER: arqueo de caja pendiente ── */}
+              {closingPhase === "fondo" && (
+                <>
+                  <div className="mb-2 flex items-center gap-1">
+                    {pasosCaja.map((paso) => (
+                      <div
+                        key={paso.key}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#f4f5f7] py-1.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#9aa6b8]"
+                      >
+                        {paso.label}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                    <ListChecks size={28} strokeWidth={1.2} className="text-[#d1d5db]" />
+                    <p className="text-[11px] font-semibold text-[#9ca3af]">
+                      Completa el arqueo de fondo de cambio para continuar
+                    </p>
+                    <p className="text-[10px] text-[#c0c8d4]">
+                      El conteo de caja se habilitará al finalizar este paso
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {closingPhase === "caja" && (
+                <div className="mb-2 flex items-center gap-1">
+                  {pasosCaja.map((paso, i) => {
+                    const estado = i < currentIndex ? "completado" : i === currentIndex ? "activo" : "pendiente";
+                    return (
+                      <div
+                        key={paso.key}
+                        className={`flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-[9.5px] font-bold uppercase tracking-[0.08em] transition ${
+                          estado === "activo" ? "text-white" :
+                          estado === "completado" ? "" : "bg-[#f4f5f7] text-[#9aa6b8]"
+                        }`}
+                        style={
+                          estado === "activo" ? { backgroundColor: paso.color } :
+                          estado === "completado" ? { backgroundColor: `${paso.color}1f`, color: paso.color } : undefined
+                        }
+                      >
+                        {estado === "completado" && <CheckCircle size={10} />}
+                        {paso.label}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
 
               {/* ── STAGE 2: CONTEO OPERACIONAL ── */}
@@ -1990,60 +2071,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
             </div>
           </div>
-
-          {/* ── Panel derecho: timeline + snapshot ── */}
-          <div className="flex w-[152px] shrink-0 flex-col px-4 py-4 gap-4">
-
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">PROCESO</span>
-
-            {/* Timeline */}
-            <div className="flex flex-col">
-              {([
-                { s: 1, label: "FONDO DE CAMBIO" },
-                { s: 2, label: "CONTEO VENTAS" },
-                { s: 3, label: "VALIDACIÓN" },
-                { s: 4, label: "COMPARAR TOTALES" },
-                { s: 5, label: "CIERRE" },
-              ] as const).map((step, idx) => {
-                const done   = closingStage > step.s;
-                const active = closingStage === step.s;
-                return (
-                  <div key={step.s} className="flex items-start gap-2">
-                    <div className="flex flex-col items-center" style={{ minWidth: 8 }}>
-                      <div className={`mt-[3px] h-2 w-2 shrink-0 rounded-full transition-colors ${
-                        done ? "bg-emerald-500" : active ? "bg-[#2154d8]" : "bg-[#e4e9f0]"
-                      }`} />
-                      {idx < 4 && <div className={`w-px mt-0.5 h-4 ${done ? "bg-emerald-300" : "bg-[#e4e9f0]"}`} />}
-                    </div>
-                    <span className={`pb-2 text-[10px] font-bold uppercase tracking-[0.10em] leading-tight ${
-                      done ? "text-emerald-600" : active ? "text-[#2154d8]" : "text-[#c0cad4]"
-                    }`}>
-                      {done ? "✓ " : ""}{step.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Separator */}
-            <div className="-mx-4 h-px bg-[#fef2f2]" />
-
-            {/* Session snapshot */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">TURNO</span>
-              <span className="text-[11px] font-bold text-[#374151]">CAJA {activeBox?.code}</span>
-              <span className="text-[10px] text-[#9ca3af] leading-tight">{operatorName}</span>
-              {sessionStats.count > 0 && (
-                <span className="text-[10px] tabular-nums text-[#b0bac8]">{sessionStats.count} op.</span>
-              )}
-              {openedAt && (
-                <span className="text-[10px] tabular-nums text-[#b0bac8]">{formatTime(openedAt)}</span>
-              )}
-            </div>
-
-          </div>
-
-        </div>
+        </>
 
       ) : (
 
