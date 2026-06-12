@@ -21,8 +21,10 @@ import {
   recordSessionOpen, recordSessionClose, getCurrentSessionId,
   loadSessionHistory, type SessionEntry,
 } from "./services/session-history.service";
+import { AutorizacionEjecucionCard } from "./AutorizacionEjecucionCard";
 import {
-  loadAuthorizations, markAuthorizationExecuted,
+  loadAuthorizations, markAuthorizationExecuted, getActiveAuthorizationsForBlock,
+  type CajaAuthorization,
 } from "./services/supervision-authorization.service";
 import { moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 import { useAutorizacion } from "../../hooks/useAutorizacion";
@@ -463,6 +465,22 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const operatorName        = activeOperator?.alias ?? operators.find(o => o.baseBloque !== null && String(o.baseBloque)[0] === operatorBlockPrefix && o.estado === "ACTIVO")?.alias ?? "Operador";
   const operatorFullName    = activeOperator?.nombreCompleto ?? operators.find(o => o.baseBloque !== null && String(o.baseBloque)[0] === operatorBlockPrefix && o.estado === "ACTIVO")?.nombreCompleto ?? "Operador";
 
+  // ── autorización supervisora pendiente — solo bloque del operador ──
+  const [authRefresh, setAuthRefresh] = useState(0);
+  const pendingCorrectionAuth: CajaAuthorization | null = useMemo(() => {
+    const auths = getActiveAuthorizationsForBlock(operatorBlockPrefix)
+      .filter(a => a.type !== "cierre_activo")
+      .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt));
+    return auths[0] ?? null;
+  }, [operatorBlockPrefix, authRefresh]);
+  const targetSessionForAuth = pendingCorrectionAuth
+    ? sessionHistory.find(e => e.id === pendingCorrectionAuth.sessionId) ?? null
+    : null;
+  function handleCorrectionExecuted() {
+    setSessionHistory(loadSessionHistory());
+    setAuthRefresh(v => v + 1);
+  }
+
   useEffect(() => {
     if (!canCorrectApertura) setEditingApertura(false);
   }, [canCorrectApertura]);
@@ -792,7 +810,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   // Refresca historial al volver a Gestión Turno desde Corregir arqueo
   useEffect(() => {
-    if (cashSubView === "turno") setSessionHistory(loadSessionHistory());
+    if (cashSubView === "turno") {
+      setSessionHistory(loadSessionHistory());
+      setAuthRefresh(v => v + 1);
+    }
   }, [cashSubView]);
 
   // ── sub-view routing ─────────────────────────────────────────
@@ -815,8 +836,15 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       {/* ── LEFT ── */}
       <div className="flex flex-[3] shrink-0 flex-col gap-2">
 
-        {/* Status / pre-open card */}
-        {isOpen ? (
+        {/* Autorización supervisora pendiente — reemplaza la card de apertura/resumen mientras esté activa */}
+        {closingStage === 0 && pendingCorrectionAuth ? (
+          <AutorizacionEjecucionCard
+            activeAuth={pendingCorrectionAuth}
+            targetSession={targetSessionForAuth}
+            operatorName={operatorName}
+            onExecuted={handleCorrectionExecuted}
+          />
+        ) : isOpen ? (
           <div className="flex flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#F2F7FA] border-[#2A7CA8]/15">
               {closingStage > 0
@@ -1257,7 +1285,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                           <span className="text-[10.5px] tabular-nums text-[#6b7280]">
                             {e.closedAt ? `→ ${fmtTime(e.closedAt)}` : <span className="text-[#d1d5db]">—</span>}
                           </span>
-                          <div className="flex justify-start">
+                          <div className="flex items-center gap-1 justify-start">
                             {e.closeSignal === "ok"  && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
                                 ✓ correcto
@@ -1273,6 +1301,24 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                                 ~ pendiente
                               </span>
                             )}
+                            {e.correction && (() => {
+                              const c = e.correction;
+                              const tipo: Record<string, string> = {
+                                regularizar_cierre:    "Cierre regularizado",
+                                cierre_extemporaneo:   "Cierre extemporáneo",
+                                documentar_diferencia: "Diferencia documentada",
+                                correccion_apertura:   "Apertura corregida",
+                              };
+                              const tip = `${tipo[c.accion] ?? c.accion} · ${c.correctedBy} · ${fmtDay(c.correctedAt)} ${fmtTime(c.correctedAt)}${c.motivo ? ` · ${c.motivo}` : ""}${c.accion === "cierre_extemporaneo" && c.fechaOperacional ? ` · Fecha real: ${fmtDay(c.fechaOperacional)} ${fmtTime(c.fechaOperacional)}` : ""}`;
+                              return (
+                                <span
+                                  title={tip}
+                                  className="inline-flex items-center gap-1 rounded-full bg-[#EEF3FD] px-2 py-0.5 text-[9px] font-bold text-[#2154d8] cursor-help"
+                                >
+                                  ✎ corregido
+                                </span>
+                              );
+                            })()}
                           </div>
                           <div className="flex justify-end">
                             {(() => {
