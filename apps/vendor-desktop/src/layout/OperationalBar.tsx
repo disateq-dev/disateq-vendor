@@ -117,6 +117,7 @@ export function ContextBar({
   const puedeVerComprobantes   = contexto !== null;
   const puedeVerAbastecimiento = useCapacidad("gestionar_inventarios");
   const puedeVerAjustes        = useCapacidad("gestionar_operadores");
+  const puedeSupervisarCaja    = useCapacidad("reaperturar_cierres");
 
   // Estado de expansión — independiente de activeModule
   const [expanded, setExpanded] = useState<ActiveModule | null>(null);
@@ -129,9 +130,9 @@ export function ContextBar({
   useEffect(() => {
     stateRef.current = { navMode, navIdx, expanded, focusedPillIdx, active };
   });
-  const accessRef = useRef({ puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes });
+  const accessRef = useRef({ puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja });
   useEffect(() => {
-    accessRef.current = { puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes };
+    accessRef.current = { puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja };
   });
 
   // Sincronizar: si el módulo activo no tiene subtabs, colapsar
@@ -249,7 +250,7 @@ export function ContextBar({
       // ── ←→ Enter — navegar pills cuando hay expanded ───────
       if (!s.navMode && !e.ctrlKey && !e.altKey && !e.shiftKey && s.expanded) {
         const tabs = s.expanded === "cash"
-          ? CASH_TABS
+          ? CASH_TABS.filter(t => t.key !== "supervision-caja" || acc.puedeSupervisarCaja)
           : s.expanded === "config"
             ? CONFIG_TABS
             : ABAST_TABS.filter(t => !t.placeholder);
@@ -311,7 +312,7 @@ export function ContextBar({
     let onTabClick: (key: string) => void = () => {};
 
     if (expanded === "cash") {
-      tabs = CASH_TABS;
+      tabs = CASH_TABS.filter(t => t.key !== "supervision-caja" || puedeSupervisarCaja);
       isActiveTab = k => active === "cash" && cashSubView === k;
       onTabClick  = k => { if (active === "cash") onCashSubViewChange(k as CashSubView); };
     } else if (expanded === "config") {
