@@ -806,7 +806,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       <PinAutorizacionModal />
 
       {/* ── LEFT ── */}
-      <div className="flex w-[30%] shrink-0 flex-col gap-2">
+      <div className="flex flex-[3] shrink-0 flex-col gap-2">
 
         {/* Status / pre-open card */}
         {isOpen ? (
@@ -1158,7 +1158,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         <>
 
           {/* CENTER: CAJAS DISPONIBLES — ancho fijo */}
-          <div className="flex w-[30%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+          <div className="flex flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
               <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS DISPONIBLES</span>
@@ -1204,7 +1204,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             const resolveArqueo = (e: (typeof blockEntries)[number]) =>
               e.arqueo ?? (lastArqueo && lastArqueo.cashBoxCode === e.boxCode && e.closedAt ? lastArqueo : null);
             return (
-              <div className="flex min-h-0 w-[40%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/30 bg-[#FDFCF9]">
+              <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/30 bg-[#FDFCF9]">
 
                 {/* Header */}
                 <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
@@ -1299,7 +1299,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         <>
 
           {/* ── SHEET 2: ARQUEO FONDO DE CAMBIO (30%) ── */}
-          <div className="flex min-h-0 w-[30%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
               <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
@@ -1558,7 +1558,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
           </div>
 
           {/* ── SHEET 3: ARQUEO CAJA · CIERRE DE TURNO (40%) ── */}
-          <div className="flex min-h-0 w-[40%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
               <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
@@ -1993,7 +1993,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         <>
 
           {/* ─── MOVEMENTS PANEL ─── */}
-          <div className="flex min-h-0 w-[30%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
 
             {/* SheetHeader */}
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
@@ -2536,7 +2536,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
           </div>
 
           {/* ─── SUCESOS DEL TURNO ─── */}
-          <div className="flex min-h-0 w-[40%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
 
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
               <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
