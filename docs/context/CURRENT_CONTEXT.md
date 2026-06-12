@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-fix(cash): refinar cierre de turno - botones por sheet, sin PIN en cierre normal, PROGRESO timeline, color TURNO (6bebcc0)
+feat(cash): arqueo a ciegas universal, bloque ADMIN propio (900), simetria GESTION (176f349)
 
 ---
 
@@ -270,12 +270,14 @@ Commit `6bebcc0`.
 
 ---
 
-## Sesión 2026-06-11 (ronda 3) — arqueo a ciegas universal + bloque ADMIN propio + simetría GESTIÓN
+## Sesión 2026-06-11 (ronda 3) — arqueo a ciegas universal + bloque ADMIN propio + simetría de shell (8px global)
 
 Tras el commit `6bebcc0`, Fernando revisó la impresión del ticket de cierre,
 reportó un conflicto de bloque entre FTEJADA (ADMIN) y Gabriel Ríos Tovar (VEN,
-bloque 100), y una asimetría de márgenes en la vista GESTIÓN. 3 hallazgos,
-resueltos en 3 prompts atómicos, cada uno verificado vía filesystem MCP.
+bloque 100), y una asimetría de márgenes en la vista GESTIÓN — que tras
+verificación visual resultó ser un descompasé global de espaciado del shell
+(borde-a-sheet 12px vs sheet-a-sheet 8px). 4 hallazgos, resueltos en 4 prompts
+atómicos, cada uno verificado vía filesystem MCP.
 
 ### Hallazgos y resolución
 
@@ -314,18 +316,67 @@ resueltos en 3 prompts atómicos, cada uno verificado vía filesystem MCP.
    margen derecho distinto al izquierdo entre las tres sub-vistas de CAJA.
    Resolución: `pr-2` eliminado del `<section>` raíz — las tres sub-vistas
    (Gestión, Cajas, Supervisión) comparten ahora el mismo margen simétrico
-   12px/12px provisto por `AppShell` (`p-3`).
+   provisto por `AppShell`.
 
-`npx tsc -b` pasó sin errores nuevos en los tres prompts.
+4. **Estandarización del margen del shell a 8px** (`AppShell.tsx`): tras
+   confirmar visualmente el punto 3, Fernando señaló un segundo descompasé:
+   el `<section>` del workspace en AppShell usaba `p-3` (12px) para el margen
+   borde-de-ventana → contenido, mientras que dentro de cada módulo (ej.
+   CashWorkspace) el espacio entre sheets usa `gap-2` (8px) — 12px vs 8px,
+   descompasé visual entre "sheet-a-sheet" y "borde-a-sheet". Resolución:
+   `gap-3 p-3` → `gap-2 p-2` en el `<section>` de workspace de `AppShell.tsx`
+   — ahora 8px en ambos casos, en TODOS los módulos (no solo CAJA). Cambio
+   global de una sola clase, confirmado por Fernando.
+
+`npx tsc -b` pasó sin errores nuevos en los cuatro prompts.
 
 ### Pendiente
 
-- Tras el próximo reinicio de la app, Fernando debe registrar de nuevo a
-  Gabriel Ríos Tovar (y cualquier otro operador manual) desde OPERADORES,
-  dado el reset de SEED a versión 6.
-- Verificación visual de Fernando: confirmar que la simetría de márgenes en
-  GESTIÓN/CAJAS/SUPERVISIÓN quedó como se esperaba tras eliminar `pr-2`.
 - Continuar recorrido sistemático: módulo VENTAS (siguiente).
+
+Commit `176f349`.
+
+---
+
+## Sesión 2026-06-11 (ronda 4) — hallazgo arquitectónico: ventana no era responsive
+
+Al calcular el ancho del workspace para validar las proporciones 30/30/40, se
+descubrió que `tauri.conf.json` (heredado del arquitecto anterior, sin
+documentar como decisión) tenía la ventana en `740x520`, `resizable: false`
+— probablemente un placeholder de la pantalla de LOGIN nunca generalizado.
+Esto contradice la resolución mínima real exigida a los clientes (1366x768)
+y el principio de UI responsive establecido por Fernando, con miras a soporte
+futuro de tablets.
+
+### Resuelto hoy (cambio mínimo, una sola edición)
+
+`apps/vendor-desktop/src-tauri/tauri.conf.json`:
+- `width`/`height`: 740/520 → **1366/768** (tamaño inicial = mínimo real)
+- `resizable`: `false` → **`true`**
+- `minWidth`/`minHeight`: nuevos, **1366/768** — la ventana nunca puede ser
+  menor a la resolución mínima exigida a clientes.
+- Sin cambios en `decorations`, `closable`, `alwaysOnTop`, `center`,
+  `maximized`.
+
+El layout interno (AppShell + CashWorkspace) ya usa `flex`/`%`/`gap` —
+proporciones 30/30/40 ya son relativas, no requieren cambio para esta parte.
+
+### Deuda priorizada — dos fases separadas
+
+- **Fase A — Responsive de escritorio (PRÓXIMA)**: auditar tipografías y
+  espaciados en `px` absolutos (`text-[Npx]`, headers `h-[42px]`, paddings
+  fijos), calibrados originalmente para ~724px de workspace, para que no se
+  vean "perdidos"/diminutos en 1366px+ de ancho. Sin tocar arquitectura de
+  dominios ni doctrina operacional — es un ajuste de escala visual.
+- **Fase B — Tablets/táctil (STAND-BY, diseño propio)**: densidad táctil
+  (targets ≥44px vs los 24-32px actuales), orientación, posibles layouts
+  alternativos para pantallas angostas — rediseño de Modern Operational UI
+  por tipo de dispositivo, documentado aparte (mismo tratamiento que
+  `ARQUITECTURA_SYNC.md`: diseño completo, en stand-by hasta su turno).
+
+No bloquea el recorrido sistemático de módulos. Fase A se prioriza para
+cuando termine el recorrido de TURNO/inicio de VENTAS, o antes si Fernando lo
+considera urgente.
 
 ---
 
@@ -463,7 +514,8 @@ ARQUEO CAJA · CIERRE DE TURNO, con ramas activa/completada/pendiente según fas
 botones de cada stage en su sheet correspondiente · PIN de autorización fuera del
 cierre normal (reservado para reapertura vía SUPERVISIÓN) · identidad cromática
 TURNO consistente en las 3 sheets del cierre · márgenes simétricos 12px/12px en
-Gestión/Cajas/Supervisión (sin `pr-2`) · panel PROCESO eliminado · proporciones
+Gestión/Cajas/Supervisión (8px global, sin `pr-2`, AppShell `gap-2 p-2`) · panel
+PROCESO eliminado · proporciones
 30/30/40 verificadas en pre-apertura, turno abierto y cierre de turno.
 
 ### FONDO DE CAMBIO
