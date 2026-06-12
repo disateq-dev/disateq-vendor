@@ -42,7 +42,7 @@ function esHash(s: string): boolean {
 
 const LS_KEY      = "disateq:operators";
 const LS_V_KEY    = "disateq:operators:v";
-const SEED_VERSION = "5";
+const SEED_VERSION = "6";
 
 const SEED: Operador[] = [
   {
@@ -50,7 +50,7 @@ const SEED: Operador[] = [
     apellidos: "TEJADA QUEVEDO", nombres: "FERNANDO MIGUEL", nombreCompleto: "FERNANDO MIGUEL TEJADA QUEVEDO",
     dni: "", telefono: "",
     codigoRol: "ADMIN", nombreRol: "Administrador",
-    baseBloque: null,
+    baseBloque: 900,
     estado: "ACTIVO", pin: "b9776d7ddf459c9ad5b0e1d6ac61e27befb5e99fd62446677600d7472e88a8cc",
     capacidades: [
       "corregir_arqueos","reaperturar_cierres","regularizar_incidencias",

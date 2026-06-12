@@ -4,7 +4,7 @@
 main
 
 ## Último commit
-fix(cash): reestructurar cierre de turno en 3 sheets 30/30/40, eliminar panel PROCESO (86745e7)
+fix(cash): refinar cierre de turno - botones por sheet, sin PIN en cierre normal, PROGRESO timeline, color TURNO (6bebcc0)
 
 ---
 
@@ -261,11 +261,71 @@ sin uso).
 
 ### Pendiente
 
-- Commit de los 4 prompts de esta ronda + actualización de este documento.
 - Auditoría de la **impresión del ticket de cierre**: Fernando señaló que
   "Esperado ventas"/conciliación SISTEMA vs OPERADOR es contenido de
   impresión, no de pantalla — pendiente revisión específica de ese flujo en
   una sesión futura, antes de retomar VENTAS.
+
+Commit `6bebcc0`.
+
+---
+
+## Sesión 2026-06-11 (ronda 3) — arqueo a ciegas universal + bloque ADMIN propio + simetría GESTIÓN
+
+Tras el commit `6bebcc0`, Fernando revisó la impresión del ticket de cierre,
+reportó un conflicto de bloque entre FTEJADA (ADMIN) y Gabriel Ríos Tovar (VEN,
+bloque 100), y una asimetría de márgenes en la vista GESTIÓN. 3 hallazgos,
+resueltos en 3 prompts atómicos, cada uno verificado vía filesystem MCP.
+
+### Hallazgos y resolución
+
+1. **Arqueo a ciegas universal en pantalla, comparación completa solo en
+   impresión** (`CashWorkspace.tsx`): hasta ahora Stage 4/5 mostraban en
+   pantalla, solo para roles `!esVEN` (ADMIN/SUPERVISOR), los "esp. X.XX"
+   inline en "Arqueo contado", el bloque "Desglose efectivo esperado · cómo
+   se calcula", el bloque "Conciliación ventas"/"Esperado ventas" +
+   CUADRADO/SOBRANTE/FALTANTE (Stage 4), y el bloque final
+   CUADRADO/SOBRANTE/FALTANTE (Stage 5) — mientras que en impresión
+   `sistemaEsperado` (tabla SISTEMA vs OPERADOR) solo se llenaba para VEN.
+   Resolución: los 4 bloques anteriores se eliminaron por completo de Stage
+   4/5 (ahora idénticos para todos los roles — arqueo a ciegas universal), y
+   `sistemaEsperado` en `handleConfirmClose` se llena siempre, para todos los
+   roles — la comparación completa SISTEMA vs OPERADOR queda únicamente en el
+   ticket impreso. `esVEN` se conserva (uso legítimo en el filtro de
+   historial de APERTURAS Y CIERRES ANTERIORES).
+
+2. **Bloque operacional propio para ADMIN (900)**: FTEJADA (ADMIN) tenía
+   `baseBloque: null`, lo que provocaba que su fallback de bloque
+   (`operatorBlockPrefix`) cayera sobre el bloque 100 — el mismo asignado a
+   Gabriel Ríos Tovar (VEN) — generando la apariencia de "dos operadores en
+   CAJA 100". Resolución: `BLOCK_BASES` (`blocks.store.ts`) ahora incluye 900
+   (`[100, 200, 300, 400, 500, 900]`), generando automáticamente las cajas 900
+   (PRINCIPAL), 901/902 (SECUNDARIAS), 950 (CONTINGENCIA). El SEED de FTEJADA
+   (`operator.store.ts`) pasa a `baseBloque: 900`. `SEED_VERSION` subió de
+   "5" a "6" — al reiniciar la app, `cargarOperadores()` recarga el SEED
+   completo: **todos los operadores registrados manualmente (incluyendo
+   Gabriel Ríos Tovar) se pierden** y deben registrarse de nuevo. Solo
+   FTEJADA (ADMIN, bloque 900) queda desde el SEED. Decisión confirmada por
+   Fernando, quien acepta el reseteo.
+
+3. **Simetría de márgenes en GESTIÓN**: el `<section>` raíz de
+   `CashWorkspace` (vista Gestión/Turno) tenía un `pr-2` extra que
+   `CajasWorkspace` y `SupervisionCajaWorkspace` no tienen, generando un
+   margen derecho distinto al izquierdo entre las tres sub-vistas de CAJA.
+   Resolución: `pr-2` eliminado del `<section>` raíz — las tres sub-vistas
+   (Gestión, Cajas, Supervisión) comparten ahora el mismo margen simétrico
+   12px/12px provisto por `AppShell` (`p-3`).
+
+`npx tsc -b` pasó sin errores nuevos en los tres prompts.
+
+### Pendiente
+
+- Tras el próximo reinicio de la app, Fernando debe registrar de nuevo a
+  Gabriel Ríos Tovar (y cualquier otro operador manual) desde OPERADORES,
+  dado el reset de SEED a versión 6.
+- Verificación visual de Fernando: confirmar que la simetría de márgenes en
+  GESTIÓN/CAJAS/SUPERVISIÓN quedó como se esperaba tras eliminar `pr-2`.
+- Continuar recorrido sistemático: módulo VENTAS (siguiente).
 
 ---
 
@@ -390,16 +450,21 @@ Dependencias: solo `cashSession` de `usePOS()`. Sin `sessionStats`, `cashMoves`,
 
 ### TURNO / CAJA — AUDITADO ✅
 Ciclo completo: apertura · movimientos · arqueo · cierre · historial · corrección · recovery.
-Arqueo a ciegas para rol VEN: Stage 4 oculta esperados del sistema y resultado de conciliación.
-Stage 5 cierre: fila DIFERENCIA (FALTANTE/SOBRANTE/CUADRADO) visible para roles no VEN.
-Ticket de cierre incluye sección SISTEMA vs OPERADOR (tú a tú) solo para cierres de rol VEN.
+Arqueo a ciegas UNIVERSAL (todos los roles): Stage 4/5 ya no muestran esperados del
+sistema ni resultado de conciliación para nadie — idéntico para VEN/ADMIN/SUPERVISOR.
+Ticket de cierre incluye SIEMPRE la sección SISTEMA vs OPERADOR (tú a tú), para
+todos los roles — la comparación completa queda solo en el ticket impreso (ronda 3,
+sesión 2026-06-11).
 Lenguaje operacional en FONDO DE CAMBIO · historial filtrado por operador para VEN ·
 corrección de apertura visible (sin PIN, ventana acotada) · guías contextuales ·
 pills Gestión/Cajas/Supervisión · cierre de turno reestructurado en 3 sheets 30/30/40
-(Sheet 1 CIERRE DE TURNO + PROGRESO · Sheet 2 ARQUEO FONDO DE CAMBIO · Sheet 3 ARQUEO
-CAJA · CIERRE DE TURNO, con ramas activa/completada/pendiente según fase — ver sesión
-2026-06-11) · panel PROCESO eliminado · proporciones 30/30/40 verificadas en
-pre-apertura, turno abierto y cierre de turno.
+(Sheet 1 CIERRE DE TURNO + PROGRESO timeline · Sheet 2 ARQUEO FONDO DE CAMBIO · Sheet 3
+ARQUEO CAJA · CIERRE DE TURNO, con ramas activa/completada/pendiente según fase) ·
+botones de cada stage en su sheet correspondiente · PIN de autorización fuera del
+cierre normal (reservado para reapertura vía SUPERVISIÓN) · identidad cromática
+TURNO consistente en las 3 sheets del cierre · márgenes simétricos 12px/12px en
+Gestión/Cajas/Supervisión (sin `pr-2`) · panel PROCESO eliminado · proporciones
+30/30/40 verificadas en pre-apertura, turno abierto y cierre de turno.
 
 ### FONDO DE CAMBIO
 Ciclo "DI SENCILLO" → "ME DEVOLVIERON" y "RECIBÍ SENCILLO" → "YO DEVOLVÍ" validados.
@@ -428,7 +493,10 @@ Recepción parcial incremental · causalidad compra → INVENTARIOS.
 
 ### OPERADORES + ROLES
 Ciclo de vida completo · PIN SHA-256 · Bloque Operacional · capacidades · roles configurables.
-SEED: FTEJADA / 1234 · ADMIN · acceso_total · versión 5.
+SEED: FTEJADA / 1234 · ADMIN · acceso_total · bloque 900 (propio, fuera del rango
+operativo 100-500) · versión 6 (ronda 3, sesión 2026-06-11 — reset de operadores
+manuales al próximo reinicio: Gabriel Ríos Tovar debe registrarse de nuevo).
+`BLOCK_BASES` = [100, 200, 300, 400, 500, 900].
 
 ---
 

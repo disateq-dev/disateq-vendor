@@ -4,7 +4,7 @@ export type BoxSlotDef = { code: string; type: BoxSlotType };
 
 // Única fuente de verdad para bloques operacionales disponibles.
 // Agregar un bloque aquí lo registra automáticamente en cajas y en el selector de operadores.
-export const BLOCK_BASES = [100, 200, 300, 400, 500] as const;
+export const BLOCK_BASES = [100, 200, 300, 400, 500, 900] as const;
 
 export type BlockBase = (typeof BLOCK_BASES)[number];
 

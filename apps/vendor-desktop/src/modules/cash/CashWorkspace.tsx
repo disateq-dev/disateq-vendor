@@ -709,12 +709,12 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       diferencia,
       observations:     observations.trim() || undefined,
       zeroMotive:       (moneyIsZero(contadoTotal) && zeroMotive) ? zeroMotive : undefined,
-      sistemaEsperado:  esVEN ? {
+      sistemaEsperado: {
         efe:     arqueoOperacional,
         yape:    sessionStats.yape,
         tarjeta: sessionStats.tarjeta,
         total:   totalEsperado,
-      } : undefined,
+      },
     };
     // Persistir snapshot del arqueo antes de destruir la sesión — permite reimprimir si el print falla
     try { localStorage.setItem("disateq.pos.lastArqueo", JSON.stringify(arqueo)); } catch { /* quota */ }
@@ -802,7 +802,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   // ── render ────────────────────────────────────────────────────
 
   return (
-    <section className="flex min-h-0 flex-1 gap-2 pr-2">
+    <section className="flex min-h-0 flex-1 gap-2">
       <PinAutorizacionModal />
 
       {/* ── LEFT ── */}
@@ -1798,14 +1798,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   {/* Arqueo contado */}
                   <div className="flex flex-col divide-y divide-[#f1f5f9] rounded-xl border border-amber-200 bg-white overflow-hidden">
                     {[
-                      { label: "EFECTIVO", val: contadoEfeNum,  esp: arqueoOperacional    },
-                      { label: "YAPE",     val: contadoYapeNum, esp: sessionStats.yape    },
-                      { label: "TARJETAS", val: contadoTarNum,  esp: sessionStats.tarjeta },
-                    ].map(({ label, val, esp }) => (
+                      { label: "EFECTIVO", val: contadoEfeNum  },
+                      { label: "YAPE",     val: contadoYapeNum },
+                      { label: "TARJETAS", val: contadoTarNum  },
+                    ].map(({ label, val }) => (
                       <div key={label} className="flex items-center px-3.5 py-1.5 gap-2">
                         <span className="w-[68px] shrink-0 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">{label}</span>
                         <span className="flex-1 text-right text-[11px] font-semibold tabular-nums text-[#374151]">S/ {val.toFixed(2)}</span>
-                        {!esVEN && <span className="text-[8.5px] text-[#c0cad4]">esp. {esp.toFixed(2)}</span>}
                       </div>
                     ))}
                     <div className="flex justify-between items-center px-3.5 py-2.5 bg-[#fffbf0]">
@@ -1813,62 +1812,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                       <span className="text-[14px] font-bold tabular-nums text-[#92400e]">S/ {contadoTotal.toFixed(2)}</span>
                     </div>
                   </div>
-
-                  {/* Desglose efectivo esperado — oculto para rol VEN (arqueo a ciegas) */}
-                  {!esVEN && (moneyGt(ingVendido, 0) || moneyGt(egVendido, 0)) && (
-                    <div className="flex flex-col gap-0.5 rounded-xl border border-[#f1f5f9] bg-[#f8fafc] px-3.5 py-2">
-                      <span className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#c0cad4]">Efectivo esperado · cómo se calcula</span>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] text-[#9ca3af]">Ventas efectivo</span>
-                        <span className="text-[10px] font-semibold tabular-nums text-[#374151]">S/ {sessionStats.cash.toFixed(2)}</span>
-                      </div>
-                      {moneyGt(ingVendido, 0) && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] text-[#9ca3af]">Ingresos caja del día</span>
-                          <span className="text-[10px] font-semibold tabular-nums text-emerald-600">+S/ {ingVendido.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {moneyGt(egVendido, 0) && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] text-[#9ca3af]">Egresos caja del día</span>
-                          <span className="text-[10px] font-semibold tabular-nums text-red-400">−S/ {egVendido.toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center border-t border-[#f1f5f9] pt-1 mt-0.5">
-                        <span className="text-[9px] font-bold text-[#374151]">Efectivo neto esperado</span>
-                        <span className="text-[10px] font-bold tabular-nums text-[#374151]">S/ {arqueoOperacional.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Conciliación ventas — oculta para rol VEN (arqueo a ciegas) */}
-                  {!esVEN && (() => {
-                    const cuadrado = moneyIsZero(diferencia);
-                    const sobrante = !cuadrado && moneyGt(diferencia, 0);
-                    const diffAbs  = Math.abs(diferencia);
-                    return (
-                      <div className={`flex flex-col gap-1.5 rounded-xl border px-3.5 py-2.5 ${
-                        cuadrado ? "border-emerald-200 bg-[#f0fdf4]" : sobrante ? "border-[#dbeafe] bg-[#eff6ff]" : "border-red-200 bg-[#fef2f2]"
-                      }`}>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Esperado ventas</span>
-                          <span className="text-[10.5px] font-semibold tabular-nums text-[#374151]">S/ {totalEsperado.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className={`text-[10px] font-bold uppercase tracking-[0.1em] ${
-                            cuadrado ? "text-emerald-600" : sobrante ? "text-[#2154d8]" : "text-red-600"
-                          }`}>
-                            {cuadrado ? "✓ CUADRADO" : sobrante ? "SOBRANTE" : "FALTANTE"}
-                          </span>
-                          <span className={`text-[13px] font-bold tabular-nums ${
-                            cuadrado ? "text-emerald-600" : sobrante ? "text-[#2154d8]" : "text-red-600"
-                          }`}>
-                            {cuadrado ? "±S/ 0.00" : `${moneyGte(diferencia, 0) ? "+" : "−"}S/ ${diffAbs.toFixed(2)}`}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
                 </>
               )}
 
@@ -1937,35 +1880,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                       </span>
                     </div>
                   </div>
-
-                  {!esVEN && (() => {
-                    const cuadrado = moneyIsZero(diferencia);
-                    const sobrante = !cuadrado && moneyGt(diferencia, 0);
-                    const diffAbs  = Math.abs(diferencia);
-                    return (
-                      <div className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 ${
-                        cuadrado
-                          ? "border-emerald-200 bg-[#f0fdf4]"
-                          : sobrante
-                            ? "border-[#dbeafe] bg-[#eff6ff]"
-                            : "border-red-200 bg-[#fef2f2]"
-                      }`}>
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.12em] ${
-                          cuadrado ? "text-emerald-600" : sobrante ? "text-[#2154d8]" : "text-red-600"
-                        }`}>
-                          {cuadrado ? "✓ CUADRADO" : sobrante ? "SOBRANTE" : "FALTANTE"}
-                        </span>
-                        <span className={`text-[13px] font-bold tabular-nums ${
-                          cuadrado ? "text-emerald-600" : sobrante ? "text-[#2154d8]" : "text-red-600"
-                        }`}>
-                          {cuadrado
-                            ? "±S/ 0.00"
-                            : `${moneyGte(diferencia, 0) ? "+" : "−"}S/ ${diffAbs.toFixed(2)}`
-                          }
-                        </span>
-                      </div>
-                    );
-                  })()}
 
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Observaciones (opcional)</span>
