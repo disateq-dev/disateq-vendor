@@ -15,9 +15,9 @@ import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
-export type CashSubView             = "turno" | "cajas" | "supervision-caja";
+export type CashSubView             = "turno" | "supervision-caja";
 export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
-export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "roles" | "capacidades";
+export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
 
 function AppRoot() {
   const { activeOperator } = usePOS();
@@ -32,18 +32,22 @@ function AppRoot() {
     try {
       const win = getCurrentWindow();
       if (activeOperator) {
-        win.setAlwaysOnTop(false);
-        win.setDecorations(true);
-        win.setResizable(true);
-        win.setSize(new LogicalSize(1366, 768))
+        win.setResizable(true)
+          .then(() => win.setMinSize(new LogicalSize(1366, 768)))
+          .then(() => win.setSize(new LogicalSize(1366, 768)))
+          .then(() => win.setDecorations(true))
+          .then(() => win.setAlwaysOnTop(false))
           .then(() => win.center())
           .then(() => win.show())
           .catch(() => {});
       } else if (!isInitialMount.current) {
-        win.setResizable(false);
-        win.setDecorations(false);
-        win.setAlwaysOnTop(true);
-        win.setSize(new LogicalSize(740, 520)).then(() => win.center()).catch(() => {});
+        win.setMinSize(null)
+          .then(() => win.setSize(new LogicalSize(740, 520)))
+          .then(() => win.setResizable(false))
+          .then(() => win.setDecorations(false))
+          .then(() => win.setAlwaysOnTop(true))
+          .then(() => win.center())
+          .catch(() => {});
       }
     } catch { /* no-tauri env */ }
     isInitialMount.current = false;

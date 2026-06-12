@@ -1,7 +1,6 @@
 ﻿import { useState, useEffect, useRef, useMemo } from "react";
 import { Clock, LogIn, LogOut, Lock, CheckCircle, Printer, AlertTriangle, X, Wallet, ShoppingCart, Pencil, CircleCheck, Monitor, ShieldAlert, ClipboardList, ListChecks } from "lucide-react";
 import { type CashSubView } from "../../App";
-import { CajasWorkspace } from "./CajasWorkspace";
 import { SupervisionCajaWorkspace } from "./SupervisionCajaWorkspace";
 import { usePOS, type CashBox, type MoveType, type CashMove } from "../../context/POSContext";
 import type { TurnEvent } from "../../domains/cash/turn-events.store";
@@ -789,7 +788,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   // ── sub-view routing ─────────────────────────────────────────
 
-  if (cashSubView === "cajas")           return <CajasWorkspace />;
   if (cashSubView === "supervision-caja") return (
     <SupervisionCajaWorkspace
       onAutorizarCierre={() => {
