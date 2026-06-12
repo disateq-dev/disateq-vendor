@@ -4,7 +4,10 @@
 main
 
 ## Último commit
-feat(cash): arqueo a ciegas universal, bloque ADMIN propio (900), simetria GESTION (176f349)
+refactor(config): mover CajasWorkspace de TURNO a CONFIG/AJUSTES + eliminar SubContextBar.tsx huérfano (998083e)
+
+## Cambios sin commitear
+Ninguno.
 
 ---
 
@@ -41,6 +44,73 @@ hasta completar el recorrido de módulos. Diseño arquitectónico ya documentado
 en `ARQUITECTURA_SYNC.md` — no se pierde, solo espera. Razón: sin Portal/Nexo
 aún no hay extremo-a-extremo que probar; el recorrido de módulos tiene impacto
 inmediato en distribución.
+
+---
+
+## Sesión 2026-06-12 — fix proporciones 30/30/40 (flex) + 3 pendientes abiertos para próxima ventana
+
+Continuación inmediata de la ronda 4 (sesión 2026-06-11). Fernando reportó que
+todas las sheets del lado derecho en CashWorkspace tenían el borde derecho
+pegado al borde de la ventana, sin margen — bug presente desde el origen,
+imperceptible a 740px, evidente a 1366px tras el fix de ventana responsive.
+
+### Completado (sin commit todavía)
+
+- **Causa raíz**: `w-[30%]`/`w-[40%]` + `gap-2` en flexbox — `gap` se SUMA a
+  los anchos en porcentaje (no se resta), el total excede el 100% por 16px
+  (2 gaps), y `overflow-hidden` recorta ese excedente quitando el margen
+  derecho de la sheet más a la derecha.
+- **Fix aplicado** (Codex, 1 prompt, verificado vía filesystem MCP):
+  `apps/vendor-desktop/src/modules/cash/CashWorkspace.tsx` —
+  `w-[30%]` → `flex-[3]` (4 ocurrencias: LEFT, CENTER "CAJAS DISPONIBLES",
+  Sheet 2 "ARQUEO FONDO DE CAMBIO", MOVIMIENTOS) y `w-[40%]` → `flex-[4]`
+  (3 ocurrencias: RIGHT "APERTURAS Y CIERRES ANTERIORES", Sheet 3 "ARQUEO
+  CAJA · CIERRE DE TURNO", SUCESOS DEL TURNO). Resto de clases intactas.
+  `npx tsc -b` sin errores nuevos. Conteo final verificado: 4× `flex-[3]`,
+  3× `flex-[4]`, cero `w-[30%]`/`w-[40%]` restantes.
+- **Commiteado y pusheado**: commit `024930f` (sesión 2026-06-12).
+
+### 3 pendientes abiertos para la próxima ventana (en orden a decidir con Fernando)
+
+1. **Hallazgo C — RESUELTO (commit `f9095fb`)**: pill "Supervisión" (CASH_TABS)
+   ahora filtrado por `useCapacidad("reaperturar_cierres")` en `OperationalBar.tsx`
+   — aplicado en `renderPills()` y en el handler de teclado (`acc.puedeSupervisarCaja`).
+   Auditado vía filesystem MCP, `npx tsc -b` sin errores nuevos.
+
+2. **Hallazgo D — RESUELTO (commit `998083e`)**: `CajasWorkspace` movido de
+   TURNO a CONFIG/AJUSTES. Cambios en 4 archivos:
+   - `App.tsx`: `CashSubView` pierde `"cajas"` → `"turno" | "supervision-caja"`;
+     `ConfigSubView` gana `"cajas"` (entre `operadores` y `roles`).
+   - `OperationalBar.tsx`: `CASH_TABS` sin `cajas` (queda Gestión · Supervisión);
+     `CONFIG_TABS` con `cajas` después de `operadores`.
+   - `CashWorkspace.tsx`: removido import y routing de `CajasWorkspace`.
+   - `ConfigWorkspace.tsx`: `CajasWorkspace` importado desde `../cash/`,
+     routing `configSubView === "cajas"`, entradas en `SUB_ICONS`/`SUB_LABELS`
+     (icono `LayoutGrid`).
+   - **Hallazgo extra**: `layout/SubContextBar.tsx` era código huérfano
+     (ya documentado como "eliminado" en el rediseño ContextBar, pero el
+     archivo nunca se borró — mantenía copias locales desactualizadas de
+     `CASH_TABS`/`CONFIG_TABS` que rompieron `tsc` al quitar `"cajas"` de
+     `CashSubView`). Confirmado sin importaciones activas y eliminado.
+   - Deuda separada (no resuelta aquí, ya documentada): `CajasWorkspace`
+     usa `MOCK_BLOCKS` desconectado de `BLOCK_BASES` real `[100,200,300,400,500,900]`.
+   - `npx tsc -b` sin errores. Auditado vía filesystem MCP en los 4 archivos
+     + confirmación de eliminación de `SubContextBar.tsx`.
+
+3. **Auditoría sistémica del patrón `w-[N%]` + `gap` (sumando ~100%) — RESUELTA,
+   SIN HALLAZGOS**: búsqueda de solo lectura en `apps/vendor-desktop/src/**/*.tsx`
+   (excluyendo `CashWorkspace.tsx`, ya corregido) no encontró ningún contenedor
+   `gap-N` con hijos `w-[N%]` sumando 90-100%. Casos descartados:
+   - `PreVentaGrid.tsx` (footer línea 227): hijos `w-[28%]` suman 56% + centro
+     `flex-1` — no aplica.
+   - `CajasWorkspace.tsx` (línea 948): `PanelCajas` `w-[35%]` + `PanelGestionCajas`
+     `flex-1` — no aplica.
+   - `LoginScreen.tsx` (línea 222): `w-[45%]` pero el contenedor padre no usa
+     `gap-N` — no aplica.
+   No se requiere acción adicional. Sin cambios aplicados.
+
+**Fernando indicó que esta ventana de chat está saturada — continuar en una
+ventana nueva.** Leer esta sección al iniciar.
 
 ---
 
@@ -377,6 +447,8 @@ proporciones 30/30/40 ya son relativas, no requieren cambio para esta parte.
 No bloquea el recorrido sistemático de módulos. Fase A se prioriza para
 cuando termine el recorrido de TURNO/inicio de VENTAS, o antes si Fernando lo
 considera urgente.
+
+Commit `4ffc2ac`.
 
 ---
 
