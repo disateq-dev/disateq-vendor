@@ -85,6 +85,12 @@ fn money(n: f64) -> String {
     format!("S/ {:.2}", n)
 }
 
+fn diff_str(sistema: f64, operador: f64) -> String {
+    let diff = operador - sistema;
+    let sign = if cents(diff) < 0 { "-" } else { "+" };
+    format!("{sign}{:.2}", diff.abs())
+}
+
 struct Buf(Vec<u8>);
 
 impl Buf {
@@ -132,6 +138,26 @@ impl Buf {
         let mut out = ltrunc.to_string();
         out.push_str(&" ".repeat(spaces));
         out.push_str(&r);
+        self.line(&out);
+    }
+
+    fn four_col(&mut self, label: &str, c1: &str, c2: &str, c3: &str) {
+        const LBL: usize = 9;
+        const COL: usize = 13;
+        let l = normalize(label);
+        let mut out = if l.len() >= LBL {
+            l[..LBL].to_string()
+        } else {
+            format!("{l:<LBL$}")
+        };
+        for c in [c1, c2, c3] {
+            let cn = normalize(c);
+            if cn.len() >= COL {
+                out.push_str(&cn[cn.len() - COL..]);
+            } else {
+                out.push_str(&format!("{cn:>COL$}"));
+            }
+        }
         self.line(&out);
     }
 
@@ -490,6 +516,15 @@ pub fn build_cash_move_escpos(d: &VoucherMovePrintData) -> Vec<u8> {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SistemaEsperado {
+    pub efe:     f64,
+    pub yape:    f64,
+    pub tarjeta: f64,
+    pub total:   f64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ArqueoPrintData {
     pub business_name:     String,
     pub cash_box_code:     String,
@@ -509,6 +544,7 @@ pub struct ArqueoPrintData {
     pub diferencia:        f64,
     pub observations:      Option<String>,
     pub zero_motive:       Option<String>,
+    pub sistema_esperado:  Option<SistemaEsperado>,
 }
 
 pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
@@ -543,20 +579,14 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     b.dashes();
 
     b.two_col("Fondo apertura (ref.)", &money(d.apertura));
-    if money_pos(d.total_ventas) {
-        let ventas_label = if d.sales_count > 0 {
-            format!("Ventas ({})", d.sales_count)
-        } else {
-            "Ventas".to_string()
-        };
-        b.two_col(&ventas_label, &money(d.total_ventas));
-    }
-    if money_pos(d.ingresos_total) {
-        b.two_col("Ingresos ^", &format!("+{}", money(d.ingresos_total)));
-    }
-    if money_pos(d.egresos_total) {
-        b.two_col("Egresos v", &format!("-{}", money(d.egresos_total)));
-    }
+    let ventas_label = if d.sales_count > 0 {
+        format!("Ventas ({})", d.sales_count)
+    } else {
+        "Ventas".to_string()
+    };
+    b.two_col(&ventas_label, &money(d.total_ventas));
+    b.two_col("Ingresos ^", &format!("+{}", money(d.ingresos_total)));
+    b.two_col("Egresos v", &format!("-{}", money(d.egresos_total)));
     b.bold_on();
     b.two_col("Esperado oper.", &money(d.efectivo_esperado));
     b.bold_off();
@@ -569,17 +599,30 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     b.bold_off();
     b.dashes();
 
-    b.two_col("Efectivo", &money(d.contado_efe));
-    b.two_col("Yape", &money(d.contado_yape));
-    b.two_col("Tarjetas", &money(d.contado_tar));
+    if let Some(ref se) = d.sistema_esperado {
+        b.four_col("", "SISTEMA", "OPERADOR", "DIFER.");
+        b.four_col("Efectivo", &format!("{:.2}", se.efe), &format!("{:.2}", d.contado_efe), &diff_str(se.efe, d.contado_efe));
+        b.four_col("Yape", &format!("{:.2}", se.yape), &format!("{:.2}", d.contado_yape), &diff_str(se.yape, d.contado_yape));
+        b.four_col("Tarjetas", &format!("{:.2}", se.tarjeta), &format!("{:.2}", d.contado_tar), &diff_str(se.tarjeta, d.contado_tar));
+        b.equals();
+        b.bold_on();
+        b.dbl_h_on();
+        b.four_col("TOTAL", &format!("{:.2}", se.total), &format!("{:.2}", d.contado_total), &diff_str(se.total, d.contado_total));
+        b.dbl_h_off();
+        b.bold_off();
+    } else {
+        b.two_col("Efectivo", &money(d.contado_efe));
+        b.two_col("Yape", &money(d.contado_yape));
+        b.two_col("Tarjetas", &money(d.contado_tar));
 
-    b.equals();
+        b.equals();
 
-    b.bold_on();
-    b.dbl_h_on();
-    b.two_col("TOTAL CONTADO", &money(d.contado_total));
-    b.dbl_h_off();
-    b.bold_off();
+        b.bold_on();
+        b.dbl_h_on();
+        b.two_col("TOTAL CONTADO", &money(d.contado_total));
+        b.dbl_h_off();
+        b.bold_off();
+    }
 
     b.dashes();
 

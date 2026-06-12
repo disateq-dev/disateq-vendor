@@ -486,29 +486,15 @@ function buildArqueoHTML(d: ArqueoData): string {
 
   <div class="pt-sect">CONTEXTO OPERACIONAL</div>
   <div class="pt-row"><span>Fondo apertura <span style="font-size:9px;color:#999">(ref.)</span></span><span>${money(d.apertura)}</span></div>
-  ${moneyGt(d.totalVentas, 0) ? `<div class="pt-row"><span>Ventas${d.salesCount > 0 ? ` (${d.salesCount})` : ""}</span><span>${money(d.totalVentas)}</span></div>` : ""}
-  ${moneyGt(d.ingresosTotal, 0) ? `<div class="pt-row"><span>Ingresos &#8593;</span><span>+${money(d.ingresosTotal)}</span></div>` : ""}
-  ${moneyGt(d.egresosTotal,  0) ? `<div class="pt-row"><span>Egresos &#8595;</span><span>&#8722;${money(d.egresosTotal)}</span></div>` : ""}
+  <div class="pt-row"><span>Ventas${d.salesCount > 0 ? ` (${d.salesCount})` : ""}</span><span>${money(d.totalVentas)}</span></div>
+  <div class="pt-row"><span>Ingresos &#8593;</span><span>+${money(d.ingresosTotal)}</span></div>
+  <div class="pt-row"><span>Egresos &#8595;</span><span>&#8722;${money(d.egresosTotal)}</span></div>
   <div class="pt-row"><span>Esperado oper.</span><span class="pt-bold">${money(d.efectivoEsperado)}</span></div>
 
   <div class="pt-dash"></div>
 
-  <div class="pt-sect">CONTEO CONCILIADO</div>
-  <div class="pt-row"><span>Efectivo</span><span>${money(d.contadoEfe)}</span></div>
-  <div class="pt-row"><span>Yape</span><span>${money(d.contadoYape)}</span></div>
-  <div class="pt-row"><span>Tarjetas</span><span>${money(d.contadoTar)}</span></div>
-
-  <div class="pt-solid"></div>
-
-  <div class="pt-total">
-    <span class="pt-tlbl">TOTAL CONTADO</span>
-    <span class="pt-tamt">${money(d.contadoTotal)}</span>
-  </div>
-
-  <div class="pt-dash"></div>
-
   ${d.sistemaEsperado ? `
-  <div class="pt-sect">SISTEMA vs OPERADOR</div>
+  <div class="pt-sect">CONTEO CONCILIADO</div>
   <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-bottom:2px;">
     <span style="min-width:60px;">CONCEPTO</span>
     <span style="min-width:52px; text-align:right;">SISTEMA</span>
@@ -532,8 +518,21 @@ function buildArqueoHTML(d: ArqueoData): string {
       <span style="min-width:44px; text-align:right; color:${color};">${diffStr}</span>
     </div>`;
   }).join("")}
+  ` : `
+  <div class="pt-sect">CONTEO CONCILIADO</div>
+  <div class="pt-row"><span>Efectivo</span><span>${money(d.contadoEfe)}</span></div>
+  <div class="pt-row"><span>Yape</span><span>${money(d.contadoYape)}</span></div>
+  <div class="pt-row"><span>Tarjetas</span><span>${money(d.contadoTar)}</span></div>
+
+  <div class="pt-solid"></div>
+
+  <div class="pt-total">
+    <span class="pt-tlbl">TOTAL CONTADO</span>
+    <span class="pt-tamt">${money(d.contadoTotal)}</span>
+  </div>
+  `}
+
   <div class="pt-dash"></div>
-  ` : ""}
 
   <div class="pt-sect">DIFERENCIA</div>
   <div class="pt-arq-diff ${diffClass}">
