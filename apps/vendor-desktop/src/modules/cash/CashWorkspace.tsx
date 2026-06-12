@@ -21,6 +21,9 @@ import {
   recordSessionOpen, recordSessionClose, getCurrentSessionId,
   loadSessionHistory, type SessionEntry,
 } from "./services/session-history.service";
+import {
+  loadAuthorizations, markAuthorizationExecuted,
+} from "./services/supervision-authorization.service";
 import { moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 import { useAutorizacion } from "../../hooks/useAutorizacion";
 
@@ -722,6 +725,12 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     if (closeSid) {
       const closeSignal = moneyIsZero(diferencia) ? "ok" as const : "warn" as const;
       recordSessionClose(closeSid, new Date().toISOString(), closeSignal, arqueo);
+      if (cierreAutorizado) {
+        const pendingAuth = loadAuthorizations().find(
+          a => a.sessionId === closeSid && a.type === "cierre_activo" && a.status === "emitida",
+        );
+        if (pendingAuth) markAuthorizationExecuted(pendingAuth.id, operatorName);
+      }
       setSessionHistory(loadSessionHistory());
     }
     closeCashSession();
