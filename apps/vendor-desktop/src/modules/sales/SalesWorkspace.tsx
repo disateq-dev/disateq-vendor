@@ -66,6 +66,13 @@ function searchCatalog(
   productos: ProductoBuscable[],
   query: string
 ): ProductoBuscable[] {
+  // Búsqueda exacta por código de barras (pistola o teclado)
+  const trimmed = query.trim();
+  if (trimmed.length >= 4) {
+    const exactBarcode = productos.find(p => p.barcode === trimmed);
+    if (exactBarcode) return [exactBarcode];
+  }
+
   const q = normalize(query);
   if (!q) return productos;
   const tokens = q.split(/\s+/).filter(Boolean);
@@ -392,8 +399,9 @@ export function SalesWorkspace() {
 
           <button
             tabIndex={-1}
-            title="Escanear código de barras"
-            className="flex shrink-0 items-center justify-center rounded-lg p-1 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#6b7280]"
+            title="Escanear código de barras (F3)"
+            onClick={() => inputRef.current?.focus()}
+            className="flex shrink-0 items-center justify-center rounded-lg p-1 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#45b356]"
           >
             <ScanLine size={15} strokeWidth={2} />
           </button>
@@ -494,7 +502,7 @@ export function SalesWorkspace() {
                           </div>
                           <div className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold">
                             <span className="tabular-nums text-[#374151]">
-                              {product.id}
+                              {product.barcode || product.id}
                             </span>
                             <span className="text-[#d1d9e1]">·</span>
                             {statusChip(product)}
