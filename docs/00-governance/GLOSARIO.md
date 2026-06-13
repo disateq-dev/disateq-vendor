@@ -333,6 +333,7 @@ Registro de los términos que existían antes de este glosario y fueron unificad
 | `loadOperators()` | `domains/operator/` | `cargarOperadores()` | Pendiente de migración |
 | `saveOperators()` | `domains/operator/` | `guardarOperadores()` | Pendiente de migración |
 | `disponible/bajo_stock/agotado` | `domains/inventory/` | `DISPONIBLE/BAJO_STOCK/AGOTADO` | Pendiente de migración |
+| `disateq:inventory:items` (declarado en §6) | `domains/inventory/persistence.ts` | `inv_v0_items` / `inv_v0_movimientos` | Pendiente de migración |
 
 ---
 
