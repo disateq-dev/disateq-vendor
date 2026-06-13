@@ -47,6 +47,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   const [nombreComercial, setNombreComercial] = useState(() => loadBusinessConfig().nombreComercial);
   const [razonSocial,     setRazonSocial]     = useState(() => loadBusinessConfig().razonSocial);
   const [ruc,             setRuc]             = useState(() => loadBusinessConfig().ruc);
+  const [alias,           setAlias]           = useState(() => loadBusinessConfig().alias);
   const [direccion,       setDireccion]       = useState(() => loadBusinessConfig().direccion);
   const [telefono,        setTelefono]        = useState(() => loadBusinessConfig().telefono);
   const [bizSaved,        setBizSaved]        = useState(false);
@@ -59,7 +60,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
       ruc:             ruc.trim(),
       direccion:       direccion.trim(),
       telefono:        telefono.trim(),
-      alias:           loadBusinessConfig().alias,
+      alias:           alias.trim(),
       tasaIGV:         loadBusinessConfig().tasaIGV,
       rubro,
     });
@@ -171,6 +172,15 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 maxLength={11}
                 className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
                 placeholder="RUC"
+              />
+              <input
+                type="text"
+                value={alias}
+                onChange={e => setAlias(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
+                maxLength={60}
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                placeholder="Local (alias del local)"
               />
               <input
                 type="text"

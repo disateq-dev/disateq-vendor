@@ -717,6 +717,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     const p   = (n: number) => String(n).padStart(2, "0");
     const arqueo: ArqueoData = {
       businessName:     loadBusinessConfig().nombreComercial,
+      alias:            loadBusinessConfig().alias,
       cashBoxCode:      activeBox?.code ?? "?",
       operator,
       terminal,
@@ -1009,7 +1010,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                 const docLabel: Record<string, string> = { nota: "Notas", boleta: "Boletas", factura: "Facturas", cotizacion: "Cotiza" };
                 return (
                   <>
-                    <div className="-mx-5 h-px bg-[#f0f4f8]" />
                     <InfoRow label="Operaciones" value={String(sessionStats.count)} />
                     {breakdown.length > 0 && (
                       <p className="text-right text-[10px] font-semibold tabular-nums text-[#9ca3af] -mt-1">
@@ -1028,7 +1028,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
               {closingStage === 0 && (moneyGt(ingVendido, 0) || moneyGt(egVendido, 0)) && (
                 <>
-                  <div className="-mx-5 h-px bg-[#f0f4f8]" />
                   {moneyGt(ingVendido, 0) && <InfoRow label="Ingresos ↑" value={`S/ ${ingVendido.toFixed(2)}`} accent />}
                   {moneyGt(egVendido, 0)  && <InfoRow label="Egresos ↓"  value={`S/ ${egVendido.toFixed(2)}`}  red />}
                 </>
@@ -1036,15 +1035,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             </div>
             </div>
             {closingStage === 0 && (
-              <div className="shrink-0 border-t border-[#2A7CA8]/15 px-4 py-3">
+              <div className="shrink-0 px-4 py-3">
                 <button
                   onClick={() => setClosingStage(1)}
                   title="Tecla [Enter]"
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#dc2626] py-3 text-[12px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(220,38,38,0.28)] transition hover:bg-[#b91c1c] active:scale-[0.98]"
+                  className="flex w-full items-center justify-center rounded-2xl bg-[#dc2626] py-3 text-[12px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(220,38,38,0.28)] transition hover:bg-[#b91c1c] active:scale-[0.98]"
                 >
-                  <LogOut size={13} strokeWidth={2.5} />
                   {cierreAutorizado ? "CIERRE AUTORIZADO" : "IR A CIERRE DE TURNO"}
-                  <span className="ml-1 rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>
                 </button>
               </div>
             )}
@@ -1174,9 +1171,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               </div>
             )}
             </div>
-            <div className={`shrink-0 border-t px-4 py-3 ${
-              openingMode === "exceptional" ? "border-amber-200/60" : "border-[#2A7CA8]/15"
-            }`}>
+            <div className="shrink-0 px-4 py-3">
               <button
                 onClick={handleOpen}
                 disabled={!canOpen}

@@ -20,7 +20,7 @@ export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" 
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
 
 function AppRoot() {
-  const { activeOperator } = usePOS();
+  const { activeOperator, cashSession } = usePOS();
   const [activeModule,            setActiveModule]            = useState<ActiveModule>("cash");
   const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
   const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("compras");
@@ -53,14 +53,19 @@ function AppRoot() {
     isInitialMount.current = false;
   }, [activeOperator]);
 
-  // Al hacer login (transición null → operador), ir a TURNO
+  // Al hacer login o reingresar (transición null → operador): si ya hay
+  // turno abierto (sesión recuperada), ir directo a VENTAS; si no, a TURNO.
   useEffect(() => {
     if (activeOperator && activeOperator.id !== prevOpId.current) {
-      setActiveModule("cash");
-      setCashSubView("turno");
+      if (cashSession.isOpen) {
+        setActiveModule("sales");
+      } else {
+        setActiveModule("cash");
+        setCashSubView("turno");
+      }
     }
     prevOpId.current = activeOperator?.id ?? null;
-  }, [activeOperator]);
+  }, [activeOperator, cashSession.isOpen]);
 
   if (!activeOperator) return <LoginScreen />;
 

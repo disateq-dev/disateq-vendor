@@ -502,22 +502,10 @@ export function SalesWorkspace() {
                         </div>
                       </div>
 
-                      <div className="ml-4 flex shrink-0 items-center gap-3">
+                      <div className="ml-4 flex shrink-0 items-center">
                         <span className="text-[14px] font-semibold text-[#2F3E46]">
                           S/ {product.unitPrice.toFixed(2)}
                         </span>
-
-                        <button
-                          title="Tecla [Enter]"
-                          onClick={e => { e.stopPropagation(); addProductToTicket(product); }}
-                          className={`rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
-                            isSelected
-                              ? "bg-[#4F7396] text-white hover:bg-[#3d5c7a]"
-                              : "bg-[#EEF3F8] text-[#2d4f6b] hover:bg-[#e0e9f0]"
-                          }`}
-                        >
-                          Agregar
-                        </button>
                       </div>
                     </div>
                   );

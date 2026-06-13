@@ -405,6 +405,7 @@ export function printCashMoveVoucher(d: VoucherMoveData): void {
 
 export interface ArqueoData {
   businessName:     string;
+  alias:            string;
   cashBoxCode:      string;
   operator:         string;
   terminal:         string;
@@ -472,6 +473,7 @@ function buildArqueoHTML(d: ArqueoData): string {
 
   <div class="pt-center">
     <div class="pt-biz">${esc(d.businessName)}</div>
+    <div class="pt-meta">${esc(d.alias)}</div>
     <div class="pt-doc">CIERRE DE TURNO</div>
     <div class="pt-meta">${esc(d.dateTime)}</div>
   </div>
@@ -496,7 +498,7 @@ function buildArqueoHTML(d: ArqueoData): string {
   ${d.sistemaEsperado ? `
   <div class="pt-sect">CONTEO CONCILIADO</div>
   <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-bottom:2px;">
-    <span style="min-width:60px;">CONCEPTO</span>
+    <span style="min-width:60px;">MEDIO</span>
     <span style="min-width:52px; text-align:right;">SISTEMA</span>
     <span style="min-width:52px; text-align:right;">OPERADOR</span>
     <span style="min-width:44px; text-align:right;">DIFER.</span>
