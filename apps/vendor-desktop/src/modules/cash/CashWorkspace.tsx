@@ -813,6 +813,22 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, closingStage, contadoValid, canContinueToCaja, handleContinueToCaja]);
 
+  // ── ENTER global: IR A CIERRE DE TURNO (footsheet RESUMEN) ──
+  useEffect(() => {
+    if (!isOpen || closingStage !== 0 || editingApertura) return;
+    if (pendingCorrectionAuth && !acknowledgedAuthIds.has(pendingCorrectionAuth.id)) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Enter") return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON") return;
+      e.preventDefault();
+      setClosingStage(1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, closingStage, editingApertura, pendingCorrectionAuth, acknowledgedAuthIds]);
+
   // Refresca historial al volver a Gestión Turno desde Corregir arqueo
   useEffect(() => {
     if (cashSubView === "turno") {
@@ -850,8 +866,45 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             onExecuted={handleCorrectionExecuted}
             onPostponed={handleCorrectionPostponed}
           />
-        ) : isOpen ? (
-          <div className="flex flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+        ) : isOpen ? editingApertura ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#F2F7FA] border-[#2A7CA8]/15">
+              <Pencil size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+              <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+                CORREGIR FONDO DE CAMBIO
+              </span>
+              <button onClick={cancelEditApertura} className="ml-auto text-[#c0cad4] transition hover:text-[#374151]">
+                <X size={12} />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-3 px-4 pt-3 pb-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo inicial S/</span>
+                <input
+                  autoFocus
+                  type="number"
+                  value={editAperturaInput}
+                  onChange={e => setEditAperturaInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
+                  placeholder="0.00"
+                  min="0" step="0.50"
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                />
+              </div>
+            </div>
+            <div className="shrink-0 border-t border-[#e4e9f0] px-4 py-3">
+              <button
+                onClick={handleSaveCorrection}
+                title="Tecla [Enter]"
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#45b356] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#45b356]/60"
+              >
+                <CheckCircle size={14} strokeWidth={2} />
+                Guardar corrección
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#F2F7FA] border-[#2A7CA8]/15">
               {closingStage > 0
                 ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
@@ -864,7 +917,36 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                 <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-red-400">{closingStage}/5</span>
               )}
             </div>
-            <div className="flex flex-col gap-3 px-4 pt-3 pb-3">
+            <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-3 px-4 pt-3 pb-3">
+            {closingStage > 0 && (
+              <div className="flex flex-col gap-1 rounded-[20px] border border-[#2A7CA8]/20 bg-white px-4 py-3.5">
+                <p className="px-0.5 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa6b8]">
+                  PROGRESO
+                </p>
+                {progresoCierre.map(({ label, estado }, idx) => (
+                  <div key={label} className="flex items-start gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        estado === "completado" ? "bg-emerald-500 text-white" :
+                        estado === "activo" ? "bg-[#2154d8] text-white" :
+                        "bg-[#e2e8f0] text-[#9aa6b8]"
+                      }`}>
+                        {estado === "completado" ? <CheckCircle size={14} strokeWidth={2.5} /> : idx + 1}
+                      </div>
+                      {idx < progresoCierre.length - 1 && (
+                        <div className={`w-[2px] flex-1 ${estado === "completado" ? "bg-emerald-300" : "bg-[#e2e8f0]"}`} style={{ minHeight: "20px" }} />
+                      )}
+                    </div>
+                    <div className={`flex-1 pb-3 pt-0.5 text-[12px] font-semibold ${
+                      estado === "activo" ? "text-[#2154d8]" :
+                      estado === "completado" ? "text-emerald-600" : "text-[#9aa6b8]"
+                    }`}>
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f4f7fb] ${
                 closingStage > 0 ? "text-[#b91c1c]" : "text-emerald-600"
@@ -953,11 +1035,24 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               )}
             </div>
             </div>
+            {closingStage === 0 && (
+              <div className="shrink-0 border-t border-[#2A7CA8]/15 px-4 py-3">
+                <button
+                  onClick={() => setClosingStage(1)}
+                  title="Tecla [Enter]"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#dc2626] py-3 text-[12px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(220,38,38,0.28)] transition hover:bg-[#b91c1c] active:scale-[0.98]"
+                >
+                  <LogOut size={13} strokeWidth={2.5} />
+                  {cierreAutorizado ? "CIERRE AUTORIZADO" : "IR A CIERRE DE TURNO"}
+                  <span className="ml-1 rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-bold tracking-widest">ENTER</span>
+                </button>
+              </div>
+            )}
           </div>
 
         ) : (
           /* Pre-open: operator + apertura card */
-          <div className={`flex flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
+          <div className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
             openingMode === "exceptional" ? "border-amber-300/60" : "border-[#2A7CA8]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
@@ -976,7 +1071,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                 <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-amber-600">PIN + MOTIVO</span>
               )}
             </div>
-            <div className="flex flex-col gap-3 px-4 pt-3 pb-3">
+            <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-3 px-4 pt-3 pb-3">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#f1f5f9] text-[#9ca3af]">
                 <Clock size={20} strokeWidth={1.5} />
@@ -1079,84 +1174,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
               </div>
             )}
             </div>
-          </div>
-        )}
-
-        {/* ── Corrección datos apertura ── */}
-        {isOpen && closingStage === 0 && (
-          canCorrectApertura ? (
-            editingApertura ? (
-              <div className="flex flex-col gap-2 rounded-[20px] border border-[#dde4f0] bg-white px-4 py-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Datos apertura</span>
-                  <button onClick={cancelEditApertura} className="text-[#c0cad4] transition hover:text-[#374151]">
-                    <X size={12} />
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Fondo inicial S/</span>
-                  <input
-                    autoFocus
-                    type="number"
-                    value={editAperturaInput}
-                    onChange={e => setEditAperturaInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
-                    placeholder="0.00"
-                    min="0" step="0.50"
-                    className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-                  />
-                </div>
-
-
-                <button
-                  onClick={handleSaveCorrection}
-                  title="Tecla [Enter]"
-                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#45b356] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#45b356]/60"
-                >
-                  <CheckCircle size={14} strokeWidth={2} />
-                  Guardar corrección
-                </button>
-              </div>
-            ) : null
-          ) : null
-        )}
-
-        <div className="flex-1" />
-
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
-          {isOpen && closingStage > 0 ? (
-            <div className="flex flex-col gap-1 rounded-[20px] border border-[#2A7CA8]/20 bg-white px-4 py-3.5">
-              <p className="px-0.5 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa6b8]">
-                PROGRESO
-              </p>
-              {progresoCierre.map(({ label, estado }, idx) => (
-                <div key={label} className="flex items-start gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                      estado === "completado" ? "bg-emerald-500 text-white" :
-                      estado === "activo" ? "bg-[#2154d8] text-white" :
-                      "bg-[#e2e8f0] text-[#9aa6b8]"
-                    }`}>
-                      {estado === "completado" ? <CheckCircle size={14} strokeWidth={2.5} /> : idx + 1}
-                    </div>
-                    {idx < progresoCierre.length - 1 && (
-                      <div className={`w-[2px] flex-1 ${estado === "completado" ? "bg-emerald-300" : "bg-[#e2e8f0]"}`} style={{ minHeight: "20px" }} />
-                    )}
-                  </div>
-                  <div className={`flex-1 pb-3 pt-0.5 text-[12px] font-semibold ${
-                    estado === "activo" ? "text-[#2154d8]" :
-                    estado === "completado" ? "text-emerald-600" : "text-[#9aa6b8]"
-                  }`}>
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {!isOpen ? (
-            <>
+            <div className={`shrink-0 border-t px-4 py-3 ${
+              openingMode === "exceptional" ? "border-amber-200/60" : "border-[#2A7CA8]/15"
+            }`}>
               <button
                 onClick={handleOpen}
                 disabled={!canOpen}
@@ -1174,24 +1194,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                 <LogIn size={14} strokeWidth={2} />
                 {openingMode === "exceptional" ? "Aperturar excepcionalmente" : "Aperturar"}
               </button>
-
-
-
-            </>
-
-          ) : closingStage === 0 ? (
-            <>
-              <button
-                onClick={() => setClosingStage(1)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#dc2626] py-3 text-[12px] font-bold uppercase tracking-widest text-white shadow-[0_4px_12px_rgba(220,38,38,0.28)] transition hover:bg-[#b91c1c] active:scale-[0.98]"
-              >
-                <LogOut size={13} strokeWidth={2.5} />
-                {cierreAutorizado ? "CIERRE AUTORIZADO" : "CIERRE DE TURNO"}
-              </button>
-            </>
-
-          ) : null}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── RIGHT ── */}

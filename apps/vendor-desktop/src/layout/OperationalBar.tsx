@@ -120,7 +120,8 @@ export function ContextBar({
   const pendingAuth = getActiveAuthorizationsForBlock(operatorBlockPrefix)
     .filter(a => a.type !== "cierre_activo")
     .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt))[0] ?? null;
-  const isBlocking = pendingAuth !== null && !acknowledgedAuthIds.has(pendingAuth.id);
+  const esVEN = activeOperator?.codigoRol === "VEN";
+  const isBlocking = esVEN && pendingAuth !== null && !acknowledgedAuthIds.has(pendingAuth.id);
 
   const puedeVerSales          = !isBlocking;
   const puedeVerReportes       = useCapacidad("ver_reportes")          && !isBlocking;

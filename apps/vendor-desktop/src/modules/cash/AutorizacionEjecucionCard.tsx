@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Monitor, ShieldCheck, CheckCircle } from "lucide-react";
+import { ShieldCheck, CheckCircle } from "lucide-react";
 import {
   recordSessionCorrection, recordAperturaCorrection,
   type SessionEntry, type CorrectionRecord,
@@ -13,21 +13,10 @@ import {
   printCorreccion, printCorreccionThermal, type CorreccionPrintData,
 } from "../../print/printTicket";
 
-const MOTIVOS_EXEC_EXTMP = [
-  "Finalicé el turno sin cerrar el sistema",
-  "Corte eléctrico antes del cierre",
-  "Emergencia antes del cierre",
-  "Delegué el turno sin cerrar",
-  "Otro",
-];
+const MOTIVO_EJEMPLOS_EXTMP =
+  "Ej: Finalicé el turno sin cerrar el sistema · Corte eléctrico antes del cierre · Emergencia antes del cierre · Delegué el turno sin cerrar...";
 
-const MOTIVOS_EXEC_CORRECCION = [
-  "Reconteo confirmó el monto correcto",
-  "Separé el billete o moneda falso identificado",
-  "Ingresé el monto correcto en el sistema",
-  "Registré la diferencia autorizada",
-  "Otro",
-];
+const MOTIVO_EJEMPLOS_CORRECCION = "Ej: Ajuste de montos, error de digitación, etc.";
 
 const AUTH_EXEC_LABELS: Record<string, string> = {
   cierre_activo:       "Cierre de sesión activa",
@@ -61,8 +50,7 @@ export function AutorizacionEjecucionCard({
 }: AutorizacionEjecucionCardProps) {
   const [execFecha,        setExecFecha]        = useState("");
   const [execSignal,       setExecSignal]       = useState<"ok" | "warn">("ok");
-  const [execMotivoPreset, setExecMotivoPreset] = useState("");
-  const [execMotivoLibre,  setExecMotivoLibre]  = useState("");
+  const [execMotivo,       setExecMotivo]       = useState("");
   const [execNewApertura,  setExecNewApertura]  = useState("");
   const [execDone,         setExecDone]         = useState(false);
   const [showPostpone,     setShowPostpone]     = useState(false);
@@ -73,7 +61,7 @@ export function AutorizacionEjecucionCard({
 
   useEffect(() => {
     setExecFecha(""); setExecSignal("ok");
-    setExecMotivoPreset(""); setExecMotivoLibre("");
+    setExecMotivo("");
     setExecNewApertura(""); setExecDone(false);
     setShowPostpone(false); setPostponeMotivo("");
     const a = targetSession?.arqueo;
@@ -82,9 +70,7 @@ export function AutorizacionEjecucionCard({
     setNewTar(a ? a.contadoTar.toFixed(2) : "0.00");
   }, [activeAuth.id, targetSession]);
 
-  const execMotivoCombined = (execMotivoPreset === "Otro" || execMotivoPreset === "")
-    ? execMotivoLibre.trim()
-    : execMotivoPreset;
+  const execMotivoCombined = execMotivo.trim();
 
   const newAperturaNum = parseFloat(execNewApertura.replace(",", "."));
   const canExec = execMotivoCombined.length >= 3 &&
@@ -170,14 +156,14 @@ export function AutorizacionEjecucionCard({
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
       <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#F2F7FA] border-[#2A7CA8]/15">
         <ShieldCheck size={13} strokeWidth={2} className="shrink-0 text-[#2154d8]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
           {AUTH_CARD_TITLES[activeAuth.type]}
         </span>
       </div>
-      <div className="flex flex-col gap-3 px-4 pt-3 pb-3">
+      <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-3 px-4 pt-3 pb-3">
 
       {/* Info de la autorización */}
       <div className="flex flex-col gap-1 rounded-lg border border-[#2154d8]/15 bg-white px-3 py-2">
@@ -237,37 +223,14 @@ export function AutorizacionEjecucionCard({
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
               Motivo <span className="text-amber-500">*</span>
             </span>
-            <div className="flex flex-wrap gap-1">
-              {MOTIVOS_EXEC_CORRECCION.map(p => (
-                <button key={p}
-                  onClick={() => { setExecMotivoPreset(p); if (p !== "Otro") setExecMotivoLibre(""); }}
-                  className={`rounded-xl border px-3 py-1.5 text-[10px] font-semibold transition ${
-                    execMotivoPreset === p
-                      ? "border-[#45b356]/40 bg-emerald-50 text-emerald-700"
-                      : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-emerald-200"
-                  }`}>{p}</button>
-              ))}
-            </div>
-            {(execMotivoPreset === "Otro" || execMotivoPreset === "") && (
-              <input type="text" value={execMotivoLibre} onChange={e => setExecMotivoLibre(e.target.value)}
-                placeholder="Describe brevemente..."
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-[#45b356]" />
-            )}
+            <input
+              type="text"
+              value={execMotivo}
+              onChange={e => setExecMotivo(e.target.value)}
+              placeholder={MOTIVO_EJEMPLOS_CORRECCION}
+              className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#c0cad4] focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10"
+            />
           </div>
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#f0f4f8] bg-white px-3.5 py-2">
-            <Monitor size={11} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
-            <span className="text-[10px] text-[#9ca3af]">
-              Ejecutado por: <strong className="text-[#374151]">{operatorName}</strong>
-            </span>
-          </div>
-          <button onClick={handleExec} disabled={!canExec}
-            className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
-              canExec
-                ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
-                : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
-            }`}>
-            Registrar Corrección de Apertura
-          </button>
         </div>
       )}
 
@@ -307,39 +270,14 @@ export function AutorizacionEjecucionCard({
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
               Motivo de la ejecución <span className="text-amber-500">*</span>
             </span>
-            <div className="flex flex-wrap gap-1">
-              {MOTIVOS_EXEC_EXTMP.map(p => (
-                <button key={p}
-                  onClick={() => { setExecMotivoPreset(p); if (p !== "Otro") setExecMotivoLibre(""); }}
-                  className={`rounded-xl border px-3 py-1.5 text-[10px] font-semibold transition ${
-                    execMotivoPreset === p
-                      ? "border-[#45b356]/40 bg-emerald-50 text-emerald-700"
-                      : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-emerald-200"
-                  }`}>{p}</button>
-              ))}
-            </div>
-            {(execMotivoPreset === "Otro" || execMotivoPreset === "") && (
-              <input type="text" value={execMotivoLibre} onChange={e => setExecMotivoLibre(e.target.value)}
-                placeholder="Describe brevemente..."
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-[#45b356]" />
-            )}
+            <input
+              type="text"
+              value={execMotivo}
+              onChange={e => setExecMotivo(e.target.value)}
+              placeholder={MOTIVO_EJEMPLOS_EXTMP}
+              className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#c0cad4] focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10"
+            />
           </div>
-
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#f0f4f8] bg-white px-3.5 py-2">
-            <Monitor size={11} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
-            <span className="text-[10px] text-[#9ca3af]">
-              Ejecutado por: <strong className="text-[#374151]">{operatorName}</strong>
-            </span>
-          </div>
-
-          <button onClick={handleExec} disabled={!canExec}
-            className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
-              canExec
-                ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
-                : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
-            }`}>
-            Ejecutar Corrección
-          </button>
         </div>
       )}
 
@@ -394,39 +332,14 @@ export function AutorizacionEjecucionCard({
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
               Motivo de la corrección <span className="text-amber-500">*</span>
             </span>
-            <div className="flex flex-wrap gap-1">
-              {MOTIVOS_EXEC_CORRECCION.map(p => (
-                <button key={p}
-                  onClick={() => { setExecMotivoPreset(p); if (p !== "Otro") setExecMotivoLibre(""); }}
-                  className={`rounded-xl border px-3 py-1.5 text-[10px] font-semibold transition ${
-                    execMotivoPreset === p
-                      ? "border-[#45b356]/40 bg-emerald-50 text-emerald-700"
-                      : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-emerald-200"
-                  }`}>{p}</button>
-              ))}
-            </div>
-            {(execMotivoPreset === "Otro" || execMotivoPreset === "") && (
-              <input type="text" value={execMotivoLibre} onChange={e => setExecMotivoLibre(e.target.value)}
-                placeholder="Describe brevemente..."
-                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-[#45b356]" />
-            )}
+            <input
+              type="text"
+              value={execMotivo}
+              onChange={e => setExecMotivo(e.target.value)}
+              placeholder={MOTIVO_EJEMPLOS_CORRECCION}
+              className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#c0cad4] focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10"
+            />
           </div>
-
-          <div className="flex items-center gap-1.5 rounded-xl border border-[#f0f4f8] bg-white px-3.5 py-2">
-            <Monitor size={11} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
-            <span className="text-[10px] text-[#9ca3af]">
-              Ejecutado por: <strong className="text-[#374151]">{operatorName}</strong>
-            </span>
-          </div>
-
-          <button onClick={handleExec} disabled={!canExec}
-            className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
-              canExec
-                ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
-                : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
-            }`}>
-            Ejecutar Corrección
-          </button>
         </div>
       )}
 
@@ -439,49 +352,63 @@ export function AutorizacionEjecucionCard({
         </div>
       )}
 
-      {activeAuth.type !== "cierre_activo" && !execDone && (
-        showPostpone ? (
-          <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-3.5 py-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">
-              Motivo de la postergación <span className="text-amber-500">*</span>
-            </span>
-            <textarea
-              value={postponeMotivo}
-              onChange={e => setPostponeMotivo(e.target.value)}
-              placeholder="Explica por qué no puedes regularizar ahora..."
-              rows={2}
-              className="w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11.5px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-amber-400 focus:ring-2 focus:ring-amber-200/40"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setShowPostpone(false); setPostponeMotivo(""); }}
-                className="flex-1 rounded-xl border border-[#e4e9f0] bg-white py-2 text-[10.5px] font-semibold uppercase tracking-wide text-[#6b7280] hover:bg-[#f8fafd] transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handlePostpone}
-                disabled={postponeMotivo.trim().length < MIN_MOTIVO_LEN}
-                className={`flex-1 rounded-xl py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
-                  postponeMotivo.trim().length >= MIN_MOTIVO_LEN
-                    ? "bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.98]"
-                    : "cursor-not-allowed bg-amber-500/15 text-amber-500/50"
-                }`}
-              >
-                Confirmar postergación
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowPostpone(true)}
-            className="self-start text-[10.5px] font-semibold text-amber-600 underline-offset-2 hover:underline"
-          >
-            No puedo regularizar ahora
-          </button>
-        )
-      )}
       </div>
+
+      {!execDone && activeAuth.type !== "cierre_activo" && (
+        <div className="shrink-0 flex flex-col gap-2 px-4 pb-4">
+          {!showPostpone && (
+            <button onClick={handleExec} disabled={!canExec}
+              className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
+                canExec
+                  ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
+                  : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
+              }`}>
+              {activeAuth.type === "correccion_apertura" ? "Registrar Corrección de Apertura" : "Ejecutar Corrección"}
+            </button>
+          )}
+
+          {showPostpone ? (
+            <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-3.5 py-3">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">
+                Motivo de la postergación <span className="text-amber-500">*</span>
+              </span>
+              <textarea
+                value={postponeMotivo}
+                onChange={e => setPostponeMotivo(e.target.value)}
+                placeholder="Explica por qué no puedes regularizar ahora..."
+                rows={2}
+                className="w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11.5px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-amber-400 focus:ring-2 focus:ring-amber-200/40"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowPostpone(false); setPostponeMotivo(""); }}
+                  className="flex-1 rounded-xl border border-[#e4e9f0] bg-white py-2 text-[10.5px] font-semibold uppercase tracking-wide text-[#6b7280] hover:bg-[#f8fafd] transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handlePostpone}
+                  disabled={postponeMotivo.trim().length < MIN_MOTIVO_LEN}
+                  className={`flex-1 rounded-xl py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                    postponeMotivo.trim().length >= MIN_MOTIVO_LEN
+                      ? "bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.98]"
+                      : "cursor-not-allowed bg-amber-500/15 text-amber-500/50"
+                  }`}
+                >
+                  Confirmar postergación
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowPostpone(true)}
+              className="self-start text-[10.5px] font-semibold text-amber-600 underline-offset-2 hover:underline"
+            >
+              No puedo regularizar ahora
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
