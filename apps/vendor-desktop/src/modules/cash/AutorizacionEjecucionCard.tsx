@@ -5,8 +5,9 @@ import {
   type SessionEntry, type CorrectionRecord,
 } from "./services/session-history.service";
 import {
-  markAuthorizationExecuted, type CajaAuthorization,
+  markAuthorizationExecuted, markAuthorizationPostponed, type CajaAuthorization,
 } from "./services/supervision-authorization.service";
+import { MIN_MOTIVO_LEN } from "./services/cash-rules.service";
 
 const MOTIVOS_EXEC_EXTMP = [
   "Finalicé el turno sin cerrar el sistema",
@@ -48,10 +49,11 @@ interface AutorizacionEjecucionCardProps {
   targetSession:  SessionEntry | null;
   operatorName:   string;
   onExecuted:     () => void;
+  onPostponed:    () => void;
 }
 
 export function AutorizacionEjecucionCard({
-  activeAuth, targetSession, operatorName, onExecuted,
+  activeAuth, targetSession, operatorName, onExecuted, onPostponed,
 }: AutorizacionEjecucionCardProps) {
   const [execFecha,        setExecFecha]        = useState("");
   const [execSignal,       setExecSignal]       = useState<"ok" | "warn">("ok");
@@ -59,11 +61,14 @@ export function AutorizacionEjecucionCard({
   const [execMotivoLibre,  setExecMotivoLibre]  = useState("");
   const [execNewApertura,  setExecNewApertura]  = useState("");
   const [execDone,         setExecDone]         = useState(false);
+  const [showPostpone,     setShowPostpone]     = useState(false);
+  const [postponeMotivo,   setPostponeMotivo]   = useState("");
 
   useEffect(() => {
     setExecFecha(""); setExecSignal("ok");
     setExecMotivoPreset(""); setExecMotivoLibre("");
     setExecNewApertura(""); setExecDone(false);
+    setShowPostpone(false); setPostponeMotivo("");
   }, [activeAuth.id]);
 
   const execMotivoCombined = (execMotivoPreset === "Otro" || execMotivoPreset === "")
@@ -75,6 +80,12 @@ export function AutorizacionEjecucionCard({
     (activeAuth.type !== "cierre_extemporaneo" || execFecha.length > 0) &&
     (activeAuth.type !== "correccion_apertura" || (execNewApertura.length > 0 && newAperturaNum >= 0)) &&
     !execDone;
+
+  function handlePostpone() {
+    if (postponeMotivo.trim().length < MIN_MOTIVO_LEN) return;
+    markAuthorizationPostponed(activeAuth.id, postponeMotivo.trim(), operatorName);
+    onPostponed();
+  }
 
   function handleExec() {
     if (!canExec) return;
@@ -292,6 +303,49 @@ export function AutorizacionEjecucionCard({
             Corrección registrada · Pendiente de validación supervisora
           </span>
         </div>
+      )}
+
+      {activeAuth.type !== "cierre_activo" && !execDone && (
+        showPostpone ? (
+          <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-3.5 py-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">
+              Motivo de la postergación <span className="text-amber-500">*</span>
+            </span>
+            <textarea
+              value={postponeMotivo}
+              onChange={e => setPostponeMotivo(e.target.value)}
+              placeholder="Explica por qué no puedes regularizar ahora..."
+              rows={2}
+              className="w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-[11.5px] text-[#374151] outline-none placeholder:text-[#c8d4e0] focus:border-amber-400 focus:ring-2 focus:ring-amber-200/40"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowPostpone(false); setPostponeMotivo(""); }}
+                className="flex-1 rounded-xl border border-[#e4e9f0] bg-white py-2 text-[10.5px] font-semibold uppercase tracking-wide text-[#6b7280] hover:bg-[#f8fafd] transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handlePostpone}
+                disabled={postponeMotivo.trim().length < MIN_MOTIVO_LEN}
+                className={`flex-1 rounded-xl py-2 text-[10.5px] font-bold uppercase tracking-wide transition ${
+                  postponeMotivo.trim().length >= MIN_MOTIVO_LEN
+                    ? "bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.98]"
+                    : "cursor-not-allowed bg-amber-500/15 text-amber-500/50"
+                }`}
+              >
+                Confirmar postergación
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowPostpone(true)}
+            className="self-start text-[10.5px] font-semibold text-amber-600 underline-offset-2 hover:underline"
+          >
+            No puedo regularizar ahora
+          </button>
+        )
       )}
       </div>
     </div>

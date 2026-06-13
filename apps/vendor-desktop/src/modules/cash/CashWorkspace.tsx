@@ -232,6 +232,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     openCashSession, closeCashSession, correctAperturaData,
     sessionStats, cashMoves, addCashMove, updateCashMove,
     showNotice, operators, activeOperator, currentSessionEvents,
+    acknowledgedAuthIds, acknowledgeAuthorization,
   } = usePOS();
   const {
     isOpen, cashBox: activeBox, operator, terminal, openedAt,
@@ -479,6 +480,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   function handleCorrectionExecuted() {
     setSessionHistory(loadSessionHistory());
     setAuthRefresh(v => v + 1);
+    if (pendingCorrectionAuth) acknowledgeAuthorization(pendingCorrectionAuth.id);
+  }
+  function handleCorrectionPostponed() {
+    if (pendingCorrectionAuth) acknowledgeAuthorization(pendingCorrectionAuth.id);
   }
 
   useEffect(() => {
@@ -837,12 +842,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       <div className="flex flex-[3] shrink-0 flex-col gap-2">
 
         {/* Autorización supervisora pendiente — reemplaza la card de apertura/resumen mientras esté activa */}
-        {closingStage === 0 && pendingCorrectionAuth ? (
+        {closingStage === 0 && pendingCorrectionAuth && !acknowledgedAuthIds.has(pendingCorrectionAuth.id) ? (
           <AutorizacionEjecucionCard
             activeAuth={pendingCorrectionAuth}
             targetSession={targetSessionForAuth}
             operatorName={operatorName}
             onExecuted={handleCorrectionExecuted}
+            onPostponed={handleCorrectionPostponed}
           />
         ) : isOpen ? (
           <div className="flex flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">

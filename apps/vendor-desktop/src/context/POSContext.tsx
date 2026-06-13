@@ -73,6 +73,8 @@ interface POSContextValue {
   setVisualMode: (m: VisualMode) => void;
   printFlow: PrintFlow;
   setPrintFlow: (f: PrintFlow) => void;
+  acknowledgedAuthIds: Set<string>;
+  acknowledgeAuthorization: (id: string) => void;
 }
 
 const POSContext = createContext<POSContextValue | null>(null);
@@ -152,6 +154,15 @@ export function POSProvider({ children }: { children: ReactNode }) {
   });
   cashSessionRef.current = cajaCashSessionRef.current;
 
+  // ── Autorizaciones supervisoras pospuestas — en memoria, se limpia al abrir nuevo turno ──
+  const [acknowledgedAuthIds, setAcknowledgedAuthIds] = useState<Set<string>>(new Set());
+  const acknowledgeAuthorization = useCallback((id: string) => {
+    setAcknowledgedAuthIds(prev => new Set(prev).add(id));
+  }, []);
+  useEffect(() => {
+    setAcknowledgedAuthIds(new Set());
+  }, [cashSession.openedAt]);
+
   const {
     zone, setZone,
     cobroOpen, setCobroOpen,
@@ -192,6 +203,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       assignOperatorBlock, releaseOperatorBlock, updateOperatorCapabilities,
       roles, createRole, updateRoleData, setRoleActive, updateRoleCapabilities,
       rubro, setRubro, visualMode, setVisualMode, printFlow, setPrintFlow,
+      acknowledgedAuthIds, acknowledgeAuthorization,
     }}>
       {children}
     </POSContext.Provider>

@@ -19,6 +19,9 @@ export type CajaAuthorization = {
   executedAt?:  string;
   validatedBy?: string;
   validatedAt?: string;
+  postponedMotivo?: string;
+  postponedAt?:     string;
+  postponedBy?:     string;
 };
 
 export function loadAuthorizations(): CajaAuthorization[] {
@@ -56,6 +59,14 @@ export function markAuthorizationValidated(id: string, validatedBy: string): voi
   save(loadAuthorizations().map(a =>
     a.id === id
       ? { ...a, status: "validada" as const, validatedBy, validatedAt: new Date().toISOString() }
+      : a,
+  ));
+}
+
+export function markAuthorizationPostponed(id: string, motivo: string, postponedBy: string): void {
+  save(loadAuthorizations().map(a =>
+    a.id === id
+      ? { ...a, postponedMotivo: motivo, postponedBy, postponedAt: new Date().toISOString() }
       : a,
   ));
 }

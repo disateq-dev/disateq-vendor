@@ -3,6 +3,8 @@ import { BarChart2, Boxes, ChevronRight, FileText, Package, Settings, ShoppingCa
 import { type ActiveModule, type CashSubView, type AbastecimientoSubModule, type ConfigSubView } from "../App";
 import { useCapacidad } from "../hooks/useCapacidad";
 import { useContextoOperacional } from "../hooks/useContextoOperacional";
+import { usePOS } from "../context/POSContext";
+import { getActiveAuthorizationsForBlock } from "../modules/cash/services/supervision-authorization.service";
 
 // ── Módulos que tienen subtabs activos ────────────────────────
 const CON_SUBTABS = new Set<ActiveModule>(["cash", "abastecimiento", "config"]);
@@ -111,13 +113,23 @@ export function ContextBar({
   abastecimientoSubModule, onAbastecimientoSubModuleChange,
   configSubView, onConfigSubViewChange,
 }: ContextBarProps) {
-  const puedeVerReportes       = useCapacidad("ver_reportes");
-  const puedeVerClientes       = useCapacidad("gestionar_clientes");
+  // ── Bloqueo operacional — autorización supervisora pendiente sin resolver ──
+  const { activeOperator, cashSession, suggestedCashBox, acknowledgedAuthIds } = usePOS();
+  const operatorBlockPrefix = cashSession.cashBox?.code[0]
+    ?? (activeOperator?.baseBloque != null ? String(activeOperator.baseBloque)[0] : suggestedCashBox?.code[0] ?? "1");
+  const pendingAuth = getActiveAuthorizationsForBlock(operatorBlockPrefix)
+    .filter(a => a.type !== "cierre_activo")
+    .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt))[0] ?? null;
+  const isBlocking = pendingAuth !== null && !acknowledgedAuthIds.has(pendingAuth.id);
+
+  const puedeVerSales          = !isBlocking;
+  const puedeVerReportes       = useCapacidad("ver_reportes")          && !isBlocking;
+  const puedeVerClientes       = useCapacidad("gestionar_clientes")    && !isBlocking;
   const contexto               = useContextoOperacional();
-  const puedeVerComprobantes   = contexto !== null;
-  const puedeVerAbastecimiento = useCapacidad("gestionar_inventarios");
-  const puedeVerAjustes        = useCapacidad("gestionar_operadores");
-  const puedeSupervisarCaja    = useCapacidad("reaperturar_cierres");
+  const puedeVerComprobantes   = contexto !== null                     && !isBlocking;
+  const puedeVerAbastecimiento = useCapacidad("gestionar_inventarios") && !isBlocking;
+  const puedeVerAjustes        = useCapacidad("gestionar_operadores")  && !isBlocking;
+  const puedeSupervisarCaja    = useCapacidad("reaperturar_cierres")   && !isBlocking;
 
   // Estado de expansión — independiente de activeModule
   const [expanded, setExpanded] = useState<ActiveModule | null>(null);
@@ -130,15 +142,24 @@ export function ContextBar({
   useEffect(() => {
     stateRef.current = { navMode, navIdx, expanded, focusedPillIdx, active };
   });
-  const accessRef = useRef({ puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja });
+  const accessRef = useRef({ puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja, puedeVerSales });
   useEffect(() => {
-    accessRef.current = { puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja };
+    accessRef.current = { puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja, puedeVerSales };
   });
 
   // Sincronizar: si el módulo activo no tiene subtabs, colapsar
   useEffect(() => {
     if (!CON_SUBTABS.has(active)) setExpanded(null);
   }, [active]);
+
+  // Bloqueo operacional — forzar TURNO › Gestión mientras haya autorización pendiente
+  useEffect(() => {
+    if (isBlocking && (active !== "cash" || cashSubView !== "turno")) {
+      setExpanded(null);
+      onChange("cash");
+      onCashSubViewChange("turno");
+    }
+  }, [isBlocking, active, cashSubView, onChange, onCashSubViewChange]);
 
   // Notificar al shell si navMode está activo — para que Escape no interfiera
   useEffect(() => {
@@ -169,6 +190,7 @@ export function ContextBar({
         if (m === "reportes")       return acc.puedeVerReportes;
         if (m === "comprobantes")   return acc.puedeVerComprobantes;
         if (m === "config")         return acc.puedeVerAjustes;
+        if (m === "sales")          return acc.puedeVerSales;
         return true;
       }
 
@@ -409,9 +431,11 @@ export function ContextBar({
         className={navMode && MODULES_ORDER[navIdx] === "cash" ? NAV_FOCUS["cash"] : active === "cash" ? MOD_ON["cash"] : MOD_OFF}>
         <ShoppingCart size={15} /><span>TURNO</span>
       </button>
-      <button onClick={() => handleModuleClick("sales")}
-        onMouseEnter={() => onHover("sales")}
-        className={navMode && MODULES_ORDER[navIdx] === "sales" ? NAV_FOCUS["sales"] : active === "sales" ? MOD_ON["sales"] : MOD_OFF}>
+      <button
+        onClick={() => handleModuleClick("sales", puedeVerSales)}
+        onMouseEnter={puedeVerSales ? () => onHover("sales") : undefined}
+        title={puedeVerSales ? undefined : "Regulariza la autorización pendiente en TURNO para continuar"}
+        className={navMode && MODULES_ORDER[navIdx] === "sales" ? NAV_FOCUS["sales"] : puedeVerSales ? (active === "sales" ? MOD_ON["sales"] : MOD_OFF) : MOD_PH}>
         <Package size={15} /><span>VENTAS</span>
       </button>
 
