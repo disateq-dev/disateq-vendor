@@ -566,3 +566,125 @@ export function printArqueo(d: ArqueoData): void {
 export async function printArqueoThermal(printer: string, d: ArqueoData): Promise<void> {
   await invoke("print_arqueo", { printer, data: d });
 }
+
+// ─── CORRECCIÓN DE CIERRE ────────────────────────────────────────────────────
+
+export interface CorreccionPrintData {
+  businessName:     string;
+  cashBoxCode:      string;
+  sessionDateTime:  string;
+  dateTime:         string;
+  authorizedBy:     string;
+  executedBy:       string;
+  motivo:           string;
+  prevEfe:          number;
+  prevYape:         number;
+  prevTar:          number;
+  prevTotal:        number;
+  newEfe:           number;
+  newYape:          number;
+  newTar:           number;
+  newTotal:         number;
+}
+
+function diffStrHtml(prev: number, next: number): { str: string; color: string } {
+  const diff = Math.round((next - prev) * 100) / 100;
+  if (diff === 0) return { str: "±0.00", color: "#065f46" };
+  return { str: (diff > 0 ? "+" : "−") + Math.abs(diff).toFixed(2), color: diff < 0 ? "#991b1b" : "#1d4ed8" };
+}
+
+function buildCorreccionHTML(d: CorreccionPrintData): string {
+  const rows = [
+    { label: "Efectivo", prev: d.prevEfe,   next: d.newEfe   },
+    { label: "Yape",     prev: d.prevYape,  next: d.newYape  },
+    { label: "Tarjetas", prev: d.prevTar,   next: d.newTar   },
+    { label: "TOTAL",    prev: d.prevTotal, next: d.newTotal },
+  ];
+  return `
+<style>
+@page { size: 80mm auto; margin: 0; }
+@media print {
+  body > *:not(#pt-overlay) { display: none !important; }
+  #pt-overlay { display: block !important; }
+}
+#pt-overlay {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  color: #000;
+  line-height: 1.5;
+  background: #fff;
+}
+#pt-overlay .pt-ticket  { padding: 4mm 2mm 12mm; }
+#pt-overlay .pt-center  { text-align: center; }
+#pt-overlay .pt-biz     { font-size: 13px; font-weight: bold; letter-spacing: .5px; }
+#pt-overlay .pt-meta    { font-size: 10px; color: #444; }
+#pt-overlay .pt-doc     { font-size: 12px; font-weight: bold; text-align: center; margin: 3px 0 1px; }
+#pt-overlay .pt-solid   { border-top: 1px solid #000; margin: 5px 0; }
+#pt-overlay .pt-dash    { border-top: 1px dashed #555; margin: 4px 0; }
+#pt-overlay .pt-row     { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; }
+#pt-overlay .pt-bold    { font-weight: bold; }
+#pt-overlay .pt-sect    { font-size: 9px; font-weight: bold; letter-spacing: 1.5px; color: #666; margin: 4px 0 2px; }
+#pt-overlay .pt-foot    { text-align: center; font-size: 10px; color: #555; margin-top: 4px; }
+</style>
+<div class="pt-ticket">
+
+  <div class="pt-center">
+    <div class="pt-biz">${esc(d.businessName)}</div>
+    <div class="pt-doc">CORRECCIÓN DE CIERRE</div>
+    <div class="pt-meta">${esc(d.dateTime)}</div>
+  </div>
+
+  <div class="pt-solid"></div>
+
+  <div class="pt-row"><span>CAJA</span><span class="pt-bold">CAJA ${esc(d.cashBoxCode)}</span></div>
+  <div class="pt-row"><span>SESIÓN</span><span>${esc(d.sessionDateTime)}</span></div>
+
+  <div class="pt-dash"></div>
+
+  <div class="pt-row"><span>Autorizado por</span><span>${esc(d.authorizedBy)}</span></div>
+  <div class="pt-row"><span>Ejecutado por</span><span>${esc(d.executedBy)}</span></div>
+  <div class="pt-row"><span>Motivo</span><span style="text-align:right; max-width:60%;">${esc(d.motivo)}</span></div>
+
+  <div class="pt-dash"></div>
+
+  <div class="pt-sect">ORIGINAL / CORREGIDO</div>
+  <div style="display:flex; justify-content:space-between; font-size:9px; color:#666; margin-bottom:2px;">
+    <span style="min-width:60px;">CONCEPTO</span>
+    <span style="min-width:52px; text-align:right;">ORIGINAL</span>
+    <span style="min-width:52px; text-align:right;">CORREGIDO</span>
+    <span style="min-width:44px; text-align:right;">DIFER.</span>
+  </div>
+  ${rows.map(r => {
+    const { str, color } = diffStrHtml(r.prev, r.next);
+    const bold = r.label === "TOTAL" ? "font-weight:bold;" : "";
+    return `<div style="display:flex; justify-content:space-between; font-size:10px; ${bold} margin:1px 0;">
+      <span style="min-width:60px;">${r.label}</span>
+      <span style="min-width:52px; text-align:right;">${r.prev.toFixed(2)}</span>
+      <span style="min-width:52px; text-align:right;">${r.next.toFixed(2)}</span>
+      <span style="min-width:44px; text-align:right; color:${color};">${str}</span>
+    </div>`;
+  }).join("")}
+
+  <div class="pt-solid"></div>
+
+  <div class="pt-foot">CORRECCIÓN REGISTRADA</div>
+  <div class="pt-foot" style="font-size:9px;">${esc(d.dateTime)}</div>
+
+</div>`;
+}
+
+export function printCorreccion(d: CorreccionPrintData): void {
+  let overlay = document.getElementById("pt-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "pt-overlay";
+    overlay.style.display = "none";
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = buildCorreccionHTML(d);
+  window.print();
+}
+
+export async function printCorreccionThermal(printer: string, d: CorreccionPrintData): Promise<void> {
+  await invoke("print_correccion", { printer, data: d });
+}

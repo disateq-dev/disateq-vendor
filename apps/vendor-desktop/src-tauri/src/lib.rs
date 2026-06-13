@@ -30,6 +30,12 @@ async fn print_arqueo(printer: String, data: thermal::ArqueoPrintData) -> Result
 }
 
 #[tauri::command]
+async fn print_correccion(printer: String, data: thermal::CorreccionPrintData) -> Result<(), String> {
+    let bytes = thermal::build_correccion_escpos(&data);
+    thermal::print_raw(&printer, &bytes)
+}
+
+#[tauri::command]
 fn app_exit(app: tauri::AppHandle) {
     app.exit(0);
 }
@@ -66,7 +72,7 @@ pub fn run() {
       }
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![print_ticket, print_ticket_with_dispatch, print_cash_move, print_arqueo, app_exit])
+    .invoke_handler(tauri::generate_handler![print_ticket, print_ticket_with_dispatch, print_cash_move, print_arqueo, print_correccion, app_exit])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

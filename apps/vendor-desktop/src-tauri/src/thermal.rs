@@ -688,6 +688,101 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     b.0
 }
 
+// ─── CORRECCIÓN DE CIERRE ────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CorreccionPrintData {
+    pub business_name:     String,
+    pub cash_box_code:     String,
+    pub session_date_time: String,
+    pub date_time:         String,
+    pub authorized_by:     String,
+    pub executed_by:       String,
+    pub motivo:            String,
+    pub prev_efe:          f64,
+    pub prev_yape:         f64,
+    pub prev_tar:          f64,
+    pub prev_total:        f64,
+    pub new_efe:           f64,
+    pub new_yape:          f64,
+    pub new_tar:           f64,
+    pub new_total:         f64,
+}
+
+pub fn build_correccion_escpos(d: &CorreccionPrintData) -> Vec<u8> {
+    let mut b = Buf::new();
+    b.init();
+
+    b.align_center();
+    b.bold_on();
+    b.dbl_h_on();
+    b.line(&normalize(&d.business_name));
+    b.dbl_h_off();
+    b.bold_off();
+    b.bold_on();
+    b.line("CORRECCION DE CIERRE");
+    b.bold_off();
+    b.line(&normalize(&d.date_time));
+    b.align_left();
+
+    b.equals();
+
+    b.two_col("CAJA:", &normalize(&format!("CAJA {}", d.cash_box_code)));
+    b.two_col("SESION:", &normalize(&d.session_date_time));
+
+    b.dashes();
+
+    b.two_col("Autorizado por:", &normalize(&d.authorized_by));
+    b.two_col("Ejecutado por:", &normalize(&d.executed_by));
+
+    {
+        let text = normalize(&d.motivo);
+        let prefix = "Motivo: ";
+        if prefix.len() + text.len() <= COLS {
+            b.line(&format!("{prefix}{text}"));
+        } else {
+            b.line("Motivo:");
+            let width = COLS - 2;
+            let bytes = text.as_bytes();
+            let mut i = 0;
+            while i < bytes.len() {
+                let end = (i + width).min(bytes.len());
+                b.line(&format!("  {}", std::str::from_utf8(&bytes[i..end]).unwrap_or("")));
+                i = end;
+            }
+        }
+    }
+
+    b.dashes();
+
+    b.four_col("", "ORIGINAL", "CORREGIDO", "DIFER.");
+    b.four_col("Efectivo", &format!("{:.2}", d.prev_efe), &format!("{:.2}", d.new_efe), &diff_str(d.prev_efe, d.new_efe));
+    b.four_col("Yape", &format!("{:.2}", d.prev_yape), &format!("{:.2}", d.new_yape), &diff_str(d.prev_yape, d.new_yape));
+    b.four_col("Tarjetas", &format!("{:.2}", d.prev_tar), &format!("{:.2}", d.new_tar), &diff_str(d.prev_tar, d.new_tar));
+    b.equals();
+    b.bold_on();
+    b.dbl_h_on();
+    b.four_col("TOTAL", &format!("{:.2}", d.prev_total), &format!("{:.2}", d.new_total), &diff_str(d.prev_total, d.new_total));
+    b.dbl_h_off();
+    b.bold_off();
+
+    b.equals();
+
+    b.align_center();
+    b.bold_on();
+    b.line("CORRECCION REGISTRADA");
+    b.bold_off();
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+    b.lf();
+
+    b.cut();
+    b.0
+}
+
 // ─── DISPATCH TICKET ─────────────────────────────────────────────────────────
 
 #[derive(Deserialize)]

@@ -8,6 +8,10 @@ import {
   markAuthorizationExecuted, markAuthorizationPostponed, type CajaAuthorization,
 } from "./services/supervision-authorization.service";
 import { MIN_MOTIVO_LEN } from "./services/cash-rules.service";
+import { loadBusinessConfig } from "../../config/business";
+import {
+  printCorreccion, printCorreccionThermal, type CorreccionPrintData,
+} from "../../print/printTicket";
 
 const MOTIVOS_EXEC_EXTMP = [
   "Finalicé el turno sin cerrar el sistema",
@@ -133,6 +137,20 @@ export function AutorizacionEjecucionCard({
         newDiferencia: newDiferenciaCalc,
       };
       recordSessionCorrection(activeAuth.sessionId, correction, newSignalCalc);
+      const printData: CorreccionPrintData = {
+        businessName:    loadBusinessConfig().nombreComercial,
+        cashBoxCode:     targetSession?.boxCode ?? "?",
+        sessionDateTime: targetSession ? fmtDt(targetSession.openedAt) : "",
+        dateTime:        fmtDt(new Date().toISOString()),
+        authorizedBy:    activeAuth.authorizedBy,
+        executedBy:      operatorName,
+        motivo:          execMotivoCombined,
+        prevEfe:   prevEfeNum,  prevYape: prevYapeNum,  prevTar: prevTarNum,  prevTotal: prevTotalNum,
+        newEfe:    newEfeNum,   newYape:  newYapeNum,   newTar:  newTarNum,   newTotal:  newTotalNum,
+      };
+      setTimeout(() => {
+        printCorreccionThermal("TIQUE", printData).catch(() => printCorreccion(printData));
+      }, 120);
     } else if (activeAuth.type === "correccion_apertura") {
       const correction: CorrectionRecord = {
         correctedBy:  operatorName,
