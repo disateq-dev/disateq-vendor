@@ -1,5 +1,7 @@
 import type { ContextoCatalogo, DisponibilidadCatalogo, UmbralDisponibilidad } from './catalogo.types'
 import { construirCatalogo } from './catalogo.service'
+import { loadMovimientos } from '../inventory/persistence'
+import { deriveDisponibilidad } from '../inventory/store'
 
 export interface ProductoBuscable {
   id: string
@@ -44,17 +46,7 @@ export function obtenerProductosBuscables(
     const disponibilidadService = {
       getUnidadesDisponibles(productoId: string): number {
         try {
-          const raw = localStorage.getItem('disateq:inventory:items')
-          if (!raw) return 0
-          const parsed = JSON.parse(raw) as unknown
-          if (!Array.isArray(parsed)) return 0
-          const item = parsed.find(entry =>
-            typeof entry === 'object' &&
-            entry !== null &&
-            'id' in entry &&
-            entry.id === productoId
-          ) as { disponible?: number } | undefined
-          return item?.disponible ?? 0
+          return deriveDisponibilidad(loadMovimientos(), productoId)
         } catch {
           return 0
         }
