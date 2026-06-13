@@ -23,6 +23,7 @@ export interface ItemCatalogo {
   disponibilidad: DisponibilidadCatalogo
   unidadesDisponibles: number
   category?: string
+  codigoBarras?: string
 }
 
 export interface CatalogoProyectado {

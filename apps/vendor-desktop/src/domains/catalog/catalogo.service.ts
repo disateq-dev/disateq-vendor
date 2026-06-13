@@ -60,6 +60,7 @@ export function construirCatalogo(
       disponibilidad,
       unidadesDisponibles,
       category: hov.category,
+      codigoBarras: hov.codigoBarras,
     }
   })
 

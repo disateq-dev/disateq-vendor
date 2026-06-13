@@ -62,7 +62,7 @@ export function obtenerProductosBuscables(
     return catalogo.items.map(item => ({
       id: item.hovId,
       description: item.nombre,
-      barcode: item.hovId,
+      barcode: item.codigoBarras ?? '',
       unitPrice: item.valorAplicado ?? 0,
       presentacion: item.unidadDespacho,
       stockStatus: mapearDisponibilidad(item.disponibilidad),
