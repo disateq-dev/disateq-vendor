@@ -63,13 +63,20 @@ export function AutorizacionEjecucionCard({
   const [execDone,         setExecDone]         = useState(false);
   const [showPostpone,     setShowPostpone]     = useState(false);
   const [postponeMotivo,   setPostponeMotivo]   = useState("");
+  const [newEfe,  setNewEfe]  = useState("");
+  const [newYape, setNewYape] = useState("");
+  const [newTar,  setNewTar]  = useState("");
 
   useEffect(() => {
     setExecFecha(""); setExecSignal("ok");
     setExecMotivoPreset(""); setExecMotivoLibre("");
     setExecNewApertura(""); setExecDone(false);
     setShowPostpone(false); setPostponeMotivo("");
-  }, [activeAuth.id]);
+    const a = targetSession?.arqueo;
+    setNewEfe(a ? a.contadoEfe.toFixed(2) : "0.00");
+    setNewYape(a ? a.contadoYape.toFixed(2) : "0.00");
+    setNewTar(a ? a.contadoTar.toFixed(2) : "0.00");
+  }, [activeAuth.id, targetSession]);
 
   const execMotivoCombined = (execMotivoPreset === "Otro" || execMotivoPreset === "")
     ? execMotivoLibre.trim()
@@ -81,6 +88,19 @@ export function AutorizacionEjecucionCard({
     (activeAuth.type !== "correccion_apertura" || (execNewApertura.length > 0 && newAperturaNum >= 0)) &&
     !execDone;
 
+  // ── corrección de cierre: ORIGINAL / CORREGIDO ──
+  const prevEfeNum  = targetSession?.arqueo?.contadoEfe  ?? 0;
+  const prevYapeNum = targetSession?.arqueo?.contadoYape ?? 0;
+  const prevTarNum  = targetSession?.arqueo?.contadoTar  ?? 0;
+  const prevTotalNum = Math.round((prevEfeNum + prevYapeNum + prevTarNum) * 100) / 100;
+  const newEfeNum  = parseFloat(newEfe.replace(",", "."))  || 0;
+  const newYapeNum = parseFloat(newYape.replace(",", ".")) || 0;
+  const newTarNum  = parseFloat(newTar.replace(",", "."))  || 0;
+  const newTotalNum = Math.round((newEfeNum + newYapeNum + newTarNum) * 100) / 100;
+  const esperadoTotal = targetSession?.arqueo?.sistemaEsperado?.total ?? 0;
+  const newDiferenciaCalc = Math.round((newTotalNum - esperadoTotal) * 100) / 100;
+  const newSignalCalc: "ok" | "warn" = newDiferenciaCalc === 0 ? "ok" : "warn";
+
   function handlePostpone() {
     if (postponeMotivo.trim().length < MIN_MOTIVO_LEN) return;
     markAuthorizationPostponed(activeAuth.id, postponeMotivo.trim(), operatorName);
@@ -89,18 +109,30 @@ export function AutorizacionEjecucionCard({
 
   function handleExec() {
     if (!canExec) return;
-    if (activeAuth.type === "cierre_extemporaneo" || activeAuth.type === "correccion_cierre") {
+    if (activeAuth.type === "cierre_extemporaneo") {
       const correction: CorrectionRecord = {
         correctedBy: operatorName,
         correctedAt: new Date().toISOString(),
         motivo:      execMotivoCombined,
-        accion:      activeAuth.type === "cierre_extemporaneo" ? "cierre_extemporaneo" : "documentar_diferencia",
-        prevSignal:  activeAuth.type === "cierre_extemporaneo" ? null : "warn",
+        accion:      "cierre_extemporaneo",
+        prevSignal:  null,
         newSignal:   execSignal,
-        ...(activeAuth.type === "cierre_extemporaneo" && execFecha
-          ? { fechaOperacional: new Date(execFecha).toISOString() } : {}),
+        ...(execFecha ? { fechaOperacional: new Date(execFecha).toISOString() } : {}),
       };
       recordSessionCorrection(activeAuth.sessionId, correction, execSignal);
+    } else if (activeAuth.type === "correccion_cierre") {
+      const correction: CorrectionRecord = {
+        correctedBy: operatorName,
+        correctedAt: new Date().toISOString(),
+        motivo:      execMotivoCombined,
+        accion:      "documentar_diferencia",
+        prevSignal:  targetSession?.closeSignal ?? "warn",
+        newSignal:   newSignalCalc,
+        prevContado: { efe: prevEfeNum, yape: prevYapeNum, tar: prevTarNum, total: prevTotalNum },
+        newContado:  { efe: newEfeNum,  yape: newYapeNum,  tar: newTarNum,  total: newTotalNum },
+        newDiferencia: newDiferenciaCalc,
+      };
+      recordSessionCorrection(activeAuth.sessionId, correction, newSignalCalc);
     } else if (activeAuth.type === "correccion_apertura") {
       const correction: CorrectionRecord = {
         correctedBy:  operatorName,
@@ -221,24 +253,21 @@ export function AutorizacionEjecucionCard({
         </div>
       )}
 
-      {/* Formulario de ejecución — extemporáneo y corrección de cierre */}
-      {(activeAuth.type === "cierre_extemporaneo" || activeAuth.type === "correccion_cierre") && !execDone && (
+      {/* Formulario de ejecución — cierre extemporáneo */}
+      {activeAuth.type === "cierre_extemporaneo" && !execDone && (
         <div className="flex flex-col gap-2">
-
-          {activeAuth.type === "cierre_extemporaneo" && (
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
-                Fecha/hora real del cierre <span className="text-amber-500">*</span>
-              </span>
-              <input type="datetime-local" value={execFecha} onChange={e => setExecFecha(e.target.value)}
-                max={new Date().toISOString().slice(0, 16)}
-                className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/15" />
-            </div>
-          )}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
+              Fecha/hora real del cierre <span className="text-amber-500">*</span>
+            </span>
+            <input type="datetime-local" value={execFecha} onChange={e => setExecFecha(e.target.value)}
+              max={new Date().toISOString().slice(0, 16)}
+              className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/15" />
+          </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
-              {activeAuth.type === "cierre_extemporaneo" ? "¿El arqueo cuadró?" : "Resultado de la corrección"}
+              ¿El arqueo cuadró?
             </span>
             <div className="flex gap-2">
               <button onClick={() => setExecSignal("ok")}
@@ -261,7 +290,94 @@ export function AutorizacionEjecucionCard({
               Motivo de la ejecución <span className="text-amber-500">*</span>
             </span>
             <div className="flex flex-wrap gap-1">
-              {(activeAuth.type === "cierre_extemporaneo" ? MOTIVOS_EXEC_EXTMP : MOTIVOS_EXEC_CORRECCION).map(p => (
+              {MOTIVOS_EXEC_EXTMP.map(p => (
+                <button key={p}
+                  onClick={() => { setExecMotivoPreset(p); if (p !== "Otro") setExecMotivoLibre(""); }}
+                  className={`rounded-xl border px-3 py-1.5 text-[10px] font-semibold transition ${
+                    execMotivoPreset === p
+                      ? "border-[#45b356]/40 bg-emerald-50 text-emerald-700"
+                      : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-emerald-200"
+                  }`}>{p}</button>
+              ))}
+            </div>
+            {(execMotivoPreset === "Otro" || execMotivoPreset === "") && (
+              <input type="text" value={execMotivoLibre} onChange={e => setExecMotivoLibre(e.target.value)}
+                placeholder="Describe brevemente..."
+                className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none focus:border-[#45b356]" />
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 rounded-xl border border-[#f0f4f8] bg-white px-3.5 py-2">
+            <Monitor size={11} strokeWidth={2} className="text-[#c0cad4] shrink-0" />
+            <span className="text-[10px] text-[#9ca3af]">
+              Ejecutado por: <strong className="text-[#374151]">{operatorName}</strong>
+            </span>
+          </div>
+
+          <button onClick={handleExec} disabled={!canExec}
+            className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-semibold uppercase tracking-wider transition ${
+              canExec
+                ? "bg-[#45b356] text-white hover:bg-[#35994a] active:scale-[0.98]"
+                : "cursor-not-allowed bg-[#45b356]/[0.15] text-[#45b356]/50"
+            }`}>
+            Ejecutar Corrección
+          </button>
+        </div>
+      )}
+
+      {/* Formulario de ejecución — corrección de cierre: tabla ORIGINAL/CORREGIDO */}
+      {activeAuth.type === "correccion_cierre" && !execDone && (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1 rounded-xl border border-[#e4e9f0] bg-white overflow-hidden">
+            <div className="grid grid-cols-[1fr_72px_72px] gap-x-2 px-3 py-1.5 border-b border-[#f0f4f8] bg-[#f8fafd]">
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Modalidad</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#9ca3af] text-right">Original</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#2154d8] text-right">Corregido</span>
+            </div>
+            {([
+              { label: "Efectivo", prev: prevEfeNum,  value: newEfe,  set: setNewEfe  },
+              { label: "Yape",     prev: prevYapeNum, value: newYape, set: setNewYape },
+              { label: "Tarjetas", prev: prevTarNum,  value: newTar,  set: setNewTar  },
+            ] as const).map(({ label, prev, value, set }) => (
+              <div key={label} className="grid grid-cols-[1fr_72px_72px] items-center gap-x-2 px-3 py-1.5 border-b border-[#f0f4f8] last:border-0">
+                <span className="text-[10.5px] font-semibold text-[#374151]">{label}</span>
+                <span className="text-[10.5px] tabular-nums text-[#9ca3af] text-right">{prev.toFixed(2)}</span>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={value}
+                  onChange={e => set(e.target.value)}
+                  className="w-full rounded-lg border border-[#2154d8]/30 bg-white px-1.5 py-1 text-right text-[11px] font-bold tabular-nums text-[#374151] outline-none focus:border-[#2154d8] focus:ring-1 focus:ring-[#2154d8]/10"
+                />
+              </div>
+            ))}
+            <div className="grid grid-cols-[1fr_72px_72px] items-center gap-x-2 px-3 py-2 bg-[#f8fafd]">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#374151]">Total</span>
+              <span className="text-[11px] font-bold tabular-nums text-[#9ca3af] text-right">{prevTotalNum.toFixed(2)}</span>
+              <span className="text-[11px] font-bold tabular-nums text-[#2154d8] text-right">{newTotalNum.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className={`flex items-center justify-between rounded-xl border px-3 py-2 ${
+            newDiferenciaCalc === 0 ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"
+          }`}>
+            <span className={`text-[10px] font-bold uppercase tracking-[0.1em] ${
+              newDiferenciaCalc === 0 ? "text-emerald-700" : "text-amber-700"
+            }`}>
+              {newDiferenciaCalc === 0 ? "✓ Cuadrado" : "⚠ Con diferencia"}
+            </span>
+            {newDiferenciaCalc !== 0 && (
+              <span className="text-[12px] font-bold tabular-nums text-amber-700">
+                {newDiferenciaCalc > 0 ? "+" : "−"}S/ {Math.abs(newDiferenciaCalc).toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
+              Motivo de la corrección <span className="text-amber-500">*</span>
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {MOTIVOS_EXEC_CORRECCION.map(p => (
                 <button key={p}
                   onClick={() => { setExecMotivoPreset(p); if (p !== "Otro") setExecMotivoLibre(""); }}
                   className={`rounded-xl border px-3 py-1.5 text-[10px] font-semibold transition ${

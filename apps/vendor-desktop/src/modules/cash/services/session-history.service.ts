@@ -22,6 +22,9 @@ export type CorrectionRecord = {
   fechaOperacional?: string;
   prevApertura?:    number;
   newApertura?:     number;
+  prevContado?: { efe: number; yape: number; tar: number; total: number };
+  newContado?:  { efe: number; yape: number; tar: number; total: number };
+  newDiferencia?: number;
 };
 
 export type SessionEntry = {
@@ -98,9 +101,20 @@ export function recordSessionCorrection(
 ): void {
   try {
     const hist = loadSessionHistory();
-    const updated = hist.map(e =>
-      e.id === sid ? { ...e, closeSignal: newSignal, correction } : e,
-    );
+    const updated = hist.map(e => {
+      if (e.id !== sid) return e;
+      const arqueo = (e.arqueo && correction.newContado)
+        ? {
+            ...e.arqueo,
+            contadoEfe:   correction.newContado.efe,
+            contadoYape:  correction.newContado.yape,
+            contadoTar:   correction.newContado.tar,
+            contadoTotal: correction.newContado.total,
+            diferencia:   correction.newDiferencia ?? e.arqueo.diferencia,
+          }
+        : e.arqueo;
+      return { ...e, closeSignal: newSignal, arqueo, correction };
+    });
     localStorage.setItem(LS_HISTORY, JSON.stringify(updated));
   } catch { /* quota */ }
 }
