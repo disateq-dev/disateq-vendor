@@ -63,9 +63,15 @@ pub struct TicketPrintData {
 }
 
 fn normalize(s: &str) -> String {
-    // Impresora configurada en UTF-8 — solo eliminar caracteres
-    // que causan problemas de control, pasar el resto sin tocar.
-    s.chars().filter(|c| !matches!(c, '¿' | '¡')).collect()
+    // UTF-8 habilitado en impresora. Transliterar solo caracteres
+    // con soporte variable en el firmware de impresoras termicas.
+    s.chars().map(|c| match c {
+        '\u{00D1}' => 'N',
+        '\u{00F1}' => 'n',
+        '\u{00B0}' => ' ',
+        '\u{00BF}' | '\u{00A1}' => ' ',
+        _          => c,
+    }).collect()
 }
 
 fn money(n: f64) -> String {
