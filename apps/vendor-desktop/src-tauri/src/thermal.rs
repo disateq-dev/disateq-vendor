@@ -95,6 +95,7 @@ fn to_cp850(s: &str) -> Vec<u8> {
         '\u{00BF}' => 0xA8, // ¿
         '\u{00A1}' => 0xAD, // ¡
         '\u{00B0}' => 0xF8, // °
+        '\u{00B7}' => 0xFA, // ·
         '\u{00AA}' => 0xA6, // ª
         '\u{00BA}' => 0xA7, // º
         c if c.is_ascii() => c as u8,
@@ -105,7 +106,7 @@ fn to_cp850(s: &str) -> Vec<u8> {
 fn normalize(s: &str) -> String {
     // Compatibilidad — usado solo donde se necesita String
     s.chars().map(|c| match c {
-        '\u{00BF}' | '\u{00A1}' | '\u{00B0}' => ' ',
+        '\u{00BF}' | '\u{00A1}' => ' ',
         _ => c,
     }).collect()
 }
