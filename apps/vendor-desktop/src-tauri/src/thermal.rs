@@ -164,35 +164,47 @@ impl Buf {
     fn item_row(&mut self, qty: u32, desc: &str, subtotal: f64) {
         let qty_str = format!("{qty}x");
         let amt_str = money(subtotal);
-        // qty(3) + space + desc + space + amt
-        let fixed = qty_str.len() + 1 + amt_str.len() + 1;
         let desc_n = normalize(desc);
+        let amt_len = amt_str.len() as u8;
+        let tab_col = COLS as u8;
+
+        // Set tab stop at right edge minus amount width
+        self.set_tab(tab_col.saturating_sub(amt_len));
+
+        let fixed = qty_str.len() + 1 + amt_str.len() + 1;
         let desc_max = COLS.saturating_sub(fixed);
 
-        let chunks: Vec<&str> = if desc_n.len() <= desc_max {
-            vec![&desc_n]
+        let chunks: Vec<String> = if desc_n.len() <= desc_max {
+            vec![desc_n.clone()]
         } else {
             desc_n
                 .as_bytes()
                 .chunks(desc_max)
-                .map(|c| std::str::from_utf8(c).unwrap_or(""))
+                .map(|c| std::str::from_utf8(c).unwrap_or("").to_string())
                 .collect()
         };
 
-        // First line: qty + first chunk + amount
-        let first = chunks[0];
-        let used = qty_str.len() + 1 + first.len() + 1 + amt_str.len();
-        let spaces = if used < COLS { COLS - used } else { 0 };
-        let mut row = format!("{qty_str} {first}");
-        row.push_str(&" ".repeat(spaces + 1));
-        row.push_str(&amt_str);
-        self.line(&row);
+        // First line: qty + desc + TAB + amount (tab aligns to right)
+        let first = &chunks[0];
+        self.text(&format!("{qty_str} {first}"));
+        self.tab();
+        self.line(&amt_str);
 
         // Continuation lines indented
         for chunk in chunks.iter().skip(1) {
             let indent = " ".repeat(qty_str.len() + 1);
             self.line(&format!("{indent}{chunk}"));
         }
+    }
+
+    fn set_tab(&mut self, pos: u8) {
+        // ESC D — set horizontal tab at column pos
+        self.raw(&[ESC, b'D', pos, 0]);
+    }
+
+    fn tab(&mut self) {
+        // HT — jump to next tab stop
+        self.raw(&[0x09]);
     }
 
     fn cut(&mut self) {
