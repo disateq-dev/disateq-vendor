@@ -181,9 +181,10 @@ impl Buf {
 
         // First line: qty + first chunk + amount
         let first = chunks[0];
-        let spaces = COLS - qty_str.len() - 1 - first.len() - 1 - amt_str.len();
+        let used = qty_str.len() + 1 + first.len() + 1 + amt_str.len();
+        let spaces = if used < COLS { COLS - used } else { 1 };
         let mut row = format!("{qty_str} {first}");
-        row.push_str(&" ".repeat(spaces + 1));
+        row.push_str(&" ".repeat(spaces));
         row.push_str(&amt_str);
         self.line(&row);
 
