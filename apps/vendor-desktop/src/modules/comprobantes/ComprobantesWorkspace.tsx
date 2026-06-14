@@ -13,7 +13,7 @@ type Vista = "sesion" | "historial";
 type AccionDetalle = "none" | "anular" | "convertir";
 
 const DOC_LABELS: Record<TipoComprobante, string> = {
-  TIQUE_VENTA: "NOTA",
+  TIQUE_VENTA: "TIQ",
   BOLETA: "BOL",
   FACTURA: "FAC",
   COTIZACION: "COT",
@@ -557,7 +557,7 @@ export function ComprobantesWorkspace() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               <FilterChip active={filtroTipo === "TODOS"} onClick={() => setFiltroTipo("TODOS")}>Todos</FilterChip>
-              <FilterChip active={filtroTipo === "TIQUE_VENTA"} onClick={() => setFiltroTipo("TIQUE_VENTA")}>Nota</FilterChip>
+              <FilterChip active={filtroTipo === "TIQUE_VENTA"} onClick={() => setFiltroTipo("TIQUE_VENTA")}>Tique</FilterChip>
               <FilterChip active={filtroTipo === "BOLETA"} onClick={() => setFiltroTipo("BOLETA")}>Boleta</FilterChip>
               <FilterChip active={filtroTipo === "FACTURA"} onClick={() => setFiltroTipo("FACTURA")}>Factura</FilterChip>
               <FilterChip active={filtroTipo === "COTIZACION"} onClick={() => setFiltroTipo("COTIZACION")}>Cotiza</FilterChip>

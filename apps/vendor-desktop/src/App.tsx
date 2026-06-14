@@ -11,12 +11,13 @@ import { ClientesWorkspace } from "./modules/sales/ClientesWorkspace";
 import { ReportesWorkspace } from "./modules/sales/ReportesWorkspace";
 import { InventoryWorkspace } from "./modules/inventory/InventoryWorkspace";
 import { PurchasesWorkspace } from "./modules/purchases/PurchasesWorkspace";
+import { CatalogoWorkspace } from "./modules/config/CatalogoWorkspace";
 import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
 export type CashSubView             = "turno" | "supervision-caja";
-export type AbastecimientoSubModule = "compras" | "inventarios" | "proveedores" | "traslados";
+export type AbastecimientoSubModule = "catalogo" | "compras" | "inventarios" | "proveedores" | "traslados";
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
 
 function AppRoot() {
@@ -91,6 +92,7 @@ function AppRoot() {
       {activeModule === "clientes"  && <ClientesWorkspace />}
       {activeModule === "reportes"  && <ReportesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "catalogo"     && <CatalogoWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
       {activeModule === "abastecimiento" && (abastecimientoSubModule === "proveedores" || abastecimientoSubModule === "traslados") && (

@@ -10,6 +10,7 @@ export interface HOV {
   costoBase: number
   costoBaseActualizadoEn: string
   estado: EstadoHOV
+  codigoBarras?: string
   contextoOperacionalId: string
   category?: string
   creadoEn: string
@@ -24,6 +25,7 @@ export interface CrearHOVInput {
   costoBase: number
   contextoOperacionalId: string
   category?: string
+  codigoBarras?: string
 }
 
 export interface HOVStore {

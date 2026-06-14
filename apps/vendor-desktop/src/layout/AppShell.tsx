@@ -83,7 +83,7 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
           />
         </header>
 
-        <section className="flex min-h-0 flex-1 gap-3 p-3">
+        <section className="flex min-h-0 flex-1 gap-2 p-2">
           {children}
         </section>
 

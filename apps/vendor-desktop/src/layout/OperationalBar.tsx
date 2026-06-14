@@ -100,6 +100,7 @@ const CONFIG_TABS: { key: ConfigSubView; label: string }[] = [
 ];
 
 const ABAST_TABS: { key: AbastecimientoSubModule; label: string; placeholder?: boolean }[] = [
+  { key: "catalogo",    label: "Catálogo"    },
   { key: "compras",     label: "Compras"     },
   { key: "inventarios", label: "Inventarios" },
   { key: "proveedores", label: "Proveedores", placeholder: true },

@@ -377,8 +377,16 @@ export function SalesWorkspace() {
             value={query}
             onChange={e => {
               const v = e.target.value;
+              const trimmed = v.trim();
+              if (trimmed.length >= 4) {
+                const exactMatch = catalogoActivo.find(p => p.barcode === trimmed);
+                if (exactMatch) {
+                  addProductToTicket(exactMatch);
+                  return;
+                }
+              }
               setQuery(v);
-              setSearchQuery(v.trim());
+              setSearchQuery(trimmed);
             }}
             onKeyDown={handleKeyDown}
             onFocus={() => { enterSearch(); setIsFocused(true); }}
