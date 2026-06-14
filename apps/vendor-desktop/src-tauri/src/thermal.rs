@@ -63,22 +63,9 @@ pub struct TicketPrintData {
 }
 
 fn normalize(s: &str) -> String {
-    s.chars().map(|c| match c {
-        'á' | 'à' | 'â' | 'ä' => 'a',
-        'é' | 'è' | 'ê' | 'ë' => 'e',
-        'í' | 'ì' | 'î' | 'ï' => 'i',
-        'ó' | 'ò' | 'ô' | 'ö' => 'o',
-        'ú' | 'ù' | 'û' | 'ü' => 'u',
-        'Á' | 'À' | 'Â' | 'Ä' => 'A',
-        'É' | 'È' | 'Ê' | 'Ë' => 'E',
-        'Í' | 'Ì' | 'Î' | 'Ï' => 'I',
-        'Ó' | 'Ò' | 'Ô' | 'Ö' => 'O',
-        'Ú' | 'Ù' | 'Û' | 'Ü' => 'U',
-        'ñ' => 'n',
-        'Ñ' => 'N',
-        '¿' | '¡' => ' ',
-        _ => c,
-    }).collect()
+    // Impresora configurada en UTF-8 — solo eliminar caracteres
+    // que causan problemas de control, pasar el resto sin tocar.
+    s.chars().filter(|c| !matches!(c, '¿' | '¡')).collect()
 }
 
 fn money(n: f64) -> String {
@@ -255,16 +242,6 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     b.line(&doc_num);
     b.line(&normalize(&d.date_time));
 
-    // Leyenda normativa obligatoria — solo NOTA DE VENTA
-    if d.doc_type == "nota" {
-        b.lf();
-        b.bold_on();
-        b.line("ESTE DOCUMENTO NO ES UN");
-        b.line("COMPROBANTE DE PAGO");
-        b.bold_off();
-        b.line("Documento interno sin valor tributario");
-    }
-
     b.align_left();
 
     // Customer
@@ -338,8 +315,10 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     b.line("CONSERVE SU COMPROBANTE");
     if d.doc_type == "nota" {
         b.lf();
-        b.line("Canjee por su Boleta o Factura");
-        b.line("Electronica en caja");
+        b.bold_on();
+        b.line("SIN VALOR FISCAL.");
+        b.bold_off();
+        b.line("Solicite Boleta o Factura.");
     }
     b.lf();
     b.lf();
