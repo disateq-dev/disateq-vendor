@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  ArrowLeft, Banknote, Smartphone, CreditCard,
+  Banknote, Smartphone, CreditCard,
   Printer, Send, Save, User, AlertCircle, Plus, Receipt,
 } from "lucide-react";
 import { useLineasPreVenta } from "../../domains/preventa/selectors/preventa.selectors";

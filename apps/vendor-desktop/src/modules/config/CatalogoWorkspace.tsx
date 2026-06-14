@@ -9,7 +9,6 @@ import { useInventoryStore } from "../../domains/inventory/store"
 import { loadBusinessConfig } from "../../config/business"
 import { RUBROS } from "../../data/catalogs"
 import type { HOV } from "../../domains/catalog/hov.types"
-import type { ValorOperacional } from "../../domains/catalog/valor-operacional.types"
 
 type PanelDerecho =
   | "vacio"
@@ -308,7 +307,7 @@ function PanelDerechoContainer({
           <FormRetirarRecurso
             productoId={selectedProductoId}
             recurso={recursoSeleccionado}
-            onCompletado={() => { setPanel("vacio"); setSelectedProductoId(null); refresh() }}
+            onCompletado={() => { setPanel("vacio"); setSelectedProductoId(""); refresh() }}
             onCancelar={() => setPanel("presentaciones")}
           />
         )}
@@ -1001,7 +1000,6 @@ function FormRetirarRecurso({
   const tieneHovsActivas = recurso.hovsActivas.length > 0
   const sinHovs          = recurso.hovsTotales.length === 0
   const puedeEliminar    = !tieneMovimientos && sinHovs
-  const puedeRetirar     = !tieneHovsActivas
 
   if (tieneHovsActivas) {
     return (
