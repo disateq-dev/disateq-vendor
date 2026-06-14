@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   ArrowLeft, Banknote, Smartphone, CreditCard,
-  Printer, Send, Save, User, AlertCircle, Plus,
+  Printer, Send, Save, User, AlertCircle, Plus, Receipt,
 } from "lucide-react";
 import { useLineasPreVenta } from "../../domains/preventa/selectors/preventa.selectors";
 import { preVentaService } from "../../domains/preventa/services/preventa.service";
@@ -54,7 +54,7 @@ const DOC_SERIES: Record<DocType, { series: string }> = {
 };
 
 const DOC_SHORT: Record<DocType, string> = {
-  nota: "Nota", boleta: "Boleta", factura: "Factura", cotizacion: "Cotiza",
+  nota: "Tique", boleta: "Boleta", factura: "Factura", cotizacion: "Cotiza",
 };
 
 const AFFECTATIONS: { id: Affectation; label: string }[] = [
@@ -313,6 +313,11 @@ export function CobroPanel() {
       const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
+        tipoAfectacionIGV: affectation === "exonerado-onerosa"
+          ? "EXONERADO"
+          : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
+          ? "INAFECTO"
+          : "GRAVADO",
         lineas: lines.map(l => ({
           description: l.descripcion,
           quantity:    l.cantidad,
@@ -338,13 +343,15 @@ export function CobroPanel() {
     } catch {
       addComprobante(buildComprobanteData(dt));
     }
-    lines.forEach(line => {
-      inventoryService.registrarSalida(
-        line.hovId,
-        line.cantidad,
-        `venta:${docNumber}`
-      );
-    });
+    if (docType !== "cotizacion") {
+      lines.forEach(line => {
+        inventoryService.registrarSalida(
+          line.hovId,
+          line.cantidad,
+          `venta:${docNumber}`
+        );
+      });
+    }
 
     const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
       "default",
@@ -372,6 +379,11 @@ export function CobroPanel() {
       const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
+        tipoAfectacionIGV: affectation === "exonerado-onerosa"
+          ? "EXONERADO"
+          : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
+          ? "INAFECTO"
+          : "GRAVADO",
         lineas: lines.map(l => ({
           description: l.descripcion,
           quantity:    l.cantidad,
@@ -458,13 +470,15 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoEfeNum : undefined,
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
-    lines.forEach(line => {
-      inventoryService.registrarSalida(
-        line.hovId,
-        line.cantidad,
-        `venta:${docNumber}`
-      );
-    });
+    if (docType !== "cotizacion") {
+      lines.forEach(line => {
+        inventoryService.registrarSalida(
+          line.hovId,
+          line.cantidad,
+          `venta:${docNumber}`
+        );
+      });
+    }
 
     const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
       "default",
@@ -587,43 +601,55 @@ export function CobroPanel() {
 
       {/* SheetHeader */}
       <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#45b356]/20 bg-[#F2F7F3] px-4">
-        <button
-          title="Tecla [Escape]"
-          onClick={cobroView === "client" ? resetForm : closeCobro}
-          className="flex shrink-0 items-center gap-1 text-[14px] font-semibold uppercase tracking-tight text-[#121416] leading-none transition hover:text-[#374151]"
-        >
-          <ArrowLeft size={12} />
-          {cobroView === "client" ? "COBRO" : "PRE-VENTA"}
-        </button>
-
-        <div className="flex flex-1 justify-center">
-          <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5">
-            {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt, i) => (
-              <button
-                key={dt}
-                title={`Tecla [Ctrl + ${i + 1}]`}
-                onClick={() => setDocType(dt)}
-                className={`rounded-[5px] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
-                  docType === dt ? "bg-white text-[#2154d8] shadow-sm" : "text-[#9ca3af] hover:text-[#374151]"
-                }`}
-              >
-                {DOC_SHORT[dt]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          {isCtg && (
-            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-extrabold tracking-widest text-amber-500">CTG</span>
-          )}
-          <span className="tabular-nums text-[11px] font-semibold text-[#374151]">{docNumber}</span>
-        </div>
+        <Receipt size={13} strokeWidth={2} className="text-[#45b356]" />
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+          COBRO
+        </span>
       </header>
 
       {/* BODY */}
       {cobroView === "main" ? (
         <>
+          {/* TIPO DE COMPROBANTE + CORRELATIVO */}
+          <div className="shrink-0 flex items-center gap-2 border-b border-[#e8f0e9] px-4 py-2">
+            <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5 flex-1">
+              {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt, i) => (
+                <button
+                  key={dt}
+                  title={`Tecla [Ctrl + ${i + 1}]`}
+                  onClick={() => setDocType(dt)}
+                  className={`flex-1 rounded-[5px] px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
+                    docType === dt
+                      ? "bg-white text-[#2154d8] shadow-sm"
+                      : "text-[#9ca3af] hover:text-[#374151]"
+                  }`}
+                >
+                  {DOC_SHORT[dt]}
+                </button>
+              ))}
+              <button
+                disabled
+                title="Nota de Crédito — disponible próximamente"
+                className="rounded-[5px] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c0cad4] cursor-not-allowed"
+              >
+                N.Cré
+              </button>
+              <button
+                disabled
+                title="Nota de Débito — disponible próximamente"
+                className="rounded-[5px] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c0cad4] cursor-not-allowed"
+              >
+                N.Déb
+              </button>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {isCtg && (
+                <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-extrabold tracking-widest text-amber-500">CTG</span>
+              )}
+              <span className="tabular-nums text-[11px] font-semibold text-[#374151]">{docNumber}</span>
+            </div>
+          </div>
+
           {/* CLIENTE strip */}
           <div className="shrink-0 px-4 pt-3 pb-1">
             <button
