@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { BookOpen, Plus, Tag, Package, Check, AlertCircle } from "lucide-react"
+import { BookOpen, Plus, Tag, Package, Check, AlertCircle, Pencil } from "lucide-react"
 import { getAllHOVs, guardarHOV, existeHOVActiva } from "../../domains/catalog/hov.store"
 import { crearHOV, suspenderHOV, actualizarCostoBase } from "../../domains/catalog/hov.service"
 import { crearValor, suspenderValor } from "../../domains/catalog/valor-operacional.service"
@@ -17,6 +17,7 @@ type PanelDerecho =
   | "presentaciones"
   | "nueva-presentacion"
   | "editar-presentacion"
+  | "editar-recurso"
 
 interface RecursoAgrupado {
   productoId: string
@@ -210,6 +211,7 @@ function PanelDerechoContainer({
   const headerIcon = () => {
     if (panel === "nuevo-recurso")      return <Plus    size={13} strokeWidth={2} className="text-[#2A7CA8]" />
     if (panel === "nueva-presentacion") return <Plus    size={13} strokeWidth={2} className="text-[#2A7CA8]" />
+    if (panel === "editar-recurso")     return <Pencil  size={13} strokeWidth={2} className="text-[#2A7CA8]" />
     if (panel === "editar-presentacion")return <Tag     size={13} strokeWidth={2} className="text-[#2A7CA8]" />
     if (panel === "presentaciones")     return <Tag     size={13} strokeWidth={2} className="text-[#2A7CA8]" />
     return <BookOpen size={13} strokeWidth={2} className="text-[#2A7CA8]" />
@@ -217,6 +219,7 @@ function PanelDerechoContainer({
   const headerTitle = () => {
     if (panel === "nuevo-recurso")       return "NUEVO RECURSO"
     if (panel === "nueva-presentacion")  return "NUEVA PRESENTACIÓN"
+    if (panel === "editar-recurso")      return "EDITAR PRODUCTO"
     if (panel === "editar-presentacion") return "EDITAR PRESENTACIÓN"
     if (panel === "presentaciones" && recursoSeleccionado)
       return recursoSeleccionado.nombre.toUpperCase()
@@ -246,6 +249,7 @@ function PanelDerechoContainer({
             productoId={selectedProductoId}
             onNuevaPresentacion={() => setPanel("nueva-presentacion")}
             onEditarPresentacion={(hovId) => { setEditingHovId(hovId); setPanel("editar-presentacion") }}
+            onEditarRecurso={() => setPanel("editar-recurso")}
             refresh={refresh}
           />
         )}
@@ -259,6 +263,13 @@ function PanelDerechoContainer({
         {panel === "editar-presentacion" && editingHovId && (
           <FormEditarPresentacion
             hovId={editingHovId}
+            onGuardado={() => { setPanel("presentaciones"); refresh() }}
+            onCancelar={() => setPanel("presentaciones")}
+          />
+        )}
+        {panel === "editar-recurso" && selectedProductoId && (
+          <FormEditarRecurso
+            productoId={selectedProductoId}
             onGuardado={() => { setPanel("presentaciones"); refresh() }}
             onCancelar={() => setPanel("presentaciones")}
           />
@@ -374,11 +385,12 @@ function FormNuevoRecurso({
 }
 
 function ContenidoPresentaciones({
-  productoId, onNuevaPresentacion, onEditarPresentacion, refresh,
+  productoId, onNuevaPresentacion, onEditarPresentacion, onEditarRecurso, refresh,
 }: {
   productoId: string
   onNuevaPresentacion: () => void
   onEditarPresentacion: (hovId: string) => void
+  onEditarRecurso: () => void
   refresh: () => void
 }) {
   const [confirmandoSuspender, setConfirmandoSuspender] = useState<string | null>(null)
@@ -497,14 +509,24 @@ function ContenidoPresentaciones({
         )
       })}
 
-      <button
-        onClick={onNuevaPresentacion}
-        className="mt-1 flex items-center gap-1.5 self-start rounded-xl border border-[#2A7CA8]/30
-                   px-4 py-2 text-[12px] font-semibold text-[#2A7CA8] hover:bg-[#2A7CA8]/5 transition"
-      >
-        <Plus size={11} strokeWidth={2.5} />
-        Agregar presentación
-      </button>
+      <div className="mt-1 flex gap-2">
+        <button
+          onClick={onNuevaPresentacion}
+          className="flex items-center gap-1.5 self-start rounded-xl border border-[#2A7CA8]/30
+                     px-4 py-2 text-[12px] font-semibold text-[#2A7CA8] hover:bg-[#2A7CA8]/5 transition"
+        >
+          <Plus size={11} strokeWidth={2.5} />
+          Agregar presentación
+        </button>
+        <button
+          onClick={onEditarRecurso}
+          className="flex items-center gap-1.5 self-start rounded-xl border border-[#e9e4dc]
+                     px-4 py-2 text-[12px] font-semibold text-[#6b7280] hover:bg-[#f4f7fb] transition"
+        >
+          <Pencil size={11} strokeWidth={2} />
+          Editar producto
+        </button>
+      </div>
     </div>
   )
 }
@@ -777,6 +799,130 @@ function FormEditarPresentacion({
         <button
           onClick={handleGuardar}
           disabled={!nuevoPrecio || parseFloat(nuevoPrecio) <= 0}
+          className={`${btnPrimario} disabled:opacity-40 disabled:cursor-not-allowed`}
+        >
+          <Check size={12} strokeWidth={2.5} />
+          Guardar cambios
+        </button>
+        <button onClick={onCancelar} className={btnSecundario}>Cancelar</button>
+      </div>
+    </div>
+  )
+}
+
+function FormEditarRecurso({
+  productoId, onGuardado, onCancelar,
+}: {
+  productoId: string
+  onGuardado: () => void
+  onCancelar: () => void
+}) {
+  const item = useInventoryStore.getState().items.find(i => i.itemId === productoId) ?? null
+  const todasHovs = getAllHOVs().filter(h => h.productoId === productoId)
+  const tieneMovimientos = useInventoryStore.getState().movimientos.some(m => m.itemId === productoId)
+
+  const rubro = loadBusinessConfig().rubro
+  const cats  = RUBROS[rubro]?.categories.filter(c => c.id !== "all") ?? []
+  const categoriaActual = todasHovs[0]?.category ?? ""
+
+  const [nombre,    setNombre]    = useState(item?.nombre ?? "")
+  const [unidadBase, setUnidadBase] = useState(item?.unidadBase ?? "")
+  const [categoria, setCategoria] = useState(categoriaActual)
+  const [error,     setError]     = useState("")
+
+  if (!item) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-16 px-6 text-center">
+        <AlertCircle size={22} className="text-red-300" />
+        <p className="text-[12px] text-[#9ca3af]">No se encontró el producto.</p>
+        <button onClick={onCancelar} className={btnSecundario}>Volver</button>
+      </div>
+    )
+  }
+
+  function handleGuardar() {
+    if (!nombre.trim()) { setError("El nombre es obligatorio."); return }
+    setError("")
+
+    const nombreCambia   = nombre.trim() !== item!.nombre
+    const unidadCambia   = unidadBase.trim() !== item!.unidadBase
+    const categoriaCambia = categoria !== categoriaActual
+
+    if (nombreCambia || unidadCambia) {
+      inventoryService.actualizarItem(productoId, {
+        ...(nombreCambia   ? { nombre: nombre.trim() }         : {}),
+        ...(unidadCambia   ? { unidadBase: unidadBase.trim() } : {}),
+      })
+    }
+
+    if (nombreCambia || categoriaCambia) {
+      for (const hov of todasHovs) {
+        const nombreHOV = nombreCambia
+          ? nombre.trim() + " · " + hov.unidadDespacho
+          : hov.nombre
+        guardarHOV({
+          ...hov,
+          nombre:    nombreHOV,
+          category:  categoriaCambia ? categoria : hov.category,
+          modificadoEn: new Date().toISOString(),
+        })
+      }
+    }
+
+    onGuardado()
+  }
+
+  return (
+    <div className="flex flex-col gap-4 px-5 pt-4 pb-5 max-w-md">
+      <p className="text-[11px] text-[#9ca3af]">
+        Modifica los datos base del producto. Los cambios se propagan a todas sus presentaciones.
+      </p>
+
+      <Field label="Nombre del producto">
+        <input
+          autoFocus
+          type="text"
+          value={nombre}
+          onChange={e => { setNombre(e.target.value); setError("") }}
+          onKeyDown={e => e.key === "Enter" && handleGuardar()}
+          className={inputCls}
+        />
+        {error && <Err>{error}</Err>}
+      </Field>
+
+      <Field
+        label="Unidad de medida base"
+        hint={tieneMovimientos
+          ? "Este producto tiene movimientos registrados. La unidad base no puede modificarse."
+          : "La unidad mínima en la que existe físicamente en tu almacén."}
+      >
+        <input
+          type="text"
+          value={unidadBase}
+          onChange={e => setUnidadBase(e.target.value)}
+          disabled={tieneMovimientos}
+          className={`${inputCls} ${tieneMovimientos ? "cursor-not-allowed opacity-50 bg-[#f4f4f4]" : ""}`}
+        />
+      </Field>
+
+      {cats.length > 0 && (
+        <Field label="Categoría">
+          <select
+            value={categoria || cats[0]?.id}
+            onChange={e => setCategoria(e.target.value)}
+            className={inputCls}
+          >
+            {cats.map(c => (
+              <option key={c.id} value={c.id}>{c.label}</option>
+            ))}
+          </select>
+        </Field>
+      )}
+
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={handleGuardar}
+          disabled={!nombre.trim()}
           className={`${btnPrimario} disabled:opacity-40 disabled:cursor-not-allowed`}
         >
           <Check size={12} strokeWidth={2.5} />

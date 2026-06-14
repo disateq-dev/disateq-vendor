@@ -53,6 +53,10 @@ export const inventoryService = {
     store().eliminarItem(itemId);
   },
 
+  actualizarItem(itemId: string, cambios: Partial<Pick<ItemOperacional, 'nombre' | 'unidadBase'>>): void {
+    store().actualizarItem(itemId, cambios);
+  },
+
   // 0.6 — reconstrucción desde log (valida continuidad operacional)
   reconstruirDesdeLog(): void {
     store().reconstruir();
