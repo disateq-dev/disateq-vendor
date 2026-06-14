@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { BookOpen, Plus, Tag, Package, Check, AlertCircle, Pencil } from "lucide-react"
+import { BookOpen, Plus, Tag, Package, Check, AlertCircle, Pencil, Trash2 } from "lucide-react"
 import { getAllHOVs, guardarHOV, existeHOVActiva } from "../../domains/catalog/hov.store"
 import { crearHOV, suspenderHOV, actualizarCostoBase } from "../../domains/catalog/hov.service"
 import { crearValor, suspenderValor } from "../../domains/catalog/valor-operacional.service"
@@ -18,32 +18,46 @@ type PanelDerecho =
   | "nueva-presentacion"
   | "editar-presentacion"
   | "editar-recurso"
+  | "retirar-recurso"
 
 interface RecursoAgrupado {
   productoId: string
   nombre: string
   hovsActivas: HOV[]
   hovsTotales: HOV[]
+  estadoItem: 'ACTIVO' | 'RETIRADO'
 }
 
 function agruparRecursos(): RecursoAgrupado[] {
   const todas = getAllHOVs()
+  const todosItems = useInventoryStore.getState().items.filter(i => !i.eliminado)
+
   const mapa = new Map<string, HOV[]>()
   for (const hov of todas) {
     const grupo = mapa.get(hov.productoId) ?? []
     grupo.push(hov)
     mapa.set(hov.productoId, grupo)
   }
+
   const resultado: RecursoAgrupado[] = []
-  for (const [productoId, hovs] of mapa.entries()) {
+
+  for (const item of todosItems) {
+    const hovs = mapa.get(item.itemId) ?? []
     const hovsActivas = hovs.filter(h => h.estado === 'ACTIVA')
-    const fuente = hovsActivas[0] ?? hovs[0]
-    const nombre = fuente
-      ? fuente.nombre.split(' · ')[0]
-      : productoId
-    resultado.push({ productoId, nombre, hovsActivas, hovsTotales: hovs })
+    resultado.push({
+      productoId: item.itemId,
+      nombre: item.nombre,
+      hovsActivas,
+      hovsTotales: hovs,
+      estadoItem: item.estado ?? 'ACTIVO',
+    })
   }
-  return resultado.sort((a, b) => a.nombre.localeCompare(b.nombre))
+
+  return resultado.sort((a, b) => {
+    if (a.estadoItem === 'RETIRADO' && b.estadoItem !== 'RETIRADO') return 1
+    if (a.estadoItem !== 'RETIRADO' && b.estadoItem === 'RETIRADO') return -1
+    return a.nombre.localeCompare(b.nombre)
+  })
 }
 
 export function CatalogoWorkspace() {
@@ -168,19 +182,32 @@ function PanelIzquierdo({
                   style={{ backgroundColor: dotColor }}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className={`truncate text-[12px] font-semibold ${
-                    isSel ? "text-[#121416]" : "text-[#2F3E46]"
-                  }`}>
-                    {r.nombre}
-                  </p>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className={`truncate text-[12px] font-semibold ${
+                      r.estadoItem === 'RETIRADO'
+                        ? "text-[#9ca3af] line-through"
+                        : isSel ? "text-[#121416]" : "text-[#2F3E46]"
+                    }`}>
+                      {r.nombre}
+                    </p>
+                    {r.estadoItem === 'RETIRADO' && (
+                      <span className="shrink-0 rounded bg-[#f0f0f0] px-1 py-0.5 text-[8px] font-bold text-[#9ca3af]">
+                        RETIRADO
+                      </span>
+                    )}
+                  </div>
                   <p className={`text-[10px] ${
-                    r.hovsActivas.length === 0
-                      ? "font-semibold text-amber-500"
-                      : "text-[#9ca3af]"
+                    r.estadoItem === 'RETIRADO'
+                      ? "text-[#c4cdd8]"
+                      : r.hovsActivas.length === 0
+                        ? "font-semibold text-amber-500"
+                        : "text-[#9ca3af]"
                   }`}>
-                    {r.hovsActivas.length === 0
-                      ? "Sin presentaciones · no aparece en venta"
-                      : `${r.hovsActivas.length} presentación${r.hovsActivas.length !== 1 ? "es" : ""}`
+                    {r.estadoItem === 'RETIRADO'
+                      ? "Retirado · no aparece en ventas"
+                      : r.hovsActivas.length === 0
+                        ? "Sin presentaciones · no aparece en venta"
+                        : `${r.hovsActivas.length} presentación${r.hovsActivas.length !== 1 ? "es" : ""}`
                     }
                   </p>
                 </div>
@@ -220,6 +247,7 @@ function PanelDerechoContainer({
     if (panel === "nuevo-recurso")       return "NUEVO RECURSO"
     if (panel === "nueva-presentacion")  return "NUEVA PRESENTACIÓN"
     if (panel === "editar-recurso")      return "EDITAR PRODUCTO"
+    if (panel === "retirar-recurso")     return "RETIRAR PRODUCTO"
     if (panel === "editar-presentacion") return "EDITAR PRESENTACIÓN"
     if (panel === "presentaciones" && recursoSeleccionado)
       return recursoSeleccionado.nombre.toUpperCase()
@@ -247,9 +275,11 @@ function PanelDerechoContainer({
         {panel === "presentaciones" && selectedProductoId && (
           <ContenidoPresentaciones
             productoId={selectedProductoId}
+            estadoItem={recursoSeleccionado?.estadoItem ?? 'ACTIVO'}
             onNuevaPresentacion={() => setPanel("nueva-presentacion")}
             onEditarPresentacion={(hovId) => { setEditingHovId(hovId); setPanel("editar-presentacion") }}
             onEditarRecurso={() => setPanel("editar-recurso")}
+            onRetirarEliminar={() => setPanel("retirar-recurso")}
             refresh={refresh}
           />
         )}
@@ -271,6 +301,14 @@ function PanelDerechoContainer({
           <FormEditarRecurso
             productoId={selectedProductoId}
             onGuardado={() => { setPanel("presentaciones"); refresh() }}
+            onCancelar={() => setPanel("presentaciones")}
+          />
+        )}
+        {panel === "retirar-recurso" && selectedProductoId && recursoSeleccionado && (
+          <FormRetirarRecurso
+            productoId={selectedProductoId}
+            recurso={recursoSeleccionado}
+            onCompletado={() => { setPanel("vacio"); setSelectedProductoId(null); refresh() }}
             onCancelar={() => setPanel("presentaciones")}
           />
         )}
@@ -385,12 +423,14 @@ function FormNuevoRecurso({
 }
 
 function ContenidoPresentaciones({
-  productoId, onNuevaPresentacion, onEditarPresentacion, onEditarRecurso, refresh,
+  productoId, estadoItem, onNuevaPresentacion, onEditarPresentacion, onEditarRecurso, onRetirarEliminar, refresh,
 }: {
   productoId: string
+  estadoItem: 'ACTIVO' | 'RETIRADO'
   onNuevaPresentacion: () => void
   onEditarPresentacion: (hovId: string) => void
   onEditarRecurso: () => void
+  onRetirarEliminar: () => void
   refresh: () => void
 }) {
   const [confirmandoSuspender, setConfirmandoSuspender] = useState<string | null>(null)
@@ -512,20 +552,35 @@ function ContenidoPresentaciones({
       <div className="mt-1 flex gap-2">
         <button
           onClick={onNuevaPresentacion}
+          disabled={estadoItem === 'RETIRADO'}
           className="flex items-center gap-1.5 self-start rounded-xl border border-[#2A7CA8]/30
-                     px-4 py-2 text-[12px] font-semibold text-[#2A7CA8] hover:bg-[#2A7CA8]/5 transition"
+                     px-4 py-2 text-[12px] font-semibold text-[#2A7CA8] hover:bg-[#2A7CA8]/5
+                     transition disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Plus size={11} strokeWidth={2.5} />
           Agregar presentación
         </button>
         <button
           onClick={onEditarRecurso}
+          disabled={estadoItem === 'RETIRADO'}
           className="flex items-center gap-1.5 self-start rounded-xl border border-[#e9e4dc]
-                     px-4 py-2 text-[12px] font-semibold text-[#6b7280] hover:bg-[#f4f7fb] transition"
+                     px-4 py-2 text-[12px] font-semibold text-[#6b7280] hover:bg-[#f4f7fb]
+                     transition disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Pencil size={11} strokeWidth={2} />
           Editar producto
         </button>
+        {estadoItem !== 'RETIRADO' && (
+          <button
+            onClick={onRetirarEliminar}
+            className="flex items-center gap-1.5 self-start rounded-xl border border-red-100
+                       px-4 py-2 text-[12px] font-semibold text-red-400 hover:bg-red-50
+                       hover:text-red-600 transition"
+          >
+            <Trash2 size={11} strokeWidth={2} />
+            Retirar
+          </button>
+        )}
       </div>
     </div>
   )
@@ -930,6 +985,105 @@ function FormEditarRecurso({
         </button>
         <button onClick={onCancelar} className={btnSecundario}>Cancelar</button>
       </div>
+    </div>
+  )
+}
+
+function FormRetirarRecurso({
+  productoId, recurso, onCompletado, onCancelar,
+}: {
+  productoId: string
+  recurso: RecursoAgrupado
+  onCompletado: () => void
+  onCancelar: () => void
+}) {
+  const tieneMovimientos = useInventoryStore.getState().movimientos.some(m => m.itemId === productoId)
+  const tieneHovsActivas = recurso.hovsActivas.length > 0
+  const sinHovs          = recurso.hovsTotales.length === 0
+  const puedeEliminar    = !tieneMovimientos && sinHovs
+  const puedeRetirar     = !tieneHovsActivas
+
+  if (tieneHovsActivas) {
+    return (
+      <div className="flex flex-col gap-3 px-5 pt-4 pb-5 max-w-md">
+        <div className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <AlertCircle size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-amber-500" />
+          <div>
+            <p className="text-[12px] font-semibold text-amber-700">
+              Suspende todas las presentaciones primero
+            </p>
+            <p className="mt-0.5 text-[11px] text-amber-600">
+              Este producto tiene {recurso.hovsActivas.length} presentación
+              {recurso.hovsActivas.length !== 1 ? "es" : ""} activa
+              {recurso.hovsActivas.length !== 1 ? "s" : ""}.
+              Para retirarlo, suspéndelas primero desde la lista de presentaciones.
+            </p>
+          </div>
+        </div>
+        <button onClick={onCancelar} className={btnSecundario}>Volver</button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4 px-5 pt-4 pb-5 max-w-md">
+      <p className="text-[11px] text-[#9ca3af]">
+        Producto: <span className="font-semibold text-[#2F3E46]">{recurso.nombre}</span>
+      </p>
+
+      {puedeEliminar ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-2 rounded-2xl border border-red-100 bg-red-50/60 px-4 py-3">
+            <Trash2 size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-red-400" />
+            <div>
+              <p className="text-[12px] font-semibold text-red-600">
+                Eliminar permanentemente
+              </p>
+              <p className="mt-0.5 text-[11px] text-red-400">
+                Este producto no tiene presentaciones ni movimientos.
+                Se eliminará de forma permanente y no podrá recuperarse.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { inventoryService.eliminarItemFisico(productoId); onCompletado() }}
+              className="flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-[12px]
+                         font-bold text-white hover:bg-red-600 transition active:scale-[0.98]"
+            >
+              <Trash2 size={12} strokeWidth={2.5} />
+              Eliminar definitivamente
+            </button>
+            <button onClick={onCancelar} className={btnSecundario}>Cancelar</button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-2 rounded-2xl border border-[#e4edf5] bg-[#f4f8fb] px-4 py-3">
+            <AlertCircle size={14} strokeWidth={2} className="mt-0.5 shrink-0 text-[#2A7CA8]" />
+            <div>
+              <p className="text-[12px] font-semibold text-[#2F3E46]">
+                Se marcará como RETIRADO
+              </p>
+              <p className="mt-0.5 text-[11px] text-[#9ca3af]">
+                Este producto tiene historial de movimientos y no puede eliminarse.
+                Al retirarlo dejará de aparecer en ventas y quedará visible solo en el Gestor de Catálogo.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { inventoryService.retirarItem(productoId); onCompletado() }}
+              className="flex items-center gap-1.5 rounded-xl bg-[#6b7280] px-4 py-2 text-[12px]
+                         font-bold text-white hover:bg-[#4b5563] transition active:scale-[0.98]"
+            >
+              <Trash2 size={12} strokeWidth={2.5} />
+              Marcar como retirado
+            </button>
+            <button onClick={onCancelar} className={btnSecundario}>Cancelar</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

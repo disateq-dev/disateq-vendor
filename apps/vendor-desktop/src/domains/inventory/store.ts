@@ -19,6 +19,8 @@ interface InventoryState {
   setUmbral: (itemId: string, umbral: number) => void;
   eliminarItem: (itemId: string) => void;
   actualizarItem: (itemId: string, cambios: Partial<Pick<ItemOperacional, 'nombre' | 'unidadBase'>>) => void;
+  retirarItem: (itemId: string) => void;
+  eliminarItemFisico: (itemId: string) => void;
   reconstruir: () => void;
   // 1.3 — Reservas operacionales
   crearReserva: (itemId: string, cantidad: number, causa: string, expiracion?: number) => string;
@@ -79,6 +81,22 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     const next = items.map(i =>
       i.itemId === itemId ? { ...i, ...cambios } : i
     );
+    saveItems(next);
+    set({ items: next });
+  },
+
+  retirarItem(itemId) {
+    const { items } = get();
+    const next = items.map(i =>
+      i.itemId === itemId ? { ...i, estado: 'RETIRADO' as const } : i
+    );
+    saveItems(next);
+    set({ items: next });
+  },
+
+  eliminarItemFisico(itemId) {
+    const { items } = get();
+    const next = items.filter(i => i.itemId !== itemId);
     saveItems(next);
     set({ items: next });
   },

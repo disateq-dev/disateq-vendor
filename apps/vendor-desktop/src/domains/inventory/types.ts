@@ -6,6 +6,7 @@ export interface ItemOperacional {
   nombre: string;
   unidadBase: string;
   eliminado?: boolean;
+  estado?: 'ACTIVO' | 'RETIRADO';
 }
 
 // 0.2 — Movimiento operacional con causalidad mínima

@@ -57,6 +57,14 @@ export const inventoryService = {
     store().actualizarItem(itemId, cambios);
   },
 
+  retirarItem(itemId: string): void {
+    store().retirarItem(itemId);
+  },
+
+  eliminarItemFisico(itemId: string): void {
+    store().eliminarItemFisico(itemId);
+  },
+
   // 0.6 — reconstrucción desde log (valida continuidad operacional)
   reconstruirDesdeLog(): void {
     store().reconstruir();
