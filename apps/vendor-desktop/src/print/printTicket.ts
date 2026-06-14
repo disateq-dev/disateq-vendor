@@ -89,11 +89,10 @@ function buildHTML(d: PrintData): string {
   const docNum   = `${d.docSeries}-${String(d.docCorrelative).padStart(8, "0")}`;
   const isNotaVenta = d.docType === "nota";
   const advertenciaHTML = isNotaVenta
-    ? `<div class="pt-advertencia">ESTE DOCUMENTO NO ES UN COMPROBANTE DE PAGO</div>
-       <div class="pt-advertencia-sub">Documento interno sin valor tributario</div>`
+    ? `<div class="pt-advertencia">SIN VALOR FISCAL.</div>`
     : "";
   const canjeHTML = isNotaVenta
-    ? `<div class="pt-foot pt-canje">Canjee este documento por su Boleta o Factura Electrónica en caja</div>`
+    ? `<div class="pt-foot pt-canje">Solicite su Boleta o Factura.</div>`
     : "";
 
   const linesHTML = d.lines.map(l =>
