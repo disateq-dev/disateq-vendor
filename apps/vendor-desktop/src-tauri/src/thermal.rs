@@ -166,11 +166,12 @@ impl Buf {
     fn two_col(&mut self, left: &str, right: &str) {
         let l = normalize(left);
         let r = normalize(right);
-        let rlen = r.len();
+        let rlen = r.chars().count();
         let max_left = COLS.saturating_sub(rlen + 1);
-        let ltrunc = if l.len() > max_left { &l[..max_left] } else { &l };
-        let spaces = COLS - ltrunc.len() - rlen;
-        let mut out = ltrunc.to_string();
+        let ltrunc: String = l.chars().take(max_left).collect();
+        let llen  = ltrunc.chars().count();
+        let spaces = COLS.saturating_sub(llen + rlen);
+        let mut out = ltrunc;
         out.push_str(&" ".repeat(spaces));
         out.push_str(&r);
         self.line(&out);
@@ -180,17 +181,22 @@ impl Buf {
         const LBL: usize = 9;
         const COL: usize = 13;
         let l = normalize(label);
-        let mut out = if l.len() >= LBL {
-            l[..LBL].to_string()
+        let lchars: Vec<char> = l.chars().collect();
+        let mut out: String = if lchars.len() >= LBL {
+            lchars[..LBL].iter().collect()
         } else {
-            format!("{l:<LBL$}")
+            let s: String = lchars.iter().collect();
+            format!("{s:<LBL$}")
         };
         for c in [c1, c2, c3] {
             let cn = normalize(c);
-            if cn.len() >= COL {
-                out.push_str(&cn[cn.len() - COL..]);
+            let cnchars: Vec<char> = cn.chars().collect();
+            if cnchars.len() >= COL {
+                let s: String = cnchars[cnchars.len() - COL..].iter().collect();
+                out.push_str(&s);
             } else {
-                out.push_str(&format!("{cn:>COL$}"));
+                let s: String = cnchars.iter().collect();
+                out.push_str(&format!("{s:>COL$}"));
             }
         }
         self.line(&out);
@@ -209,19 +215,19 @@ impl Buf {
         let fixed = qty_str.len() + 1 + amt_width;
         let desc_max = COLS.saturating_sub(fixed);
 
-        let chunks: Vec<String> = if desc_n.len() <= desc_max {
-            vec![desc_n.clone()]
+        let desc_chars: Vec<char> = desc_n.chars().collect();
+        let chunks: Vec<String> = if desc_chars.len() <= desc_max {
+            vec![desc_chars.iter().collect()]
         } else {
-            desc_n
-                .as_bytes()
+            desc_chars
                 .chunks(desc_max)
-                .map(|c| std::str::from_utf8(c).unwrap_or("").to_string())
+                .map(|c| c.iter().collect())
                 .collect()
         };
 
         // Primera línea: qty + desc + precio alineado a la derecha
         let first = &chunks[0];
-        let used = qty_str.len() + 1 + first.len() + amt_width;
+        let used = qty_str.len() + 1 + first.chars().count() + amt_width;
         let spaces = if used < COLS { COLS - used } else { 1 };
         let row = format!("{qty_str} {first}{}{amt_padded}",
             " ".repeat(spaces));
@@ -232,16 +238,6 @@ impl Buf {
             let indent = " ".repeat(qty_str.len() + 1);
             self.line(&format!("{indent}{chunk}"));
         }
-    }
-
-    fn set_tab(&mut self, pos: u8) {
-        // ESC D — set horizontal tab at column pos
-        self.raw(&[ESC, b'D', pos, 0]);
-    }
-
-    fn tab(&mut self) {
-        // HT — jump to next tab stop
-        self.raw(&[0x09]);
     }
 
     fn cut(&mut self) {
