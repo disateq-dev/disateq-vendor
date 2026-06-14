@@ -63,14 +63,21 @@ pub struct TicketPrintData {
 }
 
 fn normalize(s: &str) -> String {
-    // UTF-8 habilitado en impresora. Transliterar solo caracteres
-    // con soporte variable en el firmware de impresoras termicas.
     s.chars().map(|c| match c {
-        '\u{00D1}' => 'N',
+        '\u{00E1}' | '\u{00E0}' | '\u{00E2}' | '\u{00E4}' => 'a',
+        '\u{00E9}' | '\u{00E8}' | '\u{00EA}' | '\u{00EB}' => 'e',
+        '\u{00ED}' | '\u{00EC}' | '\u{00EE}' | '\u{00EF}' => 'i',
+        '\u{00F3}' | '\u{00F2}' | '\u{00F4}' | '\u{00F6}' => 'o',
+        '\u{00FA}' | '\u{00F9}' | '\u{00FB}' | '\u{00FC}' => 'u',
+        '\u{00C1}' | '\u{00C0}' | '\u{00C2}' | '\u{00C4}' => 'A',
+        '\u{00C9}' | '\u{00C8}' | '\u{00CA}' | '\u{00CB}' => 'E',
+        '\u{00CD}' | '\u{00CC}' | '\u{00CE}' | '\u{00CF}' => 'I',
+        '\u{00D3}' | '\u{00D2}' | '\u{00D4}' | '\u{00D6}' => 'O',
+        '\u{00DA}' | '\u{00D9}' | '\u{00DB}' | '\u{00DC}' => 'U',
         '\u{00F1}' => 'n',
-        '\u{00B0}' => ' ',
+        '\u{00D1}' => 'N',
         '\u{00BF}' | '\u{00A1}' => ' ',
-        _          => c,
+        _ => c,
     }).collect()
 }
 
