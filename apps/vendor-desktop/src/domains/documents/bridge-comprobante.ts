@@ -111,6 +111,15 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
   }
 }
 
+const TIPO_A_DOC_TYPE: Record<string, string> = {
+  TIQUE_VENTA:  'nota',
+  BOLETA:       'boleta',
+  FACTURA:      'factura',
+  COTIZACION:   'cotizacion',
+  NOTA_CREDITO: 'nota_credito',
+  NOTA_DEBITO:  'nota_debito',
+}
+
 export function construirReceiptData(
   comprobante: Comprobante,
   dateTime: string,
@@ -127,8 +136,8 @@ export function construirReceiptData(
     businessName: comprobante.emisor.razonSocial,
     businessRuc: comprobante.emisor.ruc,
     businessAddr: comprobante.emisor.direccion,
-    businessPhone: biz.telefono,
-    docType: comprobante.tipo,
+    businessPhone: biz.telefono || null,
+    docType: TIPO_A_DOC_TYPE[comprobante.tipo] ?? comprobante.tipo.toLowerCase(),
     docSeries: comprobante.serie,
     docCorrelative: comprobante.correlativo,
     dateTime,
