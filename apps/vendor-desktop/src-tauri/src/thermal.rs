@@ -254,6 +254,17 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     );
     b.line(&doc_num);
     b.line(&normalize(&d.date_time));
+
+    // Leyenda normativa obligatoria — solo NOTA DE VENTA
+    if d.doc_type == "nota" {
+        b.lf();
+        b.bold_on();
+        b.line("ESTE DOCUMENTO NO ES UN");
+        b.line("COMPROBANTE DE PAGO");
+        b.bold_off();
+        b.line("Documento interno sin valor tributario");
+    }
+
     b.align_left();
 
     // Customer
@@ -325,6 +336,11 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     b.align_center();
     b.line("GRACIAS POR SU COMPRA");
     b.line("CONSERVE SU COMPROBANTE");
+    if d.doc_type == "nota" {
+        b.lf();
+        b.line("Canjee por su Boleta o Factura");
+        b.line("Electronica en caja");
+    }
     b.lf();
     b.lf();
     b.lf();
