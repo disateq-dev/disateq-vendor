@@ -75,3 +75,10 @@ export function moneyLte(a: number, b: number): boolean {
 export function moneyIsZero(n: number): boolean {
   return toCents(n) === 0;
 }
+
+// ── formatting ───────────────────────────────────────────────────────────────
+
+/** Format a monetary value as "S/ 0.00" for display. */
+export function moneyFormat(n: number): string {
+  return `S/ ${n.toFixed(2)}`;
+}
