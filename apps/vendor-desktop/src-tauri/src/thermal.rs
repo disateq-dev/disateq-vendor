@@ -8,6 +8,7 @@ fn money_zero(n: f64) -> bool { cents(n) == 0 }
 // ───────────────────────────────────────────────────────────────
 
 const COLS: usize = 48;
+const MONEY_NUM_WIDTH: usize = 8;
 
 // ESC/POS constants
 const ESC: u8 = 0x1B;
@@ -114,7 +115,11 @@ fn money(n: f64) -> String {
 }
 
 fn money_label(n: f64) -> String {
-    format!("S/ {:.2}", n)
+    format!("S/{:>width$}", money(n), width = MONEY_NUM_WIDTH)
+}
+
+fn money_signed_label(sign: &str, n: f64) -> String {
+    format!("S/{:>width$}", format!("{sign}{:.2}", n), width = MONEY_NUM_WIDTH)
 }
 
 fn diff_str(sistema: f64, operador: f64) -> String {
@@ -203,13 +208,9 @@ impl Buf {
     }
 
     fn item_row(&mut self, qty: u32, desc: &str, subtotal: f64) {
-        // Ancho fijo para el precio: "S/ 9999.99" = 10 chars máximo
-        const NUM_WIDTH: usize = 7; // "9999.99" = 7 chars máximo
         let qty_str = format!("{qty}x");
-        let num_str = money(subtotal); // solo el número
-        // S/ fijo + número justificado a la derecha
-        let amt_padded = format!("S/{:>width$}", num_str, width = NUM_WIDTH);
-        let amt_width = 2 + NUM_WIDTH; // "S/" + número
+        let amt_padded = money_label(subtotal);
+        let amt_width = amt_padded.chars().count();
         let desc_n = normalize(desc);
 
         let fixed = qty_str.len() + 1 + amt_width;
@@ -327,7 +328,7 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     // Discount
     if money_pos(d.discount_num) {
         b.two_col("Subtotal bruto", &money_label(d.total));
-        b.two_col("Descuento", &format!("-{}", money_label(d.discount_num)));
+        b.two_col("Descuento", &money_signed_label("-", d.discount_num));
     }
 
     // IGV
@@ -639,8 +640,8 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
         "Ventas".to_string()
     };
     b.two_col(&ventas_label, &money_label(d.total_ventas));
-    b.two_col("Ingresos ^", &format!("+{}", money_label(d.ingresos_total)));
-    b.two_col("Egresos v", &format!("-{}", money_label(d.egresos_total)));
+    b.two_col("Ingresos ^", &money_signed_label("+", d.ingresos_total));
+    b.two_col("Egresos v", &money_signed_label("-", d.egresos_total));
     b.bold_on();
     b.two_col("Esperado oper.", &money_label(d.efectivo_esperado));
     b.bold_off();
@@ -693,7 +694,7 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     let diff_sign = if cents(d.diferencia) >= 0 { "+" } else { "-" };
 
     b.bold_on();
-    b.two_col(diff_label, &format!("{}{}", diff_sign, money_label(diff_abs)));
+    b.two_col(diff_label, &money_signed_label(diff_sign, diff_abs));
     b.bold_off();
 
     if let Some(ref motive) = d.zero_motive {

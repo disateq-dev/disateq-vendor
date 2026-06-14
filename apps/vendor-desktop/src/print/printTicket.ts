@@ -1,6 +1,6 @@
 // Print module — HTML/CSS for PDF, ESC/POS thermal via Tauri invoke
 import { invoke } from "@tauri-apps/api/core";
-import { moneyGt, moneyGte, moneyIsZero, moneyFormat } from "../lib/money";
+import { moneyGt, moneyGte, moneyIsZero } from "../lib/money";
 
 export interface PrintData {
   // Business (MVP: static config)
@@ -80,6 +80,20 @@ function mixtoPayLabel(b: { efe: number; yap: number; tar: number }): string {
   return parts.length ? `MIXTO ${parts.join(" ")}` : "Pago Mixto";
 }
 
+function printMoney(n: number): string {
+  return `<span class="pt-money"><span class="pt-currency">S/</span><span class="pt-number">${n.toFixed(2)}</span></span>`;
+}
+
+function printSignedMoney(sign: "+" | "−", n: number): string {
+  return `<span class="pt-money"><span class="pt-currency">S/</span><span class="pt-number">${sign}${n.toFixed(2)}</span></span>`;
+}
+
+const PRINT_MONEY_CSS = `
+#pt-overlay .pt-money    { display: inline-grid; grid-template-columns: 2ch 8ch; column-gap: 1ch; justify-content: end; align-items: baseline; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#pt-overlay .pt-currency { text-align: left; }
+#pt-overlay .pt-number   { text-align: right; }
+`;
+
 function buildHTML(d: PrintData): string {
   const docLabel = DOC_LABEL[d.docType] ?? d.docType.toUpperCase();
   const docNum   = `${d.docSeries}-${String(d.docCorrelative).padStart(8, "0")}`;
@@ -95,7 +109,7 @@ function buildHTML(d: PrintData): string {
     `<div class="pt-item">
       <span class="pt-qty">${l.quantity}×</span>
       <span class="pt-desc">${esc(l.description)}${l.note ? `<br><span class="pt-note">↳ ${esc(l.note)}</span>` : ""}</span>
-      <span class="pt-amt">${moneyFormat(l.subtotal)}</span>
+      <span class="pt-amt">${printMoney(l.subtotal)}</span>
     </div>`
   ).join("");
 
@@ -106,18 +120,18 @@ function buildHTML(d: PrintData): string {
     : "";
 
   const discountHTML = moneyGt(d.discountNum, 0)
-    ? `<div class="pt-sm"><span>Subtotal bruto</span><span>${moneyFormat(d.total)}</span></div>
-       <div class="pt-sm"><span>Descuento</span><span>−${moneyFormat(d.discountNum)}</span></div>`
+    ? `<div class="pt-sm"><span>Subtotal bruto</span><span>${printMoney(d.total)}</span></div>
+       <div class="pt-sm"><span>Descuento</span><span>${printSignedMoney("−", d.discountNum)}</span></div>`
     : "";
 
   const taxHTML = moneyGt(d.igv, 0)
-    ? `<div class="pt-sm"><span>Op. Gravada</span><span>${moneyFormat(d.baseImponible)}</span></div>
-       <div class="pt-sm"><span>IGV 18%</span><span>${moneyFormat(d.igv)}</span></div>`
+    ? `<div class="pt-sm"><span>Op. Gravada</span><span>${printMoney(d.baseImponible)}</span></div>
+       <div class="pt-sm"><span>IGV 18%</span><span>${printMoney(d.igv)}</span></div>`
     : "";
 
   const payHTML = d.payMethod === "efectivo" && moneyGt(d.receivedNum, 0)
-    ? `<div class="pt-row"><span>Efectivo</span><span>${moneyFormat(d.receivedNum)}</span></div>
-       <div class="pt-row"><span>Vuelto</span><span><b>${moneyFormat(Math.max(0, d.change))}</b></span></div>`
+    ? `<div class="pt-row"><span>Efectivo</span><span>${printMoney(d.receivedNum)}</span></div>
+       <div class="pt-row"><span>Vuelto</span><span><b>${printMoney(Math.max(0, d.change))}</b></span></div>`
     : d.payMethod === "mixto" && d.mixtoBreakdown
       ? `<div class="pt-row"><span>Metodo de pago</span><span>${mixtoPayLabel(d.mixtoBreakdown)}</span></div>`
       : `<div class="pt-row"><span>Método de pago</span><span>${PAY_LABEL[d.payMethod] ?? d.payMethod}</span></div>`;
@@ -158,6 +172,7 @@ function buildHTML(d: PrintData): string {
 #pt-overlay .pt-advertencia     { text-align: center; font-size: 10.5px; font-weight: bold; letter-spacing: .3px; border: 1px solid #000; padding: 3px 4px; margin: 4px 0 2px; }
 #pt-overlay .pt-advertencia-sub { text-align: center; font-size: 9.5px; color: #333; margin-bottom: 3px; }
 #pt-overlay .pt-canje           { font-size: 9px; font-style: italic; color: #333; margin-top: 3px; border-top: 1px dashed #999; padding-top: 3px; }
+${PRINT_MONEY_CSS}
 </style>
 <div class="pt-ticket">
 
@@ -191,7 +206,7 @@ function buildHTML(d: PrintData): string {
 
   <div class="pt-total">
     <span class="pt-tlbl">TOTAL</span>
-    <span class="pt-tamt">${moneyFormat(d.netTotal)}</span>
+    <span class="pt-tamt">${printMoney(d.netTotal)}</span>
   </div>
 
   <div class="pt-dash"></div>
@@ -242,6 +257,7 @@ function buildVoucherHTML(d: VoucherMoveData): string {
   #pt-overlay { display: block !important; }
 }
 #pt-overlay { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #000; line-height: 1.5; background: #fff; }
+${PRINT_MONEY_CSS}
 </style>
 <div style="padding: 4mm 2mm 10mm; font-family: 'Courier New', Courier, monospace;">
   <div style="text-align:center; margin-bottom:4px;">
@@ -252,7 +268,7 @@ function buildVoucherHTML(d: VoucherMoveData): string {
   <div style="border-top:1px solid #000; margin:4px 0;"></div>
   <div style="display:flex; justify-content:space-between; align-items:baseline; margin:3px 0;">
     <span style="font-size:11px; font-weight:bold;">MONTO</span>
-    <span style="font-size:20px; font-weight:bold; color:${amtColor};">S/ ${d.amount.toFixed(2)}</span>
+    <span style="font-size:20px; font-weight:bold; color:${amtColor};">${printMoney(d.amount)}</span>
   </div>
   <div style="border-top:1px dashed #555; margin:4px 0;"></div>
   <div style="display:flex; justify-content:space-between; font-size:10.5px; margin:2px 0;"><span>Motivo</span><span style="font-weight:bold;">${esc(d.motivo)}</span></div>
@@ -477,6 +493,7 @@ function buildArqueoHTML(d: ArqueoData): string {
 #pt-overlay .pt-arq-damt { font-size: 16px; font-weight: bold; }
 #pt-overlay .pt-arq-ok   { color: #065f46; }
 #pt-overlay .pt-arq-falt { color: #991b1b; }
+${PRINT_MONEY_CSS}
 </style>
 <div class="pt-ticket">
 
@@ -496,11 +513,11 @@ function buildArqueoHTML(d: ArqueoData): string {
   <div class="pt-dash"></div>
 
   <div class="pt-sect">CONTEXTO OPERACIONAL</div>
-  <div class="pt-row"><span>Fondo apertura <span style="font-size:9px;color:#999">(ref.)</span></span><span>${moneyFormat(d.apertura)}</span></div>
-  <div class="pt-row"><span>Ventas${d.salesCount > 0 ? ` (${d.salesCount})` : ""}</span><span>${moneyFormat(d.totalVentas)}</span></div>
-  <div class="pt-row"><span>Ingresos &#8593;</span><span>+${moneyFormat(d.ingresosTotal)}</span></div>
-  <div class="pt-row"><span>Egresos &#8595;</span><span>&#8722;${moneyFormat(d.egresosTotal)}</span></div>
-  <div class="pt-row"><span>Esperado oper.</span><span class="pt-bold">${moneyFormat(d.efectivoEsperado)}</span></div>
+  <div class="pt-row"><span>Fondo apertura <span style="font-size:9px;color:#999">(ref.)</span></span><span>${printMoney(d.apertura)}</span></div>
+  <div class="pt-row"><span>Ventas${d.salesCount > 0 ? ` (${d.salesCount})` : ""}</span><span>${printMoney(d.totalVentas)}</span></div>
+  <div class="pt-row"><span>Ingresos &#8593;</span><span>${printSignedMoney("+", d.ingresosTotal)}</span></div>
+  <div class="pt-row"><span>Egresos &#8595;</span><span>${printSignedMoney("−", d.egresosTotal)}</span></div>
+  <div class="pt-row"><span>Esperado oper.</span><span class="pt-bold">${printMoney(d.efectivoEsperado)}</span></div>
 
   <div class="pt-dash"></div>
 
@@ -531,15 +548,15 @@ function buildArqueoHTML(d: ArqueoData): string {
   }).join("")}
   ` : `
   <div class="pt-sect">CONTEO CONCILIADO</div>
-  <div class="pt-row"><span>Efectivo</span><span>${moneyFormat(d.contadoEfe)}</span></div>
-  <div class="pt-row"><span>Yape</span><span>${moneyFormat(d.contadoYape)}</span></div>
-  <div class="pt-row"><span>Tarjetas</span><span>${moneyFormat(d.contadoTar)}</span></div>
+  <div class="pt-row"><span>Efectivo</span><span>${printMoney(d.contadoEfe)}</span></div>
+  <div class="pt-row"><span>Yape</span><span>${printMoney(d.contadoYape)}</span></div>
+  <div class="pt-row"><span>Tarjetas</span><span>${printMoney(d.contadoTar)}</span></div>
 
   <div class="pt-solid"></div>
 
   <div class="pt-total">
     <span class="pt-tlbl">TOTAL CONTADO</span>
-    <span class="pt-tamt">${moneyFormat(d.contadoTotal)}</span>
+    <span class="pt-tamt">${printMoney(d.contadoTotal)}</span>
   </div>
   `}
 
@@ -548,7 +565,7 @@ function buildArqueoHTML(d: ArqueoData): string {
   <div class="pt-sect">DIFERENCIA</div>
   <div class="pt-arq-diff ${diffClass}">
     <span class="pt-arq-dlbl">${diffLabel}</span>
-    <span class="pt-arq-damt">${diffSign}${moneyFormat(diffAbs)}</span>
+    <span class="pt-arq-damt">${printSignedMoney(diffSign, diffAbs)}</span>
   </div>
 
   ${d.zeroMotive   ? `<div class="pt-dash"></div><div class="pt-row"><span>Motivo</span><span class="pt-bold">${esc(d.zeroMotive)}</span></div>` : ""}

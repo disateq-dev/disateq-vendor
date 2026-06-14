@@ -6,7 +6,7 @@ import {
 import { useLineasPreVenta } from "../../domains/preventa/selectors/preventa.selectors";
 import { preVentaService } from "../../domains/preventa/services/preventa.service";
 import { usePOS } from "../../context/POSContext";
-import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatch, printDispatchTicket, type DispatchData } from "../../print/printTicket";
+import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptWithDispatchHTML, printDispatchTicket, type DispatchData } from "../../print/printTicket";
 
 import { toCents, moneySum, moneySub, moneyRound, moneyGt, moneyGte, moneyEq } from "../../lib/money";
 import { loadBusinessConfig } from "../../config/business";
@@ -456,7 +456,7 @@ export function CobroPanel() {
       try {
         await printTicketWithDispatch("TIQUE", receiptData, dispatchData);
       } catch {
-        printReceiptWithDispatch(receiptData, dispatchData);
+        printReceiptWithDispatchHTML(receiptData, dispatchData);
       }
     } else {
       // solo-comprobante + flujos no implementados aún → solo receipt
