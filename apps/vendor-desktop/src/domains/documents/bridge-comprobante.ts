@@ -7,6 +7,7 @@ import type {
   LineaComprobante,
   MetodoPago,
   ReceptorComprobante,
+  TipoAfectacionIGV,
   TipoComprobante,
 } from './comprobante.types'
 
@@ -24,6 +25,7 @@ interface EmitirComprobanteInput {
   igv: number
   isc: number
   total: number
+  tipoAfectacionIGV: TipoAfectacionIGV
   metodoPago: MetodoPago
   mixtoBreakdown?: {
     efe: number
@@ -57,8 +59,12 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
           esGenerico: true,
         }
       : {
-          tipoDocumento: 'DNI',
-          numeroDocumento: input.customer.docNumber,
+          tipoDocumento: input.customer.docNumber?.length === 11
+            ? 'RUC'
+            : input.customer.docNumber?.length === 8
+            ? 'DNI'
+            : 'SIN_DOCUMENTO',
+          numeroDocumento: input.customer.docNumber || null,
           nombre: input.customer.name,
           direccion: null,
           esGenerico: false,
@@ -71,8 +77,8 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
       valorUnitario: linea.unitPrice,
       subtotal: linea.subtotal,
       codigoProductoSUNAT: null,
-      tipoAfectacionIGV: 'GRAVADO',
-      tasaIGV: 0.18,
+      tipoAfectacionIGV: input.tipoAfectacionIGV,
+      tasaIGV: input.tipoAfectacionIGV === 'GRAVADO' ? 0.18 : 0,
       montoISC: null,
       notaLinea: linea.note,
     }))
