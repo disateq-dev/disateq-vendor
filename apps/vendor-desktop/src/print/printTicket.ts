@@ -87,6 +87,14 @@ function money(n: number): string {
 function buildHTML(d: PrintData): string {
   const docLabel = DOC_LABEL[d.docType] ?? d.docType.toUpperCase();
   const docNum   = `${d.docSeries}-${String(d.docCorrelative).padStart(8, "0")}`;
+  const isNotaVenta = d.docType === "nota";
+  const advertenciaHTML = isNotaVenta
+    ? `<div class="pt-advertencia">ESTE DOCUMENTO NO ES UN COMPROBANTE DE PAGO</div>
+       <div class="pt-advertencia-sub">Documento interno sin valor tributario</div>`
+    : "";
+  const canjeHTML = isNotaVenta
+    ? `<div class="pt-foot pt-canje">Canjee este documento por su Boleta o Factura Electrónica en caja</div>`
+    : "";
 
   const linesHTML = d.lines.map(l =>
     `<div class="pt-item">
@@ -152,6 +160,9 @@ function buildHTML(d: PrintData): string {
 #pt-overlay .pt-tlbl    { font-size: 12px; font-weight: bold; }
 #pt-overlay .pt-tamt    { font-size: 18px; font-weight: bold; }
 #pt-overlay .pt-foot    { text-align: center; font-size: 10px; color: #555; margin-top: 4px; }
+#pt-overlay .pt-advertencia     { text-align: center; font-size: 10.5px; font-weight: bold; letter-spacing: .3px; border: 1px solid #000; padding: 3px 4px; margin: 4px 0 2px; }
+#pt-overlay .pt-advertencia-sub { text-align: center; font-size: 9.5px; color: #333; margin-bottom: 3px; }
+#pt-overlay .pt-canje           { font-size: 9px; font-style: italic; color: #333; margin-top: 3px; border-top: 1px dashed #999; padding-top: 3px; }
 </style>
 <div class="pt-ticket">
 
@@ -167,6 +178,8 @@ function buildHTML(d: PrintData): string {
   <div class="pt-doc">${docLabel}</div>
   <div class="pt-center pt-meta">${docNum}</div>
   <div class="pt-center pt-meta">${esc(d.dateTime)}</div>
+
+  ${advertenciaHTML}
 
   ${customerHTML}
 
@@ -193,6 +206,7 @@ function buildHTML(d: PrintData): string {
   <div class="pt-dash"></div>
   <div class="pt-foot">¡Gracias por su compra!</div>
   <div class="pt-foot" style="font-size:9px">Conserve su comprobante</div>
+  ${canjeHTML}
 
 </div>`;
 }
