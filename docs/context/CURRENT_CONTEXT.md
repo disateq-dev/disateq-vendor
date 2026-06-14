@@ -2,53 +2,41 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Últimos commits esta sesión:**
-  - `6b0eab5` — fix(thermal): medir anchos por chars() no bytes
-  - pendiente — fix(print): footer NOTA DE VENTA HTML doctrina SUNAT
-  - pendiente — refactor(print): moneyFormat(), dispatch unificado, voucher limpio
+* **Último commit:** `e14e1a0` — feat: navegación teclado ContextBar, modo visual/dense VENTAS, ComprobantesWorkspace sesión+historial
+
+---
+
+## Commits de esta sesión
+
+| Commit | Cambio |
+|---|---|
+| `6b0eab5` | fix(thermal): medir anchos por chars() no bytes |
+| anterior | fix(print): footer NOTA DE VENTA HTML — SIN VALOR FISCAL. |
+| `8879887` | refactor(print): moneyFormat() en lib/money.ts, dispatch unificado, voucher limpio |
+| anterior | fix(print): MONEY_NUM_WIDTH constante · money_signed_label · corregir import CobroPanel |
+| `e14e1a0` | feat: navegación teclado ContextBar, modo visual/dense VENTAS, ComprobantesWorkspace |
 
 ---
 
 ## Estado del Dominio de Impresión — CERRADO ✅
 
 ### thermal.rs
-| Elemento | Estado |
-|---|---|
-| CP850 activo (ESC t 2) | ✅ |
-| to_cp850(): vocales, Ñ, °, ¿, ¡, ª, º | ✅ |
-| two_col(): chars().count() | ✅ |
-| four_col(): Vec<char> | ✅ |
-| item_row(): chars() para corte y medición | ✅ |
-| item_row(): S/ fijo + número justificado 7 chars | ✅ |
-| money_label() en all two_col() fuera de item_row() | ✅ |
-| set_tab()/tab() eliminados | ✅ |
+- CP850 activo (ESC t 2) ✅
+- to_cp850(): vocales, Ñ, °, ¿, ¡, ª, º ✅
+- two_col/four_col/item_row: chars().count() ✅
+- MONEY_NUM_WIDTH = 8 constante global ✅
+- money_label(): S/ fijo + número justificado ✅
+- money_signed_label(): para ingresos/egresos/diferencia ✅
+- set_tab/tab eliminados ✅
 
 ### printTicket.ts
-| Elemento | Estado |
-|---|---|
-| moneyFormat() importado desde lib/money.ts | ✅ |
-| money() local eliminado | ✅ |
-| Footer NOTA DE VENTA: "SIN VALOR FISCAL." | ✅ |
-| Leyenda: "Solicite su Boleta o Factura." | ✅ |
-| buildDispatchHTML/buildDispatchAppend unificados | ✅ |
-| id="pt-ticket" eliminado de buildVoucherHTML | ✅ |
-| printReceiptWithDispatch → printReceiptWithDispatchHTML | ✅ |
+- moneyFormat() importado desde lib/money.ts ✅
+- Footer NOTA DE VENTA: "SIN VALOR FISCAL." ✅
+- buildDispatch unificado ✅
+- printReceiptWithDispatchHTML renombrado ✅
 
 ### lib/money.ts
-| Elemento | Estado |
-|---|---|
-| moneyFormat() exportado | ✅ |
-
----
-
-## Auditoría de Impresión — HALLAZGOS CERRADOS
-- 🔴 C1: two_col/four_col/item_row bytes→chars ✅
-- 🟡 M1: set_tab/tab eliminados ✅
-- 🟡 M2: footer HTML alineado con doctrina SUNAT ✅
-- 🟡 M3: buildDispatch unificado ✅
-- 🟢 m1: id="pt-ticket" eliminado ✅
-- 🟢 m2: printReceiptWithDispatch renombrado ✅
-- 🟢 m3: money() local → moneyFormat() de lib ✅
+- moneyFormat() exportado ✅
 
 ---
 
@@ -58,17 +46,18 @@
 * **ABASTECIMIENTO — CATÁLOGO:** ✅
 * **ABASTECIMIENTO — COMPRAS:** ✅
 * **ABASTECIMIENTO — INVENTARIOS:** ✅
-* **VENTAS:** 🔶 Pipeline completo · pendiente recorrido UX
+* **VENTAS:** 🔶 Modo visual/dense · categorías por rubro · pendiente recorrido UX completo
 * **COBRO:** 🔶 Impresión térmica resuelta · pendiente BOLETA/FACTURA/COTIZACIÓN
-* **COMPROBANTES:** 🔶 Pendiente documentación normativa
+* **COMPROBANTES:** 🔶 Vista sesión+historial · filtros · convertir a formal · pendiente normativa
 * **CLIENTES | REPORTES | OPERADORES | CONFIG:** ⬜
 
 ---
 
 ## Próxima Ventana de Trabajo
-1. Probar impresión en dev — verificar alineación definitiva con tildes y CP850
+1. Probar impresión en dev — verificar alineación con tildes y CP850
 2. Continuar revisión COBRO (BOLETA, FACTURA, COTIZACIÓN)
-3. Arrancar bloque SQLite (prerequisito Alpha)
+3. Recorrido UX VENTAS completo
+4. SQLite — prerequisito Alpha
 
 ---
 
