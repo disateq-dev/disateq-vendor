@@ -110,6 +110,10 @@ fn normalize(s: &str) -> String {
 }
 
 fn money(n: f64) -> String {
+    format!("{:.2}", n)
+}
+
+fn money_label(n: f64) -> String {
     format!("S/ {:.2}", n)
 }
 
@@ -194,14 +198,15 @@ impl Buf {
 
     fn item_row(&mut self, qty: u32, desc: &str, subtotal: f64) {
         // Ancho fijo para el precio: "S/ 9999.99" = 10 chars máximo
-        const AMT_WIDTH: usize = 10;
+        const NUM_WIDTH: usize = 7; // "9999.99" = 7 chars máximo
         let qty_str = format!("{qty}x");
-        let amt_str = money(subtotal);
-        // Justificar precio a la derecha dentro del ancho fijo
-        let amt_padded = format!("{:>width$}", amt_str, width = AMT_WIDTH);
+        let num_str = money(subtotal); // solo el número
+        // S/ fijo + número justificado a la derecha
+        let amt_padded = format!("S/{:>width$}", num_str, width = NUM_WIDTH);
+        let amt_width = 2 + NUM_WIDTH; // "S/" + número
         let desc_n = normalize(desc);
 
-        let fixed = qty_str.len() + 1 + AMT_WIDTH;
+        let fixed = qty_str.len() + 1 + amt_width;
         let desc_max = COLS.saturating_sub(fixed);
 
         let chunks: Vec<String> = if desc_n.len() <= desc_max {
@@ -216,7 +221,7 @@ impl Buf {
 
         // Primera línea: qty + desc + precio alineado a la derecha
         let first = &chunks[0];
-        let used = qty_str.len() + 1 + first.len() + AMT_WIDTH;
+        let used = qty_str.len() + 1 + first.len() + amt_width;
         let spaces = if used < COLS { COLS - used } else { 1 };
         let row = format!("{qty_str} {first}{}{amt_padded}",
             " ".repeat(spaces));
@@ -325,14 +330,14 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
 
     // Discount
     if money_pos(d.discount_num) {
-        b.two_col("Subtotal bruto", &money(d.total));
-        b.two_col("Descuento", &format!("-{}", money(d.discount_num)));
+        b.two_col("Subtotal bruto", &money_label(d.total));
+        b.two_col("Descuento", &format!("-{}", money_label(d.discount_num)));
     }
 
     // IGV
     if money_pos(d.igv) {
-        b.two_col("Op. Gravada", &money(d.base_imponible));
-        b.two_col("IGV 18%", &money(d.igv));
+        b.two_col("Op. Gravada", &money_label(d.base_imponible));
+        b.two_col("IGV 18%", &money_label(d.igv));
     }
 
     b.equals();
@@ -340,7 +345,7 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     // Total
     b.bold_on();
     b.dbl_h_on();
-    b.two_col("TOTAL", &money(d.net_total));
+    b.two_col("TOTAL", &money_label(d.net_total));
     b.dbl_h_off();
     b.bold_off();
 
@@ -348,8 +353,8 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
 
     // Payment
     if d.pay_method == "efectivo" && money_pos(d.received_num) {
-        b.two_col("Efectivo", &money(d.received_num));
-        b.two_col("Vuelto", &money(d.change.max(0.0)));
+        b.two_col("Efectivo", &money_label(d.received_num));
+        b.two_col("Vuelto", &money_label(d.change.max(0.0)));
     } else if d.pay_method == "mixto" {
         let label = if let Some(ref mb) = d.mixto_breakdown {
             let mut parts: Vec<String> = Vec::new();
@@ -497,7 +502,7 @@ pub fn build_cash_move_escpos(d: &VoucherMovePrintData) -> Vec<u8> {
 
     b.bold_on();
     b.dbl_h_on();
-    b.two_col("MONTO", &money(d.amount));
+    b.two_col("MONTO", &money_label(d.amount));
     b.dbl_h_off();
     b.bold_off();
 
@@ -631,17 +636,17 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     b.bold_off();
     b.dashes();
 
-    b.two_col("Fondo apertura (ref.)", &money(d.apertura));
+    b.two_col("Fondo apertura (ref.)", &money_label(d.apertura));
     let ventas_label = if d.sales_count > 0 {
         format!("Ventas ({})", d.sales_count)
     } else {
         "Ventas".to_string()
     };
-    b.two_col(&ventas_label, &money(d.total_ventas));
-    b.two_col("Ingresos ^", &format!("+{}", money(d.ingresos_total)));
-    b.two_col("Egresos v", &format!("-{}", money(d.egresos_total)));
+    b.two_col(&ventas_label, &money_label(d.total_ventas));
+    b.two_col("Ingresos ^", &format!("+{}", money_label(d.ingresos_total)));
+    b.two_col("Egresos v", &format!("-{}", money_label(d.egresos_total)));
     b.bold_on();
-    b.two_col("Esperado oper.", &money(d.efectivo_esperado));
+    b.two_col("Esperado oper.", &money_label(d.efectivo_esperado));
     b.bold_off();
 
     b.dashes();
@@ -664,15 +669,15 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
         b.dbl_h_off();
         b.bold_off();
     } else {
-        b.two_col("Efectivo", &money(d.contado_efe));
-        b.two_col("Yape", &money(d.contado_yape));
-        b.two_col("Tarjetas", &money(d.contado_tar));
+        b.two_col("Efectivo", &money_label(d.contado_efe));
+        b.two_col("Yape", &money_label(d.contado_yape));
+        b.two_col("Tarjetas", &money_label(d.contado_tar));
 
         b.equals();
 
         b.bold_on();
         b.dbl_h_on();
-        b.two_col("TOTAL CONTADO", &money(d.contado_total));
+        b.two_col("TOTAL CONTADO", &money_label(d.contado_total));
         b.dbl_h_off();
         b.bold_off();
     }
@@ -692,7 +697,7 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     let diff_sign = if cents(d.diferencia) >= 0 { "+" } else { "-" };
 
     b.bold_on();
-    b.two_col(diff_label, &format!("{}{}", diff_sign, money(diff_abs)));
+    b.two_col(diff_label, &format!("{}{}", diff_sign, money_label(diff_abs)));
     b.bold_off();
 
     if let Some(ref motive) = d.zero_motive {
