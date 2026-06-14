@@ -193,16 +193,15 @@ impl Buf {
     }
 
     fn item_row(&mut self, qty: u32, desc: &str, subtotal: f64) {
+        // Ancho fijo para el precio: "S/ 9999.99" = 10 chars máximo
+        const AMT_WIDTH: usize = 10;
         let qty_str = format!("{qty}x");
         let amt_str = money(subtotal);
+        // Justificar precio a la derecha dentro del ancho fijo
+        let amt_padded = format!("{:>width$}", amt_str, width = AMT_WIDTH);
         let desc_n = normalize(desc);
-        let amt_len = amt_str.len() as u8;
-        let tab_col = COLS as u8;
 
-        // Set tab stop at right edge minus amount width
-        self.set_tab(tab_col.saturating_sub(amt_len));
-
-        let fixed = qty_str.len() + 1 + amt_str.len() + 1;
+        let fixed = qty_str.len() + 1 + AMT_WIDTH;
         let desc_max = COLS.saturating_sub(fixed);
 
         let chunks: Vec<String> = if desc_n.len() <= desc_max {
@@ -215,13 +214,15 @@ impl Buf {
                 .collect()
         };
 
-        // First line: qty + desc + TAB + amount (tab aligns to right)
+        // Primera línea: qty + desc + precio alineado a la derecha
         let first = &chunks[0];
-        self.text(&format!("{qty_str} {first}"));
-        self.tab();
-        self.line(&amt_str);
+        let used = qty_str.len() + 1 + first.len() + AMT_WIDTH;
+        let spaces = if used < COLS { COLS - used } else { 1 };
+        let row = format!("{qty_str} {first}{}{amt_padded}",
+            " ".repeat(spaces));
+        self.line(&row);
 
-        // Continuation lines indented
+        // Líneas de continuación indentadas
         for chunk in chunks.iter().skip(1) {
             let indent = " ".repeat(qty_str.len() + 1);
             self.line(&format!("{indent}{chunk}"));
