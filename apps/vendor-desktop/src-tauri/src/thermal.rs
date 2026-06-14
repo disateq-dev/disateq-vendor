@@ -62,21 +62,49 @@ pub struct TicketPrintData {
     pub mixto_breakdown:  Option<MixtoBreakdown>,
 }
 
-fn normalize(s: &str) -> String {
+fn to_cp850(s: &str) -> Vec<u8> {
     s.chars().map(|c| match c {
-        '\u{00E1}' | '\u{00E0}' | '\u{00E2}' | '\u{00E4}' => 'a',
-        '\u{00E9}' | '\u{00E8}' | '\u{00EA}' | '\u{00EB}' => 'e',
-        '\u{00ED}' | '\u{00EC}' | '\u{00EE}' | '\u{00EF}' => 'i',
-        '\u{00F3}' | '\u{00F2}' | '\u{00F4}' | '\u{00F6}' => 'o',
-        '\u{00FA}' | '\u{00F9}' | '\u{00FB}' | '\u{00FC}' => 'u',
-        '\u{00C1}' | '\u{00C0}' | '\u{00C2}' | '\u{00C4}' => 'A',
-        '\u{00C9}' | '\u{00C8}' | '\u{00CA}' | '\u{00CB}' => 'E',
-        '\u{00CD}' | '\u{00CC}' | '\u{00CE}' | '\u{00CF}' => 'I',
-        '\u{00D3}' | '\u{00D2}' | '\u{00D4}' | '\u{00D6}' => 'O',
-        '\u{00DA}' | '\u{00D9}' | '\u{00DB}' | '\u{00DC}' => 'U',
-        '\u{00F1}' => 'n',
-        '\u{00D1}' => 'N',
-        '\u{00BF}' | '\u{00A1}' => ' ',
+        '\u{00E1}' => 0xA0, // á
+        '\u{00E9}' => 0x82, // é
+        '\u{00ED}' => 0xA1, // í
+        '\u{00F3}' => 0xA2, // ó
+        '\u{00FA}' => 0xA3, // ú
+        '\u{00C1}' => 0xB5, // Á
+        '\u{00C9}' => 0x90, // É
+        '\u{00CD}' => 0xD6, // Í
+        '\u{00D3}' => 0xE0, // Ó
+        '\u{00DA}' => 0xE9, // Ú
+        '\u{00F1}' => 0xA4, // ñ
+        '\u{00D1}' => 0xA5, // Ñ
+        '\u{00FC}' => 0x81, // ü
+        '\u{00DC}' => 0x9A, // Ü
+        '\u{00E0}' => 0x85, // à
+        '\u{00E2}' => 0x83, // â
+        '\u{00E4}' => 0x84, // ä
+        '\u{00E8}' => 0x8A, // è
+        '\u{00EA}' => 0x88, // ê
+        '\u{00EB}' => 0x89, // ë
+        '\u{00EE}' => 0x8C, // î
+        '\u{00EF}' => 0x8B, // ï
+        '\u{00F2}' => 0x95, // ò
+        '\u{00F4}' => 0x93, // ô
+        '\u{00F6}' => 0x94, // ö
+        '\u{00F9}' => 0x97, // ù
+        '\u{00FB}' => 0x96, // û
+        '\u{00BF}' => 0xA8, // ¿
+        '\u{00A1}' => 0xAD, // ¡
+        '\u{00B0}' => 0xF8, // °
+        '\u{00AA}' => 0xA6, // ª
+        '\u{00BA}' => 0xA7, // º
+        c if c.is_ascii() => c as u8,
+        _ => b'?',
+    }).collect()
+}
+
+fn normalize(s: &str) -> String {
+    // Compatibilidad — usado solo donde se necesita String
+    s.chars().map(|c| match c {
+        '\u{00BF}' | '\u{00A1}' | '\u{00B0}' => ' ',
         _ => c,
     }).collect()
 }
@@ -98,7 +126,10 @@ impl Buf {
 
     fn raw(&mut self, bytes: &[u8]) { self.0.extend_from_slice(bytes); }
 
-    fn init(&mut self) { self.raw(&[ESC, b'@']); }
+    fn init(&mut self) {
+        self.raw(&[ESC, b'@']);           // Reset
+        self.raw(&[ESC, b't', 2]);        // Activar CP850 (OEM Multilingual)
+    }
 
     fn bold_on(&mut self)  { self.raw(&[ESC, b'E', 1]); }
     fn bold_off(&mut self) { self.raw(&[ESC, b'E', 0]); }
@@ -112,7 +143,7 @@ impl Buf {
     fn lf(&mut self) { self.raw(&[b'\n']); }
 
     fn text(&mut self, s: &str) {
-        self.raw(normalize(s).as_bytes());
+        self.raw(&to_cp850(s));
     }
 
     fn line(&mut self, s: &str) {
