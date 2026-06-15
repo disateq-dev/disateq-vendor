@@ -32,7 +32,14 @@ interface EmitirComprobanteInput {
     yap: number
     tar: number
   }
-  customer: { docNumber: string; name: string } | null
+  customer: {
+    docNumber: string
+    name: string
+    clienteId?: string | null
+    email?: string | null
+    whatsapp?: string | null
+    consentimientoContacto?: boolean
+  } | null
   emitidoPor: string
   pedidoId: string | null
 }
@@ -54,9 +61,15 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
       ? {
           tipoDocumento: 'SIN_DOCUMENTO',
           numeroDocumento: null,
-          nombre: 'VARIOS',
+          nombre: 'Clientes Varios',
           direccion: null,
           esGenerico: true,
+          fuente: 'SIN_RECEPTOR',
+          clienteId: null,
+          validadoSunat: false,
+          email: null,
+          whatsapp: null,
+          consentimientoContacto: false,
         }
       : {
           tipoDocumento: input.customer.docNumber?.length === 11
@@ -68,6 +81,12 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
           nombre: input.customer.name,
           direccion: null,
           esGenerico: false,
+          fuente: 'INGRESO_MANUAL',
+          clienteId: input.customer.clienteId ?? null,
+          validadoSunat: false,
+          email: input.customer.email ?? null,
+          whatsapp: input.customer.whatsapp ?? null,
+          consentimientoContacto: input.customer.consentimientoContacto ?? false,
         }
 
     const lineas: LineaComprobante[] = input.lineas.map(linea => ({

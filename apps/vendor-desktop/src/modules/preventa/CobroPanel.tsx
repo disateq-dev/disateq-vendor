@@ -230,9 +230,15 @@ export function CobroPanel() {
         ? {
             tipoDocumento: "SIN_DOCUMENTO",
             numeroDocumento: null,
-            nombre: "VARIOS",
+            nombre: "Clientes Varios",
             direccion: null,
             esGenerico: true,
+            fuente: "SIN_RECEPTOR" as const,
+            clienteId: null,
+            validadoSunat: false,
+            email: null,
+            whatsapp: null,
+            consentimientoContacto: false,
           }
         : {
             tipoDocumento,
@@ -240,6 +246,12 @@ export function CobroPanel() {
             nombre: customer.name,
             direccion: customer.address ?? null,
             esGenerico: false,
+            fuente: "INGRESO_MANUAL" as const,
+            clienteId: null,
+            validadoSunat: false,
+            email: customer.email ?? null,
+            whatsapp: null,
+            consentimientoContacto: false,
           },
       lineas: lines.map(l => ({
         id: crypto.randomUUID(),
@@ -334,7 +346,14 @@ export function CobroPanel() {
           ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
           : undefined,
         customer:    customer
-          ? { docNumber: customer.docNumber, name: customer.name }
+          ? {
+              docNumber: customer.docNumber,
+              name: customer.name,
+              clienteId: null,
+              email: customer.email ?? null,
+              whatsapp: null,
+              consentimientoContacto: false,
+            }
           : null,
         emitidoPor:  activeOperator?.id ?? "default",
         pedidoId:    pedidoId,
@@ -400,7 +419,14 @@ export function CobroPanel() {
           ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
           : undefined,
         customer:    customer
-          ? { docNumber: customer.docNumber, name: customer.name }
+          ? {
+              docNumber: customer.docNumber,
+              name: customer.name,
+              clienteId: null,
+              email: customer.email ?? null,
+              whatsapp: null,
+              consentimientoContacto: false,
+            }
           : null,
         emitidoPor:  activeOperator?.id ?? "default",
         pedidoId:    pedidoId,
@@ -889,7 +915,7 @@ export function CobroPanel() {
               (nombre || documento)
                 ? {
                     docNumber: documento,
-                    name: nombre || 'VARIOS',
+                    name: nombre || 'Clientes Varios',
                     department: undefined,
                     province: undefined,
                     district: undefined,

@@ -49,12 +49,31 @@ export type CanalEnvio =
   | 'IMPRESO'
   | 'NINGUNO'
 
+export type FuenteReceptor =
+  | 'CLIENTE_REGISTRADO'
+  | 'INGRESO_MANUAL'
+  | 'API_SUNAT'
+  | 'SIN_RECEPTOR'
+
 export interface ReceptorComprobante {
+  // Identificación fiscal
   tipoDocumento: TipoDocumentoReceptor
   numeroDocumento: string | null
-  nombre: string
+  nombre: string                   // 'Clientes Varios' cuando SIN_RECEPTOR
   direccion: string | null
-  esGenerico: boolean
+
+  // Clasificación
+  esGenerico: boolean              // true cuando SIN_RECEPTOR
+
+  // Trazabilidad de origen
+  fuente: FuenteReceptor
+  clienteId: string | null         // enlace al Cliente registrado, si aplica
+  validadoSunat: boolean
+
+  // Canales para marketing (captura opcional en cobro)
+  email: string | null
+  whatsapp: string | null
+  consentimientoContacto: boolean
 }
 
 export interface EmisorComprobante {
@@ -130,4 +149,18 @@ export interface CrearComprobanteInput {
 export interface ComprobanteStore {
   comprobantes: Comprobante[]
   ultimaSincronizacion: string | null
+}
+
+export const RECEPTOR_VACIO: ReceptorComprobante = {
+  tipoDocumento: 'SIN_DOCUMENTO',
+  numeroDocumento: null,
+  nombre: 'Clientes Varios',
+  direccion: null,
+  esGenerico: true,
+  fuente: 'SIN_RECEPTOR',
+  clienteId: null,
+  validadoSunat: false,
+  email: null,
+  whatsapp: null,
+  consentimientoContacto: false,
 }
