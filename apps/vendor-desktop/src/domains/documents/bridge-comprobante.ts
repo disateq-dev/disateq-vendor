@@ -162,9 +162,16 @@ export function construirReceiptData(
     docCorrelative: comprobante.correlativo,
     dateTime,
     customer: comprobante.receptor.esGenerico
-      ? null
+      ? {
+          tipoDocumento: undefined,
+          docNumber: '',
+          name: 'Clientes Varios',
+        }
       : {
-          docNumber: comprobante.receptor.numeroDocumento,
+          tipoDocumento: comprobante.receptor.tipoDocumento !== 'SIN_DOCUMENTO'
+            ? comprobante.receptor.tipoDocumento
+            : undefined,
+          docNumber: comprobante.receptor.numeroDocumento ?? '',
           name: comprobante.receptor.nombre,
         },
     lines: comprobante.lineas.map(l => ({

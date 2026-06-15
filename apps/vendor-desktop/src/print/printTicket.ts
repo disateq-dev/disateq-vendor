@@ -15,8 +15,12 @@ export interface PrintData {
   docCorrelative: number;
   dateTime:       string;
 
-  // Customer (null → no customer section)
-  customer: { docNumber: string; name: string } | null;
+  // Customer (null → imprime CLIENTES VARIOS)
+  customer: {
+    tipoDocumento?: string;
+    docNumber: string;
+    name: string;
+  } | null;
 
   // Lines
   lines: Array<{
@@ -113,11 +117,17 @@ function buildHTML(d: PrintData): string {
     </div>`
   ).join("");
 
-  const customerHTML = d.customer
-    ? `<div class="pt-dash"></div>
-       <div class="pt-row"><span>Cliente</span><span>${esc(d.customer.name)}</span></div>
-       ${d.customer.docNumber ? `<div class="pt-row"><span>Doc.</span><span>${esc(d.customer.docNumber)}</span></div>` : ""}`
+  const customerLabel = d.customer
+    ? esc(d.customer.name)
+    : "CLIENTES VARIOS";
+
+  const customerDocHTML = d.customer?.docNumber
+    ? `<div class="pt-row"><span>${d.customer.tipoDocumento ?? "Doc."}</span><span>${esc(d.customer.docNumber)}</span></div>`
     : "";
+
+  const customerHTML = `<div class="pt-dash"></div>
+     <div class="pt-row"><span>Cliente</span><span>${customerLabel}</span></div>
+     ${customerDocHTML}`;
 
   const discountHTML = moneyGt(d.discountNum, 0)
     ? `<div class="pt-sm"><span>Subtotal bruto</span><span>${printMoney(d.total)}</span></div>
