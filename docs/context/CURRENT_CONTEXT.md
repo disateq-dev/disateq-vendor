@@ -2,41 +2,23 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `e14e1a0` — feat: navegación teclado ContextBar, modo visual/dense VENTAS, ComprobantesWorkspace sesión+historial
+* **Último commit:** `7484fb1` — fix(thermal): punto centrado · y símbolo grado ° al encoder CP850
 
 ---
 
-## Commits de esta sesión
+## Doctrina de Impresión — DECISIÓN IRREVERSIBLE
 
-| Commit | Cambio |
-|---|---|
-| `6b0eab5` | fix(thermal): medir anchos por chars() no bytes |
-| anterior | fix(print): footer NOTA DE VENTA HTML — SIN VALOR FISCAL. |
-| `8879887` | refactor(print): moneyFormat() en lib/money.ts, dispatch unificado, voucher limpio |
-| anterior | fix(print): MONEY_NUM_WIDTH constante · money_signed_label · corregir import CobroPanel |
-| `e14e1a0` | feat: navegación teclado ContextBar, modo visual/dense VENTAS, ComprobantesWorkspace |
+La impresión siempre se resuelve por **ESC/POS vía Rust/Tauri**.
+El path HTML/CSS existe únicamente como fallback para exportar PDF desde ComprobantesWorkspace.
+Ningún flujo operacional normal usa el path HTML.
 
 ---
 
-## Estado del Dominio de Impresión — CERRADO ✅
+## Pendientes de Impresión (futura implementación)
 
-### thermal.rs
-- CP850 activo (ESC t 2) ✅
-- to_cp850(): vocales, Ñ, °, ¿, ¡, ª, º ✅
-- two_col/four_col/item_row: chars().count() ✅
-- MONEY_NUM_WIDTH = 8 constante global ✅
-- money_label(): S/ fijo + número justificado ✅
-- money_signed_label(): para ingresos/egresos/diferencia ✅
-- set_tab/tab eliminados ✅
-
-### printTicket.ts
-- moneyFormat() importado desde lib/money.ts ✅
-- Footer NOTA DE VENTA: "SIN VALOR FISCAL." ✅
-- buildDispatch unificado ✅
-- printReceiptWithDispatchHTML renombrado ✅
-
-### lib/money.ts
-- moneyFormat() exportado ✅
+- **Logo térmico:** PNG → bitmap monocromo raster (`ESC *` / `GS v 0`) — Post-Alpha
+- **QR térmico:** generación raster via `qrcode` + `image` — junto con BOLETA/FACTURA electrónica
+- **PrintConfig futuro:** `{ logoPath, logoEnabled, qrEnabled }` — dato QR derivado del comprobante
 
 ---
 
@@ -46,18 +28,17 @@
 * **ABASTECIMIENTO — CATÁLOGO:** ✅
 * **ABASTECIMIENTO — COMPRAS:** ✅
 * **ABASTECIMIENTO — INVENTARIOS:** ✅
-* **VENTAS:** 🔶 Modo visual/dense · categorías por rubro · pendiente recorrido UX completo
-* **COBRO:** 🔶 Impresión térmica resuelta · pendiente BOLETA/FACTURA/COTIZACIÓN
-* **COMPROBANTES:** 🔶 Vista sesión+historial · filtros · convertir a formal · pendiente normativa
+* **VENTAS:** 🔶 Pendiente recorrido UX completo
+* **COBRO:** 🔶 Impresión validada · pendiente BOLETA/FACTURA/COTIZACIÓN
+* **COMPROBANTES:** 🔶 Pendiente documentación normativa
 * **CLIENTES | REPORTES | OPERADORES | CONFIG:** ⬜
 
 ---
 
 ## Próxima Ventana de Trabajo
-1. Probar impresión en dev — verificar alineación con tildes y CP850
-2. Continuar revisión COBRO (BOLETA, FACTURA, COTIZACIÓN)
-3. Recorrido UX VENTAS completo
-4. SQLite — prerequisito Alpha
+1. Revisión COBRO — BOLETA, FACTURA, COTIZACIÓN
+2. Recorrido UX VENTAS
+3. SQLite — prerequisito Alpha
 
 ---
 
