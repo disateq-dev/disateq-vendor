@@ -22,7 +22,7 @@ import ClienteBuscador from "../sales/ClienteBuscador";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
-type CobroView   = "main" | "client";
+type CobroView   = "main" | "client" | "client-envio";
 type Affectation = "gravado-onerosa" | "exonerado-onerosa" | "inafecto-onerosa" | "gravado-retiro" | "inafecto-retiro";
 
 type CustomerData = {
@@ -36,6 +36,7 @@ type CustomerData = {
   address?:      string;
   phone?:        string;
   email?:        string;
+  whatsapp?:     string;
 };
 
 function Helper({ text }: { text: string }) {
@@ -375,6 +376,39 @@ export function CobroPanel() {
     return 'EFECTIVO' as const;
   }
 
+  function handleEnviar() {
+    if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
+    if (!canConfirm) return;
+    const tieneCanal = !!(customer?.email || customer?.whatsapp);
+    if (tieneCanal) {
+      despacharPorCanal();
+    } else {
+      setCobroView("client-envio");
+    }
+  }
+
+  function despacharPorCanal() {
+    const biz = loadBusinessConfig();
+    const resumen = [
+      `*${biz.nombreComercial}*`,
+      `Comprobante: ${docNumber}`,
+      `Total: S/ ${netTotal.toFixed(2)}`,
+      `Gracias por su preferencia.`,
+    ].join('\n');
+
+    if (customer?.whatsapp) {
+      const numero = customer.whatsapp.replace(/\D/g, '');
+      const url = `https://wa.me/51${numero}?text=${encodeURIComponent(resumen)}`;
+      window.open(url, '_blank');
+    } else if (customer?.email) {
+      const asunto = encodeURIComponent(`Comprobante ${docNumber} - ${biz.nombreComercial}`);
+      const cuerpo = encodeURIComponent(resumen);
+      window.open(`mailto:${customer.email}?subject=${asunto}&body=${cuerpo}`, '_blank');
+    }
+
+    confirmEmit();
+  }
+
   function confirmEmit() {
     if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
     if (!canConfirm) return;
@@ -618,7 +652,7 @@ export function CobroPanel() {
     return () => clearTimeout(t);
   }, [cobroOpen]);
 
-  // F1-F4 doc · F5-F8 pago · F10 guardar · F11 enviar · F12 imprimir · Ctrl+Enter cliente
+  // Ctrl+1-4 doc · E/Y/T/M pago · Ctrl+Insert guardar · Ctrl+Home enviar · Enter imprimir · Ctrl+Enter cliente
   useEffect(() => {
     if (!cobroOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -630,6 +664,8 @@ export function CobroPanel() {
         else if (e.key === "3") { e.preventDefault(); setDocType("factura"); }
         else if (e.key === "4") { e.preventDefault(); setDocType("cotizacion"); }
         else if (e.key.toLowerCase() === "d" && cobroView === "main") { e.preventDefault(); discountRef.current?.focus(); }
+        else if (e.key === "Insert") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
+        else if (e.key === "Home") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
         return;
       }
       if (!inInput && cobroView === "main") {
@@ -638,9 +674,6 @@ export function CobroPanel() {
         else if (e.key.toLowerCase() === "t") { e.preventDefault(); setPayMethod("tarjeta"); }
         else if (e.key.toLowerCase() === "m") { e.preventDefault(); setPayMethod("mixto"); }
       }
-      if      (e.key === "F10") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
-      else if (e.key === "F11") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
-      else if (e.key === "F12") { e.preventDefault(); if (cobroView === "main") imprimirRef.current(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -714,8 +747,8 @@ export function CobroPanel() {
       {cobroView === "main" ? (
         <>
           {/* TIPO DE COMPROBANTE + CORRELATIVO */}
-          <div className="shrink-0 flex items-center gap-2 border-b border-[#e8f0e9] px-4 py-2">
-            <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5 flex-1">
+          <div className="shrink-0 flex flex-col px-4 pt-2 pb-0">
+            <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5">
               {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt, i) => (
                 <button
                   key={dt}
@@ -735,29 +768,25 @@ export function CobroPanel() {
                 title="Nota de Crédito — disponible próximamente"
                 className="rounded-[5px] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c0cad4] cursor-not-allowed"
               >
-                N.Cré
+                N. Crédito
               </button>
               <button
                 disabled
                 title="Nota de Débito — disponible próximamente"
                 className="rounded-[5px] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#c0cad4] cursor-not-allowed"
               >
-                N.Déb
+                N. Débito
               </button>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex items-center gap-1.5 pt-1 pb-1">
               {isCtg && (
                 <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-extrabold tracking-widest text-amber-500">CTG</span>
               )}
               <span className="tabular-nums text-[11px] font-semibold text-[#374151]">{docNumber}</span>
+              <span className={`inline-block rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold tracking-wide ${CHIP_FISCAL[docType].color}`}>
+                {CHIP_FISCAL[docType].label}
+              </span>
             </div>
-          </div>
-
-          {/* CHIP FISCAL */}
-          <div className="shrink-0 px-4 pb-1 pt-0">
-            <span className={`inline-block rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold tracking-wide ${CHIP_FISCAL[docType].color}`}>
-              {CHIP_FISCAL[docType].label}
-            </span>
           </div>
 
           {/* CLIENTE strip */}
@@ -782,7 +811,7 @@ export function CobroPanel() {
                 {customerDisplay ?? rowLabel}
               </span>
               <span className="shrink-0 text-[10px] text-[#9ca3af]">
-                {customerDisplay ? "editar" : "agregar →"}
+                {customerDisplay ? "editar" : "agregar → [Ctrl + Enter]"}
               </span>
             </button>
           </div>
@@ -995,19 +1024,16 @@ export function CobroPanel() {
           </div>
         </>
 
-      ) : (
+      ) : cobroView === "client-envio" ? (
         <ClienteBuscador
           docType={docType}
+          modo="envio"
           onClienteSeleccionado={(cliente) => {
             setCustomer({
-              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC'
-                ? 'RUC'
-                : cliente.identificacionFiscal.tipoDocumento === 'DNI'
-                ? 'DNI'
-                : cliente.identificacionFiscal.tipoDocumento === 'CE'
-                ? 'CE'
-                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE'
-                ? 'PASAPORTE'
+              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
+                : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
+                : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
+                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
                 : 'SIN_DOCUMENTO',
               docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
               name:       cliente.nombre,
@@ -1018,6 +1044,27 @@ export function CobroPanel() {
               address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
               phone:      undefined,
               email:      cliente.canales.email ?? undefined,
+              whatsapp:   cliente.canales.whatsapp ?? undefined,
+            });
+            setCobroView("main");
+          }}
+          onClienteConCanal={(cliente, email, whatsapp) => {
+            setCustomer({
+              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
+                : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
+                : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
+                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
+                : 'SIN_DOCUMENTO',
+              docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
+              name:       cliente.nombre,
+              clienteId:  cliente.id,
+              department: undefined,
+              province:   undefined,
+              district:   undefined,
+              address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
+              phone:      undefined,
+              email:      email ?? undefined,
+              whatsapp:   whatsapp ?? undefined,
             });
             setCobroView("main");
           }}
@@ -1035,6 +1082,52 @@ export function CobroPanel() {
                     address:       undefined,
                     phone:         undefined,
                     email:         undefined,
+                    whatsapp:      undefined,
+                  }
+                : null
+            );
+            setCobroView("main");
+          }}
+          onCancelar={() => setCobroView("main")}
+        />
+      ) : (
+        <ClienteBuscador
+          docType={docType}
+          onClienteSeleccionado={(cliente) => {
+            setCustomer({
+              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
+                : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
+                : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
+                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
+                : 'SIN_DOCUMENTO',
+              docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
+              name:       cliente.nombre,
+              clienteId:  cliente.id,
+              department: undefined,
+              province:   undefined,
+              district:   undefined,
+              address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
+              phone:      undefined,
+              email:      cliente.canales.email ?? undefined,
+              whatsapp:   cliente.canales.whatsapp ?? undefined,
+            });
+            setCobroView("main");
+          }}
+          onClienteOcasional={(nombre, documento, tipoDoc) => {
+            setCustomer(
+              (nombre || documento)
+                ? {
+                    tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
+                    docNumber:     documento,
+                    name:          nombre || 'Clientes Varios',
+                    clienteId:     null,
+                    department:    undefined,
+                    province:      undefined,
+                    district:      undefined,
+                    address:       undefined,
+                    phone:         undefined,
+                    email:         undefined,
+                    whatsapp:      undefined,
                   }
                 : null
             );
@@ -1049,31 +1142,31 @@ export function CobroPanel() {
         <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
           <div className="flex gap-1.5 items-stretch">
             <button
-              title="Tecla [F10]"
+              title="Tecla [Ctrl + Insert]"
               onClick={confirmEmit}
               disabled={!canConfirm}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-[#e4e9f0] bg-[#f8fafd] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f1f5f9] hover:border-[#d0d5dd] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex w-[25%] items-center justify-center gap-1.5 rounded-2xl bg-[#F5A623] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(245,166,35,0.30)] transition hover:bg-[#e09610] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Save size={13} strokeWidth={2} />
               Guardar
             </button>
             <button
-              title="Tecla [F12]"
-              onClick={handleImprimir}
+              title="Tecla [Ctrl + Home]"
+              onClick={handleEnviar}
               disabled={!canConfirm}
-              className="flex flex-[1.5] items-center justify-center gap-2 rounded-2xl bg-[#56C264] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(86,194,100,0.32)] transition hover:bg-[#45b356] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
-            >
-              <Printer size={15} strokeWidth={2} />
-              Imprimir
-            </button>
-            <button
-              title="Tecla [F11]"
-              onClick={confirmEmit}
-              disabled={!canConfirm}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-[#005BE3] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(0,91,227,0.22)] transition hover:bg-[#0049c4] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+              className="flex w-[25%] items-center justify-center gap-1.5 rounded-2xl bg-[#4A90D9] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(74,144,217,0.30)] transition hover:bg-[#3a7fc8] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Send size={13} strokeWidth={2} />
               Enviar
+            </button>
+            <button
+              title="Tecla [Enter]"
+              onClick={handleImprimir}
+              disabled={!canConfirm}
+              className="flex w-[50%] items-center justify-center gap-2 rounded-2xl bg-[#4CAF50] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(76,175,80,0.30)] transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+            >
+              <Printer size={15} strokeWidth={2} />
+              Imprimir
             </button>
           </div>
         </div>
