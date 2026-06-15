@@ -33,6 +33,7 @@ interface EmitirComprobanteInput {
     tar: number
   }
   customer: {
+    tipoDocumento?: 'RUC' | 'DNI' | 'CE' | 'PASAPORTE' | 'SIN_DOCUMENTO'
     docNumber: string
     name: string
     clienteId?: string | null
@@ -72,16 +73,16 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
           consentimientoContacto: false,
         }
       : {
-          tipoDocumento: input.customer.docNumber?.length === 11
-            ? 'RUC'
-            : input.customer.docNumber?.length === 8
-            ? 'DNI'
-            : 'SIN_DOCUMENTO',
+          tipoDocumento: input.customer.tipoDocumento ?? (
+            input.customer.docNumber?.length === 11 ? 'RUC' :
+            input.customer.docNumber?.length === 8  ? 'DNI' :
+            'SIN_DOCUMENTO'
+          ),
           numeroDocumento: input.customer.docNumber || null,
           nombre: input.customer.name,
           direccion: null,
           esGenerico: false,
-          fuente: 'INGRESO_MANUAL',
+          fuente: input.customer.clienteId ? 'CLIENTE_REGISTRADO' : 'INGRESO_MANUAL',
           clienteId: input.customer.clienteId ?? null,
           validadoSunat: false,
           email: input.customer.email ?? null,

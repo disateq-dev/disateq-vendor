@@ -25,14 +25,16 @@ type CobroView   = "main" | "client";
 type Affectation = "gravado-onerosa" | "exonerado-onerosa" | "inafecto-onerosa" | "gravado-retiro" | "inafecto-retiro";
 
 type CustomerData = {
-  docNumber:  string;
-  name:       string;
-  department?: string;
-  province?:  string;
-  district?:  string;
-  address?:   string;
-  phone?:     string;
-  email?:     string;
+  tipoDocumento: 'RUC' | 'DNI' | 'CE' | 'PASAPORTE' | 'SIN_DOCUMENTO';
+  docNumber:     string;
+  name:          string;
+  clienteId?:    string | null;
+  department?:   string;
+  province?:     string;
+  district?:     string;
+  address?:      string;
+  phone?:        string;
+  email?:        string;
 };
 
 function Helper({ text }: { text: string }) {
@@ -67,7 +69,7 @@ const AFFECTATIONS: { id: Affectation; label: string }[] = [
 
 const QUICK_AMOUNTS      = [10, 20, 50, 100, 200];
 const BOLETA_THRESHOLD   = 700;
-const CLIENTES_VARIOS    = "00000000 - CLIENTES VARIOS";
+const CLIENTES_VARIOS    = "Clientes Varios";
 
 export function CobroPanel() {
   const lines = useLineasPreVenta();
@@ -175,14 +177,20 @@ export function CobroPanel() {
   const handleEstablecer = useCallback((persist = false) => {
     if (!canEstablecer) return;
     setCustomer({
-      docNumber:  cDoc.trim(),
-      name:       cName.trim(),
-      department: cDept.trim()     || undefined,
-      province:   cProvince.trim() || undefined,
-      district:   cDistrict.trim() || undefined,
-      address:    cAddress.trim()  || undefined,
-      phone:      cPhone.trim()    || undefined,
-      email:      cEmail.trim()    || undefined,
+      tipoDocumento: cDoc.trim().length === 11
+        ? "RUC"
+        : cDoc.trim().length === 8
+        ? "DNI"
+        : "SIN_DOCUMENTO",
+      docNumber:     cDoc.trim(),
+      name:          cName.trim(),
+      clienteId:     null,
+      department:    cDept.trim()     || undefined,
+      province:      cProvince.trim() || undefined,
+      district:      cDistrict.trim() || undefined,
+      address:       cAddress.trim()  || undefined,
+      phone:         cPhone.trim()    || undefined,
+      email:         cEmail.trim()    || undefined,
     });
     if (persist) showNotice("Cliente registrado");
     setCDoc(""); setCName(""); setCDept(""); setCProvince("");
@@ -200,12 +208,7 @@ export function CobroPanel() {
         : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
         ? "INAFECTO"
         : "GRAVADO";
-    const tipoDocumento =
-      customer?.docNumber?.length === 11
-        ? "RUC"
-        : customer?.docNumber?.length === 8
-        ? "DNI"
-        : "SIN_DOCUMENTO";
+    // tipoDocumento resuelto desde customer.tipoDocumento — inferencia por longitud eliminada
 
     return {
       id: crypto.randomUUID(),
@@ -241,13 +244,13 @@ export function CobroPanel() {
             consentimientoContacto: false,
           }
         : {
-            tipoDocumento,
+            tipoDocumento: customer.tipoDocumento,
             numeroDocumento: customer.docNumber || null,
             nombre: customer.name,
             direccion: customer.address ?? null,
             esGenerico: false,
-            fuente: "INGRESO_MANUAL" as const,
-            clienteId: null,
+            fuente: customer.clienteId ? "CLIENTE_REGISTRADO" as const : "INGRESO_MANUAL" as const,
+            clienteId: customer.clienteId ?? null,
             validadoSunat: false,
             email: customer.email ?? null,
             whatsapp: null,
@@ -347,11 +350,12 @@ export function CobroPanel() {
           : undefined,
         customer:    customer
           ? {
-              docNumber: customer.docNumber,
-              name: customer.name,
-              clienteId: null,
-              email: customer.email ?? null,
-              whatsapp: null,
+              tipoDocumento: customer.tipoDocumento,
+              docNumber:     customer.docNumber,
+              name:          customer.name,
+              clienteId:     customer.clienteId ?? null,
+              email:         customer.email ?? null,
+              whatsapp:      null,
               consentimientoContacto: false,
             }
           : null,
@@ -420,11 +424,12 @@ export function CobroPanel() {
           : undefined,
         customer:    customer
           ? {
-              docNumber: customer.docNumber,
-              name: customer.name,
-              clienteId: null,
-              email: customer.email ?? null,
-              whatsapp: null,
+              tipoDocumento: customer.tipoDocumento,
+              docNumber:     customer.docNumber,
+              name:          customer.name,
+              clienteId:     customer.clienteId ?? null,
+              email:         customer.email ?? null,
+              whatsapp:      null,
               consentimientoContacto: false,
             }
           : null,
@@ -899,29 +904,41 @@ export function CobroPanel() {
           docType={docType}
           onClienteSeleccionado={(cliente) => {
             setCustomer({
-              docNumber: cliente.identificacionFiscal.numeroDocumento ?? '',
-              name: cliente.nombre,
+              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC'
+                ? 'RUC'
+                : cliente.identificacionFiscal.tipoDocumento === 'DNI'
+                ? 'DNI'
+                : cliente.identificacionFiscal.tipoDocumento === 'CE'
+                ? 'CE'
+                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE'
+                ? 'PASAPORTE'
+                : 'SIN_DOCUMENTO',
+              docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
+              name:       cliente.nombre,
+              clienteId:  cliente.id,
               department: undefined,
-              province: undefined,
-              district: undefined,
-              address: cliente.identificacionFiscal.direccionFiscal ?? undefined,
-              phone: undefined,
-              email: cliente.canales.email ?? undefined,
+              province:   undefined,
+              district:   undefined,
+              address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
+              phone:      undefined,
+              email:      cliente.canales.email ?? undefined,
             });
             setCobroView("main");
           }}
-          onClienteOcasional={(nombre, documento) => {
+          onClienteOcasional={(nombre, documento, tipoDoc) => {
             setCustomer(
               (nombre || documento)
                 ? {
-                    docNumber: documento,
-                    name: nombre || 'Clientes Varios',
-                    department: undefined,
-                    province: undefined,
-                    district: undefined,
-                    address: undefined,
-                    phone: undefined,
-                    email: undefined,
+                    tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
+                    docNumber:     documento,
+                    name:          nombre || 'Clientes Varios',
+                    clienteId:     null,
+                    department:    undefined,
+                    province:      undefined,
+                    district:      undefined,
+                    address:       undefined,
+                    phone:         undefined,
+                    email:         undefined,
                   }
                 : null
             );

@@ -10,7 +10,7 @@ import type {
 
 interface ClienteBuscadorProps {
   onClienteSeleccionado: (cliente: Cliente) => void
-  onClienteOcasional: (nombre: string, documento: string) => void
+  onClienteOcasional: (nombre: string, documento: string, tipoDoc: 'RUC' | 'DNI' | 'CE' | 'PASAPORTE' | 'SIN_DOCUMENTO') => void
   docType: string
   onCancelar: () => void
 }
@@ -34,6 +34,7 @@ export default function ClienteBuscador(props: ClienteBuscadorProps) {
 
   const [ocasionalNombre, setOcasionalNombre] = useState('')
   const [ocasionalDoc, setOcasionalDoc] = useState('')
+  const [ocasionalTipoDoc, setOcasionalTipoDoc] = useState<'RUC' | 'DNI' | 'CE' | 'PASAPORTE' | 'SIN_DOCUMENTO'>('DNI')
 
   const [error, setError] = useState<string | null>(null)
 
@@ -184,11 +185,27 @@ export default function ClienteBuscador(props: ClienteBuscadorProps) {
           className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2.5 text-[14px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
         />
 
+        <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5 self-start">
+          {(['DNI', 'RUC', 'CE', 'PASAPORTE'] as const).map(tipo => (
+            <button
+              key={tipo}
+              onClick={() => setOcasionalTipoDoc(tipo)}
+              className={`rounded-[5px] px-3 py-1 text-[11px] font-bold uppercase transition ${
+                ocasionalTipoDoc === tipo
+                  ? 'bg-white text-[#2154d8] shadow-sm'
+                  : 'text-[#9ca3af] hover:text-[#374151]'
+              }`}
+            >
+              {tipo}
+            </button>
+          ))}
+        </div>
+
         <input
           type="text"
           value={ocasionalDoc}
           onChange={e => setOcasionalDoc(e.target.value)}
-          placeholder="Documento · opcional"
+          placeholder="Número de documento · opcional"
           className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2.5 text-[14px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
         />
 
@@ -202,7 +219,8 @@ export default function ClienteBuscador(props: ClienteBuscadorProps) {
           <button
             onClick={() => onClienteOcasional(
               ocasionalNombre.trim(),
-              ocasionalDoc.trim()
+              ocasionalDoc.trim(),
+              ocasionalDoc.trim() ? ocasionalTipoDoc : 'SIN_DOCUMENTO'
             )}
             className="flex-1 rounded-xl bg-[#2154d8] py-2 text-[12px] font-bold text-white transition hover:bg-[#1a42b0]"
           >
