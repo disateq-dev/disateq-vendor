@@ -17,7 +17,7 @@ import {
 } from "../../domains/documents/bridge-comprobante";
 import { validarComprobante } from "../../domains/documents/comprobante.validator";
 import { correlativoStore } from "../../domains/documents/correlativo.store";
-import type { Comprobante } from "../../domains/documents/comprobante.types";
+import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
 import ClienteBuscador from "../sales/ClienteBuscador";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
@@ -343,10 +343,29 @@ export function CobroPanel() {
     };
   }
 
-  function mapearTipoComprobante(docType: string) {
-    if (docType === 'FACTURA' || docType === "factura") return 'FACTURA' as const;
-    if (docType === 'BOLETA' || docType === "boleta") return 'BOLETA' as const;
-    return 'TIQUE_VENTA' as const;
+  function mapearTipoComprobante(dt: DocType): TipoComprobante {
+    switch (dt) {
+      case 'factura':    return 'FACTURA'
+      case 'boleta':     return 'BOLETA'
+      case 'cotizacion': return 'COTIZACION'
+      default:           return 'TIQUE_VENTA'
+    }
+  }
+
+  function resolverFormatoImpresion(dt: DocType): string {
+    switch (dt) {
+      case 'factura':    return 'FACTURA'
+      case 'boleta':     return 'BOLETA'
+      case 'cotizacion': return 'COTIZACION'
+      default:           return 'TIQUE'
+    }
+  }
+
+  const CHIP_FISCAL: Record<DocType, { label: string; color: string }> = {
+    nota:       { label: 'No es comprobante de pago',        color: 'bg-[#f1f5f9] text-[#64748b]' },
+    boleta:     { label: 'Consumidor final · IGV incluido',  color: 'bg-[#eff6ff] text-[#2154d8]' },
+    factura:    { label: 'Requiere RUC · Crédito fiscal',    color: 'bg-[#eef2ff] text-[#4338ca]' },
+    cotizacion: { label: 'Referencial · No descuenta stock', color: 'bg-amber-50 text-amber-700'  },
   }
 
   function mapearMetodoPago(payMethod: string) {
@@ -538,14 +557,14 @@ export function CobroPanel() {
     setDispatchCorrelative(prev => prev + 1);
     if (printFlow === "comprobante-despacho") {
       try {
-        await printTicketWithDispatch("TIQUE", receiptData, dispatchData);
+        await printTicketWithDispatch(resolverFormatoImpresion(docType), receiptData, dispatchData);
       } catch {
         printReceiptWithDispatchHTML(receiptData, dispatchData);
       }
     } else {
       // solo-comprobante + flujos no implementados aún → solo receipt
       try {
-        await printTicketThermal("TIQUE", receiptData);
+        await printTicketThermal(resolverFormatoImpresion(docType), receiptData);
       } catch {
         printTicket(receiptData);
       }
@@ -732,6 +751,13 @@ export function CobroPanel() {
               )}
               <span className="tabular-nums text-[11px] font-semibold text-[#374151]">{docNumber}</span>
             </div>
+          </div>
+
+          {/* CHIP FISCAL */}
+          <div className="shrink-0 px-4 pb-1 pt-0">
+            <span className={`inline-block rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold tracking-wide ${CHIP_FISCAL[docType].color}`}>
+              {CHIP_FISCAL[docType].label}
+            </span>
           </div>
 
           {/* CLIENTE strip */}

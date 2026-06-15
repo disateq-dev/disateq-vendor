@@ -64,7 +64,7 @@ function clasificarTipo(tipo: TipoComprobante): ClasificacionComprobante {
       return {
         esFormal: false,
         requiereEnvioSUNAT: false,
-        leyendaNoFormal: null,
+        leyendaNoFormal: 'ESTE DOCUMENTO ES UNA COTIZACIÓN Y NO CONSTITUYE UN COMPROBANTE DE PAGO',
       }
   }
 }
