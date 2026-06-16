@@ -562,11 +562,10 @@ function FormularioDNI({
             </div>
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
           </div>
-          <footer className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#f0f4f8] px-4 py-3">
+          <footer className="grid shrink-0 grid-cols-1 gap-2 border-t border-[#f0f4f8] px-4 py-3">
             <button type="button" onClick={onCancelar} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               CANCELAR
             </button>
-            {botonIngreso('py-3')}
           </footer>
         </>
       ) : (

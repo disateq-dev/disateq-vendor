@@ -57,7 +57,7 @@ const AFFECTATIONS: { id: Affectation; label: string }[] = [
 
 const QUICK_AMOUNTS      = [10, 20, 50, 100, 200];
 const BOLETA_THRESHOLD   = 700;
-const CLIENTES_VARIOS    = "Clientes Varios";
+const CLIENTES_VARIOS    = "99999999 - CLIENTES VARIOS";
 
 export function CobroPanel() {
   const lines = useLineasPreVenta();
