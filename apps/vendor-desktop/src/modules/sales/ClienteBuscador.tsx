@@ -130,28 +130,25 @@ function parsearHtmlSunat(
 
 function ChipFuente({ fuente }: { fuente: 'LOCAL' | 'RENIEC' | 'SUNAT' | 'MANUAL' }): ReactElement {
   const map = {
-    LOCAL:  'bg-emerald-50 text-emerald-700 border-emerald-200',
-    RENIEC: 'bg-blue-50 text-blue-700 border-blue-200',
-    SUNAT:  'bg-indigo-50 text-indigo-700 border-indigo-200',
-    MANUAL: 'bg-amber-50 text-amber-700 border-amber-200',
+    LOCAL:  { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'CONSULTA LOCAL' },
+    RENIEC: { cls: 'bg-blue-50 text-blue-700 border-blue-200', label: 'CONSULTA RENIEC' },
+    SUNAT:  { cls: 'bg-indigo-50 text-indigo-700 border-indigo-200', label: 'CONSULTA SUNAT' },
+    MANUAL: { cls: 'bg-amber-50 text-amber-700 border-amber-200', label: 'INGRESO MANUAL' },
   }
   return (
-    <span className={`inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${map[fuente]}`}>
-      {fuente}
+    <span className={`inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${map[fuente].cls}`}>
+      {map[fuente].label}
     </span>
   )
 }
 
-function HeaderComprobante({ fuente }: { fuente?: 'LOCAL' | 'RENIEC' | 'SUNAT' | 'MANUAL' }): ReactElement {
+function HeaderComprobante(): ReactElement {
   return (
-    <header className="shrink-0 flex h-[42px] items-center justify-between gap-2 border-b border-[#e4ecf7] bg-[#f4f7fb] px-4">
-      <div className="flex items-center gap-2">
-        <FileText size={13} strokeWidth={2} className="text-[#45b356]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416]">
-          DATOS COMPROBANTE
-        </span>
-      </div>
-      {fuente ? <ChipFuente fuente={fuente} /> : null}
+    <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#e4ecf7] bg-[#f4f7fb] px-4">
+      <FileText size={13} strokeWidth={2} className="text-[#45b356]" />
+      <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416]">
+        DATOS COMPROBANTE
+      </span>
     </header>
   )
 }
@@ -541,7 +538,7 @@ function FormularioDNI({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <HeaderComprobante fuente={fase === 'RESULTADO' ? fuente : undefined} />
+      <HeaderComprobante />
       {fase === 'INGRESO' ? (
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
@@ -578,6 +575,9 @@ function FormularioDNI({
             <div className="flex flex-col gap-1">
               <span className={labelCls}>N° DNI</span>
               <div className={inputDis}>{numDoc}</div>
+            </div>
+            <div>
+              <ChipFuente fuente={fuente} />
             </div>
 
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
@@ -789,7 +789,7 @@ function FormularioRUC({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <HeaderComprobante fuente={fase === 'RESULTADO' ? fuente : undefined} />
+      <HeaderComprobante />
       {fase === 'INGRESO' ? (
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
@@ -832,6 +832,9 @@ function FormularioRUC({
             <div className="flex flex-col gap-1">
               <span className={labelCls}>N° RUC</span>
               <div className={inputDis}>{numDoc}</div>
+            </div>
+            <div>
+              <ChipFuente fuente={fuente} />
             </div>
             {estadoRuc ? (
               <div className="flex flex-col gap-1">
@@ -958,7 +961,7 @@ function FormularioLibre({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <HeaderComprobante fuente="MANUAL" />
+      <HeaderComprobante />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-1">
           <span className={labelCls}>Tipo documento</span>
@@ -967,6 +970,9 @@ function FormularioLibre({
         <div className="flex flex-col gap-1">
           <span className={labelCls}>N° documento</span>
           <div className={inputDis}>{numDocInicial}</div>
+        </div>
+        <div>
+          <ChipFuente fuente="MANUAL" />
         </div>
         <div className="flex flex-col gap-1">
           <span className={labelCls}>Nombre completo</span>
