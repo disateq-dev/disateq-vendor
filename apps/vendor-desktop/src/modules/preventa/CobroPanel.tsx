@@ -353,15 +353,6 @@ export function CobroPanel() {
     }
   }
 
-  function resolverFormatoImpresion(dt: DocType): string {
-    switch (dt) {
-      case 'factura':    return 'FACTURA'
-      case 'boleta':     return 'BOLETA'
-      case 'cotizacion': return 'COTIZACION'
-      default:           return 'TIQUE'
-    }
-  }
-
   const CHIP_FISCAL: Record<DocType, { label: string; color: string }> = {
     nota:       { label: 'No es comprobante de pago',        color: 'bg-[#f1f5f9] text-[#64748b]' },
     boleta:     { label: 'Consumidor final · IGV incluido',  color: 'bg-[#eff6ff] text-[#2154d8]' },
@@ -591,14 +582,14 @@ export function CobroPanel() {
     setDispatchCorrelative(prev => prev + 1);
     if (printFlow === "comprobante-despacho") {
       try {
-        await printTicketWithDispatch(resolverFormatoImpresion(docType), receiptData, dispatchData);
+        await printTicketWithDispatch("TIQUE", receiptData, dispatchData);
       } catch {
         printReceiptWithDispatchHTML(receiptData, dispatchData);
       }
     } else {
       // solo-comprobante + flujos no implementados aún → solo receipt
       try {
-        await printTicketThermal(resolverFormatoImpresion(docType), receiptData);
+        await printTicketThermal("TIQUE", receiptData);
       } catch {
         printTicket(receiptData);
       }
@@ -736,12 +727,14 @@ export function CobroPanel() {
     <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#45b356]/20 bg-[#F2F7F3] px-4">
-        <Receipt size={13} strokeWidth={2} className="text-[#45b356]" />
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-          COBRO
-        </span>
-      </header>
+      {cobroView === "main" && (
+        <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#45b356]/20 bg-[#F2F7F3] px-4">
+          <Receipt size={13} strokeWidth={2} className="text-[#45b356]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
+            COBRO
+          </span>
+        </header>
+      )}
 
       {/* BODY */}
       {cobroView === "main" ? (
@@ -811,7 +804,7 @@ export function CobroPanel() {
                 {customerDisplay ?? rowLabel}
               </span>
               <span className="shrink-0 text-[10px] text-[#9ca3af]">
-                {customerDisplay ? "editar" : "agregar → [Ctrl + Enter]"}
+                {customerDisplay ? "editar" : "Agregar datos →"}
               </span>
             </button>
           </div>
@@ -1025,120 +1018,124 @@ export function CobroPanel() {
         </>
 
       ) : cobroView === "client-envio" ? (
-        <ClienteBuscador
-          docType={docType}
-          modo="envio"
-          onClienteSeleccionado={(cliente) => {
-            setCustomer({
-              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
-                : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
-                : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
-                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
-                : 'SIN_DOCUMENTO',
-              docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
-              name:       cliente.nombre,
-              clienteId:  cliente.id,
-              department: undefined,
-              province:   undefined,
-              district:   undefined,
-              address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
-              phone:      undefined,
-              email:      cliente.canales.email ?? undefined,
-              whatsapp:   cliente.canales.whatsapp ?? undefined,
-            });
-            setCobroView("main");
-          }}
-          onClienteConCanal={(cliente, email, whatsapp) => {
-            setCustomer({
-              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
-                : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
-                : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
-                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
-                : 'SIN_DOCUMENTO',
-              docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
-              name:       cliente.nombre,
-              clienteId:  cliente.id,
-              department: undefined,
-              province:   undefined,
-              district:   undefined,
-              address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
-              phone:      undefined,
-              email:      email ?? undefined,
-              whatsapp:   whatsapp ?? undefined,
-            });
-            setCobroView("main");
-          }}
-          onClienteOcasional={(nombre, documento, tipoDoc) => {
-            setCustomer(
-              (nombre || documento)
-                ? {
-                    tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
-                    docNumber:     documento,
-                    name:          nombre || 'Clientes Varios',
-                    clienteId:     null,
-                    department:    undefined,
-                    province:      undefined,
-                    district:      undefined,
-                    address:       undefined,
-                    phone:         undefined,
-                    email:         undefined,
-                    whatsapp:      undefined,
-                  }
-                : null
-            );
-            setCobroView("main");
-          }}
-          onCancelar={() => setCobroView("main")}
-        />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <ClienteBuscador
+            docType={docType}
+            modo="envio"
+            onClienteSeleccionado={(cliente) => {
+              setCustomer({
+                tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
+                  : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
+                  : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
+                  : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
+                  : 'SIN_DOCUMENTO',
+                docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
+                name:       cliente.nombre,
+                clienteId:  cliente.id,
+                department: undefined,
+                province:   undefined,
+                district:   undefined,
+                address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
+                phone:      undefined,
+                email:      cliente.canales.email ?? undefined,
+                whatsapp:   cliente.canales.whatsapp ?? undefined,
+              });
+              setCobroView("main");
+            }}
+            onClienteConCanal={(cliente, email, whatsapp) => {
+              setCustomer({
+                tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
+                  : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
+                  : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
+                  : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
+                  : 'SIN_DOCUMENTO',
+                docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
+                name:       cliente.nombre,
+                clienteId:  cliente.id,
+                department: undefined,
+                province:   undefined,
+                district:   undefined,
+                address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
+                phone:      undefined,
+                email:      email ?? undefined,
+                whatsapp:   whatsapp ?? undefined,
+              });
+              setCobroView("main");
+            }}
+            onClienteOcasional={(nombre, documento, tipoDoc) => {
+              setCustomer(
+                (nombre || documento)
+                  ? {
+                      tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
+                      docNumber:     documento,
+                      name:          nombre || 'Clientes Varios',
+                      clienteId:     null,
+                      department:    undefined,
+                      province:      undefined,
+                      district:      undefined,
+                      address:       undefined,
+                      phone:         undefined,
+                      email:         undefined,
+                      whatsapp:      undefined,
+                    }
+                  : null
+              );
+              setCobroView("main");
+            }}
+            onCancelar={() => setCobroView("main")}
+          />
+        </div>
       ) : (
-        <ClienteBuscador
-          docType={docType}
-          onClienteSeleccionado={(cliente) => {
-            setCustomer({
-              tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
-                : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
-                : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
-                : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
-                : 'SIN_DOCUMENTO',
-              docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
-              name:       cliente.nombre,
-              clienteId:  cliente.id,
-              department: undefined,
-              province:   undefined,
-              district:   undefined,
-              address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
-              phone:      undefined,
-              email:      cliente.canales.email ?? undefined,
-              whatsapp:   cliente.canales.whatsapp ?? undefined,
-            });
-            setCobroView("main");
-          }}
-          onClienteOcasional={(nombre, documento, tipoDoc) => {
-            setCustomer(
-              (nombre || documento)
-                ? {
-                    tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
-                    docNumber:     documento,
-                    name:          nombre || 'Clientes Varios',
-                    clienteId:     null,
-                    department:    undefined,
-                    province:      undefined,
-                    district:      undefined,
-                    address:       undefined,
-                    phone:         undefined,
-                    email:         undefined,
-                    whatsapp:      undefined,
-                  }
-                : null
-            );
-            setCobroView("main");
-          }}
-          onCancelar={() => setCobroView("main")}
-        />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <ClienteBuscador
+            docType={docType}
+            onClienteSeleccionado={(cliente) => {
+              setCustomer({
+                tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
+                  : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
+                  : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
+                  : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
+                  : 'SIN_DOCUMENTO',
+                docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
+                name:       cliente.nombre,
+                clienteId:  cliente.id,
+                department: undefined,
+                province:   undefined,
+                district:   undefined,
+                address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
+                phone:      undefined,
+                email:      cliente.canales.email ?? undefined,
+                whatsapp:   cliente.canales.whatsapp ?? undefined,
+              });
+              setCobroView("main");
+            }}
+            onClienteOcasional={(nombre, documento, tipoDoc) => {
+              setCustomer(
+                (nombre || documento)
+                  ? {
+                      tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
+                      docNumber:     documento,
+                      name:          nombre || 'Clientes Varios',
+                      clienteId:     null,
+                      department:    undefined,
+                      province:      undefined,
+                      district:      undefined,
+                      address:       undefined,
+                      phone:         undefined,
+                      email:         undefined,
+                      whatsapp:      undefined,
+                    }
+                  : null
+              );
+              setCobroView("main");
+            }}
+            onCancelar={() => setCobroView("main")}
+          />
+        </div>
       )}
 
       {/* FOOTER — condicional por sheet activa */}
-      {cobroView === "main" ? (
+      {cobroView === "main" && (
         <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
           <div className="flex gap-1.5 items-stretch">
             <button
@@ -1167,33 +1164,6 @@ export function CobroPanel() {
             >
               <Printer size={15} strokeWidth={2} />
               Imprimir
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
-          <div className="flex gap-1.5 items-stretch">
-            <button
-              title="Tecla [Escape]"
-              onClick={resetForm}
-              className="flex flex-1 items-center justify-center rounded-2xl border border-[#e4e9f0] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
-            >
-              Cancelar
-            </button>
-            <button
-              title="Tecla [Enter]"
-              onClick={() => handleEstablecer(false)}
-              disabled={!canEstablecer}
-              className="flex flex-[1.5] items-center justify-center rounded-2xl bg-[#56C264] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(86,194,100,0.28)] transition hover:bg-[#45b356] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
-            >
-              Confirmar
-            </button>
-            <button
-              onClick={() => handleEstablecer(true)}
-              disabled={!canEstablecer}
-              className="flex flex-1 items-center justify-center rounded-2xl border border-[#e4e9f0] bg-[#f8fafd] py-3.5 text-[12px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f1f5f9] hover:border-[#d0d5dd] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
-            >
-              Guardar
             </button>
           </div>
         </div>
