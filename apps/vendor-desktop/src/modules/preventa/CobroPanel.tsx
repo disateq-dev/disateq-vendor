@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Banknote, Smartphone, CreditCard,
   Printer, Send, Save, User, AlertCircle, Plus, Receipt,
@@ -18,26 +18,12 @@ import {
 import { validarComprobante } from "../../domains/documents/comprobante.validator";
 import { correlativoStore } from "../../domains/documents/correlativo.store";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
-import ClienteBuscador from "../sales/ClienteBuscador";
+import ClienteBuscador, { type ReceptorComprobante } from "../sales/ClienteBuscador";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
-type CobroView   = "main" | "client" | "client-envio";
+type CobroView   = "main" | "client";
 type Affectation = "gravado-onerosa" | "exonerado-onerosa" | "inafecto-onerosa" | "gravado-retiro" | "inafecto-retiro";
-
-type CustomerData = {
-  tipoDocumento: 'RUC' | 'DNI' | 'CE' | 'PASAPORTE' | 'SIN_DOCUMENTO';
-  docNumber:     string;
-  name:          string;
-  clienteId?:    string | null;
-  department?:   string;
-  province?:     string;
-  district?:     string;
-  address?:      string;
-  phone?:        string;
-  email?:        string;
-  whatsapp?:     string;
-};
 
 function Helper({ text }: { text: string }) {
   return (
@@ -93,17 +79,7 @@ export function CobroPanel() {
   const [dispatchCorrelative, setDispatchCorrelative] = useState(1);
 
   // ── committed customer ───────────────────────────────────────────────────────
-  const [customer, setCustomer] = useState<CustomerData | null>(null);
-
-  // ── client form fields ───────────────────────────────────────────────────────
-  const [cDoc,      setCDoc]      = useState("");
-  const [cName,     setCName]     = useState("");
-  const [cDept,     setCDept]     = useState("");
-  const [cProvince, setCProvince] = useState("");
-  const [cDistrict, setCDistrict] = useState("");
-  const [cAddress,  setCAddress]  = useState("");
-  const [cPhone,    setCPhone]    = useState("");
-  const [cEmail,    setCEmail]    = useState("");
+  const [customer, setCustomer] = useState<ReceptorComprobante | null>(null);
 
   const receivedRef    = useRef<HTMLInputElement>(null);
   const mixtoEfeRef    = useRef<HTMLInputElement>(null);
@@ -132,11 +108,12 @@ export function CobroPanel() {
   const mixtoValid  = moneyGt(mixtoTotal, 0) && moneyEq(mixtoTotal, netTotal);
   const change           = moneySub(receivedNum, netTotal);
   const paidEnough       = moneyGte(receivedNum, netTotal);
-  const needsCustomer    = docType === "factura" || (docType === "boleta" && moneyGt(netTotal, BOLETA_THRESHOLD));
+  const needsCustomer = docType === "factura" || (docType === "boleta" && moneyGt(netTotal, BOLETA_THRESHOLD));
+  const customerOk    = customer !== null && !customer.esGenerico;
   const canConfirm       = cashSession.isOpen && moneyGt(netTotal, 0)
     && (payMethod !== "efectivo" || paidEnough)
     && (payMethod !== "mixto"    || mixtoValid)
-    && (!needsCustomer || customer !== null);
+    && (!needsCustomer || customerOk);
   netTotalRef.current = netTotal;
 
   // ── advertencias reactivas del validador ─────────────────────────────────────
@@ -145,15 +122,15 @@ export function CobroPanel() {
       customer?.clienteId ? 'CLIENTE_REGISTRADO' : customer ? 'INGRESO_MANUAL' : 'SIN_RECEPTOR'
     const receptorParcial = {
       tipoDocumento: customer?.tipoDocumento ?? 'SIN_DOCUMENTO' as const,
-      numeroDocumento: customer?.docNumber ?? null,
-      nombre: customer?.name ?? 'Clientes Varios',
-      direccion: customer?.address ?? null,
-      esGenerico: customer === null,
+      numeroDocumento: customer?.numeroDocumento ?? null,
+      nombre: customer?.nombre ?? 'Clientes Varios',
+      direccion: customer?.direccion ?? null,
+      esGenerico: customer?.esGenerico ?? true,
       fuente: fuenteReceptor,
       clienteId: customer?.clienteId ?? null,
       validadoSunat: false,
       email: customer?.email ?? null,
-      whatsapp: null,
+      whatsapp: customer?.whatsapp ?? null,
       consentimientoContacto: false,
     }
     const tipoMapeado =
@@ -191,16 +168,12 @@ export function CobroPanel() {
     }
   })()
 
-  // client form derived
-  const canEstablecer      = cName.trim().length > 0 && (docType !== "factura" || cDoc.trim().length === 11);
-
   // ── customer display ─────────────────────────────────────────────────────────
   function getCustomerDisplay(): string | null {
-    if (!customer) return null;
-    if (docType === "factura")    return `${customer.docNumber} · ${customer.name}`;
-    if (docType === "boleta")     return customer.docNumber ? `${customer.docNumber} · ${customer.name}` : customer.name;
-    if (docType === "cotizacion") return customer.docNumber ? `${customer.docNumber} · ${customer.name}` : customer.name;
-    return customer.name;
+    if (!customer || customer.esGenerico) return null;
+    const num = customer.numeroDocumento;
+    const nom = customer.nombre;
+    return num ? `${num} · ${nom}` : nom;
   }
 
   function getRowLabel(): { text: string; warn: boolean } {
@@ -208,49 +181,6 @@ export function CobroPanel() {
     if (docType === "boleta" && moneyGt(netTotal, BOLETA_THRESHOLD)) return { text: "Datos requeridos", warn: true };
     return { text: CLIENTES_VARIOS, warn: false };
   }
-
-  // ── form actions ─────────────────────────────────────────────────────────────
-  function openClientForm() {
-    setCDoc(customer?.docNumber ?? "");
-    setCName(customer?.name ?? "");
-    setCDept(customer?.department ?? "");
-    setCProvince(customer?.province ?? "");
-    setCDistrict(customer?.district ?? "");
-    setCAddress(customer?.address ?? "");
-    setCPhone(customer?.phone ?? "");
-    setCEmail(customer?.email ?? "");
-    setCobroView("client");
-  }
-
-  function resetForm() {
-    setCDoc(""); setCName(""); setCDept(""); setCProvince("");
-    setCDistrict(""); setCAddress(""); setCPhone(""); setCEmail("");
-    setCobroView("main");
-  }
-
-  const handleEstablecer = useCallback((persist = false) => {
-    if (!canEstablecer) return;
-    setCustomer({
-      tipoDocumento: cDoc.trim().length === 11
-        ? "RUC"
-        : cDoc.trim().length === 8
-        ? "DNI"
-        : "SIN_DOCUMENTO",
-      docNumber:     cDoc.trim(),
-      name:          cName.trim(),
-      clienteId:     null,
-      department:    cDept.trim()     || undefined,
-      province:      cProvince.trim() || undefined,
-      district:      cDistrict.trim() || undefined,
-      address:       cAddress.trim()  || undefined,
-      phone:         cPhone.trim()    || undefined,
-      email:         cEmail.trim()    || undefined,
-    });
-    if (persist) showNotice("Cliente registrado");
-    setCDoc(""); setCName(""); setCDept(""); setCProvince("");
-    setCDistrict(""); setCAddress(""); setCPhone(""); setCEmail("");
-    setCobroView("main");
-  }, [canEstablecer, cDoc, cName, cDept, cProvince, cDistrict, cAddress, cPhone, cEmail, showNotice]);
 
   function buildComprobanteData(_: string): Comprobante {
     const tipo = mapearTipoComprobante(docType);
@@ -299,15 +229,15 @@ export function CobroPanel() {
           }
         : {
             tipoDocumento: customer.tipoDocumento,
-            numeroDocumento: customer.docNumber || null,
-            nombre: customer.name,
-            direccion: customer.address ?? null,
+            numeroDocumento: customer.numeroDocumento,
+            nombre: customer.nombre,
+            direccion: customer.direccion,
             esGenerico: false,
             fuente: customer.clienteId ? "CLIENTE_REGISTRADO" as const : "INGRESO_MANUAL" as const,
-            clienteId: customer.clienteId ?? null,
+            clienteId: customer.clienteId,
             validadoSunat: false,
-            email: customer.email ?? null,
-            whatsapp: null,
+            email: customer.email,
+            whatsapp: customer.whatsapp,
             consentimientoContacto: false,
           },
       lineas: lines.map(l => ({
@@ -370,11 +300,11 @@ export function CobroPanel() {
   function handleEnviar() {
     if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
     if (!canConfirm) return;
-    const tieneCanal = !!(customer?.email || customer?.whatsapp);
+    const tieneCanal = !customer?.esGenerico && !!(customer?.email || customer?.whatsapp);
     if (tieneCanal) {
       despacharPorCanal();
     } else {
-      setCobroView("client-envio");
+      setCobroView("client");
     }
   }
 
@@ -387,11 +317,11 @@ export function CobroPanel() {
       `Gracias por su preferencia.`,
     ].join('\n');
 
-    if (customer?.whatsapp) {
+    if (customer?.whatsapp && !customer.esGenerico) {
       const numero = customer.whatsapp.replace(/\D/g, '');
       const url = `https://wa.me/51${numero}?text=${encodeURIComponent(resumen)}`;
       window.open(url, '_blank');
-    } else if (customer?.email) {
+    } else if (customer?.email && !customer.esGenerico) {
       const asunto = encodeURIComponent(`Comprobante ${docNumber} - ${biz.nombreComercial}`);
       const cuerpo = encodeURIComponent(resumen);
       window.open(`mailto:${customer.email}?subject=${asunto}&body=${cuerpo}`, '_blank');
@@ -445,14 +375,14 @@ export function CobroPanel() {
         mixtoBreakdown: payMethod === 'mixto'
           ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
           : undefined,
-        customer:    customer
+        customer:    customer && !customer.esGenerico
           ? {
               tipoDocumento: customer.tipoDocumento,
-              docNumber:     customer.docNumber,
-              name:          customer.name,
-              clienteId:     customer.clienteId ?? null,
-              email:         customer.email ?? null,
-              whatsapp:      null,
+              docNumber:     customer.numeroDocumento ?? '',
+              name:          customer.nombre,
+              clienteId:     customer.clienteId,
+              email:         customer.email,
+              whatsapp:      customer.whatsapp,
               consentimientoContacto: false,
             }
           : null,
@@ -519,14 +449,14 @@ export function CobroPanel() {
         mixtoBreakdown: payMethod === 'mixto'
           ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
           : undefined,
-        customer:    customer
+        customer:    customer && !customer.esGenerico
           ? {
               tipoDocumento: customer.tipoDocumento,
-              docNumber:     customer.docNumber,
-              name:          customer.name,
-              clienteId:     customer.clienteId ?? null,
-              email:         customer.email ?? null,
-              whatsapp:      null,
+              docNumber:     customer.numeroDocumento ?? '',
+              name:          customer.nombre,
+              clienteId:     customer.clienteId,
+              email:         customer.email,
+              whatsapp:      customer.whatsapp,
               consentimientoContacto: false,
             }
           : null,
@@ -558,7 +488,13 @@ export function CobroPanel() {
         docSeries:      cfg.series,
         docCorrelative: nextCorrelative,
         dateTime,
-        customer,
+        customer: customer && !customer.esGenerico
+          ? {
+              tipoDocumento: customer.tipoDocumento,
+              docNumber: customer.numeroDocumento ?? '',
+              name: customer.nombre,
+            }
+          : null,
         lines: lines.map(l => ({
           description: l.descripcion,
           quantity:    l.cantidad,
@@ -622,13 +558,14 @@ export function CobroPanel() {
   }
 
   confirmRef.current    = confirmEmit;
-  openClientRef.current = openClientForm;
+  openClientRef.current = () => setCobroView("client");
   canConfirmRef.current = canConfirm;
   imprimirRef.current   = () => { void handleImprimir(); };
 
   // ── effects ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    setCustomer(null); setCDoc(""); setCName(""); setCobroView("main");
+    setCustomer(null);
+    setCobroView("main");
   }, [docType]);
 
   useEffect(() => {
@@ -636,7 +573,7 @@ export function CobroPanel() {
     activatedMethodsRef.current = new Set(["efectivo"]);
     setDocType("nota"); setPayMethod("efectivo"); setReceived(netTotalRef.current.toFixed(2)); setDiscount("");
     setMixtoEfe(""); setMixtoYap(""); setMixtoTar("");
-    setCustomer(null); setCDoc(""); setCName("");
+    setCustomer(null);
     setCobroView("main"); setAffectation("gravado-onerosa");
     setDispatchCorrelative(1);
     const t = setTimeout(() => receivedRef.current?.focus(), 80);
@@ -685,20 +622,6 @@ export function CobroPanel() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [cobroOpen, cobroView, closeCobro]);
-
-  // Client form: Esc → cancel · Enter (no input) → establecer
-  useEffect(() => {
-    if (!cobroOpen || cobroView !== "client") return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); resetForm(); return; }
-      if (e.key === "Enter") {
-        const tag = (document.activeElement as HTMLElement)?.tagName;
-        if (tag !== "INPUT" && tag !== "TEXTAREA") { e.preventDefault(); handleEstablecer(); }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [cobroOpen, cobroView, handleEstablecer]);
 
   // Autofocus + prefill por primera activación de método, y al volver de sheet cliente
   useEffect(() => {
@@ -786,7 +709,7 @@ export function CobroPanel() {
           <div className="shrink-0 px-4 pt-3 pb-1">
             <button
               title="Tecla [Ctrl + Enter]"
-              onClick={openClientForm}
+              onClick={() => setCobroView("client")}
               className={`flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left transition ${
                 rowWarn && !customerDisplay
                   ? "border border-amber-200 bg-amber-50/60 hover:bg-amber-50"
@@ -1017,116 +940,12 @@ export function CobroPanel() {
           </div>
         </>
 
-      ) : cobroView === "client-envio" ? (
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <ClienteBuscador
-            docType={docType}
-            modo="envio"
-            onClienteSeleccionado={(cliente) => {
-              setCustomer({
-                tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
-                  : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
-                  : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
-                  : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
-                  : 'SIN_DOCUMENTO',
-                docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
-                name:       cliente.nombre,
-                clienteId:  cliente.id,
-                department: undefined,
-                province:   undefined,
-                district:   undefined,
-                address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
-                phone:      undefined,
-                email:      cliente.canales.email ?? undefined,
-                whatsapp:   cliente.canales.whatsapp ?? undefined,
-              });
-              setCobroView("main");
-            }}
-            onClienteConCanal={(cliente, email, whatsapp) => {
-              setCustomer({
-                tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
-                  : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
-                  : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
-                  : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
-                  : 'SIN_DOCUMENTO',
-                docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
-                name:       cliente.nombre,
-                clienteId:  cliente.id,
-                department: undefined,
-                province:   undefined,
-                district:   undefined,
-                address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
-                phone:      undefined,
-                email:      email ?? undefined,
-                whatsapp:   whatsapp ?? undefined,
-              });
-              setCobroView("main");
-            }}
-            onClienteOcasional={(nombre, documento, tipoDoc) => {
-              setCustomer(
-                (nombre || documento)
-                  ? {
-                      tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
-                      docNumber:     documento,
-                      name:          nombre || 'Clientes Varios',
-                      clienteId:     null,
-                      department:    undefined,
-                      province:      undefined,
-                      district:      undefined,
-                      address:       undefined,
-                      phone:         undefined,
-                      email:         undefined,
-                      whatsapp:      undefined,
-                    }
-                  : null
-              );
-              setCobroView("main");
-            }}
-            onCancelar={() => setCobroView("main")}
-          />
-        </div>
       ) : (
         <div className="flex flex-1 flex-col overflow-hidden">
           <ClienteBuscador
             docType={docType}
-            onClienteSeleccionado={(cliente) => {
-              setCustomer({
-                tipoDocumento: cliente.identificacionFiscal.tipoDocumento === 'RUC' ? 'RUC'
-                  : cliente.identificacionFiscal.tipoDocumento === 'DNI' ? 'DNI'
-                  : cliente.identificacionFiscal.tipoDocumento === 'CE' ? 'CE'
-                  : cliente.identificacionFiscal.tipoDocumento === 'PASAPORTE' ? 'PASAPORTE'
-                  : 'SIN_DOCUMENTO',
-                docNumber:  cliente.identificacionFiscal.numeroDocumento ?? '',
-                name:       cliente.nombre,
-                clienteId:  cliente.id,
-                department: undefined,
-                province:   undefined,
-                district:   undefined,
-                address:    cliente.identificacionFiscal.direccionFiscal ?? undefined,
-                phone:      undefined,
-                email:      cliente.canales.email ?? undefined,
-                whatsapp:   cliente.canales.whatsapp ?? undefined,
-              });
-              setCobroView("main");
-            }}
-            onClienteOcasional={(nombre, documento, tipoDoc) => {
-              setCustomer(
-                (nombre || documento)
-                  ? {
-                      tipoDocumento: tipoDoc ?? 'SIN_DOCUMENTO',
-                      docNumber:     documento,
-                      name:          nombre || 'Clientes Varios',
-                      clienteId:     null,
-                      department:    undefined,
-                      province:      undefined,
-                      district:      undefined,
-                      address:       undefined,
-                      phone:         undefined,
-                      email:         undefined,
-                      whatsapp:      undefined,
-                    }
-                  : null
-              );
+            onReceptorConfirmado={(receptor) => {
+              setCustomer(receptor);
               setCobroView("main");
             }}
             onCancelar={() => setCobroView("main")}
