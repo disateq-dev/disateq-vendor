@@ -181,48 +181,26 @@ function VistaInicio({
   onCancelar,
   onContinuar,
 }: VistaInicioProps): ReactElement | null {
+  const [tipoDocElegido, setTipoDocElegido] = useState<TipoDocNavegacion | null>(null)
+  const [numDocIngresado, setNumDocIngresado] = useState('')
+
   useEffect(() => {
     if (docType === 'nota' || docType === 'cotizacion') {
       onContinuar('DNI', '')
     }
   }, [])
 
-  if (docType === 'boleta') {
-    return (
-      <VistaInicioBoleta
-        onReceptorConfirmado={onReceptorConfirmado}
-        onCancelar={onCancelar}
-        onContinuar={onContinuar}
-      />
-    )
-  }
+  if (docType !== 'boleta') return null
 
-  return null
-}
-
-function VistaInicioBoleta({
-  onReceptorConfirmado,
-  onCancelar,
-  onContinuar,
-}: Omit<VistaInicioProps, 'docType'>): ReactElement {
-  const [mostrandoSelector, setMostrandoSelector] = useState(false)
-  const [tipoDocElegido, setTipoDocElegido] = useState<TipoDocNavegacion | null>(null)
-  const [numDocIngresado, setNumDocIngresado] = useState('')
-
-  const tipoActivo: TipoDocNavegacion = tipoDocElegido ?? 'DNI'
+  const tipoActivo = tipoDocElegido
   const maxLength = tipoActivo === 'RUC' ? 11 : tipoActivo === 'DNI' ? 8 : 15
-  const puedeContinuar = numDocIngresado.trim().length >= 8
-
-  function volverInicio(): void {
-    setMostrandoSelector(false)
-    setTipoDocElegido(null)
-    setNumDocIngresado('')
-  }
+  const longitudRequerida = tipoActivo === 'RUC' ? 11 : tipoActivo === 'DNI' ? 8 : 6
+  const puedeContinuar = tipoActivo !== null && numDocIngresado.trim().length >= longitudRequerida
 
   function confirmarGenerico(): void {
     onReceptorConfirmado({
       tipoDocumento: 'SIN_DOCUMENTO',
-      numeroDocumento: null,
+      numeroDocumento: '99999999',
       nombre: 'CLIENTES VARIOS',
       direccion: null,
       esGenerico: true,
@@ -234,48 +212,44 @@ function VistaInicioBoleta({
   }
 
   function continuar(): void {
-    if (!puedeContinuar) return
+    if (!tipoActivo || !puedeContinuar) return
     onContinuar(tipoActivo, numDocIngresado.trim())
+  }
+
+  function cambiarNumero(value: string): void {
+    if (!tipoActivo) return
+    const limpio = tipoActivo === 'DNI' || tipoActivo === 'RUC'
+      ? normalizarDocumento(value, maxLength)
+      : value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, maxLength)
+    setNumDocIngresado(limpio)
   }
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
-        {!mostrandoSelector ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2">
-            <div className="w-full rounded-xl bg-[#f4f7fb] px-3.5 py-2.5 text-center">
-              <div className="text-[12px] font-bold uppercase tracking-wider text-[#374151]">
-                99999999 · CLIENTES VARIOS
-              </div>
-            </div>
-            <p className="text-center text-[10px] text-[#9ca3af]">
-              Este comprobante se emitirá a Clientes Varios
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-4 gap-1.5">
-              {(['DNI', 'CE', 'PASAPORTE', 'RUC'] as TipoDocNavegacion[]).map(tipo => (
-                <button
-                  key={tipo}
-                  type="button"
-                  onClick={() => {
-                    setTipoDocElegido(tipo)
-                    setNumDocIngresado('')
-                  }}
-                  className={`rounded-xl border px-2 py-2 text-[10px] font-bold uppercase transition ${
-                    tipoActivo === tipo
-                      ? 'border-[#2154d8] bg-[#f4f7ff] text-[#2154d8]'
-                      : 'border-[#e4e9f0] text-[#374151] hover:bg-[#f8fafd]'
-                  }`}
-                >
-                  {tipo === 'PASAPORTE' ? 'Pasaporte' : tipo}
-                </button>
-              ))}
-            </div>
+      <div className="flex flex-1 flex-col justify-center gap-4 overflow-y-auto px-4 py-4">
+        <div className="grid grid-cols-4 gap-1.5">
+          {(['DNI', 'CE', 'PASAPORTE', 'RUC'] as TipoDocNavegacion[]).map(tipo => (
+            <button
+              key={tipo}
+              type="button"
+              onClick={() => {
+                setTipoDocElegido(tipo)
+                setNumDocIngresado('')
+              }}
+              className={`rounded-xl border px-2 py-2 text-[10px] font-bold uppercase transition ${
+                tipoActivo === tipo
+                  ? 'border-[#2154d8] bg-[#f4f7ff] text-[#2154d8]'
+                  : 'border-[#e4e9f0] text-[#374151] hover:bg-[#f8fafd]'
+              }`}
+            >
+              {tipo === 'PASAPORTE' ? 'Pasaporte' : tipo}
+            </button>
+          ))}
+        </div>
 
-            <div className="flex flex-col gap-1">
+        {tipoActivo ? (
+          <div className="flex flex-col gap-1">
               <span className={labelCls}>
                 {tipoActivo === 'DNI' ? 'N° DNI — 8 dígitos'
                   : tipoActivo === 'RUC' ? 'N° RUC — 11 dígitos'
@@ -287,7 +261,7 @@ function VistaInicioBoleta({
                 inputMode="numeric"
                 maxLength={maxLength}
                 value={numDocIngresado}
-                onChange={event => setNumDocIngresado(normalizarDocumento(event.target.value, maxLength))}
+                onChange={event => cambiarNumero(event.target.value)}
                 onKeyDown={event => {
                   if (event.key === 'Enter') continuar()
                 }}
@@ -298,46 +272,25 @@ function VistaInicioBoleta({
                 className={inputBase}
               />
             </div>
-          </div>
-        )}
+        ) : null}
       </div>
-      <footer className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#f0f4f8] px-4 py-3">
-        {!mostrandoSelector ? (
-          <>
-            <button
-              type="button"
-              onClick={confirmarGenerico}
-              className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
-            >
-              CANCELAR
-            </button>
-            <button
-              type="button"
-              onClick={() => setMostrandoSelector(true)}
-              className="rounded-xl bg-[#2154d8] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#1a42b0] active:scale-[0.97]"
-            >
-              + AGREGAR DATOS
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={volverInicio}
-              className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
-            >
-              VOLVER
-            </button>
-            <button
-              type="button"
-              onClick={continuar}
-              disabled={!puedeContinuar}
-              className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
-            >
-              CONTINUAR →
-            </button>
-          </>
-        )}
+      <footer className={`grid shrink-0 gap-2 border-t border-[#f0f4f8] px-4 py-3 ${puedeContinuar ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <button
+          type="button"
+          onClick={confirmarGenerico}
+          className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
+        >
+          CANCELAR
+        </button>
+        {puedeContinuar ? (
+          <button
+            type="button"
+            onClick={continuar}
+            className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97]"
+          >
+            CONTINUAR →
+          </button>
+        ) : null}
       </footer>
     </div>
   )
