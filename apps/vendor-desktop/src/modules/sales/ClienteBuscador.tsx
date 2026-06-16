@@ -603,7 +603,7 @@ function FormularioDNI({
               <div className="mt-1 text-[13px] font-bold text-[#111827]">{nombreComprobante}</div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-[65%_1fr] gap-2">
               <div className="flex min-w-0 flex-col gap-1">
                 <span className={labelCls}>CORREO-E</span>
                 <input
@@ -634,7 +634,7 @@ function FormularioDNI({
               {fuente === 'RENIEC' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
             <button type="button" onClick={confirmar} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
-              REGISTRAR Y USAR →
+              {fuente === 'LOCAL' ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
         </>
@@ -871,7 +871,7 @@ function FormularioRUC({
                 <div className={inputDis}>{direccionFiscal || '—'}</div>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-[65%_1fr] gap-2">
               <div className="flex min-w-0 flex-col gap-1">
                 <span className={labelCls}>CORREO-E</span>
                 <input
@@ -902,7 +902,7 @@ function FormularioRUC({
               {fuente === 'SUNAT' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
             <button type="button" onClick={confirmarRUC} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
-              REGISTRAR Y USAR →
+              {fuente === 'LOCAL' ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
         </>
@@ -977,7 +977,7 @@ function FormularioLibre({
           <span className={labelCls}>Nombre completo</span>
           <input autoFocus className={inputBase} value={nombre} onChange={event => setNombre(event.target.value)} />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-[65%_1fr] gap-2">
           <div className="flex min-w-0 flex-col gap-1">
             <span className={labelCls}>CORREO-E</span>
             <input
