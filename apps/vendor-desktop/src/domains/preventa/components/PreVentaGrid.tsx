@@ -55,6 +55,28 @@ export function PreVentaGrid() {
     limpiarNotaPendiente();
   }, [lineaNotaPendienteId, lines, limpiarNotaPendiente]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (lines.length === 0) return;
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      const inInput = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+      if (inInput || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        openCobro();
+        return;
+      }
+
+      if (e.key === "Delete") {
+        e.preventDefault();
+        preVentaService.limpiar();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lines.length, openCobro]);
+
   const saveNote = useCallback(() => {
     if (!editingNoteId) return;
     preVentaService.guardarNotaLinea(editingNoteId, noteInput.trim());
@@ -228,6 +250,7 @@ export function PreVentaGrid() {
 
         {/* LIMPIAR ~30% */}
         <button
+          title="Tecla [Supr]"
           onClick={() => preVentaService.limpiar()}
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider transition ${
@@ -249,7 +272,7 @@ export function PreVentaGrid() {
 
         {/* COBRAR ~30% */}
         <button
-          title="Tecla [F9]"
+          title="Tecla [Enter]"
           onClick={openCobro}
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider text-white transition ${

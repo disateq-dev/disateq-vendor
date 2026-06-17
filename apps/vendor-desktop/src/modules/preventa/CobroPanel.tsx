@@ -91,6 +91,7 @@ export function CobroPanel() {
   const mixtoTarRef    = useRef<HTMLInputElement>(null);
   const discountRef         = useRef<HTMLInputElement>(null);
   const confirmRef          = useRef<() => void>(() => {});
+  const enviarRef           = useRef<() => void>(() => {});
   const openClientRef       = useRef<() => void>(() => {});
   const canConfirmRef       = useRef(false);
   const imprimirRef         = useRef<() => void>(() => {});
@@ -565,6 +566,7 @@ export function CobroPanel() {
   }
 
   confirmRef.current    = confirmEmit;
+  enviarRef.current     = handleEnviar;
   openClientRef.current = () => setCobroView("client");
   canConfirmRef.current = canConfirm;
   imprimirRef.current   = () => { void handleImprimir(); };
@@ -592,13 +594,6 @@ export function CobroPanel() {
   useEffect(() => {
     if (!cobroOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (payMethod === "efectivo" && cobroView === "main") {
-        if      (e.code === "Numpad1") { e.preventDefault(); setReceived("10"); }
-        else if (e.code === "Numpad2") { e.preventDefault(); setReceived("20"); }
-        else if (e.code === "Numpad3") { e.preventDefault(); setReceived("50"); }
-        else if (e.code === "Numpad4") { e.preventDefault(); setReceived("100"); }
-        else if (e.code === "Numpad5") { e.preventDefault(); setReceived("200"); }
-      }
       if (e.ctrlKey) {
         if      (e.key === "1") { e.preventDefault(); setDocType("nota"); }
         else if (e.key === "2") { e.preventDefault(); setDocType("boleta"); }
@@ -610,7 +605,7 @@ export function CobroPanel() {
         else if (e.key.toLowerCase() === "m" && cobroView === "main") { e.preventDefault(); setPayMethod("mixto"); }
         else if (e.key.toLowerCase() === "d" && cobroView === "main") { e.preventDefault(); discountRef.current?.focus(); }
         else if (e.key === "Insert") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
-        else if (e.key === "Home") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
+        else if (e.key === "Home") { e.preventDefault(); if (cobroView === "main") enviarRef.current(); }
         return;
       }
     };
@@ -860,7 +855,6 @@ export function CobroPanel() {
                   {QUICK_AMOUNTS.map(amt => (
                     <button
                       key={amt}
-                      title={`Tecla [NumPad ${QUICK_AMOUNTS.indexOf(amt) + 1}]`}
                       onClick={() => setReceived(String(amt))}
                       className="flex-1 rounded-xl border border-[#e4e9f0] py-1.5 text-[11px] font-bold text-[#374151] transition hover:border-[#c7d7f4] hover:bg-[#f0f5ff] hover:text-[#2154d8]"
                     >
@@ -1023,7 +1017,7 @@ export function CobroPanel() {
               Guardar
             </button>
             <button
-              title="Tecla [Ctrl + Home]"
+              title="Tecla [Ctrl + Inicio]"
               onClick={handleEnviar}
               disabled={!canConfirm}
               className="flex w-[25%] items-center justify-center gap-1.5 rounded-2xl bg-[#4A90D9] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(74,144,217,0.30)] transition hover:bg-[#3a7fc8] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
