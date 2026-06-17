@@ -73,6 +73,8 @@ export function CobroPanel() {
   const [discount,      setDiscount]      = useState("");
   const [cobroView,     setCobroView]     = useState<CobroView>("main");
   const [affectation,   setAffectation]   = useState<Affectation>("gravado-onerosa");
+  const [yapeRef, setYapeRef] = useState("");
+  const [tarjetaRef, setTarjetaRef] = useState("");
   const [mixtoEfe, setMixtoEfe] = useState("");
   const [mixtoYap, setMixtoYap] = useState("");
   const [mixtoTar, setMixtoTar] = useState("");
@@ -82,6 +84,8 @@ export function CobroPanel() {
   const [customer, setCustomer] = useState<ReceptorComprobante | null>(null);
 
   const receivedRef    = useRef<HTMLInputElement>(null);
+  const yapeRefInputRef = useRef<HTMLInputElement>(null);
+  const tarjetaRefInputRef = useRef<HTMLInputElement>(null);
   const mixtoEfeRef    = useRef<HTMLInputElement>(null);
   const mixtoYapRef    = useRef<HTMLInputElement>(null);
   const mixtoTarRef    = useRef<HTMLInputElement>(null);
@@ -575,6 +579,7 @@ export function CobroPanel() {
     if (!cobroOpen) return;
     activatedMethodsRef.current = new Set(["efectivo"]);
     setDocType("nota"); setPayMethod("efectivo"); setReceived(netTotalRef.current.toFixed(2)); setDiscount("");
+    setYapeRef(""); setTarjetaRef("");
     setMixtoEfe(""); setMixtoYap(""); setMixtoTar("");
     setCustomer(null);
     setCobroView("main"); setAffectation("gravado-onerosa");
@@ -587,28 +592,31 @@ export function CobroPanel() {
   useEffect(() => {
     if (!cobroOpen) return;
     const handler = (e: KeyboardEvent) => {
-      const tag = (document.activeElement as HTMLElement)?.tagName;
-      const inInput = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+      if (payMethod === "efectivo" && cobroView === "main") {
+        if      (e.code === "Numpad1") { e.preventDefault(); setReceived("10"); }
+        else if (e.code === "Numpad2") { e.preventDefault(); setReceived("20"); }
+        else if (e.code === "Numpad3") { e.preventDefault(); setReceived("50"); }
+        else if (e.code === "Numpad4") { e.preventDefault(); setReceived("100"); }
+        else if (e.code === "Numpad5") { e.preventDefault(); setReceived("200"); }
+      }
       if (e.ctrlKey) {
         if      (e.key === "1") { e.preventDefault(); setDocType("nota"); }
         else if (e.key === "2") { e.preventDefault(); setDocType("boleta"); }
         else if (e.key === "3") { e.preventDefault(); setDocType("factura"); }
         else if (e.key === "4") { e.preventDefault(); setDocType("cotizacion"); }
+        else if (e.key.toLowerCase() === "e" && cobroView === "main") { e.preventDefault(); setPayMethod("efectivo"); }
+        else if (e.key.toLowerCase() === "y" && cobroView === "main") { e.preventDefault(); setPayMethod("yape"); }
+        else if (e.key.toLowerCase() === "t" && cobroView === "main") { e.preventDefault(); setPayMethod("tarjeta"); }
+        else if (e.key.toLowerCase() === "m" && cobroView === "main") { e.preventDefault(); setPayMethod("mixto"); }
         else if (e.key.toLowerCase() === "d" && cobroView === "main") { e.preventDefault(); discountRef.current?.focus(); }
         else if (e.key === "Insert") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
         else if (e.key === "Home") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
         return;
       }
-      if (!inInput && cobroView === "main") {
-        if      (e.key.toLowerCase() === "e") { e.preventDefault(); setPayMethod("efectivo"); }
-        else if (e.key.toLowerCase() === "y") { e.preventDefault(); setPayMethod("yape"); }
-        else if (e.key.toLowerCase() === "t") { e.preventDefault(); setPayMethod("tarjeta"); }
-        else if (e.key.toLowerCase() === "m") { e.preventDefault(); setPayMethod("mixto"); }
-      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [cobroOpen, cobroView]);
+  }, [cobroOpen, cobroView, payMethod]);
 
   // Main view: Esc → close · Ctrl+Enter → cliente · Enter → imprimir si canConfirm
   useEffect(() => {
@@ -634,6 +642,14 @@ export function CobroPanel() {
     if (payMethod === "efectivo") {
       if (isFirst) setReceived(netTotalRef.current.toFixed(2));
       const t = setTimeout(() => receivedRef.current?.focus(), 20);
+      return () => clearTimeout(t);
+    }
+    if (payMethod === "yape") {
+      const t = setTimeout(() => yapeRefInputRef.current?.focus(), 20);
+      return () => clearTimeout(t);
+    }
+    if (payMethod === "tarjeta") {
+      const t = setTimeout(() => tarjetaRefInputRef.current?.focus(), 20);
       return () => clearTimeout(t);
     }
     if (payMethod === "mixto") {
@@ -823,7 +839,7 @@ export function CobroPanel() {
               ] as { id: PayMethod; label: string; Icon: React.ElementType; fkey: string }[]).map(({ id, label, Icon, fkey }) => (
                 <button
                   key={id}
-                  title={`Tecla [${fkey}]`}
+                  title={`Tecla [Ctrl + ${fkey}]`}
                   onClick={() => setPayMethod(id)}
                   className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[11px] font-semibold transition ${
                     payMethod === id
@@ -844,6 +860,7 @@ export function CobroPanel() {
                   {QUICK_AMOUNTS.map(amt => (
                     <button
                       key={amt}
+                      title={`Tecla [NumPad ${QUICK_AMOUNTS.indexOf(amt) + 1}]`}
                       onClick={() => setReceived(String(amt))}
                       className="flex-1 rounded-xl border border-[#e4e9f0] py-1.5 text-[11px] font-bold text-[#374151] transition hover:border-[#c7d7f4] hover:bg-[#f0f5ff] hover:text-[#2154d8]"
                     >
@@ -884,6 +901,42 @@ export function CobroPanel() {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* YAPE */}
+            {payMethod === "yape" && (
+              <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2">
+                  <Smartphone size={14} strokeWidth={2} className="text-emerald-700" />
+                  <span className="text-[10px] font-bold text-emerald-700">Yape</span>
+                  <span className="text-[15px] font-bold tabular-nums text-emerald-700">S/ {netTotal.toFixed(2)}</span>
+                </div>
+                <input
+                  ref={yapeRefInputRef}
+                  value={yapeRef}
+                  onChange={e => setYapeRef(e.target.value)}
+                  placeholder="N° operación Yape (opcional)"
+                  className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[13px] text-[#374151] outline-none focus:border-[#2154d8]"
+                />
+              </div>
+            )}
+
+            {/* TARJETA */}
+            {payMethod === "tarjeta" && (
+              <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2 rounded-xl bg-blue-50 px-3 py-2">
+                  <CreditCard size={14} strokeWidth={2} className="text-blue-600" />
+                  <span className="text-[10px] font-bold text-blue-700">Tarjeta</span>
+                  <span className="text-[15px] font-bold tabular-nums text-blue-700">S/ {netTotal.toFixed(2)}</span>
+                </div>
+                <input
+                  ref={tarjetaRefInputRef}
+                  value={tarjetaRef}
+                  onChange={e => setTarjetaRef(e.target.value)}
+                  placeholder="N° operación Tarjeta (opcional)"
+                  className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[13px] text-[#374151] outline-none focus:border-[#2154d8]"
+                />
               </div>
             )}
 
