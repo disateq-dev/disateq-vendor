@@ -189,12 +189,12 @@ export function SalesWorkspace() {
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Zone transition — focus when returning from cobro or ticket zone
+  // Cobro close — restore scanner/search focus
   useEffect(() => {
-    if (cobroOpen || zone !== "search") return;
+    if (cobroOpen) return;
     const t = setTimeout(() => inputRef.current?.focus(), 80);
     return () => clearTimeout(t);
-  }, [zone, cobroOpen]);
+  }, [cobroOpen]);
 
   // Auto-select first result when search changes
   useEffect(() => {
