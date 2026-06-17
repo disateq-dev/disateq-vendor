@@ -36,6 +36,7 @@ interface EmitirComprobanteInput {
     tipoDocumento?: 'RUC' | 'DNI' | 'CE' | 'PASAPORTE' | 'SIN_DOCUMENTO'
     docNumber: string
     name: string
+    address?: string | null
     clienteId?: string | null
     email?: string | null
     whatsapp?: string | null
@@ -80,7 +81,7 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
           ),
           numeroDocumento: input.customer.docNumber || null,
           nombre: input.customer.name,
-          direccion: null,
+          direccion: input.customer.address ?? null,
           esGenerico: false,
           fuente: input.customer.clienteId ? 'CLIENTE_REGISTRADO' : 'INGRESO_MANUAL',
           clienteId: input.customer.clienteId ?? null,
@@ -163,9 +164,9 @@ export function construirReceiptData(
     dateTime,
     customer: comprobante.receptor.esGenerico
       ? {
-          tipoDocumento: undefined,
-          docNumber: '',
-          name: 'Clientes Varios',
+          tipoDocumento: 'Sin',
+          docNumber: '99999999',
+          name: 'CLIENTES VARIOS',
         }
       : {
           tipoDocumento: comprobante.receptor.tipoDocumento !== 'SIN_DOCUMENTO'
@@ -174,6 +175,7 @@ export function construirReceiptData(
           docNumber: comprobante.receptor.numeroDocumento ?? '',
           name: comprobante.receptor.nombre,
         },
+    customerAddress: comprobante.receptor.direccion ?? null,
     lines: comprobante.lineas.map(l => ({
       description: l.descripcion,
       quantity: l.cantidad,

@@ -96,7 +96,7 @@ function printSignedMoney(sign: "+" | "−", n: number): string {
 function customerPrintLine(customer: PrintData["customer"]): string {
   const docNumber = customer?.docNumber || "99999999";
   const name = (customer?.name || "CLIENTES VARIOS").toUpperCase();
-  return `Cliente: ${docNumber} · ${name}`;
+  return `${docNumber} · ${name}`;
 }
 
 const PRINT_MONEY_CSS = `
@@ -126,8 +126,8 @@ function buildHTML(d: PrintData): string {
 
   const customerAddress = (d.customerAddress?.trim() || "S/D").toUpperCase();
   const customerHTML = `<div class="pt-dash"></div>
-     <div class="pt-line">${esc(customerPrintLine(d.customer))}</div>
-     <div class="pt-line">${esc(customerAddress)}</div>`;
+     <div class="pt-receptor">CLI.: ${esc(customerPrintLine(d.customer))}</div>
+     <div class="pt-receptor">DIR.: ${esc(customerAddress)}</div>`;
 
   const discountHTML = moneyGt(d.discountNum, 0)
     ? `<div class="pt-sm"><span>Subtotal bruto</span><span>${printMoney(d.total)}</span></div>
@@ -155,7 +155,7 @@ function buildHTML(d: PrintData): string {
 }
 #pt-overlay {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 11px;
+  font-size: 10.5px;
   color: #000;
   line-height: 1.5;
   background: #fff;
@@ -164,6 +164,7 @@ function buildHTML(d: PrintData): string {
 #pt-overlay .pt-center  { text-align: center; }
 #pt-overlay .pt-biz     { font-size: 13px; font-weight: bold; letter-spacing: .5px; }
 #pt-overlay .pt-meta    { font-size: 10px; color: #444; }
+#pt-overlay .pt-receptor { padding-left: 6ch; text-indent: -6ch; font-size: 12px; line-height: 1.35; color: #000; white-space: normal; word-break: normal; overflow-wrap: normal; }
 #pt-overlay .pt-doc     { font-size: 12px; font-weight: bold; text-align: center; margin: 3px 0 1px; }
 #pt-overlay .pt-solid   { border-top: 1px solid #000; margin: 5px 0; }
 #pt-overlay .pt-dash    { border-top: 1px dashed #555; margin: 4px 0; }

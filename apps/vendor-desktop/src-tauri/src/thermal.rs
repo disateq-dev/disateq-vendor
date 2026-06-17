@@ -27,6 +27,7 @@ pub struct PrintLine {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PrintCustomer {
+    pub tipo_documento: Option<String>,
     pub doc_number: String,
     pub name:       String,
 }
@@ -51,6 +52,7 @@ pub struct TicketPrintData {
     pub doc_correlative:  u32,
     pub date_time:        String,
     pub customer:         Option<PrintCustomer>,
+    pub customer_address: Option<String>,
     pub lines:            Vec<PrintLine>,
     pub base_imponible:   f64,
     pub igv:              f64,
@@ -109,6 +111,53 @@ fn normalize(s: &str) -> String {
         '\u{00BF}' | '\u{00A1}' => ' ',
         _ => c,
     }).collect()
+}
+
+fn customer_print_line(c: &PrintCustomer) -> String {
+    let doc_number = if c.doc_number.is_empty() { "99999999" } else { &c.doc_number };
+    let name = if c.name.is_empty() { "CLIENTES VARIOS".to_string() } else { c.name.to_uppercase() };
+    format!("{} · {}", doc_number, name)
+}
+
+fn line_prefixed_wrapped(b: &mut Buf, prefix: &str, value: &str) {
+    let normalized_prefix = normalize(prefix);
+    let normalized_value = normalize(value);
+    let prefix_len = normalized_prefix.chars().count();
+    let width = COLS.saturating_sub(prefix_len).max(1);
+    let mut lines: Vec<String> = Vec::new();
+    let mut current = String::new();
+
+    for word in normalized_value.split_whitespace() {
+        let word_len = word.chars().count();
+        if current.is_empty() {
+            current.push_str(word);
+            continue;
+        }
+
+        let next_len = current.chars().count() + 1 + word_len;
+        if next_len <= width {
+            current.push(' ');
+            current.push_str(word);
+        } else {
+            lines.push(current);
+            current = word.to_string();
+        }
+    }
+
+    if !current.is_empty() {
+        lines.push(current);
+    }
+
+    if lines.is_empty() {
+        b.line(&normalized_prefix);
+        return;
+    }
+
+    b.line(&format!("{normalized_prefix}{}", lines[0]));
+    let indent = " ".repeat(prefix_len);
+    for line in lines.iter().skip(1) {
+        b.line(&format!("{indent}{line}"));
+    }
 }
 
 fn money(n: f64) -> String {
@@ -308,10 +357,14 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     // Customer
     if let Some(ref c) = d.customer {
         b.dashes();
-        b.two_col("Cliente:", &c.name);
-        if !c.doc_number.is_empty() {
-            b.two_col("Doc.:", &c.doc_number);
-        }
+        line_prefixed_wrapped(&mut b, "CLI.: ", &customer_print_line(c));
+        let customer_address = d.customer_address
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(|value| value.to_uppercase())
+            .unwrap_or_else(|| "S/D".to_string());
+        line_prefixed_wrapped(&mut b, "DIR.: ", &customer_address);
     }
 
     b.dashes();

@@ -559,6 +559,7 @@ function FormularioDNI({
   const [numDoc, setNumDoc] = useState(numDocInicial)
   const [apellidos, setApellidos] = useState('')
   const [nombres, setNombres] = useState('')
+  const [direccion, setDireccion] = useState('')
   const [email, setEmail] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [fuente, setFuente] = useState<FuenteDNI>('MANUAL')
@@ -595,6 +596,7 @@ function FormularioDNI({
   function limpiarDatosDNI(): void {
     setApellidos('')
     setNombres('')
+    setDireccion('')
     setEmail('')
     setWhatsapp('')
     setFuente('MANUAL')
@@ -606,6 +608,7 @@ function FormularioDNI({
     const nombre = separarNombreCliente(cliente.nombre)
     setApellidos(nombre.apellidos)
     setNombres(nombre.nombres)
+    setDireccion(cliente.identificacionFiscal.direccionFiscal ?? '')
     setEmail(cliente.canales.email ?? '')
     setWhatsapp(cliente.canales.whatsapp ?? '')
     setFuente('LOCAL')
@@ -710,7 +713,7 @@ function FormularioDNI({
       tipoDocumento: 'DNI',
       numeroDocumento: numDoc.trim(),
       nombre: nombreCompleto,
-      direccion: null,
+      direccion: direccion.trim() || null,
       esGenerico: false,
       clienteId: cliente.id,
       email: email.trim() || null,
@@ -799,6 +802,10 @@ function FormularioDNI({
               <div className={`text-[13px] font-bold ${nombreComprobante === '—' ? 'text-[#d1d9e1]' : 'text-[#111827]'}`}>{nombreComprobante === '—' ? 'Nombre completo' : nombreComprobante}</div>
             </div>
 
+            <div className="flex flex-col gap-1">
+              <input className={inputBase} value={direccion} onChange={event => setDireccion(event.target.value)} placeholder="Dirección" />
+            </div>
+
             <div className="grid grid-cols-[65%_1fr] gap-2">
               <div className="flex min-w-0 flex-col gap-1">
                 <input
@@ -852,9 +859,6 @@ function FormularioRUC({
   const [razonSocial, setRazonSocial] = useState('')
   const [nombreComercial, setNombreComercial] = useState('')
   const [direccionFiscal, setDireccionFiscal] = useState('')
-  const [distrito, setDistrito] = useState('')
-  const [provincia, setProvincia] = useState('')
-  const [departamento, setDepartamento] = useState('')
   const [estadoRuc, setEstadoRuc] = useState('')
   const [condicion, setCondicion] = useState('')
   const [email, setEmail] = useState('')
@@ -867,26 +871,10 @@ function FormularioRUC({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [fase, setFase] = useState<'INGRESO' | 'RESULTADO'>('INGRESO')
 
-  function separarDireccionFiscal(valor: string | null): void {
-    const partes = (valor ?? '').split(',').map(parte => parte.trim()).filter(Boolean)
-    setDireccionFiscal(partes[0] ?? '')
-    setDistrito(partes[1] ?? '')
-    setProvincia(partes[2] ?? '')
-    setDepartamento(partes[3] ?? '')
-  }
-
-  function construirDireccionFiscal(): string | null {
-    const direccionCompleta = [direccionFiscal, distrito, provincia, departamento]
-      .map(parte => parte.trim())
-      .filter(Boolean)
-      .join(', ')
-    return direccionCompleta || null
-  }
-
   function cargarClienteLocal(cliente: Cliente): void {
     setRazonSocial(cliente.nombre)
     setNombreComercial('')
-    separarDireccionFiscal(cliente.identificacionFiscal.direccionFiscal)
+    setDireccionFiscal(cliente.identificacionFiscal.direccionFiscal ?? '')
     setEstadoRuc('')
     setCondicion('')
     setEmail(cliente.canales.email ?? '')
@@ -936,9 +924,6 @@ function FormularioRUC({
       setRazonSocial(parsed.razonSocial ?? '')
       setNombreComercial(parsed.nombreComercial ?? '')
       setDireccionFiscal(parsed.direccionFiscal ?? '')
-      setDistrito('')
-      setProvincia('')
-      setDepartamento('')
       setEstadoRuc(parsed.estadoRuc ?? '')
       setCondicion(parsed.condicion ?? '')
       setEmail('')
@@ -980,7 +965,7 @@ function FormularioRUC({
 
   function confirmarRUC(): void {
     const nombreFinal = razonSocial.trim().toUpperCase()
-    const direccionCompleta = construirDireccionFiscal()
+    const direccionCompleta = direccionFiscal.trim() || null
     let cliente: Cliente
     if (clienteId) {
       const existente = clienteStore.getClienteById(clienteId)!
@@ -1098,35 +1083,8 @@ function FormularioRUC({
               )}
             </div>
             <div className="flex flex-col gap-1">
-              {puedeEditarDatos ? (
-                <input className={inputBase} value={direccionFiscal} onChange={event => setDireccionFiscal(event.target.value)} placeholder="Dirección fiscal" />
-              ) : (
-                <div className={`${inputDis} ${direccionFiscal ? '' : 'text-[#d1d9e1]'}`}>{direccionFiscal || 'Dirección fiscal'}</div>
-              )}
+              <input className={inputBase} value={direccionFiscal} onChange={event => setDireccionFiscal(event.target.value)} placeholder="Dirección fiscal" />
               {direccionFiscalRequerida ? <p className="text-[11px] text-red-500">La dirección fiscal es requerida por normativa SUNAT</p> : null}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex min-w-0 flex-col gap-1">
-                {puedeEditarDatos ? (
-                  <input className={inputBase} value={distrito} onChange={event => setDistrito(event.target.value)} placeholder="Distrito" />
-                ) : (
-                  <div className={`${inputDis} ${distrito ? '' : 'text-[#d1d9e1]'}`}>{distrito || 'Distrito'}</div>
-                )}
-              </div>
-              <div className="flex min-w-0 flex-col gap-1">
-                {puedeEditarDatos ? (
-                  <input className={inputBase} value={provincia} onChange={event => setProvincia(event.target.value)} placeholder="Provincia" />
-                ) : (
-                  <div className={`${inputDis} ${provincia ? '' : 'text-[#d1d9e1]'}`}>{provincia || 'Provincia'}</div>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              {puedeEditarDatos ? (
-                <input className={inputBase} value={departamento} onChange={event => setDepartamento(event.target.value)} placeholder="Departamento / Región" />
-              ) : (
-                <div className={`${inputDis} ${departamento ? '' : 'text-[#d1d9e1]'}`}>{departamento || 'Departamento / Región'}</div>
-              )}
             </div>
             {estadoRuc ? (
               <div className="flex flex-col gap-1">
