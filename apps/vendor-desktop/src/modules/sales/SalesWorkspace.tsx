@@ -293,6 +293,7 @@ export function SalesWorkspace() {
         if (e.ctrlKey) break; // Ctrl+Enter → openCobro, handled by global listener
         if (isSearching) {
           e.preventDefault();
+          e.stopPropagation();
           const product = selectedIndex >= 0 ? filtered[selectedIndex] : filtered[0];
           if (product) addProductToTicket(product);
         } else if (indiceLineaActiva >= 0) {

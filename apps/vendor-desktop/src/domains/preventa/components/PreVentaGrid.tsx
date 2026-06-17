@@ -20,6 +20,7 @@ export function PreVentaGrid() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
+  const sectionRef      = useRef<HTMLElement>(null);
   const noteInputRef    = useRef<HTMLInputElement>(null);
   const listRef         = useRef<HTMLDivElement>(null);
   const noteKeyHandled  = useRef(false);
@@ -60,15 +61,18 @@ export function PreVentaGrid() {
       if (lines.length === 0) return;
       const tag = (document.activeElement as HTMLElement)?.tagName;
       const inInput = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
-      if (inInput || e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return;
 
       if (e.key === "Enter") {
+        if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return;
+        if (inInput && sectionRef.current?.contains(document.activeElement)) return;
         e.preventDefault();
         openCobro();
         return;
       }
 
-      if (e.key === "Delete") {
+      if (e.key === "Delete" && e.ctrlKey) {
+        if (e.altKey || e.shiftKey || e.metaKey) return;
+        if (inInput) return;
         e.preventDefault();
         preVentaService.limpiar();
       }
@@ -87,7 +91,7 @@ export function PreVentaGrid() {
   const totalUnits = lines.reduce((acc, l) => acc + l.cantidad, 0);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
+    <section ref={sectionRef} className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
       <header className="shrink-0 flex h-[42px] items-center justify-between px-4 bg-[#F2F7F3] border-b border-[#45b356]/20">
@@ -250,7 +254,7 @@ export function PreVentaGrid() {
 
         {/* LIMPIAR ~30% */}
         <button
-          title="Tecla [Supr]"
+          title="Tecla [Ctrl + Supr]"
           onClick={() => preVentaService.limpiar()}
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider transition ${
