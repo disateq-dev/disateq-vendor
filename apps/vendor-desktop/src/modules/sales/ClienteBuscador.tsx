@@ -172,7 +172,7 @@ interface VistaInicioProps {
   docType: ClienteBuscadorProps['docType']
   onReceptorConfirmado: (receptor: ReceptorComprobante) => void
   onCancelar: () => void
-  onContinuar: (tipoDocumento: TipoDocNavegacion, numeroDocumento: string) => void
+  onContinuar: (tipoDocumento: TipoDocNavegacion, numeroDocumento: string, clienteInicial?: Cliente | null) => void
 }
 
 function VistaInicio({
@@ -181,7 +181,7 @@ function VistaInicio({
   onCancelar,
   onContinuar,
 }: VistaInicioProps): ReactElement | null {
-  const [tipoDocElegido, setTipoDocElegido] = useState<TipoDocNavegacion | null>(null)
+  const [tipoDocElegido, setTipoDocElegido] = useState<TipoDocNavegacion>('DNI')
   const [numDocIngresado, setNumDocIngresado] = useState('')
 
   useEffect(() => {
@@ -193,9 +193,13 @@ function VistaInicio({
   if (docType !== 'boleta') return null
 
   const tipoActivo = tipoDocElegido
-  const maxLength = tipoActivo === 'RUC' ? 11 : tipoActivo === 'DNI' ? 8 : 15
-  const longitudRequerida = tipoActivo === 'RUC' ? 11 : tipoActivo === 'DNI' ? 8 : 6
-  const puedeContinuar = tipoActivo !== null && numDocIngresado.trim().length >= longitudRequerida
+  const maxLength = tipoActivo === 'DNI' ? 8 : tipoActivo === 'CE' ? 9 : 12
+  const longitudActual = numDocIngresado.trim().length
+  const puedeContinuar = tipoActivo === 'DNI'
+    ? longitudActual === 8
+    : tipoActivo === 'CE'
+      ? longitudActual === 9
+      : longitudActual >= 6 && longitudActual <= 12
 
   function confirmarGenerico(): void {
     onReceptorConfirmado({
@@ -212,13 +216,17 @@ function VistaInicio({
   }
 
   function continuar(): void {
-    if (!tipoActivo || !puedeContinuar) return
-    onContinuar(tipoActivo, numDocIngresado.trim())
+    if (!puedeContinuar) return
+    const documento = numDocIngresado.trim()
+    if (tipoActivo === 'CE' || tipoActivo === 'PASAPORTE') {
+      onContinuar(tipoActivo, documento, clienteStore.getClienteByDocumento(documento))
+      return
+    }
+    onContinuar(tipoActivo, documento)
   }
 
   function cambiarNumero(value: string): void {
-    if (!tipoActivo) return
-    const limpio = tipoActivo === 'DNI' || tipoActivo === 'RUC'
+    const limpio = tipoActivo === 'DNI' || tipoActivo === 'CE'
       ? normalizarDocumento(value, maxLength)
       : value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, maxLength)
     setNumDocIngresado(limpio)
@@ -228,8 +236,8 @@ function VistaInicio({
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
       <div className="flex flex-1 flex-col justify-center gap-4 overflow-y-auto px-4 py-4">
-        <div className="grid grid-cols-4 gap-1.5">
-          {(['DNI', 'CE', 'PASAPORTE', 'RUC'] as TipoDocNavegacion[]).map(tipo => (
+        <div className="grid grid-cols-3 gap-1.5">
+          {(['DNI', 'CE', 'PASAPORTE'] as TipoDocNavegacion[]).map(tipo => (
             <button
               key={tipo}
               type="button"
@@ -252,13 +260,12 @@ function VistaInicio({
           <div className="flex flex-col gap-1">
               <span className={labelCls}>
                 {tipoActivo === 'DNI' ? 'N° DNI — 8 dígitos'
-                  : tipoActivo === 'RUC' ? 'N° RUC — 11 dígitos'
-                  : tipoActivo === 'CE' ? 'N° CE'
-                  : 'N° Pasaporte'}
+                  : tipoActivo === 'CE' ? 'N° CE — 9 dígitos'
+                  : 'N° Pasaporte — 6 a 12 caracteres'}
               </span>
               <input
                 autoFocus
-                inputMode="numeric"
+                inputMode={tipoActivo === 'PASAPORTE' ? 'text' : 'numeric'}
                 maxLength={maxLength}
                 value={numDocIngresado}
                 onChange={event => cambiarNumero(event.target.value)}
@@ -266,7 +273,6 @@ function VistaInicio({
                   if (event.key === 'Enter') continuar()
                 }}
                 placeholder={tipoActivo === 'DNI' ? 'Ingresa el DNI del cliente'
-                  : tipoActivo === 'RUC' ? 'Ingresa el RUC del cliente'
                   : tipoActivo === 'CE' ? 'Ingresa el carné de extranjería'
                   : 'Ingresa el pasaporte'}
                 className={inputBase}
@@ -867,6 +873,7 @@ function FormularioRUC({
 interface FormularioLibreProps {
   tipoDocInicial: TipoDocLibre
   numDocInicial: string
+  clienteInicial: Cliente | null
   onReceptorConfirmado: (receptor: ReceptorComprobante) => void
   onCancelar: () => void
 }
@@ -874,31 +881,39 @@ interface FormularioLibreProps {
 function FormularioLibre({
   tipoDocInicial,
   numDocInicial,
+  clienteInicial,
   onReceptorConfirmado,
   onCancelar,
 }: FormularioLibreProps): ReactElement {
-  const [nombre, setNombre] = useState('')
-  const [email, setEmail] = useState('')
-  const [whatsapp, setWhatsapp] = useState('')
+  const [nombre, setNombre] = useState(clienteInicial?.nombre ?? '')
+  const [email, setEmail] = useState(clienteInicial?.canales.email ?? '')
+  const [whatsapp, setWhatsapp] = useState(clienteInicial?.canales.whatsapp ?? '')
   const [editando, setEditando] = useState(true)
   const puedeConfirmar = nombre.trim().length > 0
 
   function confirmarLibre(): void {
     const nombreFinal = nombre.trim().toUpperCase()
-    const cliente = crearCliente({
-      nombre: nombreFinal,
-      tipo: 'FRECUENTE',
-      identificacionFiscal: {
-        tipoDocumento: tipoDocInicial,
-        numeroDocumento: numDocInicial,
-        razonSocial: null,
-        direccionFiscal: null,
-        documentoFiscalSugerido: 'BOLETA',
-        validadoEn: null,
-      },
-      canales: resolverCanales(email, whatsapp),
-      condiciones: { tipoValorPreferente: null, creditoHabilitado: false, limiteCredito: null, sujetoADetraccion: false, observaciones: null },
-    })
+    const cliente = clienteInicial
+      ? clienteStore.guardarCliente({
+          ...clienteInicial,
+          nombre: nombreFinal,
+          canales: resolverCanales(email, whatsapp),
+          modificadoEn: new Date().toISOString(),
+        })
+      : crearCliente({
+          nombre: nombreFinal,
+          tipo: 'FRECUENTE',
+          identificacionFiscal: {
+            tipoDocumento: tipoDocInicial,
+            numeroDocumento: numDocInicial,
+            razonSocial: null,
+            direccionFiscal: null,
+            documentoFiscalSugerido: 'BOLETA',
+            validadoEn: null,
+          },
+          canales: resolverCanales(email, whatsapp),
+          condiciones: { tipoValorPreferente: null, creditoHabilitado: false, limiteCredito: null, sujetoADetraccion: false, observaciones: null },
+        })
     onReceptorConfirmado({
       tipoDocumento: tipoDocInicial,
       numeroDocumento: numDocInicial,
@@ -976,10 +991,12 @@ export default function ClienteBuscador({
   const [vista, setVista] = useState<Vista>(docType === 'factura' ? 'FORMULARIO_RUC' : 'INICIO')
   const [numDocNavegacion, setNumDocNavegacion] = useState('')
   const [tipoDocNavegacion, setTipoDocNavegacion] = useState<TipoDocNavegacion>('DNI')
+  const [clienteLibreInicial, setClienteLibreInicial] = useState<Cliente | null>(null)
 
-  function navegarFormulario(tipoDocumento: TipoDocNavegacion, numeroDocumento: string): void {
+  function navegarFormulario(tipoDocumento: TipoDocNavegacion, numeroDocumento: string, clienteInicial: Cliente | null = null): void {
     setTipoDocNavegacion(tipoDocumento)
     setNumDocNavegacion(numeroDocumento)
+    setClienteLibreInicial(clienteInicial)
 
     if (tipoDocumento === 'RUC') {
       setVista('FORMULARIO_RUC')
@@ -1022,6 +1039,7 @@ export default function ClienteBuscador({
         <FormularioLibre
           tipoDocInicial={tipoDocNavegacion === 'PASAPORTE' ? 'PASAPORTE' : 'CE'}
           numDocInicial={numDocNavegacion}
+          clienteInicial={clienteLibreInicial}
           onReceptorConfirmado={onReceptorConfirmado}
           onCancelar={onCancelar}
         />
