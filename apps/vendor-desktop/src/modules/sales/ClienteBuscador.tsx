@@ -57,7 +57,6 @@ interface DatosRUC {
 
 const inputBase = "w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2 text-[13px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10 transition"
 const inputDis  = "w-full rounded-xl border border-transparent bg-[#f4f7fb] px-3.5 py-2 text-[13px] text-[#374151] outline-none"
-const labelCls  = "text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]"
 
 function resolverCanales(email: string, whatsapp: string): CanalesCliente {
   const e = email.trim() || null
@@ -431,11 +430,6 @@ function FormularioBoleta({
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className={labelCls}>
-            {tipoActivo === 'DNI' ? 'N° DNI — 8 dígitos'
-              : tipoActivo === 'CE' ? 'N° CE — 9 dígitos'
-              : 'N° Pasaporte — 6 a 12 caracteres'}
-          </span>
           <div className="flex gap-2">
             <input
               autoFocus
@@ -446,11 +440,12 @@ function FormularioBoleta({
               onKeyDown={event => {
                 if (event.key === 'Enter') buscarDocumento()
               }}
-              placeholder={tipoActivo === 'DNI' ? 'Ingresa el DNI del cliente'
-                : tipoActivo === 'CE' ? 'Ingresa el carné de extranjería'
-                : 'Ingresa el pasaporte'}
+              placeholder={tipoActivo === 'DNI' ? 'N° DNI — 8 dígitos'
+                : tipoActivo === 'CE' ? 'N° CE — 9 dígitos'
+                : 'N° Pasaporte'}
               className={inputBase}
             />
+            {fase === 'RESULTADO' ? <ChipFuente fuente={fuente} /> : null}
             <button
               type="button"
               onClick={buscarDocumento}
@@ -464,66 +459,56 @@ function FormularioBoleta({
 
         {fase === 'RESULTADO' ? (
           <>
-            <div>
-              <ChipFuente fuente={fuente} />
-            </div>
-
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
 
             {tipoActivo === 'DNI' ? (
               <>
                 <div className="flex flex-col gap-1">
-                  <span className={labelCls}>APELLIDOS</span>
                   {puedeEditarNombre ? (
-                    <input className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} />
+                    <input className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" />
                   ) : (
-                    <div className={inputDis}>{apellidos || '—'}</div>
+                    <div className={`${inputDis} ${apellidos ? '' : 'text-[#d1d9e1]'}`}>{apellidos || 'Apellidos'}</div>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className={labelCls}>Nombres</span>
                   {puedeEditarNombre ? (
-                    <input className={inputBase} value={nombres} onChange={event => setNombres(event.target.value)} />
+                    <input className={inputBase} value={nombres} onChange={event => setNombres(event.target.value)} placeholder="Nombres" />
                   ) : (
-                    <div className={inputDis}>{nombres || '—'}</div>
+                    <div className={`${inputDis} ${nombres ? '' : 'text-[#d1d9e1]'}`}>{nombres || 'Nombres'}</div>
                   )}
                 </div>
               </>
             ) : (
               <div className="flex flex-col gap-1">
-                <span className={labelCls}>Nombre completo</span>
                 {puedeEditarNombre ? (
-                  <input className={inputBase} value={nombreCompleto} onChange={event => setNombreCompleto(event.target.value)} />
+                  <input className={inputBase} value={nombreCompleto} onChange={event => setNombreCompleto(event.target.value)} placeholder="Nombre completo" />
                 ) : (
-                  <div className={inputDis}>{nombreCompleto || '—'}</div>
+                  <div className={`${inputDis} ${nombreCompleto ? '' : 'text-[#d1d9e1]'}`}>{nombreCompleto || 'Nombre completo'}</div>
                 )}
               </div>
             )}
 
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>Dirección</span>
-              <input className={inputBase} value={direccion} onChange={event => setDireccion(event.target.value)} />
+              <input className={inputBase} value={direccion} onChange={event => setDireccion(event.target.value)} placeholder="Dirección" />
             </div>
 
             <div className="grid grid-cols-[65%_1fr] gap-2">
               <div className="flex min-w-0 flex-col gap-1">
-                <span className={labelCls}>CORREO-E</span>
                 <input
                   className={inputBase}
                   type="email"
                   value={email}
                   onChange={event => setEmail(event.target.value)}
-                  placeholder="correo@ejemplo.com"
+                  placeholder="Correo electrónico"
                 />
               </div>
               <div className="flex min-w-0 flex-col gap-1">
-                <span className={labelCls}>WHATSAPP</span>
                 <input
                   className={inputBase}
                   type="tel"
                   value={whatsapp}
                   onChange={event => setWhatsapp(event.target.value)}
-                  placeholder="999 999 999"
+                  placeholder="WhatsApp"
                 />
               </div>
             </div>
@@ -755,7 +740,6 @@ function FormularioDNI({
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>N° DNI — 8 dígitos</span>
               <div className="flex gap-2">
                 <input
                   autoFocus
@@ -766,7 +750,7 @@ function FormularioDNI({
                   onKeyDown={event => {
                     if (event.key === 'Enter') ejecutarAccionIngreso()
                   }}
-                  placeholder="Ingresa el DNI del cliente"
+                  placeholder="N° DNI — 8 dígitos"
                   className={inputBase}
                 />
                 {botonIngreso('shrink-0')}
@@ -784,56 +768,50 @@ function FormularioDNI({
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>N° DNI</span>
-              <div className={inputDis}>{numDoc}</div>
-            </div>
-            <div>
-              <ChipFuente fuente={fuente} />
+              <div className="flex items-center gap-2">
+                <div className={`${inputDis} ${numDoc ? '' : 'text-[#d1d9e1]'}`}>{numDoc || 'N° DNI — 8 dígitos'}</div>
+                <ChipFuente fuente={fuente} />
+              </div>
             </div>
 
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
 
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>APELLIDOS</span>
               {puedeEditarNombre ? (
-                <input className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} />
+                <input className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" />
               ) : (
-                <div className={inputDis}>{apellidos || '—'}</div>
+                <div className={`${inputDis} ${apellidos ? '' : 'text-[#d1d9e1]'}`}>{apellidos || 'Apellidos'}</div>
               )}
             </div>
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>Nombres</span>
               {puedeEditarNombre ? (
-                <input className={inputBase} value={nombres} onChange={event => setNombres(event.target.value)} />
+                <input className={inputBase} value={nombres} onChange={event => setNombres(event.target.value)} placeholder="Nombres" />
               ) : (
-                <div className={inputDis}>{nombres || '—'}</div>
+                <div className={`${inputDis} ${nombres ? '' : 'text-[#d1d9e1]'}`}>{nombres || 'Nombres'}</div>
               )}
             </div>
 
             <div className="rounded-xl bg-[#f4f7fb] px-3.5 py-2.5">
-              <span className={labelCls}>Nombre en comprobante</span>
-              <div className="mt-1 text-[13px] font-bold text-[#111827]">{nombreComprobante}</div>
+              <div className={`text-[13px] font-bold ${nombreComprobante === '—' ? 'text-[#d1d9e1]' : 'text-[#111827]'}`}>{nombreComprobante === '—' ? 'Nombre completo' : nombreComprobante}</div>
             </div>
 
             <div className="grid grid-cols-[65%_1fr] gap-2">
               <div className="flex min-w-0 flex-col gap-1">
-                <span className={labelCls}>CORREO-E</span>
                 <input
                   className={inputBase}
                   type="email"
                   value={email}
                   onChange={event => setEmail(event.target.value)}
-                  placeholder="correo@ejemplo.com"
+                  placeholder="Correo electrónico"
                 />
               </div>
               <div className="flex min-w-0 flex-col gap-1">
-                <span className={labelCls}>WHATSAPP</span>
                 <input
                   className={inputBase}
                   type="tel"
                   value={whatsapp}
                   onChange={event => setWhatsapp(event.target.value)}
-                  placeholder="999 999 999"
+                  placeholder="WhatsApp"
                 />
               </div>
             </div>
@@ -1005,14 +983,13 @@ function FormularioRUC({
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>N° RUC — 11 dígitos</span>
               <input
                 autoFocus
                 inputMode="numeric"
                 maxLength={11}
                 value={numDoc}
                 onChange={event => setNumDoc(normalizarDocumento(event.target.value, 11))}
-                placeholder="20xxxxxxxxx"
+                placeholder="N° RUC — 11 dígitos"
                 className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-3 text-[18px] font-bold tracking-wider text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
               />
             </div>
@@ -1041,67 +1018,59 @@ function FormularioRUC({
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>N° RUC</span>
-              <div className={inputDis}>{numDoc}</div>
-            </div>
-            <div>
-              <ChipFuente fuente={fuente} />
+              <div className="flex items-center gap-2">
+                <div className={`${inputDis} ${numDoc ? '' : 'text-[#d1d9e1]'}`}>{numDoc || 'N° RUC — 11 dígitos'}</div>
+                <ChipFuente fuente={fuente} />
+              </div>
             </div>
             {estadoRuc ? (
               <div className="flex flex-col gap-1">
-                <span className={labelCls}>Estado RUC</span>
                 <div className={inputDis}>{estadoRuc}</div>
               </div>
             ) : null}
             {condicion ? (
               <div className="flex flex-col gap-1">
-                <span className={labelCls}>Condición</span>
                 <div className={inputDis}>{condicion}</div>
               </div>
             ) : null}
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>Razón Social</span>
               {puedeEditarDatos ? (
-                <input className={inputBase} value={razonSocial} onChange={event => setRazonSocial(event.target.value)} />
+                <input className={inputBase} value={razonSocial} onChange={event => setRazonSocial(event.target.value)} placeholder="Razón social" />
               ) : (
-                <div className={inputDis}>{razonSocial || '—'}</div>
+                <div className={`${inputDis} ${razonSocial ? '' : 'text-[#d1d9e1]'}`}>{razonSocial || 'Razón social'}</div>
               )}
             </div>
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>Nombre Comercial</span>
               {puedeEditarDatos ? (
-                <input className={inputBase} value={nombreComercial} onChange={event => setNombreComercial(event.target.value)} />
+                <input className={inputBase} value={nombreComercial} onChange={event => setNombreComercial(event.target.value)} placeholder="Nombre comercial" />
               ) : (
-                <div className={inputDis}>{nombreComercial || '—'}</div>
+                <div className={`${inputDis} ${nombreComercial ? '' : 'text-[#d1d9e1]'}`}>{nombreComercial || 'Nombre comercial'}</div>
               )}
             </div>
             <div className="flex flex-col gap-1">
-              <span className={labelCls}>Dirección Fiscal</span>
               {puedeEditarDatos ? (
-                <input className={inputBase} value={direccionFiscal} onChange={event => setDireccionFiscal(event.target.value)} />
+                <input className={inputBase} value={direccionFiscal} onChange={event => setDireccionFiscal(event.target.value)} placeholder="Dirección fiscal" />
               ) : (
-                <div className={inputDis}>{direccionFiscal || '—'}</div>
+                <div className={`${inputDis} ${direccionFiscal ? '' : 'text-[#d1d9e1]'}`}>{direccionFiscal || 'Dirección fiscal'}</div>
               )}
             </div>
             <div className="grid grid-cols-[65%_1fr] gap-2">
               <div className="flex min-w-0 flex-col gap-1">
-                <span className={labelCls}>CORREO-E</span>
                 <input
                   className={inputBase}
                   type="email"
                   value={email}
                   onChange={event => setEmail(event.target.value)}
-                  placeholder="correo@ejemplo.com"
+                  placeholder="Correo electrónico"
                 />
               </div>
               <div className="flex min-w-0 flex-col gap-1">
-                <span className={labelCls}>WHATSAPP</span>
                 <input
                   className={inputBase}
                   type="tel"
                   value={whatsapp}
                   onChange={event => setWhatsapp(event.target.value)}
-                  placeholder="999 999 999"
+                  placeholder="WhatsApp"
                 />
               </div>
             </div>
@@ -1184,39 +1153,36 @@ function FormularioLibre({
       <HeaderComprobante />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-1">
-          <span className={labelCls}>Tipo documento</span>
           <div className={inputDis}>{tipoDocInicial === 'CE' ? 'Carné de Extranjería' : 'Pasaporte'}</div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className={labelCls}>N° documento</span>
-          <div className={inputDis}>{numDocInicial}</div>
-        </div>
-        <div>
-          <ChipFuente fuente="MANUAL" />
+          <div className="flex items-center gap-2">
+            <div className={`${inputDis} ${numDocInicial ? '' : 'text-[#d1d9e1]'}`}>
+              {numDocInicial || (tipoDocInicial === 'CE' ? 'N° CE — 9 dígitos' : 'N° Pasaporte')}
+            </div>
+            <ChipFuente fuente="MANUAL" />
+          </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className={labelCls}>Nombre completo</span>
-          <input autoFocus className={inputBase} value={nombre} onChange={event => setNombre(event.target.value)} />
+          <input autoFocus className={inputBase} value={nombre} onChange={event => setNombre(event.target.value)} placeholder="Nombre completo" />
         </div>
         <div className="grid grid-cols-[65%_1fr] gap-2">
           <div className="flex min-w-0 flex-col gap-1">
-            <span className={labelCls}>CORREO-E</span>
             <input
               className={inputBase}
               type="email"
               value={email}
               onChange={event => setEmail(event.target.value)}
-              placeholder="correo@ejemplo.com"
+              placeholder="Correo electrónico"
             />
           </div>
           <div className="flex min-w-0 flex-col gap-1">
-            <span className={labelCls}>WHATSAPP</span>
             <input
               className={inputBase}
               type="tel"
               value={whatsapp}
               onChange={event => setWhatsapp(event.target.value)}
-              placeholder="999 999 999"
+              placeholder="WhatsApp"
             />
           </div>
         </div>
