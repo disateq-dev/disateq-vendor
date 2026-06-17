@@ -1059,16 +1059,11 @@ function FormularioRUC({
                     if (event.key === 'Enter') ejecutarAccionIngreso()
                   }}
                   placeholder="N° RUC — 11 dígitos"
-                  className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-3 text-[18px] font-bold tracking-wider text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                  className={inputBase}
                 />
                 {botonIngreso('shrink-0')}
               </div>
             </div>
-            {numDoc.trim().length === 11 ? (
-              <button type="button" onClick={ingresoManual} className="self-start text-[11px] font-semibold text-[#9ca3af] transition hover:text-[#374151]">
-                ¿Sin conexión? Ingresar manual →
-              </button>
-            ) : null}
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
           </div>
           <footer className="grid shrink-0 grid-cols-1 gap-2 border-t border-[#f0f4f8] px-4 py-3">
