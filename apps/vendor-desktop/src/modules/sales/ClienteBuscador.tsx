@@ -445,7 +445,6 @@ function FormularioBoleta({
                 : 'N° Pasaporte'}
               className={inputBase}
             />
-            {fase === 'RESULTADO' ? <ChipFuente fuente={fuente} /> : null}
             <button
               type="button"
               onClick={buscarDocumento}
@@ -455,6 +454,11 @@ function FormularioBoleta({
               {textoAccion}
             </button>
           </div>
+          {fase === 'RESULTADO' ? (
+            <div>
+              <ChipFuente fuente={fuente} />
+            </div>
+          ) : null}
         </div>
 
         {fase === 'RESULTADO' ? (
@@ -768,8 +772,8 @@ function FormularioDNI({
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <div className={`${inputDis} ${numDoc ? '' : 'text-[#d1d9e1]'}`}>{numDoc || 'N° DNI — 8 dígitos'}</div>
+              <div className={`${inputDis} ${numDoc ? '' : 'text-[#d1d9e1]'}`}>{numDoc || 'N° DNI — 8 dígitos'}</div>
+              <div>
                 <ChipFuente fuente={fuente} />
               </div>
             </div>
@@ -1018,8 +1022,8 @@ function FormularioRUC({
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <div className={`${inputDis} ${numDoc ? '' : 'text-[#d1d9e1]'}`}>{numDoc || 'N° RUC — 11 dígitos'}</div>
+              <div className={`${inputDis} ${numDoc ? '' : 'text-[#d1d9e1]'}`}>{numDoc || 'N° RUC — 11 dígitos'}</div>
+              <div>
                 <ChipFuente fuente={fuente} />
               </div>
             </div>
@@ -1156,10 +1160,10 @@ function FormularioLibre({
           <div className={inputDis}>{tipoDocInicial === 'CE' ? 'Carné de Extranjería' : 'Pasaporte'}</div>
         </div>
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <div className={`${inputDis} ${numDocInicial ? '' : 'text-[#d1d9e1]'}`}>
-              {numDocInicial || (tipoDocInicial === 'CE' ? 'N° CE — 9 dígitos' : 'N° Pasaporte')}
-            </div>
+          <div className={`${inputDis} ${numDocInicial ? '' : 'text-[#d1d9e1]'}`}>
+            {numDocInicial || (tipoDocInicial === 'CE' ? 'N° CE — 9 dígitos' : 'N° Pasaporte')}
+          </div>
+          <div>
             <ChipFuente fuente="MANUAL" />
           </div>
         </div>
