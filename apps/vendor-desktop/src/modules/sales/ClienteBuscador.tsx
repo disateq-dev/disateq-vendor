@@ -536,7 +536,7 @@ function FormularioBoleta({
             {fuente === 'RENIEC' ? 'ACTUALIZAR' : 'EDITAR'}
           </button>
           <button type="button" onClick={confirmarBoleta} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
-            {fuente === 'LOCAL' ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
+            {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
           </button>
         </footer>
       )}
@@ -835,7 +835,7 @@ function FormularioDNI({
               {fuente === 'RENIEC' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
             <button type="button" onClick={confirmar} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
-              {fuente === 'LOCAL' ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
+              {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
         </>
@@ -1125,7 +1125,7 @@ function FormularioRUC({
               {fuente === 'SUNAT' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
             <button type="button" onClick={confirmarRUC} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
-              {fuente === 'LOCAL' ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
+              {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
         </>
