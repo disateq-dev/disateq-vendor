@@ -1023,7 +1023,8 @@ function FormularioRUC({
     })
   }
 
-  const puedeConfirmar = razonSocial.trim().length > 0
+  const direccionFiscalRequerida = direccionFiscal.trim().length === 0
+  const puedeConfirmar = razonSocial.trim().length > 0 && direccionFiscal.trim().length > 0
   const puedeEditarDatos = (fuente === 'LOCAL' || fuente === 'MANUAL') && editando
   const puedeBuscarIngreso = numDoc.trim().length === 11 && !buscando
   const textoBotonIngreso = buscando ? 'Consultando…' : buscoLocal ? 'SUNAT' : 'BUSCAR'
@@ -1102,6 +1103,7 @@ function FormularioRUC({
               ) : (
                 <div className={`${inputDis} ${direccionFiscal ? '' : 'text-[#d1d9e1]'}`}>{direccionFiscal || 'Dirección fiscal'}</div>
               )}
+              {direccionFiscalRequerida ? <p className="text-[11px] text-red-500">La dirección fiscal es requerida por normativa SUNAT</p> : null}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="flex min-w-0 flex-col gap-1">

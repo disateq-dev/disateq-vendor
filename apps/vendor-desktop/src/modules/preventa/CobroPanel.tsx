@@ -495,6 +495,7 @@ export function CobroPanel() {
               name: customer.nombre,
             }
           : null,
+        customerAddress: customer?.direccion ?? null,
         lines: lines.map(l => ({
           description: l.descripcion,
           quantity:    l.cantidad,

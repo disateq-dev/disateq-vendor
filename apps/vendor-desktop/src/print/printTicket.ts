@@ -21,6 +21,7 @@ export interface PrintData {
     docNumber: string;
     name: string;
   } | null;
+  customerAddress?: string | null;
 
   // Lines
   lines: Array<{
@@ -92,6 +93,12 @@ function printSignedMoney(sign: "+" | "−", n: number): string {
   return `<span class="pt-money"><span class="pt-currency">S/</span><span class="pt-number">${sign}${n.toFixed(2)}</span></span>`;
 }
 
+function customerPrintLine(customer: PrintData["customer"]): string {
+  const docNumber = customer?.docNumber || "99999999";
+  const name = (customer?.name || "CLIENTES VARIOS").toUpperCase();
+  return `Cliente: ${docNumber} · ${name}`;
+}
+
 const PRINT_MONEY_CSS = `
 #pt-overlay .pt-money    { display: inline-grid; grid-template-columns: 2ch 8ch; column-gap: 1ch; justify-content: end; align-items: baseline; font-variant-numeric: tabular-nums; white-space: nowrap; }
 #pt-overlay .pt-currency { text-align: left; }
@@ -117,17 +124,10 @@ function buildHTML(d: PrintData): string {
     </div>`
   ).join("");
 
-  const customerLabel = d.customer
-    ? esc(d.customer.name)
-    : "CLIENTES VARIOS";
-
-  const customerDocHTML = d.customer?.docNumber
-    ? `<div class="pt-row"><span>${d.customer.tipoDocumento ?? "Doc."}</span><span>${esc(d.customer.docNumber)}</span></div>`
-    : "";
-
+  const customerAddress = (d.customerAddress?.trim() || "S/D").toUpperCase();
   const customerHTML = `<div class="pt-dash"></div>
-     <div class="pt-row"><span>Cliente</span><span>${customerLabel}</span></div>
-     ${customerDocHTML}`;
+     <div class="pt-line">${esc(customerPrintLine(d.customer))}</div>
+     <div class="pt-line">${esc(customerAddress)}</div>`;
 
   const discountHTML = moneyGt(d.discountNum, 0)
     ? `<div class="pt-sm"><span>Subtotal bruto</span><span>${printMoney(d.total)}</span></div>
