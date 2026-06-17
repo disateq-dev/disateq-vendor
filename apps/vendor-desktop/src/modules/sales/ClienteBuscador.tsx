@@ -22,12 +22,14 @@ export interface ReceptorComprobante {
   whatsapp: string | null
 }
 
-type Vista = 'INICIO' | 'FORMULARIO_DNI' | 'FORMULARIO_RUC' | 'FORMULARIO_LIBRE'
+type Vista = 'INICIO' | 'FORMULARIO_DNI' | 'FORMULARIO_RUC' | 'FORMULARIO_LIBRE' | 'FORMULARIO_BOLETA'
 type TipoDocNavegacion = 'DNI' | 'CE' | 'PASAPORTE' | 'RUC'
 type TipoDocLibre = 'CE' | 'PASAPORTE'
+type TipoDocBoleta = 'DNI' | 'CE' | 'PASAPORTE'
 type FuenteDNI = 'LOCAL' | 'RENIEC' | 'MANUAL'
 type FuenteRUC = 'LOCAL' | 'SUNAT' | 'MANUAL'
 type FaseFormularioDNI = 'INGRESO' | 'RESULTADO'
+type FaseFormularioBoleta = 'INGRESO' | 'RESULTADO'
 
 interface DatosDNI {
   numDoc:    string
@@ -170,36 +172,185 @@ function separarNombreCliente(nombre: string): {
 
 interface VistaInicioProps {
   docType: ClienteBuscadorProps['docType']
-  onReceptorConfirmado: (receptor: ReceptorComprobante) => void
-  onCancelar: () => void
   onContinuar: (tipoDocumento: TipoDocNavegacion, numeroDocumento: string, clienteInicial?: Cliente | null) => void
+  onAbrirBoleta: () => void
 }
 
 function VistaInicio({
   docType,
-  onReceptorConfirmado,
-  onCancelar,
   onContinuar,
+  onAbrirBoleta,
 }: VistaInicioProps): ReactElement | null {
-  const [tipoDocElegido, setTipoDocElegido] = useState<TipoDocNavegacion>('DNI')
-  const [numDocIngresado, setNumDocIngresado] = useState('')
-
   useEffect(() => {
     if (docType === 'nota' || docType === 'cotizacion') {
       onContinuar('DNI', '')
+      return
+    }
+
+    if (docType === 'boleta') {
+      onAbrirBoleta()
     }
   }, [])
 
-  if (docType !== 'boleta') return null
+  return null
+}
 
-  const tipoActivo = tipoDocElegido
+interface FormularioBoletaProps {
+  onReceptorConfirmado: (receptor: ReceptorComprobante) => void
+  onCancelar: () => void
+}
+
+function FormularioBoleta({
+  onReceptorConfirmado,
+  onCancelar,
+}: FormularioBoletaProps): ReactElement {
+  const [tipoActivo, setTipoActivo] = useState<TipoDocBoleta>('DNI')
+  const [numDoc, setNumDoc] = useState('')
+  const [fase, setFase] = useState<FaseFormularioBoleta>('INGRESO')
+  const [fuente, setFuente] = useState<FuenteDNI>('MANUAL')
+  const [apellidos, setApellidos] = useState('')
+  const [nombres, setNombres] = useState('')
+  const [nombreCompleto, setNombreCompleto] = useState('')
+  const [direccion, setDireccion] = useState('')
+  const [email, setEmail] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [clienteId, setClienteId] = useState<string | null>(null)
+  const [editando, setEditando] = useState(true)
+  const [buscando, setBuscando] = useState(false)
+  const [buscoLocal, setBuscoLocal] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
   const maxLength = tipoActivo === 'DNI' ? 8 : tipoActivo === 'CE' ? 9 : 12
-  const longitudActual = numDocIngresado.trim().length
-  const puedeContinuar = tipoActivo === 'DNI'
-    ? longitudActual === 8
+  const longitudDocumento = numDoc.trim().length
+  const documentoValido = tipoActivo === 'DNI'
+    ? longitudDocumento === 8
     : tipoActivo === 'CE'
-      ? longitudActual === 9
-      : longitudActual >= 6 && longitudActual <= 12
+      ? longitudDocumento === 9
+      : longitudDocumento >= 6 && longitudDocumento <= 12
+  const puedeEditarNombre = fuente !== 'RENIEC' && editando
+  const nombreFinal = tipoActivo === 'DNI'
+    ? `${apellidos.trim()} ${nombres.trim()}`.replace(/\s+/g, ' ').trim().toUpperCase()
+    : nombreCompleto.trim().toUpperCase()
+  const puedeConfirmar = nombreFinal.length > 0
+  const textoAccion = buscando ? 'Consultando…' : tipoActivo === 'DNI' && buscoLocal ? 'RENIEC' : 'BUSCAR'
+  const claseAccion = tipoActivo === 'DNI' && buscoLocal
+    ? 'bg-[#2154d8] text-white hover:bg-[#1a42b0]'
+    : 'bg-[#4CAF50] text-white hover:bg-[#3d9e41]'
+
+  function limpiarResultado(): void {
+    setFuente('MANUAL')
+    setApellidos('')
+    setNombres('')
+    setNombreCompleto('')
+    setDireccion('')
+    setEmail('')
+    setWhatsapp('')
+    setClienteId(null)
+    setEditando(true)
+    setErrorMsg(null)
+  }
+
+  function seleccionarTipo(tipo: TipoDocBoleta): void {
+    setTipoActivo(tipo)
+    setNumDoc('')
+    setFase('INGRESO')
+    setBuscoLocal(false)
+    limpiarResultado()
+  }
+
+  function cambiarNumero(value: string): void {
+    const limpio = tipoActivo === 'PASAPORTE'
+      ? value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, maxLength)
+      : normalizarDocumento(value, maxLength)
+    setNumDoc(limpio)
+    setFase('INGRESO')
+    setBuscoLocal(false)
+    limpiarResultado()
+  }
+
+  function cargarCliente(cliente: Cliente): void {
+    const nombre = separarNombreCliente(cliente.nombre)
+    setApellidos(nombre.apellidos)
+    setNombres(nombre.nombres)
+    setNombreCompleto(cliente.nombre)
+    setDireccion(cliente.identificacionFiscal.direccionFiscal ?? '')
+    setEmail(cliente.canales.email ?? '')
+    setWhatsapp(cliente.canales.whatsapp ?? '')
+    setFuente('LOCAL')
+    setClienteId(cliente.id)
+    setEditando(false)
+    setErrorMsg(null)
+    setFase('RESULTADO')
+  }
+
+  function buscarLocal(): boolean {
+    const cliente = clienteStore.getClienteByDocumento(numDoc.trim())
+    if (!cliente) return false
+    cargarCliente(cliente)
+    return true
+  }
+
+  async function buscarOnlineDNI(): Promise<void> {
+    if (!documentoValido) return
+
+    setBuscando(true)
+    setErrorMsg(null)
+    try {
+      const documento = numDoc.trim()
+      const url = `https://ww1.sunat.gob.pe/ol-ti-itfisdenreg/itfisdenreg.htm?accion=obtenerDatosDni&numDocumento=${documento}`
+      const res = await fetch(url)
+      const html = await res.text()
+      const parsed = parsearHtmlSunat(html, 'DNI', documento) as Partial<DatosDNI> | null
+      if (!parsed || (!parsed.apPaterno && !parsed.nombres)) {
+        setErrorMsg('Sin conexión. Completa los campos manualmente.')
+        setFuente('MANUAL')
+        setEditando(true)
+        setFase('RESULTADO')
+        return
+      }
+
+      setApellidos(`${parsed.apPaterno ?? ''} ${parsed.apMaterno ?? ''}`.replace(/\s+/g, ' ').trim())
+      setNombres(parsed.nombres ?? '')
+      setNombreCompleto('')
+      setFuente('RENIEC')
+      setClienteId(null)
+      setEditando(false)
+      setFase('RESULTADO')
+    } catch {
+      setErrorMsg('Sin conexión. Completa los campos manualmente.')
+      setFuente('MANUAL')
+      setEditando(true)
+      setFase('RESULTADO')
+    } finally {
+      setBuscando(false)
+    }
+  }
+
+  function buscarDocumento(): void {
+    if (!documentoValido) return
+
+    setErrorMsg(null)
+    if (tipoActivo === 'DNI') {
+      if (buscoLocal) {
+        void buscarOnlineDNI()
+        return
+      }
+
+      if (buscarLocal()) return
+
+      limpiarResultado()
+      setErrorMsg('Sin resultados en búsqueda local — Usar búsqueda RENIEC')
+      setBuscoLocal(true)
+      return
+    }
+
+    if (buscarLocal()) return
+
+    limpiarResultado()
+    setFuente('MANUAL')
+    setEditando(true)
+    setFase('RESULTADO')
+  }
 
   function confirmarGenerico(): void {
     onReceptorConfirmado({
@@ -215,36 +366,59 @@ function VistaInicio({
     onCancelar()
   }
 
-  function continuar(): void {
-    if (!puedeContinuar) return
-    const documento = numDocIngresado.trim()
-    if (tipoActivo === 'CE' || tipoActivo === 'PASAPORTE') {
-      onContinuar(tipoActivo, documento, clienteStore.getClienteByDocumento(documento))
-      return
-    }
-    onContinuar(tipoActivo, documento)
-  }
+  function confirmarBoleta(): void {
+    const existente = clienteId ? clienteStore.getClienteById(clienteId) : null
+    const canales = resolverCanales(email, whatsapp)
+    const cliente = existente
+      ? clienteStore.guardarCliente({
+          ...existente,
+          nombre: nombreFinal,
+          identificacionFiscal: {
+            ...existente.identificacionFiscal,
+            tipoDocumento: tipoActivo,
+            numeroDocumento: numDoc.trim(),
+            direccionFiscal: direccion.trim() || null,
+          },
+          canales,
+          modificadoEn: new Date().toISOString(),
+        })
+      : crearCliente({
+          nombre: nombreFinal,
+          tipo: 'FRECUENTE',
+          identificacionFiscal: {
+            tipoDocumento: tipoActivo,
+            numeroDocumento: numDoc.trim(),
+            razonSocial: null,
+            direccionFiscal: direccion.trim() || null,
+            documentoFiscalSugerido: 'BOLETA',
+            validadoEn: fuente !== 'MANUAL' ? new Date().toISOString() : null,
+          },
+          canales,
+          condiciones: { tipoValorPreferente: null, creditoHabilitado: false, limiteCredito: null, sujetoADetraccion: false, observaciones: null },
+        })
 
-  function cambiarNumero(value: string): void {
-    const limpio = tipoActivo === 'DNI' || tipoActivo === 'CE'
-      ? normalizarDocumento(value, maxLength)
-      : value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, maxLength)
-    setNumDocIngresado(limpio)
+    onReceptorConfirmado({
+      tipoDocumento: tipoActivo,
+      numeroDocumento: numDoc.trim(),
+      nombre: nombreFinal,
+      direccion: direccion.trim() || null,
+      esGenerico: false,
+      clienteId: cliente.id,
+      email: email.trim() || null,
+      whatsapp: whatsapp.trim() || null,
+    })
   }
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
-      <div className="flex flex-1 flex-col justify-center gap-4 overflow-y-auto px-4 py-4">
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
         <div className="grid grid-cols-3 gap-1.5">
-          {(['DNI', 'CE', 'PASAPORTE'] as TipoDocNavegacion[]).map(tipo => (
+          {(['DNI', 'CE', 'PASAPORTE'] as TipoDocBoleta[]).map(tipo => (
             <button
               key={tipo}
               type="button"
-              onClick={() => {
-                setTipoDocElegido(tipo)
-                setNumDocIngresado('')
-              }}
+              onClick={() => seleccionarTipo(tipo)}
               className={`rounded-xl border px-2 py-2 text-[10px] font-bold uppercase transition ${
                 tipoActivo === tipo
                   ? 'border-[#2154d8] bg-[#f4f7ff] text-[#2154d8]'
@@ -256,48 +430,127 @@ function VistaInicio({
           ))}
         </div>
 
-        {tipoActivo ? (
-          <div className="flex flex-col gap-1">
-              <span className={labelCls}>
-                {tipoActivo === 'DNI' ? 'N° DNI — 8 dígitos'
-                  : tipoActivo === 'CE' ? 'N° CE — 9 dígitos'
-                  : 'N° Pasaporte — 6 a 12 caracteres'}
-              </span>
-              <input
-                autoFocus
-                inputMode={tipoActivo === 'PASAPORTE' ? 'text' : 'numeric'}
-                maxLength={maxLength}
-                value={numDocIngresado}
-                onChange={event => cambiarNumero(event.target.value)}
-                onKeyDown={event => {
-                  if (event.key === 'Enter') continuar()
-                }}
-                placeholder={tipoActivo === 'DNI' ? 'Ingresa el DNI del cliente'
-                  : tipoActivo === 'CE' ? 'Ingresa el carné de extranjería'
-                  : 'Ingresa el pasaporte'}
-                className={inputBase}
-              />
+        <div className="flex flex-col gap-1">
+          <span className={labelCls}>
+            {tipoActivo === 'DNI' ? 'N° DNI — 8 dígitos'
+              : tipoActivo === 'CE' ? 'N° CE — 9 dígitos'
+              : 'N° Pasaporte — 6 a 12 caracteres'}
+          </span>
+          <div className="flex gap-2">
+            <input
+              autoFocus
+              inputMode={tipoActivo === 'PASAPORTE' ? 'text' : 'numeric'}
+              maxLength={maxLength}
+              value={numDoc}
+              onChange={event => cambiarNumero(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter') buscarDocumento()
+              }}
+              placeholder={tipoActivo === 'DNI' ? 'Ingresa el DNI del cliente'
+                : tipoActivo === 'CE' ? 'Ingresa el carné de extranjería'
+                : 'Ingresa el pasaporte'}
+              className={inputBase}
+            />
+            <button
+              type="button"
+              onClick={buscarDocumento}
+              disabled={!documentoValido || buscando}
+              className={`shrink-0 rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 ${claseAccion}`}
+            >
+              {textoAccion}
+            </button>
+          </div>
+        </div>
+
+        {fase === 'RESULTADO' ? (
+          <>
+            <div>
+              <ChipFuente fuente={fuente} />
             </div>
+
+            {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
+
+            {tipoActivo === 'DNI' ? (
+              <>
+                <div className="flex flex-col gap-1">
+                  <span className={labelCls}>APELLIDOS</span>
+                  {puedeEditarNombre ? (
+                    <input className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} />
+                  ) : (
+                    <div className={inputDis}>{apellidos || '—'}</div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={labelCls}>Nombres</span>
+                  {puedeEditarNombre ? (
+                    <input className={inputBase} value={nombres} onChange={event => setNombres(event.target.value)} />
+                  ) : (
+                    <div className={inputDis}>{nombres || '—'}</div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <span className={labelCls}>Nombre completo</span>
+                {puedeEditarNombre ? (
+                  <input className={inputBase} value={nombreCompleto} onChange={event => setNombreCompleto(event.target.value)} />
+                ) : (
+                  <div className={inputDis}>{nombreCompleto || '—'}</div>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              <span className={labelCls}>Dirección</span>
+              <input className={inputBase} value={direccion} onChange={event => setDireccion(event.target.value)} />
+            </div>
+
+            <div className="grid grid-cols-[65%_1fr] gap-2">
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className={labelCls}>CORREO-E</span>
+                <input
+                  className={inputBase}
+                  type="email"
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className={labelCls}>WHATSAPP</span>
+                <input
+                  className={inputBase}
+                  type="tel"
+                  value={whatsapp}
+                  onChange={event => setWhatsapp(event.target.value)}
+                  placeholder="999 999 999"
+                />
+              </div>
+            </div>
+          </>
+        ) : errorMsg ? (
+          <p className="text-[11px] text-red-500">{errorMsg}</p>
         ) : null}
       </div>
-      <footer className={`grid shrink-0 gap-2 border-t border-[#f0f4f8] px-4 py-3 ${puedeContinuar ? 'grid-cols-2' : 'grid-cols-1'}`}>
-        <button
-          type="button"
-          onClick={confirmarGenerico}
-          className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
-        >
-          CANCELAR
-        </button>
-        {puedeContinuar ? (
-          <button
-            type="button"
-            onClick={continuar}
-            className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97]"
-          >
-            CONTINUAR →
+      {fase === 'INGRESO' ? (
+        <footer className="grid shrink-0 grid-cols-1 gap-2 border-t border-[#f0f4f8] px-4 py-3">
+          <button type="button" onClick={confirmarGenerico} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
+            CANCELAR
           </button>
-        ) : null}
-      </footer>
+        </footer>
+      ) : (
+        <footer className="grid shrink-0 grid-cols-[25%_25%_1fr] gap-2 border-t border-[#f0f4f8] px-4 py-3">
+          <button type="button" onClick={confirmarGenerico} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
+            CANCELAR
+          </button>
+          <button type="button" onClick={fuente === 'RENIEC' ? buscarOnlineDNI : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
+            {fuente === 'RENIEC' ? 'ACTUALIZAR' : 'EDITAR'}
+          </button>
+          <button type="button" onClick={confirmarBoleta} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+            {fuente === 'LOCAL' ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
+          </button>
+        </footer>
+      )}
     </div>
   )
 }
@@ -385,7 +638,7 @@ function FormularioDNI({
     }
 
     limpiarDatosDNI()
-    setErrorMsg('Sin resultados en búsqueda local')
+    setErrorMsg('Sin resultados en búsqueda local — Usar búsqueda RENIEC')
     setBuscoLocal(true)
   }
 
@@ -1016,9 +1269,14 @@ export default function ClienteBuscador({
       {vista === 'INICIO' && (
         <VistaInicio
           docType={docType}
+          onContinuar={navegarFormulario}
+          onAbrirBoleta={() => setVista('FORMULARIO_BOLETA')}
+        />
+      )}
+      {vista === 'FORMULARIO_BOLETA' && (
+        <FormularioBoleta
           onReceptorConfirmado={onReceptorConfirmado}
           onCancelar={onCancelar}
-          onContinuar={navegarFormulario}
         />
       )}
       {vista === 'FORMULARIO_DNI' && (
