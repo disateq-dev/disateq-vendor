@@ -852,6 +852,9 @@ function FormularioRUC({
   const [razonSocial, setRazonSocial] = useState('')
   const [nombreComercial, setNombreComercial] = useState('')
   const [direccionFiscal, setDireccionFiscal] = useState('')
+  const [distrito, setDistrito] = useState('')
+  const [provincia, setProvincia] = useState('')
+  const [departamento, setDepartamento] = useState('')
   const [estadoRuc, setEstadoRuc] = useState('')
   const [condicion, setCondicion] = useState('')
   const [email, setEmail] = useState('')
@@ -860,43 +863,62 @@ function FormularioRUC({
   const [clienteId, setClienteId] = useState<string | null>(null)
   const [editando, setEditando] = useState(false)
   const [buscando, setBuscando] = useState(false)
+  const [buscoLocal, setBuscoLocal] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [fase, setFase] = useState<'INGRESO' | 'RESULTADO'>('INGRESO')
 
-  useEffect(() => {
-    const documento = numDocInicial.trim()
-    if (!documento) return
+  function separarDireccionFiscal(valor: string | null): void {
+    const partes = (valor ?? '').split(',').map(parte => parte.trim()).filter(Boolean)
+    setDireccionFiscal(partes[0] ?? '')
+    setDistrito(partes[1] ?? '')
+    setProvincia(partes[2] ?? '')
+    setDepartamento(partes[3] ?? '')
+  }
 
-    setNumDoc(documento)
-    const local = clienteStore.getClienteByDocumento(documento)
-    if (!local) return
+  function construirDireccionFiscal(): string | null {
+    const direccionCompleta = [direccionFiscal, distrito, provincia, departamento]
+      .map(parte => parte.trim())
+      .filter(Boolean)
+      .join(', ')
+    return direccionCompleta || null
+  }
 
-    setRazonSocial(local.nombre)
+  function cargarClienteLocal(cliente: Cliente): void {
+    setRazonSocial(cliente.nombre)
     setNombreComercial('')
-    setDireccionFiscal(local.identificacionFiscal.direccionFiscal ?? '')
-    setEmail(local.canales.email ?? '')
-    setWhatsapp(local.canales.whatsapp ?? '')
+    separarDireccionFiscal(cliente.identificacionFiscal.direccionFiscal)
+    setEstadoRuc('')
+    setCondicion('')
+    setEmail(cliente.canales.email ?? '')
+    setWhatsapp(cliente.canales.whatsapp ?? '')
     setFuente('LOCAL')
-    setClienteId(local.id)
+    setClienteId(cliente.id)
     setEditando(false)
+    setBuscoLocal(false)
+    setErrorMsg(null)
     setFase('RESULTADO')
-  }, [numDocInicial])
+  }
 
-  async function buscarRUC(): Promise<void> {
-    const local = clienteStore.getClienteByDocumento(numDoc.trim())
+  function cambiarNumeroDocumento(valor: string): void {
+    setNumDoc(normalizarDocumento(valor, 11))
+    setBuscoLocal(false)
+    setErrorMsg(null)
+  }
+
+  function buscarLocal(): void {
+    const documento = numDoc.trim()
+    const local = clienteStore.getClienteByDocumento(documento)
     if (local) {
-      setRazonSocial(local.nombre)
-      setNombreComercial('')
-      setDireccionFiscal(local.identificacionFiscal.direccionFiscal ?? '')
-      setEmail(local.canales.email ?? '')
-      setWhatsapp(local.canales.whatsapp ?? '')
-      setFuente('LOCAL')
-      setClienteId(local.id)
-      setEditando(false)
-      setFase('RESULTADO')
+      cargarClienteLocal(local)
       return
     }
 
+    setClienteId(null)
+    setBuscoLocal(true)
+    setErrorMsg('Sin resultados en búsqueda local — Usar búsqueda SUNAT')
+  }
+
+  async function consultarSunat(): Promise<void> {
     setBuscando(true)
     setErrorMsg(null)
     try {
@@ -905,7 +927,8 @@ function FormularioRUC({
       const html = await res.text()
       const parsed = parsearHtmlSunat(html, 'RUC', numDoc.trim()) as Partial<DatosRUC> | null
       if (!parsed?.razonSocial) {
-        setErrorMsg('No se encontraron datos en SUNAT. Completa manualmente.')
+        setErrorMsg('Sin conexión. Completa los campos manualmente.')
+        setFuente('MANUAL')
         setEditando(true)
         setFase('RESULTADO')
         return
@@ -913,13 +936,20 @@ function FormularioRUC({
       setRazonSocial(parsed.razonSocial ?? '')
       setNombreComercial(parsed.nombreComercial ?? '')
       setDireccionFiscal(parsed.direccionFiscal ?? '')
+      setDistrito('')
+      setProvincia('')
+      setDepartamento('')
       setEstadoRuc(parsed.estadoRuc ?? '')
       setCondicion(parsed.condicion ?? '')
+      setEmail('')
+      setWhatsapp('')
       setFuente('SUNAT')
+      setClienteId(null)
       setEditando(false)
       setFase('RESULTADO')
     } catch {
       setErrorMsg('Sin conexión. Completa los campos manualmente.')
+      setFuente('MANUAL')
       setEditando(true)
       setFase('RESULTADO')
     } finally {
@@ -927,14 +957,30 @@ function FormularioRUC({
     }
   }
 
+  function ejecutarAccionIngreso(): void {
+    if (numDoc.trim().length !== 11 || buscando) return
+    if (buscoLocal) {
+      void consultarSunat()
+      return
+    }
+    buscarLocal()
+  }
+
   function ingresoManual(): void {
     setFuente('MANUAL')
     setEditando(true)
+    setClienteId(null)
     setFase('RESULTADO')
+  }
+
+  async function actualizarSunat(): Promise<void> {
+    if (buscando) return
+    await consultarSunat()
   }
 
   function confirmarRUC(): void {
     const nombreFinal = razonSocial.trim().toUpperCase()
+    const direccionCompleta = construirDireccionFiscal()
     let cliente: Cliente
     if (clienteId) {
       const existente = clienteStore.getClienteById(clienteId)!
@@ -944,7 +990,7 @@ function FormularioRUC({
         identificacionFiscal: {
           ...existente.identificacionFiscal,
           razonSocial: nombreFinal,
-          direccionFiscal: direccionFiscal.trim() || null,
+          direccionFiscal: direccionCompleta,
         },
         canales: resolverCanales(email, whatsapp),
         modificadoEn: new Date().toISOString(),
@@ -957,7 +1003,7 @@ function FormularioRUC({
           tipoDocumento: 'RUC',
           numeroDocumento: numDoc.trim(),
           razonSocial: nombreFinal,
-          direccionFiscal: direccionFiscal.trim() || null,
+          direccionFiscal: direccionCompleta,
           documentoFiscalSugerido: 'FACTURA',
           validadoEn: fuente !== 'MANUAL' ? new Date().toISOString() : null,
         },
@@ -969,7 +1015,7 @@ function FormularioRUC({
       tipoDocumento: 'RUC',
       numeroDocumento: numDoc.trim(),
       nombre: nombreFinal,
-      direccion: direccionFiscal.trim() || null,
+      direccion: direccionCompleta,
       esGenerico: false,
       clienteId: cliente.id,
       email: email.trim() || null,
@@ -979,6 +1025,21 @@ function FormularioRUC({
 
   const puedeConfirmar = razonSocial.trim().length > 0
   const puedeEditarDatos = (fuente === 'LOCAL' || fuente === 'MANUAL') && editando
+  const puedeBuscarIngreso = numDoc.trim().length === 11 && !buscando
+  const textoBotonIngreso = buscando ? 'Consultando…' : buscoLocal ? 'SUNAT' : 'BUSCAR'
+  const claseBotonIngreso = buscoLocal
+    ? 'bg-[#2154d8] text-white hover:bg-[#1a42b0]'
+    : 'bg-[#4CAF50] text-white hover:bg-[#3d9e41]'
+  const botonIngreso = (className = ''): ReactElement => (
+    <button
+      type="button"
+      onClick={ejecutarAccionIngreso}
+      disabled={!puedeBuscarIngreso}
+      className={`rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 ${claseBotonIngreso} ${className}`}
+    >
+      {textoBotonIngreso}
+    </button>
+  )
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -987,56 +1048,45 @@ function FormularioRUC({
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
             <div className="flex flex-col gap-1">
-              <input
-                autoFocus
-                inputMode="numeric"
-                maxLength={11}
-                value={numDoc}
-                onChange={event => setNumDoc(normalizarDocumento(event.target.value, 11))}
-                placeholder="N° RUC — 11 dígitos"
-                className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-3 text-[18px] font-bold tracking-wider text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
-              />
+              <div className="flex gap-2">
+                <input
+                  autoFocus
+                  inputMode="numeric"
+                  maxLength={11}
+                  value={numDoc}
+                  onChange={event => cambiarNumeroDocumento(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') ejecutarAccionIngreso()
+                  }}
+                  placeholder="N° RUC — 11 dígitos"
+                  className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-3 text-[18px] font-bold tracking-wider text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                />
+                {botonIngreso('shrink-0')}
+              </div>
             </div>
             {numDoc.trim().length === 11 ? (
-              <div className="flex flex-col gap-2">
-                <button type="button" onClick={buscarRUC} disabled={buscando} className="rounded-xl border border-[#d0d9ee] bg-[#f4f7ff] px-3.5 py-2.5 text-[12px] font-bold text-[#2154d8] transition hover:bg-[#e8eeff] disabled:cursor-not-allowed disabled:opacity-50">
-                  {buscando ? 'Consultando SUNAT…' : 'Buscar en SUNAT →'}
-                </button>
-                <button type="button" onClick={ingresoManual} className="rounded-xl border border-[#e4e9f0] px-3.5 py-2.5 text-[12px] font-bold text-[#374151] transition hover:bg-[#f8fafd]">
-                  Ingresar manual
-                </button>
-              </div>
+              <button type="button" onClick={ingresoManual} className="self-start text-[11px] font-semibold text-[#9ca3af] transition hover:text-[#374151]">
+                ¿Sin conexión? Ingresar manual →
+              </button>
             ) : null}
+            {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
           </div>
-          <footer className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#f0f4f8] px-4 py-3">
+          <footer className="grid shrink-0 grid-cols-1 gap-2 border-t border-[#f0f4f8] px-4 py-3">
             <button type="button" onClick={onCancelar} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               CANCELAR
-            </button>
-            <button type="button" onClick={buscarRUC} disabled={numDoc.trim().length !== 11 || buscando} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
-              {buscando ? 'Consultando SUNAT…' : 'BUSCAR EN SUNAT →'}
             </button>
           </footer>
         </>
       ) : (
         <>
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
-            {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
             <div className="flex flex-col gap-1">
               <div className={`${inputDis} ${numDoc ? '' : 'text-[#d1d9e1]'}`}>{numDoc || 'N° RUC — 11 dígitos'}</div>
               <div>
                 <ChipFuente fuente={fuente} />
               </div>
             </div>
-            {estadoRuc ? (
-              <div className="flex flex-col gap-1">
-                <div className={inputDis}>{estadoRuc}</div>
-              </div>
-            ) : null}
-            {condicion ? (
-              <div className="flex flex-col gap-1">
-                <div className={inputDis}>{condicion}</div>
-              </div>
-            ) : null}
+            {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
             <div className="flex flex-col gap-1">
               {puedeEditarDatos ? (
                 <input className={inputBase} value={razonSocial} onChange={event => setRazonSocial(event.target.value)} placeholder="Razón social" />
@@ -1058,6 +1108,39 @@ function FormularioRUC({
                 <div className={`${inputDis} ${direccionFiscal ? '' : 'text-[#d1d9e1]'}`}>{direccionFiscal || 'Dirección fiscal'}</div>
               )}
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex min-w-0 flex-col gap-1">
+                {puedeEditarDatos ? (
+                  <input className={inputBase} value={distrito} onChange={event => setDistrito(event.target.value)} placeholder="Distrito" />
+                ) : (
+                  <div className={`${inputDis} ${distrito ? '' : 'text-[#d1d9e1]'}`}>{distrito || 'Distrito'}</div>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-col gap-1">
+                {puedeEditarDatos ? (
+                  <input className={inputBase} value={provincia} onChange={event => setProvincia(event.target.value)} placeholder="Provincia" />
+                ) : (
+                  <div className={`${inputDis} ${provincia ? '' : 'text-[#d1d9e1]'}`}>{provincia || 'Provincia'}</div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              {puedeEditarDatos ? (
+                <input className={inputBase} value={departamento} onChange={event => setDepartamento(event.target.value)} placeholder="Departamento / Región" />
+              ) : (
+                <div className={`${inputDis} ${departamento ? '' : 'text-[#d1d9e1]'}`}>{departamento || 'Departamento / Región'}</div>
+              )}
+            </div>
+            {estadoRuc ? (
+              <div className="flex flex-col gap-1">
+                <div className={inputDis}>{estadoRuc}</div>
+              </div>
+            ) : null}
+            {condicion ? (
+              <div className="flex flex-col gap-1">
+                <div className={inputDis}>{condicion}</div>
+              </div>
+            ) : null}
             <div className="grid grid-cols-[65%_1fr] gap-2">
               <div className="flex min-w-0 flex-col gap-1">
                 <input
@@ -1083,7 +1166,7 @@ function FormularioRUC({
             <button type="button" onClick={onCancelar} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               CANCELAR
             </button>
-            <button type="button" onClick={fuente === 'SUNAT' ? buscarRUC : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
+            <button type="button" onClick={fuente === 'SUNAT' ? () => { void actualizarSunat() } : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               {fuente === 'SUNAT' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
             <button type="button" onClick={confirmarRUC} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
