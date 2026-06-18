@@ -73,7 +73,7 @@ export function PreVentaGrid() {
 
       if (e.key === "Delete" && e.ctrlKey) {
         if (e.altKey || e.shiftKey || e.metaKey) return;
-        if (inInput) return;
+        if (inInput && sectionRef.current?.contains(document.activeElement)) return;
         e.preventDefault();
         preVentaService.limpiar();
       }
