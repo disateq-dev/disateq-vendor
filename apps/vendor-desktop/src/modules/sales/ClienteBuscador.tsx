@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { FileText } from 'lucide-react'
 import { crearCliente } from '../../domains/clients/cliente.service'
@@ -218,6 +218,7 @@ function FormularioBoleta({
   const [buscando, setBuscando] = useState(false)
   const [buscoLocal, setBuscoLocal] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const numDocInputRef = useRef<HTMLInputElement>(null)
 
   const maxLength = tipoActivo === 'DNI' ? 8 : tipoActivo === 'CE' ? 9 : 12
   const longitudDocumento = numDoc.trim().length
@@ -408,6 +409,42 @@ function FormularioBoleta({
     })
   }
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        onCancelar()
+        event.preventDefault()
+        return
+      }
+
+      if (event.ctrlKey && event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        if (fuente === 'RENIEC') {
+          void buscarOnlineDNI()
+          return
+        }
+        setEditando(e => !e)
+        return
+      }
+
+      if (
+        event.key === 'Enter' &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.metaKey &&
+        document.activeElement !== numDocInputRef.current &&
+        puedeConfirmar
+      ) {
+        event.preventDefault()
+        confirmarBoleta()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancelar, fuente, puedeConfirmar, buscarOnlineDNI, confirmarBoleta, setEditando])
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
@@ -432,6 +469,7 @@ function FormularioBoleta({
         <div className="flex flex-col gap-1">
           <div className="flex gap-2">
             <input
+              ref={numDocInputRef}
               autoFocus
               inputMode={tipoActivo === 'PASAPORTE' ? 'text' : 'numeric'}
               maxLength={maxLength}
@@ -568,6 +606,7 @@ function FormularioDNI({
   const [buscando, setBuscando] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [buscoLocal, setBuscoLocal] = useState(false)
+  const numDocInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const documentoInicial = normalizarDocumento(numDocInicial, 8)
@@ -740,6 +779,42 @@ function FormularioDNI({
     </button>
   )
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        onCancelar()
+        event.preventDefault()
+        return
+      }
+
+      if (event.ctrlKey && event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        if (fuente === 'RENIEC') {
+          void buscarOnline()
+          return
+        }
+        setEditando(e => !e)
+        return
+      }
+
+      if (
+        event.key === 'Enter' &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.metaKey &&
+        document.activeElement !== numDocInputRef.current &&
+        puedeConfirmar
+      ) {
+        event.preventDefault()
+        confirmar()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancelar, fuente, puedeConfirmar, buscarOnline, confirmar, setEditando])
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
@@ -749,6 +824,7 @@ function FormularioDNI({
             <div className="flex flex-col gap-1">
               <div className="flex gap-2">
                 <input
+                  ref={numDocInputRef}
                   autoFocus
                   inputMode="numeric"
                   maxLength={8}
@@ -870,6 +946,7 @@ function FormularioRUC({
   const [buscoLocal, setBuscoLocal] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [fase, setFase] = useState<'INGRESO' | 'RESULTADO'>('INGRESO')
+  const numDocInputRef = useRef<HTMLInputElement>(null)
 
   function cargarClienteLocal(cliente: Cliente): void {
     setRazonSocial(cliente.nombre)
@@ -1027,6 +1104,42 @@ function FormularioRUC({
     </button>
   )
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        onCancelar()
+        event.preventDefault()
+        return
+      }
+
+      if (event.ctrlKey && event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        if (fuente === 'SUNAT') {
+          void actualizarSunat()
+          return
+        }
+        setEditando(e => !e)
+        return
+      }
+
+      if (
+        event.key === 'Enter' &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.metaKey &&
+        document.activeElement !== numDocInputRef.current &&
+        puedeConfirmar
+      ) {
+        event.preventDefault()
+        confirmarRUC()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancelar, fuente, puedeConfirmar, actualizarSunat, confirmarRUC, setEditando])
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
@@ -1036,6 +1149,7 @@ function FormularioRUC({
             <div className="flex flex-col gap-1">
               <div className="flex gap-2">
                 <input
+                  ref={numDocInputRef}
                   autoFocus
                   inputMode="numeric"
                   maxLength={11}
@@ -1154,6 +1268,24 @@ function FormularioLibre({
   const [whatsapp, setWhatsapp] = useState(clienteInicial?.canales.whatsapp ?? '')
   const [editando, setEditando] = useState(true)
   const puedeConfirmar = nombre.trim().length > 0
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        onCancelar()
+        event.preventDefault()
+        return
+      }
+
+      if (event.ctrlKey && event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        setEditando(e => !e)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancelar, setEditando])
 
   function confirmarLibre(): void {
     const nombreFinal = nombre.trim().toUpperCase()

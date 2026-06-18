@@ -266,7 +266,6 @@ export function SalesWorkspace() {
   }, [cobroOpen, closeCobro, posContext]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (cobroOpen) return;
     // Helper: target line for operations — active (navigated) or fallback to last
     const targetLine = indiceLineaActiva >= 0 ? lines[indiceLineaActiva] : lastLine;
 
@@ -391,7 +390,7 @@ export function SalesWorkspace() {
               setSearchQuery(trimmed);
             }}
             onKeyDown={handleKeyDown}
-            onFocus={() => { enterSearch(); setIsFocused(true); }}
+            onFocus={() => { if (cobroOpen) closeCobro(); enterSearch(); setIsFocused(true); }}
             onBlur={() => setIsFocused(false)}
             placeholder="Buscar producto, código o barra..."
             className="min-w-0 flex-1 bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#b8c4cf]"
