@@ -4,7 +4,7 @@ import { getHOVById } from './hov.store'
 import { resolverValor } from './valor-operacional.resolver'
 import type { TipoValorOperacional } from './valor-operacional.types'
 import { loadMovimientos } from '../inventory/persistence'
-import { deriveDisponibilidad } from '../inventory/store'
+import { deriveDisponibilidad, useInventoryStore } from '../inventory/store'
 
 export interface ProductoBuscable {
   id: string
@@ -16,6 +16,7 @@ export interface ProductoBuscable {
   hovId: string
   factorConversion: number
   requiereValorManual: boolean
+  tieneMultiplesFormas: boolean
   category?: string
 }
 
@@ -62,6 +63,12 @@ export function obtenerProductosBuscables(
       disponibilidadService
     )
 
+    const conteoPorProductoId = catalogo.items.reduce<Map<string, number>>((acc, item) => {
+      const productoId = getHOVById(item.hovId)?.productoId ?? item.hovId
+      acc.set(productoId, (acc.get(productoId) ?? 0) + 1)
+      return acc
+    }, new Map<string, number>())
+
     return catalogo.items.map(item => ({
       id: item.hovId,
       description: item.nombre,
@@ -72,6 +79,7 @@ export function obtenerProductosBuscables(
       hovId: item.hovId,
       factorConversion: item.factorConversion,
       requiereValorManual: item.valorAplicado === null,
+      tieneMultiplesFormas: (conteoPorProductoId.get(getHOVById(item.hovId)?.productoId ?? item.hovId) ?? 0) > 1,
       category: item.category,
     }))
   } catch {
@@ -133,9 +141,13 @@ export function agruparPorProducto(productos: ProductoBuscable[]): GrupoProducto
 
   return Array.from(grupos.entries()).map(([productoId, grupo]) => {
     const primero = grupo[0]
+    const nombreInventario = useInventoryStore.getState().items.find(item => item.itemId === productoId)?.nombre
+    const nombreFallback = primero.description.includes('·')
+      ? primero.description.split('·')[0].trim()
+      : primero.description
     return {
       productoId,
-      nombre: primero.description,
+      nombre: nombreInventario ?? nombreFallback,
       stockStatus: primero.stockStatus,
       barcode: primero.barcode,
       formasVenta: grupo.map(producto => {

@@ -520,6 +520,9 @@ export function SalesWorkspace() {
                 {filtered.map((product, idx) => {
                   const isOut = product.stockStatus === "out";
                   const isSelected = idx === selectedIndex;
+                  const formasCount = product.tieneMultiplesFormas
+                    ? agruparPorProducto(catalogoActivo).find(g => g.formasVenta.some(f => f.hovId === product.hovId))?.formasVenta.length ?? 1
+                    : 1;
 
                   return (
                     <div
@@ -554,6 +557,11 @@ export function SalesWorkspace() {
                             </span>
                             <span className="text-[#d1d9e1]">·</span>
                             {statusChip(product)}
+                            {product.tieneMultiplesFormas && formasCount > 1 && (
+                              <span className="rounded-full bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#2563eb]">
+                                {formasCount} formas
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -596,6 +604,9 @@ export function SalesWorkspace() {
                   {visualItems.map((product) => {
                     const isOut  = product.stockStatus === "out";
                     const price  = tilePrice(product);
+                    const formasCount = product.tieneMultiplesFormas
+                      ? agruparPorProducto(catalogoActivo).find(g => g.formasVenta.some(f => f.hovId === product.hovId))?.formasVenta.length ?? 1
+                      : 1;
 
                     return (
                       <button
@@ -624,6 +635,11 @@ export function SalesWorkspace() {
                           <p className={`mt-1.5 text-[13px] font-extrabold tabular-nums ${price.cls}`}>
                             {price.prefix}S/ {product.unitPrice.toFixed(2)}
                           </p>
+                          {product.tieneMultiplesFormas && formasCount > 1 && (
+                            <span className="mt-1.5 inline-flex rounded-full bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#2563eb]">
+                              {formasCount} formas
+                            </span>
+                          )}
                           {product.stockStatus !== "normal" && (
                             <div className="mt-1.5 text-[10px] leading-none">{statusChip(product)}</div>
                           )}
