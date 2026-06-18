@@ -4,12 +4,17 @@ import { usePreVentaStore } from "../../domains/preventa/state/preventa.store";
 import { useLineasPreVenta } from "../../domains/preventa/selectors/preventa.selectors";
 import { preVentaService } from "../../domains/preventa/services/preventa.service";
 import { usePOS } from "../../context/POSContext";
+import { getHOVById } from "../../domains/catalog/hov.store";
 import {
+  agruparPorProducto,
   obtenerProductosBuscables,
+  type GrupoProducto,
   type ProductoBuscable
 } from "../../domains/catalog/bridge-catalogo";
+import type { TipoValorOperacional } from "../../domains/catalog/valor-operacional.types";
 import { loadBusinessConfig } from "../../config/business";
 import { RUBROS } from "../../data/catalogs";
+import { PresentacionSheet } from "./PresentacionSheet";
 
 function statusChip(p: ProductoBuscable) {
   if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
@@ -141,6 +146,8 @@ export function SalesWorkspace() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const [grupoActivo, setGrupoActivo] = useState<GrupoProducto | null>(null);
+  const [puedeEditarPrecio] = useState<boolean>(false);
   const lastAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
@@ -243,6 +250,13 @@ export function SalesWorkspace() {
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
     if (p.stockStatus === "out") return;
     if (cobroOpen) closeCobro();
+    const hov = getHOVById(p.hovId);
+    const productoId = hov?.productoId ?? p.hovId;
+    const grupo = agruparPorProducto(catalogoActivo).find(g => g.productoId === productoId);
+    if (grupo && grupo.formasVenta.length > 1) {
+      setGrupoActivo(grupo);
+      return;
+    }
     preVentaService.agregarProductoDesdeHOV({
       hovId: p.hovId,
       descripcion: p.description,
@@ -263,7 +277,32 @@ export function SalesWorkspace() {
     setQuery("");
     setSearchQuery("");
     inputRef.current?.focus();
-  }, [cobroOpen, closeCobro, posContext]);
+  }, [catalogoActivo, cobroOpen, closeCobro, posContext]);
+
+  const handleConfirmarForma = useCallback((hovId: string, valorFinal: number, tipoValor: TipoValorOperacional | null) => {
+    void tipoValor;
+    const hov = getHOVById(hovId);
+    const producto = catalogoActivo.find(p => p.hovId === hovId);
+    if (!hov || !producto) return;
+    preVentaService.agregarProductoDesdeHOV({
+      hovId,
+      descripcion: producto.description,
+      cantidad: 1,
+      valorUnitario: valorFinal,
+      presentacion: producto.presentacion,
+      factorConversion: producto.factorConversion,
+      requiereValorManual: producto.requiereValorManual,
+      contextoOperacionalId: posContext.contextoOperacionalId ?? "default",
+      identidadOperacionalId: posContext.identidadOperacionalId ?? "default",
+      operadorId: posContext.operadorActivo?.id ?? "default",
+      margenMinimoConfigurable: 0.15,
+      operadorTieneCapacidadLibre: false,
+    });
+    setGrupoActivo(null);
+    setQuery("");
+    setSearchQuery("");
+    inputRef.current?.focus();
+  }, [catalogoActivo, posContext]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     // Helper: target line for operations — active (navigated) or fallback to last
@@ -600,6 +639,14 @@ export function SalesWorkspace() {
 
       </div>
       </section>
+      {grupoActivo && (
+        <PresentacionSheet
+          grupo={grupoActivo}
+          onConfirmar={handleConfirmarForma}
+          onCancelar={() => setGrupoActivo(null)}
+          puedeEditarPrecio={puedeEditarPrecio}
+        />
+      )}
     </>
   );
 }

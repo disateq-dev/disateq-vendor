@@ -1,5 +1,8 @@
 import type { ContextoCatalogo, DisponibilidadCatalogo, UmbralDisponibilidad } from './catalogo.types'
 import { construirCatalogo } from './catalogo.service'
+import { getHOVById } from './hov.store'
+import { resolverValor } from './valor-operacional.resolver'
+import type { TipoValorOperacional } from './valor-operacional.types'
 import { loadMovimientos } from '../inventory/persistence'
 import { deriveDisponibilidad } from '../inventory/store'
 
@@ -99,4 +102,61 @@ export function buscarProductos(
   } catch {
     return []
   }
+}
+
+export interface FormaVenta {
+  hovId: string
+  nombre: string
+  factorConversion: number
+  valorAplicado: number | null
+  tipoValor: TipoValorOperacional | null
+  requiereAutorizacion: boolean
+}
+
+export interface GrupoProducto {
+  productoId: string
+  nombre: string
+  stockStatus: string
+  barcode: string
+  formasVenta: FormaVenta[]
+}
+
+export function agruparPorProducto(productos: ProductoBuscable[]): GrupoProducto[] {
+  const grupos = new Map<string, ProductoBuscable[]>()
+
+  productos.forEach(producto => {
+    const hov = getHOVById(producto.hovId)
+    const productoId = hov?.productoId ?? producto.hovId
+    const grupo = grupos.get(productoId) ?? []
+    grupos.set(productoId, [...grupo, producto])
+  })
+
+  return Array.from(grupos.entries()).map(([productoId, grupo]) => {
+    const primero = grupo[0]
+    return {
+      productoId,
+      nombre: primero.description,
+      stockStatus: primero.stockStatus,
+      barcode: primero.barcode,
+      formasVenta: grupo.map(producto => {
+        const resultado = resolverValor({
+          hovId: producto.hovId,
+          cantidad: 1,
+          contextoOperacionalId: 'default',
+          identidadOperacionalId: 'default',
+          momento: new Date().toISOString(),
+          margenMinimoConfigurable: 0.15,
+          operadorTieneCapacidadLibre: false,
+        })
+        return {
+          hovId: producto.hovId,
+          nombre: producto.presentacion,
+          factorConversion: producto.factorConversion,
+          valorAplicado: resultado.valorAplicado,
+          tipoValor: resultado.tipo,
+          requiereAutorizacion: resultado.requiereAutorizacion,
+        }
+      }),
+    }
+  })
 }

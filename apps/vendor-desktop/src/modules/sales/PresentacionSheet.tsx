@@ -1,139 +1,177 @@
-import { useEffect, useRef } from "react";
-import { X, ChevronRight } from "lucide-react";
-import type { CatalogProduct, Presentacion } from "../../data/catalogs";
+import { useEffect, useRef, useState } from "react";
+import type { ReactElement } from "react";
+import { X } from "lucide-react";
+import type { GrupoProducto, FormaVenta } from "../../domains/catalog/bridge-catalogo";
+import type { TipoValorOperacional } from "../../domains/catalog/valor-operacional.types";
 
-interface Props {
-  product:      CatalogProduct;
-  selectedPres: Presentacion | null;
-  onSelectPres: (p: Presentacion) => void;
-  onConfirm:    (product: CatalogProduct, pres: Presentacion, precio: number, tipoPrecio?: string) => void;
-  onCancel:     () => void;
+interface PresentacionSheetProps {
+  grupo: GrupoProducto;
+  onConfirmar: (hovId: string, valorFinal: number, tipoValor: TipoValorOperacional | null) => void;
+  onCancelar: () => void;
+  puedeEditarPrecio: boolean;
 }
 
-export function PresentacionSheet({ product, selectedPres, onSelectPres, onConfirm, onCancel }: Props) {
-  const firstBtnRef = useRef<HTMLButtonElement>(null);
+function stockChipClass(stockStatus: string): string {
+  if (stockStatus === "low") return "bg-amber-50 text-amber-600";
+  if (stockStatus === "out") return "bg-red-50 text-red-500";
+  return "bg-emerald-50 text-emerald-600";
+}
+
+function tipoValorClass(tipoValor: TipoValorOperacional | null): string {
+  if (tipoValor === "NORMAL") return "bg-[#f1f5f9] text-[#64748b]";
+  if (tipoValor === "OFERTA") return "bg-[#dcfce7] text-[#16a34a]";
+  if (tipoValor === "MAYORISTA") return "bg-[#dbeafe] text-[#1d4ed8]";
+  if (tipoValor === "PREFERENCIAL") return "bg-[#f3e8ff] text-[#7c3aed]";
+  if (tipoValor === "LIBRE") return "bg-[#fef3c7] text-[#d97706]";
+  return "bg-[#fef2f2] text-[#dc2626]";
+}
+
+function stockLabel(stockStatus: string): string {
+  if (stockStatus === "low") return "Queda poco";
+  if (stockStatus === "out") return "Sin unidades";
+  return "Disponible";
+}
+
+export function PresentacionSheet({
+  grupo,
+  onConfirmar,
+  onCancelar,
+  puedeEditarPrecio,
+}: PresentacionSheetProps): ReactElement {
+  const [formaActiva, setFormaActiva] = useState<FormaVenta | null>(null);
+  const [precioManual, setPrecioManual] = useState<string>("");
+  const firstButtonRef = useRef<HTMLButtonElement>(null);
+
+  const precioManualNumero = Number(precioManual);
+  const precioManualValido = Number.isFinite(precioManualNumero) && precioManualNumero > 0;
+  const puedeAgregar = formaActiva !== null && (
+    formaActiva.valorAplicado !== null || precioManualValido
+  );
 
   useEffect(() => {
-    const t = setTimeout(() => firstBtnRef.current?.focus(), 60);
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancelar();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancelar]);
+
+  useEffect(() => {
+    const t = setTimeout(() => firstButtonRef.current?.focus(), 20);
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); onCancel(); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onCancel]);
-
-  const pres = product.presentaciones ?? [];
-
-  function handleSelectPres(p: Presentacion) {
-    if (!p.precios || p.precios.length === 0) {
-      onConfirm(product, p, p.precio);
+  function confirmarForma(formaVenta: FormaVenta): void {
+    if (formaVenta.valorAplicado !== null) {
+      onConfirmar(formaVenta.hovId, formaVenta.valorAplicado, formaVenta.tipoValor);
       return;
     }
-    onSelectPres(p);
+    if (puedeEditarPrecio === false) return;
+    setFormaActiva(formaVenta);
+    setPrecioManual("");
   }
 
-  function handleSelectPrecio(pres: Presentacion, precio: number, tipo: string) {
-    onConfirm(product, pres, precio, tipo);
+  function confirmarActiva(): void {
+    if (formaActiva === null) return;
+    if (formaActiva.valorAplicado !== null) {
+      onConfirmar(formaActiva.hovId, formaActiva.valorAplicado, formaActiva.tipoValor);
+      return;
+    }
+    if (precioManualValido) {
+      onConfirmar(formaActiva.hovId, precioManualNumero, "LIBRE");
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-[2px]"
-      onClick={e => { if (e.target === e.currentTarget) onCancel(); }}
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-[2px]"
+      onClick={event => { if (event.target === event.currentTarget) onCancelar(); }}
     >
-      <div className="w-full max-w-md rounded-t-[28px] border border-[#e4e9f0] bg-white shadow-2xl">
-
-        {/* Header */}
-        <div className="flex items-center gap-3 border-b border-[#f1f5f9] px-5 py-4">
-          <span className="text-[28px] leading-none">{product.emoji}</span>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-[14px] font-bold text-[#111827]">{product.name}</p>
-            <p className="text-[11px] text-[#9ca3af]">
-              {selectedPres ? `${selectedPres.label} — elige el precio` : "¿Cómo lo llevas?"}
-            </p>
+      <div className="w-full max-w-md rounded-t-[28px] bg-white">
+        <header className="flex items-center gap-3 border-b border-[#f1f5f9] px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[14px] font-bold text-[#111827]">{grupo.nombre}</p>
           </div>
+          <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${stockChipClass(grupo.stockStatus)}`}>
+            {stockLabel(grupo.stockStatus)}
+          </span>
           <button
-            onClick={onCancel}
+            type="button"
+            onClick={onCancelar}
             className="rounded-xl p-2 text-[#9ca3af] transition hover:bg-[#f4f7fb] hover:text-[#374151]"
           >
             <X size={16} strokeWidth={2} />
           </button>
+        </header>
+
+        <div className="flex flex-col gap-3 px-4 py-4">
+          <p className="px-1 text-[10px] font-bold uppercase tracking-widest text-[#c0cad4]">
+            FORMA DE VENTA
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {grupo.formasVenta.map((formaVenta, index) => (
+              <button
+                key={formaVenta.hovId}
+                ref={index === 0 ? firstButtonRef : null}
+                type="button"
+                onClick={() => confirmarForma(formaVenta)}
+                className="rounded-2xl border border-[#e4e9f0] px-3 py-3 text-left transition hover:border-[#45b356]/40 hover:bg-[#F0FAF1] active:scale-[0.98]"
+              >
+                <p className="truncate text-[13px] font-bold uppercase text-[#1f2937]">
+                  {formaVenta.nombre}
+                </p>
+                <p className={`mt-1 text-[15px] font-bold tabular-nums ${formaVenta.valorAplicado === null ? "text-[#9ca3af]" : "text-[#2d4f6b]"}`}>
+                  {formaVenta.valorAplicado === null ? "S/ ---" : `S/ ${formaVenta.valorAplicado.toFixed(2)}`}
+                </p>
+                <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${tipoValorClass(formaVenta.tipoValor)}`}>
+                  {formaVenta.tipoValor ?? "SIN PRECIO"}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {puedeEditarPrecio && formaActiva?.valorAplicado === null ? (
+            <div className="flex flex-col gap-1">
+              <label className="px-1 text-[10px] font-bold uppercase tracking-widest text-[#c0cad4]">
+                PRECIO
+              </label>
+              <input
+                type="number"
+                value={precioManual}
+                onChange={event => setPrecioManual(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === "Enter" && precioManualValido) {
+                    event.preventDefault();
+                    onConfirmar(formaActiva.hovId, precioManualNumero, "LIBRE");
+                  }
+                }}
+                className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2 text-[13px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+              />
+            </div>
+          ) : null}
         </div>
 
-        {/* Body */}
-        <div className="px-4 py-3 flex flex-col gap-2">
-
-          {!selectedPres ? (
-            <>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#c0cad4] px-1">
-                Presentación
-              </p>
-              {pres.map((p, idx) => (
-                <button
-                  key={p.id}
-                  ref={idx === 0 ? firstBtnRef : null}
-                  onClick={() => handleSelectPres(p)}
-                  className="flex items-center gap-3 rounded-2xl border border-[#e4e9f0] px-4 py-3 text-left transition hover:border-[#45b356]/40 hover:bg-[#F0FAF1] active:scale-[0.98]"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-bold text-[#1f2937]">{p.label}</p>
-                    {p.precios && p.precios.length > 0 ? (
-                      <p className="text-[11px] text-[#9ca3af]">
-                        desde S/ {Math.min(...p.precios.map(x => x.valor)).toFixed(2)}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-[#9ca3af]">S/ {p.precio.toFixed(2)}</p>
-                    )}
-                  </div>
-                  <ChevronRight size={16} strokeWidth={2} className="shrink-0 text-[#c0cad4]" />
-                </button>
-              ))}
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 px-1">
-                <button
-                  onClick={() => onSelectPres(null as unknown as Presentacion)}
-                  className="text-[11px] font-semibold text-[#9ca3af] hover:text-[#374151] transition"
-                >
-                  ← {selectedPres.label}
-                </button>
-              </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#c0cad4] px-1">
-                Tipo de precio
-              </p>
-              {(selectedPres.precios ?? []).map((pr, idx) => (
-                <button
-                  key={pr.tipo}
-                  ref={idx === 0 ? firstBtnRef : null}
-                  onClick={() => handleSelectPrecio(selectedPres, pr.valor, pr.tipo)}
-                  className="flex items-center gap-3 rounded-2xl border border-[#e4e9f0] px-4 py-3 text-left transition hover:border-[#45b356]/40 hover:bg-[#F0FAF1] active:scale-[0.98]"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-bold text-[#1f2937]">{pr.tipo}</p>
-                  </div>
-                  <p className="text-[15px] font-extrabold tabular-nums text-[#2d4f6b]">
-                    S/ {pr.valor.toFixed(2)}
-                  </p>
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 pb-5 pt-1">
+        <footer className="grid grid-cols-2 gap-2 border-t border-[#f0f4f8] px-4 py-3">
           <button
-            onClick={onCancel}
-            className="w-full rounded-2xl border border-[#e4e9f0] py-3 text-[12px] font-semibold text-[#9ca3af] transition hover:bg-[#f4f7fb] hover:text-[#374151]"
+            type="button"
+            onClick={onCancelar}
+            className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]"
           >
-            Cancelar
+            CANCELAR
           </button>
-        </div>
-
+          <button
+            type="button"
+            onClick={confirmarActiva}
+            disabled={!puedeAgregar}
+            className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            AGREGAR →
+          </button>
+        </footer>
       </div>
     </div>
   );
