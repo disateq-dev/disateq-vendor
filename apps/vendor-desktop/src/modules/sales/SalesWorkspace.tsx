@@ -327,6 +327,7 @@ export function SalesWorkspace() {
         break;
       }
       case "Delete": {
+        if (e.ctrlKey) break;
         if (query !== "") break;
         e.preventDefault();
         if (targetLine) preVentaService.quitarLinea(targetLine.lineaId);

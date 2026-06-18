@@ -14,7 +14,7 @@ export function PreVentaGrid() {
   const limpiarNotaPendiente  = usePreVentaStore(s => s.limpiarNotaPendiente);
   const indiceLineaActiva     = usePreVentaStore(s => s.indiceLineaActiva);
   const setIndiceLineaActiva  = usePreVentaStore(s => s.setIndiceLineaActiva);
-  const { openCobro, cashSession } = usePOS();
+  const { openCobro, cashSession, cobroOpen } = usePOS();
 
   const [saleNumber] = useState(() => String(_saleCounter++).padStart(6, "0"));
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -58,6 +58,7 @@ export function PreVentaGrid() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (cobroOpen) return;
       if (lines.length === 0) return;
       const tag = (document.activeElement as HTMLElement)?.tagName;
       const inInput = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
@@ -79,7 +80,7 @@ export function PreVentaGrid() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [lines.length, openCobro]);
+  }, [lines.length, openCobro, cobroOpen]);
 
   const saveNote = useCallback(() => {
     if (!editingNoteId) return;
