@@ -1005,6 +1005,7 @@ export function CobroPanel() {
                   ref={yapeRefInputRef}
                   value={yapeRef}
                   onChange={e => setYapeRef(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.ctrlKey && canConfirm) { e.preventDefault(); imprimirRef.current(); } }}
                   placeholder="N° operación Yape (opcional)"
                   className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[13px] text-[#374151] outline-none focus:border-[#2154d8]"
                 />
@@ -1023,6 +1024,7 @@ export function CobroPanel() {
                   ref={tarjetaRefInputRef}
                   value={tarjetaRef}
                   onChange={e => setTarjetaRef(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.ctrlKey && canConfirm) { e.preventDefault(); imprimirRef.current(); } }}
                   placeholder="N° operación Tarjeta (opcional)"
                   className="flex-1 rounded-xl border border-[#e4e9f0] px-3 py-2 text-[13px] text-[#374151] outline-none focus:border-[#2154d8]"
                 />
