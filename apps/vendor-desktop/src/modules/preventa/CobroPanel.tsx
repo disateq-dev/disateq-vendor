@@ -79,6 +79,7 @@ export function CobroPanel() {
   const [mixtoYap, setMixtoYap] = useState("");
   const [mixtoTar, setMixtoTar] = useState("");
   const [dispatchCorrelative, setDispatchCorrelative] = useState(1);
+  const [confirmSheet, setConfirmSheet] = useState<{ accion: 'guardar' | 'enviar' | 'imprimir'; docNumber: string; total: number; metodo: string; canal?: string } | null>(null);
 
   // ── committed customer ───────────────────────────────────────────────────────
   const [customer, setCustomer] = useState<ReceptorComprobante | null>(null);
@@ -119,6 +120,7 @@ export function CobroPanel() {
     && (payMethod !== "efectivo" || paidEnough)
     && (payMethod !== "mixto"    || mixtoValid)
     && (!needsCustomer || customerOk);
+  const puedeEnviar = canConfirm && docType !== "nota";
   netTotalRef.current = netTotal;
 
   // ── advertencias reactivas del validador ─────────────────────────────────────
@@ -332,10 +334,13 @@ export function CobroPanel() {
       window.open(`mailto:${customer.email}?subject=${asunto}&body=${cuerpo}`, '_blank');
     }
 
-    confirmEmit();
+    confirmEmit({
+      accion: 'enviar',
+      canal: customer?.whatsapp ? 'WhatsApp' : 'Email',
+    });
   }
 
-  function confirmEmit() {
+  function confirmEmit(confirmacion?: { accion: 'guardar' | 'enviar'; canal?: string }) {
     if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
     if (!canConfirm) return;
     const now = new Date();
@@ -418,8 +423,13 @@ export function CobroPanel() {
       preVentaService.concretarVenta(pedidoActivo);
     }
 
-    preVentaService.limpiar();
-    closeCobro();
+    setConfirmSheet({
+      accion: confirmacion?.accion ?? 'guardar',
+      docNumber,
+      total: netTotal,
+      metodo: payMethod,
+      canal: confirmacion?.canal,
+    });
   }
 
   async function handleImprimir() {
@@ -561,8 +571,18 @@ export function CobroPanel() {
       preVentaService.concretarVenta(pedidoActivo);
     }
 
+    setConfirmSheet({
+      accion: 'imprimir',
+      docNumber,
+      total: netTotal,
+      metodo: payMethod,
+    });
+  }
+
+  function cerrarConConfirmacion(): void {
     preVentaService.limpiar();
     closeCobro();
+    setConfirmSheet(null);
   }
 
   confirmRef.current    = confirmEmit;
@@ -584,16 +604,24 @@ export function CobroPanel() {
     setYapeRef(""); setTarjetaRef("");
     setMixtoEfe(""); setMixtoYap(""); setMixtoTar("");
     setCustomer(null);
+    setConfirmSheet(null);
     setCobroView("main"); setAffectation("gravado-onerosa");
     setDispatchCorrelative(1);
     const t = setTimeout(() => receivedRef.current?.focus(), 80);
     return () => clearTimeout(t);
   }, [cobroOpen]);
 
+  useEffect(() => {
+    if (confirmSheet === null) return;
+    const t = setTimeout(cerrarConConfirmacion, 3000);
+    return () => clearTimeout(t);
+  }, [confirmSheet]);
+
   // Ctrl+1-4 doc · E/Y/T/M pago · Ctrl+Insert guardar · Ctrl+Home enviar · Enter imprimir · Ctrl+Enter cliente
   useEffect(() => {
     if (!cobroOpen) return;
     const handler = (e: KeyboardEvent) => {
+      if (confirmSheet !== null) return;
       if (e.ctrlKey) {
         if      (e.key === "1") { e.preventDefault(); setDocType("nota"); }
         else if (e.key === "2") { e.preventDefault(); setDocType("boleta"); }
@@ -605,18 +633,25 @@ export function CobroPanel() {
         else if (e.key.toLowerCase() === "m" && cobroView === "main") { e.preventDefault(); setPayMethod("mixto"); }
         else if (e.key.toLowerCase() === "d" && cobroView === "main") { e.preventDefault(); discountRef.current?.focus(); }
         else if (e.key === "Insert") { e.preventDefault(); if (cobroView === "main") confirmRef.current(); }
-        else if (e.key === "Home") { e.preventDefault(); if (cobroView === "main") enviarRef.current(); }
+        else if (e.key === "Home") { e.preventDefault(); if (cobroView === "main" && docType !== "nota") enviarRef.current(); }
         return;
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [cobroOpen, cobroView, payMethod]);
+  }, [cobroOpen, cobroView, payMethod, confirmSheet, docType]);
 
   // Main view: Esc → close · Ctrl+Enter → cliente · Enter → imprimir si canConfirm
   useEffect(() => {
     if (!cobroOpen || cobroView !== "main") return;
     const handler = (e: KeyboardEvent) => {
+      if (confirmSheet !== null) {
+        if (e.key === "Enter" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+          e.preventDefault();
+          cerrarConConfirmacion();
+        }
+        return;
+      }
       if (e.key === "Escape") { e.preventDefault(); closeCobro(); return; }
       if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); openClientRef.current(); return; }
       if (e.key === "Enter") {
@@ -627,7 +662,7 @@ export function CobroPanel() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [cobroOpen, cobroView, closeCobro]);
+  }, [cobroOpen, cobroView, closeCobro, confirmSheet]);
 
   // Autofocus + prefill por primera activación de método, y al volver de sheet cliente
   useEffect(() => {
@@ -659,12 +694,27 @@ export function CobroPanel() {
   const docNumber       = `${cfg.series}-${String(nextCorrelative).padStart(8, "0")}`;
   const customerDisplay = getCustomerDisplay();
   const { text: rowLabel, warn: rowWarn } = getRowLabel();
+  const confirmColor = confirmSheet?.accion === "guardar"
+    ? "#F5A623"
+    : confirmSheet?.accion === "enviar"
+    ? "#4A90D9"
+    : "#4CAF50";
+  const ConfirmIcon = confirmSheet?.accion === "guardar"
+    ? Save
+    : confirmSheet?.accion === "enviar"
+    ? Send
+    : Printer;
+  const confirmTitle = confirmSheet?.accion === "guardar"
+    ? "SE GUARDÓ EL DOCUMENTO"
+    : confirmSheet?.accion === "enviar"
+    ? "SE ENVIÓ EL DOCUMENTO"
+    : "SE IMPRIMIÓ EL DOCUMENTO";
 
   return (
     <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader */}
-      {cobroView === "main" && (
+      {cobroView === "main" && confirmSheet === null && (
         <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#45b356]/20 bg-[#F2F7F3] px-4">
           <Receipt size={13} strokeWidth={2} className="text-[#45b356]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
@@ -674,7 +724,52 @@ export function CobroPanel() {
       )}
 
       {/* BODY */}
-      {cobroView === "main" ? (
+      {confirmSheet !== null ? (
+        <>
+          <style>{`
+            @keyframes cobroConfirmProgress {
+              from { width: 100%; }
+              to { width: 0%; }
+            }
+          `}</style>
+          <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+            <ConfirmIcon size={64} strokeWidth={1.8} style={{ color: confirmColor }} />
+            <h2 className="mt-5 text-[16px] font-bold uppercase text-[#2F3E46]">
+              {confirmTitle}
+            </h2>
+            <p className="mt-2 text-[13px] font-semibold tabular-nums text-[#374151]">
+              {confirmSheet.docNumber}
+            </p>
+            <p className="mt-1 text-[12px] uppercase text-[#9ca3af]">
+              S/ {confirmSheet.total.toFixed(2)} · {confirmSheet.metodo.toUpperCase()}
+            </p>
+            {confirmSheet.accion === "enviar" && confirmSheet.canal ? (
+              <p className="mt-1 text-[12px] uppercase text-[#9ca3af]">
+                {confirmSheet.canal}
+              </p>
+            ) : null}
+            <div className="mt-5 h-1 w-full overflow-hidden rounded-full bg-[#edf2f7]">
+              <div
+                className="h-full"
+                style={{
+                  backgroundColor: confirmColor,
+                  animation: "cobroConfirmProgress 3000ms linear forwards",
+                }}
+              />
+            </div>
+          </div>
+          <footer className="grid shrink-0 grid-cols-1 gap-2 border-t border-[#f0f4f8] px-4 py-3">
+            <button
+              type="button"
+              onClick={cerrarConConfirmacion}
+              className="rounded-xl py-3 text-[12px] font-bold uppercase tracking-wide text-white transition active:scale-[0.97]"
+              style={{ backgroundColor: confirmColor }}
+            >
+              ACEPTAR →
+            </button>
+          </footer>
+        </>
+      ) : cobroView === "main" ? (
         <>
           {/* TIPO DE COMPROBANTE + CORRELATIVO */}
           <div className="shrink-0 flex flex-col px-4 pt-2 pb-0">
@@ -1004,7 +1099,7 @@ export function CobroPanel() {
       )}
 
       {/* FOOTER — condicional por sheet activa */}
-      {cobroView === "main" && (
+      {cobroView === "main" && confirmSheet === null && (
         <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
           <div className="flex gap-1.5 items-stretch">
             <button
@@ -1017,9 +1112,9 @@ export function CobroPanel() {
               Guardar
             </button>
             <button
-              title="Tecla [Ctrl + Inicio]"
+              title={docType === "nota" ? "Solo se envían documentos formales" : "Tecla [Ctrl + Inicio]"}
               onClick={handleEnviar}
-              disabled={!canConfirm}
+              disabled={!puedeEnviar}
               className="flex w-[25%] items-center justify-center gap-1.5 rounded-2xl bg-[#4A90D9] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(74,144,217,0.30)] transition hover:bg-[#3a7fc8] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Send size={13} strokeWidth={2} />
