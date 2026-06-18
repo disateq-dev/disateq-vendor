@@ -219,6 +219,8 @@ function FormularioBoleta({
   const [buscoLocal, setBuscoLocal] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const numDocInputRef = useRef<HTMLInputElement>(null)
+  const primerCampoEditableRef = useRef<HTMLInputElement>(null)
+  const botonPrincipalRef = useRef<HTMLButtonElement>(null)
 
   const maxLength = tipoActivo === 'DNI' ? 8 : tipoActivo === 'CE' ? 9 : 12
   const longitudDocumento = numDoc.trim().length
@@ -445,6 +447,17 @@ function FormularioBoleta({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onCancelar, fuente, puedeConfirmar, buscarOnlineDNI, confirmarBoleta, setEditando])
 
+  useEffect(() => {
+    if (fase === 'RESULTADO' && editando) {
+      const t = setTimeout(() => primerCampoEditableRef.current?.focus(), 20)
+      return () => clearTimeout(t)
+    }
+    if (fase === 'RESULTADO' && !editando) {
+      const t = setTimeout(() => botonPrincipalRef.current?.focus(), 20)
+      return () => clearTimeout(t)
+    }
+  }, [fase, editando])
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
@@ -507,7 +520,7 @@ function FormularioBoleta({
               <>
                 <div className="flex flex-col gap-1">
                   {puedeEditarNombre ? (
-                    <input className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" />
+                    <input ref={primerCampoEditableRef} className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" />
                   ) : (
                     <div className={`${inputDis} ${apellidos ? '' : 'text-[#d1d9e1]'}`}>{apellidos || 'Apellidos'}</div>
                   )}
@@ -523,7 +536,7 @@ function FormularioBoleta({
             ) : (
               <div className="flex flex-col gap-1">
                 {puedeEditarNombre ? (
-                  <input className={inputBase} value={nombreCompleto} onChange={event => setNombreCompleto(event.target.value)} placeholder="Nombre completo" />
+                  <input ref={primerCampoEditableRef} className={inputBase} value={nombreCompleto} onChange={event => setNombreCompleto(event.target.value)} placeholder="Nombre completo" />
                 ) : (
                   <div className={`${inputDis} ${nombreCompleto ? '' : 'text-[#d1d9e1]'}`}>{nombreCompleto || 'Nombre completo'}</div>
                 )}
@@ -573,7 +586,7 @@ function FormularioBoleta({
           <button type="button" onClick={fuente === 'RENIEC' ? buscarOnlineDNI : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
             {fuente === 'RENIEC' ? 'ACTUALIZAR' : 'EDITAR'}
           </button>
-          <button type="button" onClick={confirmarBoleta} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+          <button ref={botonPrincipalRef} type="button" onClick={confirmarBoleta} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
             {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
           </button>
         </footer>
@@ -607,6 +620,8 @@ function FormularioDNI({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [buscoLocal, setBuscoLocal] = useState(false)
   const numDocInputRef = useRef<HTMLInputElement>(null)
+  const apellidosInputRef = useRef<HTMLInputElement>(null)
+  const botonPrincipalRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const documentoInicial = normalizarDocumento(numDocInicial, 8)
@@ -815,6 +830,17 @@ function FormularioDNI({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onCancelar, fuente, puedeConfirmar, buscarOnline, confirmar, setEditando])
 
+  useEffect(() => {
+    if (fase === 'RESULTADO' && editando) {
+      const t = setTimeout(() => apellidosInputRef.current?.focus(), 20)
+      return () => clearTimeout(t)
+    }
+    if (fase === 'RESULTADO' && !editando) {
+      const t = setTimeout(() => botonPrincipalRef.current?.focus(), 20)
+      return () => clearTimeout(t)
+    }
+  }, [fase, editando])
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
@@ -861,7 +887,7 @@ function FormularioDNI({
 
             <div className="flex flex-col gap-1">
               {puedeEditarNombre ? (
-                <input className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" />
+                <input ref={apellidosInputRef} className={inputBase} value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" />
               ) : (
                 <div className={`${inputDis} ${apellidos ? '' : 'text-[#d1d9e1]'}`}>{apellidos || 'Apellidos'}</div>
               )}
@@ -910,7 +936,7 @@ function FormularioDNI({
             <button type="button" onClick={fuente === 'RENIEC' ? buscarOnline : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               {fuente === 'RENIEC' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
-            <button type="button" onClick={confirmar} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+            <button ref={botonPrincipalRef} type="button" onClick={confirmar} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
               {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
@@ -947,6 +973,8 @@ function FormularioRUC({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [fase, setFase] = useState<'INGRESO' | 'RESULTADO'>('INGRESO')
   const numDocInputRef = useRef<HTMLInputElement>(null)
+  const razonSocialInputRef = useRef<HTMLInputElement>(null)
+  const botonPrincipalRef = useRef<HTMLButtonElement>(null)
 
   function cargarClienteLocal(cliente: Cliente): void {
     setRazonSocial(cliente.nombre)
@@ -1140,6 +1168,17 @@ function FormularioRUC({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onCancelar, fuente, puedeConfirmar, actualizarSunat, confirmarRUC, setEditando])
 
+  useEffect(() => {
+    if (fase === 'RESULTADO' && editando) {
+      const t = setTimeout(() => razonSocialInputRef.current?.focus(), 20)
+      return () => clearTimeout(t)
+    }
+    if (fase === 'RESULTADO' && !editando) {
+      const t = setTimeout(() => botonPrincipalRef.current?.focus(), 20)
+      return () => clearTimeout(t)
+    }
+  }, [fase, editando])
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <HeaderComprobante />
@@ -1184,7 +1223,7 @@ function FormularioRUC({
             {errorMsg ? <p className="text-[11px] text-red-500">{errorMsg}</p> : null}
             <div className="flex flex-col gap-1">
               {puedeEditarDatos ? (
-                <input className={inputBase} value={razonSocial} onChange={event => setRazonSocial(event.target.value)} placeholder="Razón social" />
+                <input ref={razonSocialInputRef} className={inputBase} value={razonSocial} onChange={event => setRazonSocial(event.target.value)} placeholder="Razón social" />
               ) : (
                 <div className={`${inputDis} ${razonSocial ? '' : 'text-[#d1d9e1]'}`}>{razonSocial || 'Razón social'}</div>
               )}
@@ -1238,7 +1277,7 @@ function FormularioRUC({
             <button type="button" onClick={fuente === 'SUNAT' ? () => { void actualizarSunat() } : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               {fuente === 'SUNAT' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
-            <button type="button" onClick={confirmarRUC} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+            <button ref={botonPrincipalRef} type="button" onClick={confirmarRUC} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
               {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
