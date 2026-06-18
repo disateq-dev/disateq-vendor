@@ -623,10 +623,12 @@ export function CobroPanel() {
     const handler = (e: KeyboardEvent) => {
       if (confirmSheet !== null) return;
       if (e.ctrlKey) {
-        if      (e.key === "1") { e.preventDefault(); setDocType("nota"); }
-        else if (e.key === "2") { e.preventDefault(); setDocType("boleta"); }
-        else if (e.key === "3") { e.preventDefault(); setDocType("factura"); }
+        if      (e.key === "7") { e.preventDefault(); setDocType("nota"); }
+        else if (e.key === "8") { e.preventDefault(); setDocType("boleta"); }
+        else if (e.key === "9") { e.preventDefault(); setDocType("factura"); }
         else if (e.key === "4") { e.preventDefault(); setDocType("cotizacion"); }
+        else if (e.key === "5") { e.preventDefault(); }
+        else if (e.key === "6") { e.preventDefault(); }
         else if (e.key.toLowerCase() === "e" && cobroView === "main") { e.preventDefault(); setPayMethod("efectivo"); }
         else if (e.key.toLowerCase() === "y" && cobroView === "main") { e.preventDefault(); setPayMethod("yape"); }
         else if (e.key.toLowerCase() === "t" && cobroView === "main") { e.preventDefault(); setPayMethod("tarjeta"); }
@@ -777,7 +779,7 @@ export function CobroPanel() {
               {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt, i) => (
                 <button
                   key={dt}
-                  title={`Tecla [Ctrl + ${i + 1}]`}
+                  title={`Tecla [Ctrl + ${dt === "nota" ? 7 : dt === "boleta" ? 8 : dt === "factura" ? 9 : 4}]`}
                   onClick={() => setDocType(dt)}
                   className={`flex-1 rounded-[5px] px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
                     docType === dt
