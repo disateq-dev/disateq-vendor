@@ -1338,7 +1338,7 @@ function FormularioLibre({
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <input autoFocus className={inputBase} value={nombre} onChange={event => setNombre(event.target.value)} placeholder="Nombre completo" />
+          <input autoFocus className={inputBase} value={nombre} onChange={event => setNombre(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && puedeConfirmar) { event.preventDefault(); confirmarLibre(); } }} placeholder="Nombre completo" />
         </div>
         <div className="grid grid-cols-[65%_1fr] gap-2">
           <div className="flex min-w-0 flex-col gap-1">
