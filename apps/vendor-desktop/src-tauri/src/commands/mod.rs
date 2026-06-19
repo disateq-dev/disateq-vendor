@@ -1,1 +1,8 @@
 pub mod db_commands;
+pub mod productos;
+pub mod presentaciones;
+pub mod proveedores;
+pub mod lotes;
+pub mod movimientos;
+pub mod servicios;
+pub mod reportes;
