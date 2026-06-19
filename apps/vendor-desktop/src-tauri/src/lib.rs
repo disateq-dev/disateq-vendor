@@ -1,3 +1,5 @@
+mod db;
+mod commands;
 mod thermal;
 
 #[tauri::command]
@@ -52,6 +54,7 @@ pub fn run() {
         let _ = window.set_focus();
       }
     }))
+    .plugin(tauri_plugin_sql::Builder::default().build())
     .setup(|app| {
       use tauri::Manager;
       if let Some(window) = app.get_webview_window("main") {
@@ -63,6 +66,31 @@ pub fn run() {
           let _ = window.set_icon(icon);
         }
       }
+      let db_instances = app.state::<tauri_plugin_sql::DbInstances>();
+      let app_path = app.path().app_config_dir()?;
+      std::fs::create_dir_all(&app_path)?;
+      let db_path = app_path.join("disateq.db");
+      let db_url = format!(
+        "sqlite:{}",
+        db_path
+          .to_str()
+          .ok_or_else(|| String::from("Ruta de base de datos inválida"))?
+      );
+      tauri::async_runtime::block_on(async {
+        use sqlx::migrate::MigrateDatabase;
+        if !sqlx::Sqlite::database_exists(&db_url).await.map_err(|e| e.to_string())? {
+          sqlx::Sqlite::create_database(&db_url).await.map_err(|e| e.to_string())?;
+        }
+        let pool = sqlx::SqlitePool::connect(&db_url).await.map_err(|e| e.to_string())?;
+        db::migrations::ejecutar_migraciones(&pool).await?;
+        db_instances
+          .0
+          .write()
+          .await
+          .insert(String::from("sqlite:disateq.db"), tauri_plugin_sql::DbPool::Sqlite(pool));
+        Ok::<(), String>(())
+      })
+        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
       if cfg!(debug_assertions) {
         app.handle().plugin(
           tauri_plugin_log::Builder::default()
@@ -72,7 +100,7 @@ pub fn run() {
       }
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![print_ticket, print_ticket_with_dispatch, print_cash_move, print_arqueo, print_correccion, app_exit])
+    .invoke_handler(tauri::generate_handler![print_ticket, print_ticket_with_dispatch, print_cash_move, print_arqueo, print_correccion, app_exit, commands::db_commands::obtener_rubro_activo, commands::db_commands::inicializar_establecimiento, commands::db_commands::verificar_db])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
