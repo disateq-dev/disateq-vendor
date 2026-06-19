@@ -6,3 +6,4 @@ pub mod lotes;
 pub mod movimientos;
 pub mod servicios;
 pub mod reportes;
+pub mod integraciones;

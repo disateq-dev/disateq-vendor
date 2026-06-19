@@ -301,3 +301,20 @@ export interface RegistrarEjecucionServicioInput {
   duracionMinutos?: number
   observacion?: string
 }
+
+export interface DatosRuc {
+  razonSocial: string
+  direccion: string
+  estado: string
+  condicion: string
+  tipo: string
+}
+
+export interface ActualizarProveedorInput {
+  id: string
+  razonSocial: string
+  ruc?: string
+  nombreContacto?: string
+  telefono?: string
+  condicionesPago?: string
+}

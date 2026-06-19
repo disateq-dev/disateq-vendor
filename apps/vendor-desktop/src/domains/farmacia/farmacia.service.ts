@@ -1,12 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
   AsignacionLote,
+  ActualizarProveedorInput,
   CrearNodoInput,
   CrearPresentacionInput,
   CrearProductoComercialInput,
   CrearProductoGenericoInput,
   CrearProveedorInput,
   CrearServicioFarmaciaInput,
+  DatosRuc,
   Lote,
   NodoFraccionamiento,
   PresentacionComercial,
@@ -19,6 +21,38 @@ import type {
   ResultadoReporteDIGEMID,
   ServicioFarmacia,
 } from './types'
+
+interface ProveedorRespuesta {
+  id: string
+  razon_social: string
+  ruc?: string
+  nombre_contacto?: string
+  telefono?: string
+  condiciones_pago?: string
+  estado: string
+  creado_en: string
+}
+
+interface DatosRucRespuesta {
+  razon_social: string
+  direccion: string
+  estado: string
+  condicion: string
+  tipo: string
+}
+
+function traducirProveedor(respuesta: ProveedorRespuesta): Proveedor {
+  return {
+    id: respuesta.id,
+    razonSocial: respuesta.razon_social,
+    ruc: respuesta.ruc,
+    nombreContacto: respuesta.nombre_contacto,
+    telefono: respuesta.telefono,
+    condicionesPago: respuesta.condiciones_pago,
+    estado: respuesta.estado,
+    creadoEn: respuesta.creado_en,
+  }
+}
 
 export async function crearProductoGenerico(input: CrearProductoGenericoInput): Promise<string> {
   return invoke<string>('crear_producto_generico', {
@@ -189,5 +223,35 @@ export async function registrarEjecucionServicio(input: RegistrarEjecucionServic
 export async function generarReporteDIGEMID(codigoEstab: string): Promise<ResultadoReporteDIGEMID> {
   return invoke<ResultadoReporteDIGEMID>('generar_reporte_digemid', {
     codigo_estab: codigoEstab,
+  })
+}
+
+export async function buscarProveedores(termino: string, soloActivos?: boolean): Promise<Proveedor[]> {
+  const respuesta = await invoke<ProveedorRespuesta[]>('buscar_proveedores', {
+    termino,
+    solo_activos: soloActivos ?? null,
+  })
+  return respuesta.map((proveedor) => traducirProveedor(proveedor))
+}
+
+export async function consultarRuc(ruc: string): Promise<DatosRuc> {
+  const respuesta = await invoke<DatosRucRespuesta>('consultar_ruc', { ruc })
+  return {
+    razonSocial: respuesta.razon_social,
+    direccion: respuesta.direccion,
+    estado: respuesta.estado,
+    condicion: respuesta.condicion,
+    tipo: respuesta.tipo,
+  }
+}
+
+export async function actualizarProveedor(input: ActualizarProveedorInput): Promise<void> {
+  return invoke<void>('actualizar_proveedor', {
+    id: input.id,
+    razon_social: input.razonSocial,
+    ruc: input.ruc ?? null,
+    nombre_contacto: input.nombreContacto ?? null,
+    telefono: input.telefono ?? null,
+    condiciones_pago: input.condicionesPago ?? null,
   })
 }
