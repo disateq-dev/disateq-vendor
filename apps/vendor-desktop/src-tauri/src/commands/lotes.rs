@@ -15,7 +15,7 @@ pub async fn registrar_lote(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     presentacion_id: String,
     numero_lote: String,
-    fecha_vencimiento: String,
+    fecha_vencimiento: Option<String>,
     fecha_fabricacion: Option<String>,
     cantidad_ingresada: f64,
     proveedor_id: Option<String>,

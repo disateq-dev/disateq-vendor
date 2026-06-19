@@ -16,9 +16,11 @@ import type {
   ProductoGenerico,
   Proveedor,
   RegistrarEjecucionServicioInput,
+  RegistrarIngresoInput,
   RegistrarLoteInput,
   RegistrarMovimientoInput,
   ResultadoReporteDIGEMID,
+  ResultadoBusquedaPresentacion,
   ServicioFarmacia,
 } from './types'
 
@@ -254,4 +256,39 @@ export async function actualizarProveedor(input: ActualizarProveedorInput): Prom
     telefono: input.telefono ?? null,
     condiciones_pago: input.condicionesPago ?? null,
   })
+}
+
+export async function registrarIngreso(input: RegistrarIngresoInput): Promise<string[]> {
+  return invoke<string[]>('registrar_ingreso', {
+    proveedor_id: input.proveedorId,
+    operador_id: input.operadorId,
+    runtime_id: input.runtimeId,
+    lineas: input.lineas.map((linea) => ({
+      presentacion_id: linea.presentacionId,
+      cantidad: linea.cantidad,
+      costo_unitario: linea.costoUnitario ?? null,
+      requiere_lote: linea.requiereLote,
+      numero_lote: linea.numeroLote ?? null,
+      fecha_vencimiento: linea.fechaVencimiento ?? null,
+      es_lote_generico: linea.esLoteGenerico,
+    })),
+  })
+}
+
+export async function buscarPresentacionesParaIngreso(termino: string): Promise<ResultadoBusquedaPresentacion[]> {
+  const productos = (await obtenerProductosComerciales(termino, true)).slice(0, 8)
+  const presentacionesPorProducto = await Promise.all(
+    productos.map(async (producto): Promise<ResultadoBusquedaPresentacion[]> => {
+      const presentaciones = await obtenerPresentaciones(producto.id)
+      return presentaciones.map((presentacion) => ({
+        presentacionId: presentacion.id,
+        productoComercialId: producto.id,
+        productoNombre: producto.nombreComercial,
+        descripcion: presentacion.descripcion,
+        requiereLote: producto.requiereLote,
+        fabricante: producto.nombreFabricante,
+      }))
+    }),
+  )
+  return presentacionesPorProducto.flat().slice(0, 8)
 }

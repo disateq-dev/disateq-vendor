@@ -318,3 +318,39 @@ export interface ActualizarProveedorInput {
   telefono?: string
   condicionesPago?: string
 }
+
+export interface LineaIngreso {
+  presentacionId: string
+  productoNombre: string
+  presentacionDescripcion: string
+  cantidad: number
+  costoUnitario?: number
+  requiereLote: boolean
+  numeroLote?: string
+  fechaVencimiento?: string
+  esLoteGenerico: boolean
+}
+
+export interface RegistrarIngresoInput {
+  proveedorId: string
+  operadorId: string
+  runtimeId: string
+  lineas: {
+    presentacionId: string
+    cantidad: number
+    costoUnitario?: number
+    requiereLote: boolean
+    numeroLote?: string
+    fechaVencimiento?: string
+    esLoteGenerico: boolean
+  }[]
+}
+
+export interface ResultadoBusquedaPresentacion {
+  presentacionId: string
+  productoComercialId: string
+  productoNombre: string
+  descripcion: string
+  requiereLote: boolean
+  fabricante: string
+}

@@ -13,6 +13,7 @@ import { InventoryWorkspace } from "./modules/inventory/InventoryWorkspace";
 import { PurchasesWorkspace } from "./modules/purchases/PurchasesWorkspace";
 import { CatalogoFarmaciaWorkspace } from './modules/abastecimiento/farmacia/CatalogoFarmaciaWorkspace'
 import { ProveedoresWorkspace } from './modules/abastecimiento/farmacia/ProveedoresWorkspace'
+import { IngresosMercaderiaWorkspace } from './modules/abastecimiento/farmacia/IngresosMercaderiaWorkspace'
 import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
@@ -95,6 +96,7 @@ function AppRoot() {
       {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "catalogo"     && <CatalogoFarmaciaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "proveedores" && <ProveedoresWorkspace />}
+      {activeModule === "abastecimiento" && (abastecimientoSubModule as string) === "ingresos" && <IngresosMercaderiaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
       {activeModule === "abastecimiento" && (abastecimientoSubModule === "proveedores" || abastecimientoSubModule === "traslados") && (
