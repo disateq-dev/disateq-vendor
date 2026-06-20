@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buscarPresentacionesParaIngreso, buscarProveedores, crearNodo, crearPresentacion, registrarIngreso } from '../../../../domains/farmacia/farmacia.service'
+import { buscarPresentacionesParaIngreso, buscarProveedores, consultarRuc, crearNodo, crearPresentacion, crearProveedor, registrarIngreso } from '../../../../domains/farmacia/farmacia.service'
 import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
 import type {
   CrearNodoInput,
   CrearPresentacionInput,
+  CrearProveedorInput,
   CrearProductoComercialInput,
   CrearProductoGenericoInput,
+  DatosRuc,
   LineaIngreso,
   Proveedor,
   RegistrarIngresoInput,
@@ -22,6 +24,11 @@ interface UseIngresosMercaderiaResult {
   buscandoProveedor: boolean
   resultadosProveedor: Proveedor[]
   terminoProveedor: string
+  creandoProveedorAbierto: boolean
+  modoCreacionProveedor: 'sunat' | 'manual'
+  rucConsultaProveedor: string
+  datosRucProveedor: DatosRuc | null
+  consultandoSunatProveedor: boolean
   buscadorProductoAbierto: boolean
   terminoProducto: string
   resultadosProducto: ResultadoBusquedaPresentacion[]
@@ -33,6 +40,13 @@ interface UseIngresosMercaderiaResult {
   ingresoValido: boolean
   onTerminoProveedorChange(t: string): void
   onSeleccionarProveedor(p: Proveedor): void
+  onAbrirCreacionProveedorSunat(): void
+  onAbrirCreacionProveedorManual(): void
+  onCerrarCreacionProveedor(): void
+  onRucProveedorChange(r: string): void
+  onConsultarRucProveedor(): Promise<void>
+  onGuardarProveedorSunatYSeleccionar(extras: { nombreContacto?: string; telefono?: string; condicionesPago?: string }): Promise<void>
+  onGuardarProveedorManualYSeleccionar(datos: CrearProveedorInput): Promise<void>
   onAbrirBuscadorProducto(): void
   onCerrarBuscadorProducto(): void
   onAbrirCreacionProducto(): void
@@ -73,6 +87,11 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
   const [buscandoProveedor, setBuscandoProveedor] = useState<boolean>(false)
   const [resultadosProveedor, setResultadosProveedor] = useState<Proveedor[]>([])
   const [terminoProveedor, setTerminoProveedor] = useState<string>('')
+  const [creandoProveedorAbierto, setCreandoProveedorAbierto] = useState<boolean>(false)
+  const [modoCreacionProveedor, setModoCreacionProveedor] = useState<'sunat' | 'manual'>('sunat')
+  const [rucConsultaProveedor, setRucConsultaProveedor] = useState<string>('')
+  const [datosRucProveedor, setDatosRucProveedor] = useState<DatosRuc | null>(null)
+  const [consultandoSunatProveedor, setConsultandoSunatProveedor] = useState<boolean>(false)
   const [buscadorProductoAbierto, setBuscadorProductoAbierto] = useState<boolean>(false)
   const [terminoProducto, setTerminoProducto] = useState<string>('')
   const [resultadosProducto, setResultadosProducto] = useState<ResultadoBusquedaPresentacion[]>([])
@@ -131,6 +150,105 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
     setTerminoProveedor(p.razonSocial)
     setResultadosProveedor([])
   }, [])
+
+  const onAbrirCreacionProveedorSunat = useCallback((): void => {
+    const termino = terminoProveedor.trim()
+    setModoCreacionProveedor('sunat')
+    setRucConsultaProveedor(/^\d{11}$/.test(termino) ? termino : '')
+    setDatosRucProveedor(null)
+    setCreandoProveedorAbierto(true)
+  }, [terminoProveedor])
+
+  const onAbrirCreacionProveedorManual = useCallback((): void => {
+    setModoCreacionProveedor('manual')
+    setCreandoProveedorAbierto(true)
+  }, [])
+
+  const onCerrarCreacionProveedor = useCallback((): void => {
+    setCreandoProveedorAbierto(false)
+    setDatosRucProveedor(null)
+    setRucConsultaProveedor('')
+  }, [])
+
+  const onRucProveedorChange = useCallback((r: string): void => {
+    setRucConsultaProveedor(r)
+    setError(null)
+  }, [])
+
+  const onConsultarRucProveedor = useCallback(async (): Promise<void> => {
+    if (rucConsultaProveedor.length !== 11 || !/^\d+$/.test(rucConsultaProveedor)) {
+      setError('RUC inválido: debe tener exactamente 11 dígitos numéricos')
+      return
+    }
+    setConsultandoSunatProveedor(true)
+    setError(null)
+    try {
+      const datosRuc = await consultarRuc(rucConsultaProveedor)
+      setDatosRucProveedor(datosRuc)
+    } catch (consultaError) {
+      setError(resolverMensajeError(consultaError))
+    } finally {
+      setConsultandoSunatProveedor(false)
+    }
+  }, [rucConsultaProveedor])
+
+  const onGuardarProveedorSunatYSeleccionar = useCallback(async (extras: {
+    nombreContacto?: string
+    telefono?: string
+    condicionesPago?: string
+  }): Promise<void> => {
+    if (datosRucProveedor === null) {
+      setError('Consulta SUNAT requerida antes de guardar.')
+      return
+    }
+    setCargando(true)
+    setError(null)
+    try {
+      const id = await crearProveedor({
+        razonSocial: datosRucProveedor.razonSocial,
+        ruc: rucConsultaProveedor,
+        ...extras,
+      })
+      onSeleccionarProveedor({
+        id,
+        razonSocial: datosRucProveedor.razonSocial,
+        ruc: rucConsultaProveedor,
+        nombreContacto: extras.nombreContacto,
+        telefono: extras.telefono,
+        condicionesPago: extras.condicionesPago,
+        estado: 'ACTIVO',
+        creadoEn: new Date().toISOString(),
+      })
+      onCerrarCreacionProveedor()
+    } catch (guardarError) {
+      setError(resolverMensajeError(guardarError))
+    } finally {
+      setCargando(false)
+    }
+  }, [datosRucProveedor, onCerrarCreacionProveedor, onSeleccionarProveedor, rucConsultaProveedor])
+
+  const onGuardarProveedorManualYSeleccionar = useCallback(async (datos: CrearProveedorInput): Promise<void> => {
+    setCargando(true)
+    setError(null)
+    try {
+      const id = await crearProveedor(datos)
+      onSeleccionarProveedor({
+        id,
+        razonSocial: datos.razonSocial,
+        ruc: datos.ruc,
+        nombreContacto: datos.nombreContacto,
+        telefono: datos.telefono,
+        condicionesPago: datos.condicionesPago,
+        estado: 'ACTIVO',
+        creadoEn: new Date().toISOString(),
+      })
+      onCerrarCreacionProveedor()
+    } catch (guardarError) {
+      setError(resolverMensajeError(guardarError))
+    } finally {
+      setCargando(false)
+    }
+  }, [onCerrarCreacionProveedor, onSeleccionarProveedor])
 
   const onAbrirBuscadorProducto = useCallback((): void => setBuscadorProductoAbierto(true), [])
   const onCerrarBuscadorProducto = useCallback((): void => setBuscadorProductoAbierto(false), [])
@@ -276,9 +394,13 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
 
   return {
     proveedorSeleccionado, lineas, buscandoProveedor, resultadosProveedor, terminoProveedor,
+    creandoProveedorAbierto, modoCreacionProveedor, rucConsultaProveedor, datosRucProveedor, consultandoSunatProveedor,
     buscadorProductoAbierto, terminoProducto, resultadosProducto, creandoProductoAbierto, pasoNuevoProducto,
     cargando, error, historialReciente, ingresoValido,
-    onTerminoProveedorChange, onSeleccionarProveedor, onAbrirBuscadorProducto, onCerrarBuscadorProducto,
+    onTerminoProveedorChange, onSeleccionarProveedor, onAbrirCreacionProveedorSunat,
+    onAbrirCreacionProveedorManual, onCerrarCreacionProveedor, onRucProveedorChange,
+    onConsultarRucProveedor, onGuardarProveedorSunatYSeleccionar, onGuardarProveedorManualYSeleccionar,
+    onAbrirBuscadorProducto, onCerrarBuscadorProducto,
     onAbrirCreacionProducto, onCerrarCreacionProducto, onTerminoProductoChange, onAgregarLinea,
     onPasoSiguienteProducto, onPasoAnteriorProducto, onGuardarProductoYAgregarLinea,
     onEliminarLinea, onActualizarLinea, onUsarLoteGenerico,

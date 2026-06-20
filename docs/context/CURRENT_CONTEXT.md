@@ -15,6 +15,7 @@
   * `fc00277` — fix(catalogo): búsqueda por nombre comercial o IFA, categoria_farmacia faltante
   * `b888909` — fix(farmacia): traducción snake_case→camelCase en 7 funciones de lectura (ver bitácora 2026-06-20)
   * `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos (fase 1 de 2 — ver auditoría doctrinal 2026-06-20 en BITACORA_DECISIONES.md)
+  * `bc0083f` — fix(farmacia): traducción snake_case→camelCase en obtenerProveedores() (hallazgo colateral de la auditoría doctrinal, quedaba fuera de b888909)
 * **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente el nuevo flujo: en Ingresos, buscar un producto inexistente, confirmar que aparece "Este producto no existe — regístralo ahora", completar el stepper y verificar que la línea se agrega automáticamente al ingreso en curso.
 
 ---
@@ -102,7 +103,6 @@ versión. Todo en una transacción.
 | useIngresosMercaderia.ts | 207 líneas — excepción documentada | Media |
 | useIngresosMercaderia.ts | operadorId/runtimeId placeholders fijos — falta store sesión/turno real | Alta (bloquea producción) |
 | useProveedores.ts | onActualizar mezcla camelCase leve inconsistencia | Baja |
-| farmacia.service.ts | `obtenerProveedores()` no traduce snake_case→camelCase (mismo bug que el resuelto en b888909, quedó fuera de esa auditoría). Hoy es código muerto — ninguna pantalla la llama, ambas usan `buscarProveedores()` que sí está bien | Media (corregir antes de conectarla a cualquier pantalla nueva) |
 | parsearHtmlSunat (COBRO) | Heurístico — pendiente comando Rust | Baja |
 | FACTURA UBIGEO | Diferido a fase CPE electrónica | Baja |
 | Notas de Crédito y Débito | Botones deshabilitados | Media |

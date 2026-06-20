@@ -1,6 +1,8 @@
 import { Truck, X } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { BuscadorProductoIngreso } from './components/BuscadorProductoIngreso'
+import { ConsultaSunatProveedor } from './components/ConsultaSunatProveedor'
+import { FormularioProveedor } from './components/FormularioProveedor'
 import { LineaIngresoCard } from './components/LineaIngresoCard'
 import { NuevoProductoStepper } from './components/NuevoProductoStepper'
 import { SelectorProveedorIngreso } from './components/SelectorProveedorIngreso'
@@ -34,6 +36,8 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
           buscando={ingresos.buscandoProveedor}
           onTerminoChange={ingresos.onTerminoProveedorChange}
           onSeleccionar={ingresos.onSeleccionarProveedor}
+          onIrSunat={ingresos.onAbrirCreacionProveedorSunat}
+          onIrManual={ingresos.onAbrirCreacionProveedorManual}
         />
         <button type="button" onClick={ingresos.onAbrirBuscadorProducto} className="w-fit rounded-xl bg-[#639922] px-4 py-2 text-[12px] font-bold text-white">
           Agregar producto
@@ -98,6 +102,41 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
             onCancelar={ingresos.onCerrarCreacionProducto}
             onGuardar={ingresos.onGuardarProductoYAgregarLinea}
           />
+        </div>
+      )}
+      {ingresos.creandoProveedorAbierto && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <header className="flex h-16 items-center justify-between border-b border-[#EAF3DE] bg-white px-6">
+            <span className="text-[14px] font-bold text-slate-900">Registrando proveedor para este ingreso</span>
+            <button
+              type="button"
+              onClick={ingresos.onCerrarCreacionProveedor}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#639922]"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </header>
+          {ingresos.modoCreacionProveedor === 'sunat' && (
+            <ConsultaSunatProveedor
+              ruc={ingresos.rucConsultaProveedor}
+              datosRuc={ingresos.datosRucProveedor}
+              consultando={ingresos.consultandoSunatProveedor}
+              error={ingresos.error}
+              onRucChange={ingresos.onRucProveedorChange}
+              onConsultar={ingresos.onConsultarRucProveedor}
+              onGuardar={ingresos.onGuardarProveedorSunatYSeleccionar}
+              onVolver={ingresos.onCerrarCreacionProveedor}
+            />
+          )}
+          {ingresos.modoCreacionProveedor === 'manual' && (
+            <FormularioProveedor
+              titulo="Registrar proveedor recibido"
+              datosIniciales={{ razonSocial: ingresos.terminoProveedor }}
+              cargando={ingresos.cargando}
+              onGuardar={ingresos.onGuardarProveedorManualYSeleccionar}
+              onCancelar={ingresos.onCerrarCreacionProveedor}
+            />
+          )}
         </div>
       )}
     </div>

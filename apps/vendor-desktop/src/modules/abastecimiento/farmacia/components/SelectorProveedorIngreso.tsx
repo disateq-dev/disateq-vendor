@@ -9,6 +9,8 @@ interface SelectorProveedorIngresoProps {
   buscando: boolean
   onTerminoChange: (t: string) => void
   onSeleccionar: (p: Proveedor) => void
+  onIrSunat: () => void
+  onIrManual: () => void
 }
 
 export function SelectorProveedorIngreso({
@@ -18,6 +20,8 @@ export function SelectorProveedorIngreso({
   buscando,
   onTerminoChange,
   onSeleccionar,
+  onIrSunat,
+  onIrManual,
 }: SelectorProveedorIngresoProps): ReactElement {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -56,6 +60,19 @@ export function SelectorProveedorIngreso({
         />
       </label>
       {buscando && <p className="mt-2 text-[12px] font-bold text-[#639922]">Buscando...</p>}
+      {termino.trim().length >= 2 && !buscando && resultados.length === 0 && (
+        <div className="mt-3 rounded-xl border border-[#EAF3DE] p-3">
+          <p className="text-[12px] font-bold text-slate-700">No encontrado</p>
+          <div className="mt-2 flex gap-2">
+            <button type="button" onClick={onIrSunat} className="rounded-xl bg-[#639922] px-3 py-2 text-[12px] font-bold text-white">
+              Consultar SUNAT por RUC
+            </button>
+            <button type="button" onClick={onIrManual} className="rounded-xl border border-[#EAF3DE] px-3 py-2 text-[12px] font-bold text-[#639922]">
+              Registrar manualmente
+            </button>
+          </div>
+        </div>
+      )}
       {termino.trim().length >= 2 && resultados.length > 0 && (
         <div className="absolute left-4 right-4 top-[92px] z-20 overflow-hidden rounded-xl border border-[#EAF3DE] bg-white shadow-lg">
           {resultados.map((proveedor) => (
