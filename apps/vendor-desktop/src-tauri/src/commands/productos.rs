@@ -137,14 +137,14 @@ pub async fn obtener_productos_comerciales(
     let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut sql = String::from(
-        "SELECT pc.*, pg.ifa, pg.concentracion, pg.forma_farmaceutica FROM producto_comercial pc JOIN producto_generico pg ON pg.id = pc.producto_generico_id",
+        "SELECT pc.*, pg.ifa, pg.concentracion, pg.forma_farmaceutica, pg.categoria_farmacia FROM producto_comercial pc JOIN producto_generico pg ON pg.id = pc.producto_generico_id",
     );
     let mut condiciones: Vec<&str> = Vec::new();
     if solo_activos == Some(true) {
         condiciones.push("pc.estado = 'ACTIVO'");
     }
     if filtro_nombre.is_some() {
-        condiciones.push("pc.nombre_comercial LIKE ?");
+        condiciones.push("(pc.nombre_comercial LIKE ? OR pg.ifa LIKE ?)");
     }
     if !condiciones.is_empty() {
         sql.push_str(" WHERE ");
@@ -154,7 +154,8 @@ pub async fn obtener_productos_comerciales(
 
     let mut query = sqlx::query(&sql);
     if let Some(filtro) = filtro_nombre {
-        query = query.bind(format!("%{}%", filtro));
+        let patron = format!("%{}%", filtro);
+        query = query.bind(patron.clone()).bind(patron);
     }
     let rows = query.fetch_all(pool).await.map_err(|e| e.to_string())?;
 
@@ -180,6 +181,7 @@ pub async fn obtener_productos_comerciales(
                 "ifa": row.try_get::<String, _>("ifa").map_err(|e| e.to_string())?,
                 "concentracion": row.try_get::<String, _>("concentracion").map_err(|e| e.to_string())?,
                 "forma_farmaceutica": row.try_get::<String, _>("forma_farmaceutica").map_err(|e| e.to_string())?,
+                "categoria_farmacia": row.try_get::<String, _>("categoria_farmacia").map_err(|e| e.to_string())?,
             }))
         })
         .collect()

@@ -89,6 +89,7 @@ export interface ProductoComercial {
   ifa?: string
   concentracion?: string
   formaFarmaceutica?: string
+  categoriaFarmacia?: string
 }
 
 export interface PresentacionComercial {

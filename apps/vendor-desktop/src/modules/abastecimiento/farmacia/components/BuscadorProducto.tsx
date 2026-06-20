@@ -11,13 +11,8 @@ interface BuscadorProductoProps {
   onNuevo: () => void
 }
 
-interface ProductoComercialConCategoria extends ProductoComercial {
-  categoriaFarmacia?: string
-}
-
 function categoriaProducto(producto: ProductoComercial): string {
-  const productoConCategoria = producto as ProductoComercialConCategoria
-  return productoConCategoria.categoriaFarmacia ?? 'SIN CATEGORIA'
+  return producto.categoriaFarmacia ?? 'SIN CATEGORIA'
 }
 
 function textoPrincipal(producto: ProductoComercial): string {
