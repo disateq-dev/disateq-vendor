@@ -345,9 +345,10 @@ export async function crearProveedor(input: CrearProveedorInput): Promise<string
 }
 
 export async function obtenerProveedores(soloActivos?: boolean): Promise<Proveedor[]> {
-  return invoke<Proveedor[]>('obtener_proveedores', {
+  const respuesta = await invoke<ProveedorRespuesta[]>('obtener_proveedores', {
     soloActivos: soloActivos ?? null,
   })
+  return respuesta.map((item) => traducirProveedor(item))
 }
 
 export async function registrarLote(input: RegistrarLoteInput): Promise<string> {
