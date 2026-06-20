@@ -43,6 +43,96 @@ interface DatosRucRespuesta {
   tipo: string
 }
 
+interface ProductoGenericoRespuesta {
+  id: string
+  ifa: string
+  concentracion: string
+  forma_farmaceutica: string
+  categoria_farmacia: string
+  permite_fraccion: boolean
+  creado_en: string
+}
+
+interface ProductoComercialRespuesta {
+  id: string
+  producto_generico_id: string
+  nombre_comercial: string
+  nombre_fabricante: string
+  nombre_titular?: string
+  pais_origen: string
+  registro_sanitario?: string
+  codigo_digemid?: string
+  condicion_venta: string
+  requiere_lote: boolean
+  requiere_cadena_frio: boolean
+  estado: string
+  creado_en: string
+  modificado_en: string
+  ifa: string
+  concentracion: string
+  forma_farmaceutica: string
+  categoria_farmacia: string
+}
+
+interface PresentacionComercialRespuesta {
+  id: string
+  producto_comercial_id: string
+  descripcion: string
+  fraccion_digemid: number
+  unidad_conteo: string
+  factor_conversion_base: number
+  codigo_barras?: string
+  proveedor_habitual_id?: string
+  costo_compra?: number
+  creado_en: string
+}
+
+interface NodoFraccionamientoRespuesta {
+  id: string
+  presentacion_id: string
+  nodo_padre_id?: string
+  nombre_forma_venta: string
+  tipo_forma_venta: string
+  unidades_en_nodo_padre?: number
+  unidades_base: number
+  es_vendible: boolean
+  es_comprable: boolean
+  descripcion_promo?: string
+  estado: string
+  creado_en: string
+}
+
+interface AsignacionLoteRespuesta {
+  lote_id: string
+  numero_lote: string
+  fecha_vencimiento: string
+  unidades_asignadas: number
+}
+
+interface LoteRespuesta {
+  id: string
+  presentacion_id: string
+  numero_lote: string
+  fecha_vencimiento: string
+  fecha_fabricacion?: string
+  cantidad_ingresada: number
+  cantidad_disponible: number
+  proveedor_id?: string
+  precio_compra?: number
+  estado: string
+  creado_en: string
+}
+
+interface ServicioFarmaciaRespuesta {
+  id: string
+  nombre: string
+  tipo_servicio: string
+  descripcion?: string
+  duracion_minutos?: number
+  estado: string
+  creado_en: string
+}
+
 function traducirProveedor(respuesta: ProveedorRespuesta): Proveedor {
   return {
     id: respuesta.id,
@@ -53,6 +143,110 @@ function traducirProveedor(respuesta: ProveedorRespuesta): Proveedor {
     condicionesPago: respuesta.condiciones_pago,
     estado: respuesta.estado,
     creadoEn: respuesta.creado_en,
+  }
+}
+
+function traducirProductoGenerico(r: ProductoGenericoRespuesta): ProductoGenerico {
+  return {
+    id: r.id,
+    ifa: r.ifa,
+    concentracion: r.concentracion,
+    formaFarmaceutica: r.forma_farmaceutica as ProductoGenerico['formaFarmaceutica'],
+    categoriaFarmacia: r.categoria_farmacia as ProductoGenerico['categoriaFarmacia'],
+    permiteFraccion: r.permite_fraccion,
+    creadoEn: r.creado_en,
+  }
+}
+
+function traducirProductoComercial(r: ProductoComercialRespuesta): ProductoComercial {
+  return {
+    id: r.id,
+    productoGenericoId: r.producto_generico_id,
+    nombreComercial: r.nombre_comercial,
+    nombreFabricante: r.nombre_fabricante,
+    nombreTitular: r.nombre_titular,
+    paisOrigen: r.pais_origen,
+    registroSanitario: r.registro_sanitario,
+    codigoDIGEMID: r.codigo_digemid,
+    condicionVenta: r.condicion_venta as ProductoComercial['condicionVenta'],
+    requiereLote: r.requiere_lote,
+    requiereCadenaFrio: r.requiere_cadena_frio,
+    estado: r.estado,
+    creadoEn: r.creado_en,
+    modificadoEn: r.modificado_en,
+    ifa: r.ifa,
+    concentracion: r.concentracion,
+    formaFarmaceutica: r.forma_farmaceutica,
+    categoriaFarmacia: r.categoria_farmacia,
+  }
+}
+
+function traducirPresentacionComercial(r: PresentacionComercialRespuesta): PresentacionComercial {
+  return {
+    id: r.id,
+    productoComercialId: r.producto_comercial_id,
+    descripcion: r.descripcion,
+    fraccionDIGEMID: r.fraccion_digemid,
+    unidadConteo: r.unidad_conteo,
+    factorConversionBase: r.factor_conversion_base,
+    codigoBarras: r.codigo_barras,
+    proveedorHabitualId: r.proveedor_habitual_id,
+    costoCompra: r.costo_compra,
+    creadoEn: r.creado_en,
+  }
+}
+
+function traducirNodoFraccionamiento(r: NodoFraccionamientoRespuesta): NodoFraccionamiento {
+  return {
+    id: r.id,
+    presentacionId: r.presentacion_id,
+    nodoPadreId: r.nodo_padre_id,
+    nombreFormaVenta: r.nombre_forma_venta,
+    tipoFormaVenta: r.tipo_forma_venta as NodoFraccionamiento['tipoFormaVenta'],
+    unidadesEnNodoPadre: r.unidades_en_nodo_padre,
+    unidadesBase: r.unidades_base,
+    esVendible: r.es_vendible,
+    esComprable: r.es_comprable,
+    descripcionPromo: r.descripcion_promo,
+    estado: r.estado,
+    creadoEn: r.creado_en,
+  }
+}
+
+function traducirAsignacionLote(r: AsignacionLoteRespuesta): AsignacionLote {
+  return {
+    loteId: r.lote_id,
+    numeroLote: r.numero_lote,
+    fechaVencimiento: r.fecha_vencimiento,
+    unidadesAsignadas: r.unidades_asignadas,
+  }
+}
+
+function traducirLote(r: LoteRespuesta): Lote {
+  return {
+    id: r.id,
+    presentacionId: r.presentacion_id,
+    numeroLote: r.numero_lote,
+    fechaVencimiento: r.fecha_vencimiento,
+    fechaFabricacion: r.fecha_fabricacion,
+    cantidadIngresada: r.cantidad_ingresada,
+    cantidadDisponible: r.cantidad_disponible,
+    proveedorId: r.proveedor_id,
+    precioCompra: r.precio_compra,
+    estado: r.estado as Lote['estado'],
+    creadoEn: r.creado_en,
+  }
+}
+
+function traducirServicioFarmacia(r: ServicioFarmaciaRespuesta): ServicioFarmacia {
+  return {
+    id: r.id,
+    nombre: r.nombre,
+    tipoServicio: r.tipo_servicio as ServicioFarmacia['tipoServicio'],
+    descripcion: r.descripcion,
+    duracionMinutos: r.duracion_minutos,
+    estado: r.estado,
+    creadoEn: r.creado_en,
   }
 }
 
@@ -67,9 +261,10 @@ export async function crearProductoGenerico(input: CrearProductoGenericoInput): 
 }
 
 export async function obtenerProductosGenericos(filtroIfa?: string): Promise<ProductoGenerico[]> {
-  return invoke<ProductoGenerico[]>('obtener_productos_genericos', {
+  const respuesta = await invoke<ProductoGenericoRespuesta[]>('obtener_productos_genericos', {
     filtroIfa: filtroIfa ?? null,
   })
+  return respuesta.map((item) => traducirProductoGenerico(item))
 }
 
 export async function crearProductoComercial(input: CrearProductoComercialInput): Promise<string> {
@@ -91,10 +286,11 @@ export async function obtenerProductosComerciales(
   filtroNombre?: string,
   soloActivos?: boolean,
 ): Promise<ProductoComercial[]> {
-  return invoke<ProductoComercial[]>('obtener_productos_comerciales', {
+  const respuesta = await invoke<ProductoComercialRespuesta[]>('obtener_productos_comerciales', {
     filtroNombre: filtroNombre ?? null,
     soloActivos: soloActivos ?? null,
   })
+  return respuesta.map((item) => traducirProductoComercial(item))
 }
 
 export async function crearPresentacion(input: CrearPresentacionInput): Promise<string> {
@@ -111,9 +307,10 @@ export async function crearPresentacion(input: CrearPresentacionInput): Promise<
 }
 
 export async function obtenerPresentaciones(productoComercialId: string): Promise<PresentacionComercial[]> {
-  return invoke<PresentacionComercial[]>('obtener_presentaciones', {
+  const respuesta = await invoke<PresentacionComercialRespuesta[]>('obtener_presentaciones', {
     productoComercialId,
   })
+  return respuesta.map((item) => traducirPresentacionComercial(item))
 }
 
 export async function crearNodo(input: CrearNodoInput): Promise<string> {
@@ -131,9 +328,10 @@ export async function crearNodo(input: CrearNodoInput): Promise<string> {
 }
 
 export async function obtenerNodosFraccionamiento(presentacionId: string): Promise<NodoFraccionamiento[]> {
-  return invoke<NodoFraccionamiento[]>('obtener_nodos_fraccionamiento', {
+  const respuesta = await invoke<NodoFraccionamientoRespuesta[]>('obtener_nodos_fraccionamiento', {
     presentacionId,
   })
+  return respuesta.map((item) => traducirNodoFraccionamiento(item))
 }
 
 export async function crearProveedor(input: CrearProveedorInput): Promise<string> {
@@ -168,16 +366,18 @@ export async function resolverLoteFefo(
   presentacionId: string,
   unidadesRequeridas: number,
 ): Promise<AsignacionLote[]> {
-  return invoke<AsignacionLote[]>('resolver_lote_fefo', {
+  const respuesta = await invoke<AsignacionLoteRespuesta[]>('resolver_lote_fefo', {
     presentacionId,
     unidadesRequeridas,
   })
+  return respuesta.map((item) => traducirAsignacionLote(item))
 }
 
 export async function obtenerLotesVigentes(presentacionId: string): Promise<Lote[]> {
-  return invoke<Lote[]>('obtener_lotes_vigentes', {
+  const respuesta = await invoke<LoteRespuesta[]>('obtener_lotes_vigentes', {
     presentacionId,
   })
+  return respuesta.map((item) => traducirLote(item))
 }
 
 export async function registrarMovimiento(input: RegistrarMovimientoInput): Promise<string> {
@@ -204,9 +404,10 @@ export async function crearServicioFarmacia(input: CrearServicioFarmaciaInput): 
 }
 
 export async function obtenerServiciosFarmacia(soloActivos?: boolean): Promise<ServicioFarmacia[]> {
-  return invoke<ServicioFarmacia[]>('obtener_servicios_farmacia', {
+  const respuesta = await invoke<ServicioFarmaciaRespuesta[]>('obtener_servicios_farmacia', {
     soloActivos: soloActivos ?? null,
   })
+  return respuesta.map((item) => traducirServicioFarmacia(item))
 }
 
 export async function registrarEjecucionServicio(input: RegistrarEjecucionServicioInput): Promise<string> {
