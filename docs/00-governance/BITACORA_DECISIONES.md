@@ -473,6 +473,20 @@ puntos de union type estricto (`formaFarmaceutica`, `categoriaFarmacia`,
 `condicionVenta`, `tipoFormaVenta`, `estado` de Lote) con su correspondiente
 type assertion. Pendiente verificación visual final en pantalla.
 
+**ADENDA 2026-06-20 (post-commit 6ada611):** Al auditar `farmacia.service.ts`
+completo por otro motivo, se detectó que `obtenerProveedores()` tiene el
+mismo bug y quedó fuera del barrido original de 7 funciones — no estaba en
+la lista de afectadas ni en la de "ya correctas". Hace
+`invoke<Proveedor[]>('obtener_proveedores', ...)` directo, sin
+`ProveedorRespuesta` ni `traducirProveedor`. Verificado que hoy es código
+muerto: ni `useProveedores.ts` ni `useIngresosMercaderia.ts` la invocan,
+ambos usan `buscarProveedores()` (que sí está correcta). Registrado en
+`CURRENT_CONTEXT.md` → DEUDA TÉCNICA, severidad Media, con instrucción de
+corregir antes de conectarla a cualquier pantalla futura. También se
+detectó y corrigió la discrepancia donde este commit (b888909) nunca se
+había agregado a la lista de commits de `CURRENT_CONTEXT.md` — quedaba
+documentado aquí pero invisible en el contexto vivo.
+
 ---
 
 ## 2026-06-20 — Auditoría doctrinal ABASTECIMIENTO FARMACIA vs. CONTRATO_ARQUITECTURA: creación standalone de Producto/Proveedor se mantiene como vía adicional, no se elimina
