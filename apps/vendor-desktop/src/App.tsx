@@ -19,14 +19,14 @@ import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
 export type CashSubView             = "turno" | "supervision-caja";
-export type AbastecimientoSubModule = "catalogo" | "compras" | "inventarios" | "proveedores" | "traslados";
+export type AbastecimientoSubModule = "catalogo" | "proveedores" | "ingresos" | "compras" | "inventarios" | "traslados";
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
 
 function AppRoot() {
   const { activeOperator, cashSession } = usePOS();
   const [activeModule,            setActiveModule]            = useState<ActiveModule>("cash");
   const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
-  const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("compras");
+  const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("catalogo");
   const [configSubView,           setConfigSubView]           = useState<ConfigSubView>("negocio");
   const prevOpId        = useRef<string | null>(null);
   const isInitialMount  = useRef(true);
@@ -96,10 +96,10 @@ function AppRoot() {
       {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "catalogo"     && <CatalogoFarmaciaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "proveedores" && <ProveedoresWorkspace />}
-      {activeModule === "abastecimiento" && (abastecimientoSubModule as string) === "ingresos" && <IngresosMercaderiaWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "ingresos" && <IngresosMercaderiaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
-      {activeModule === "abastecimiento" && (abastecimientoSubModule === "proveedores" || abastecimientoSubModule === "traslados") && (
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "traslados" && (
         <div className="flex flex-1 items-center justify-center">
           <span className="text-[12px] font-semibold uppercase tracking-wider text-[#9ca3af]">Próximamente</span>
         </div>
