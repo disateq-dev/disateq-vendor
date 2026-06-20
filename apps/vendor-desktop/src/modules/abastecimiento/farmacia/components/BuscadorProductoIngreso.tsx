@@ -9,6 +9,7 @@ interface BuscadorProductoIngresoProps {
   onTerminoChange: (t: string) => void
   onSeleccionar: (r: ResultadoBusquedaPresentacion) => void
   onCerrar: () => void
+  onCrearNuevo: () => void
 }
 
 export function BuscadorProductoIngreso({
@@ -18,6 +19,7 @@ export function BuscadorProductoIngreso({
   onTerminoChange,
   onSeleccionar,
   onCerrar,
+  onCrearNuevo,
 }: BuscadorProductoIngresoProps): ReactElement | null {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -72,7 +74,16 @@ export function BuscadorProductoIngreso({
             </button>
           ))}
           {termino.trim().length >= 2 && resultados.length === 0 && (
-            <p className="px-3 py-4 text-center text-[12px] font-semibold text-slate-500">Sin resultados</p>
+            <div className="px-3 py-4 text-center">
+              <p className="text-[12px] font-semibold text-slate-500">Sin resultados</p>
+              <button
+                type="button"
+                onClick={onCrearNuevo}
+                className="mt-3 rounded-xl bg-[#639922] px-4 py-2 text-[12px] font-bold text-white"
+              >
+                Este producto no existe — regístralo ahora
+              </button>
+            </div>
           )}
         </div>
       </div>

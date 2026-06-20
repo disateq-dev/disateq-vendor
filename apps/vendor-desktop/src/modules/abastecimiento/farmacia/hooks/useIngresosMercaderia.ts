@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buscarPresentacionesParaIngreso, buscarProveedores, registrarIngreso } from '../../../../domains/farmacia/farmacia.service'
-import type { LineaIngreso, Proveedor, RegistrarIngresoInput, ResultadoBusquedaPresentacion } from '../../../../domains/farmacia/types'
+import { buscarPresentacionesParaIngreso, buscarProveedores, crearNodo, crearPresentacion, registrarIngreso } from '../../../../domains/farmacia/farmacia.service'
+import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
+import type {
+  CrearNodoInput,
+  CrearPresentacionInput,
+  CrearProductoComercialInput,
+  CrearProductoGenericoInput,
+  LineaIngreso,
+  Proveedor,
+  RegistrarIngresoInput,
+  ResultadoBusquedaPresentacion,
+} from '../../../../domains/farmacia/types'
 
 export interface LineaIngresoDraft extends LineaIngreso {
   id: string
@@ -15,6 +25,8 @@ interface UseIngresosMercaderiaResult {
   buscadorProductoAbierto: boolean
   terminoProducto: string
   resultadosProducto: ResultadoBusquedaPresentacion[]
+  creandoProductoAbierto: boolean
+  pasoNuevoProducto: number
   cargando: boolean
   error: string | null
   historialReciente: unknown[]
@@ -23,8 +35,18 @@ interface UseIngresosMercaderiaResult {
   onSeleccionarProveedor(p: Proveedor): void
   onAbrirBuscadorProducto(): void
   onCerrarBuscadorProducto(): void
+  onAbrirCreacionProducto(): void
+  onCerrarCreacionProducto(): void
   onTerminoProductoChange(t: string): void
   onAgregarLinea(r: ResultadoBusquedaPresentacion): void
+  onPasoSiguienteProducto(): void
+  onPasoAnteriorProducto(): void
+  onGuardarProductoYAgregarLinea(
+    generico: CrearProductoGenericoInput,
+    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
+    presentacion: CrearPresentacionInput,
+    nodosExtra: CrearNodoInput[],
+  ): Promise<void>
   onEliminarLinea(id: string): void
   onActualizarLinea(id: string, cambios: Partial<LineaIngresoDraft>): void
   onUsarLoteGenerico(id: string): void
@@ -54,8 +76,11 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
   const [buscadorProductoAbierto, setBuscadorProductoAbierto] = useState<boolean>(false)
   const [terminoProducto, setTerminoProducto] = useState<string>('')
   const [resultadosProducto, setResultadosProducto] = useState<ResultadoBusquedaPresentacion[]>([])
+  const [creandoProductoAbierto, setCreandoProductoAbierto] = useState<boolean>(false)
+  const [pasoNuevoProducto, setPasoNuevoProducto] = useState<number>(1)
   const [cargando, setCargando] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const crearProductoCompleto = useFarmaciaStore((state) => state.crearProductoCompleto)
   const timerProveedorRef = useRef<number | null>(null)
   const timerProductoRef = useRef<number | null>(null)
   const historialReciente: unknown[] = [] // TODO: cargar historial cuando exista comando de listado.
@@ -109,6 +134,18 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
 
   const onAbrirBuscadorProducto = useCallback((): void => setBuscadorProductoAbierto(true), [])
   const onCerrarBuscadorProducto = useCallback((): void => setBuscadorProductoAbierto(false), [])
+  const onAbrirCreacionProducto = useCallback((): void => {
+    setBuscadorProductoAbierto(false)
+    setPasoNuevoProducto(1)
+    setCreandoProductoAbierto(true)
+  }, [])
+  const onCerrarCreacionProducto = useCallback((): void => setCreandoProductoAbierto(false), [])
+  const onPasoSiguienteProducto = useCallback((): void => {
+    setPasoNuevoProducto((actual) => Math.min(4, actual + 1))
+  }, [])
+  const onPasoAnteriorProducto = useCallback((): void => {
+    setPasoNuevoProducto((actual) => Math.max(1, actual - 1))
+  }, [])
 
   const onTerminoProductoChange = useCallback((t: string): void => {
     setTerminoProducto(t)
@@ -146,6 +183,46 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
     setTerminoProducto('')
     setResultadosProducto([])
   }, [])
+
+  const onGuardarProductoYAgregarLinea = useCallback(async (
+    generico: CrearProductoGenericoInput,
+    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
+    presentacion: CrearPresentacionInput,
+    nodosExtra: CrearNodoInput[],
+  ): Promise<void> => {
+    setCargando(true)
+    try {
+      const productoComercialId = await crearProductoCompleto(generico, comercial)
+      const presentacionId = await crearPresentacion({ ...presentacion, productoComercialId })
+      const nodoRaizId = await crearNodo({
+        presentacionId,
+        nombreFormaVenta: presentacion.descripcion,
+        tipoFormaVenta: 'PRESENTACION_ORIGINAL',
+        unidadesBase: presentacion.factorConversionBase,
+        esVendible: true,
+        esComprable: true,
+      })
+      await Promise.all(nodosExtra.map((nodo) => crearNodo({
+        ...nodo,
+        presentacionId,
+        nodoPadreId: nodo.nodoPadreId ?? nodoRaizId,
+      })))
+      onAgregarLinea({
+        presentacionId,
+        productoComercialId,
+        productoNombre: comercial.nombreComercial,
+        descripcion: presentacion.descripcion,
+        requiereLote: comercial.requiereLote,
+        fabricante: comercial.nombreFabricante,
+      })
+      setCreandoProductoAbierto(false)
+    } catch (guardarError) {
+      setError(resolverMensajeError(guardarError))
+      throw guardarError
+    } finally {
+      setCargando(false)
+    }
+  }, [crearProductoCompleto, onAgregarLinea])
 
   const onEliminarLinea = useCallback((id: string): void => {
     setLineas((actuales) => actuales.filter((linea) => linea.id !== id))
@@ -199,9 +276,12 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
 
   return {
     proveedorSeleccionado, lineas, buscandoProveedor, resultadosProveedor, terminoProveedor,
-    buscadorProductoAbierto, terminoProducto, resultadosProducto, cargando, error, historialReciente, ingresoValido,
+    buscadorProductoAbierto, terminoProducto, resultadosProducto, creandoProductoAbierto, pasoNuevoProducto,
+    cargando, error, historialReciente, ingresoValido,
     onTerminoProveedorChange, onSeleccionarProveedor, onAbrirBuscadorProducto, onCerrarBuscadorProducto,
-    onTerminoProductoChange, onAgregarLinea, onEliminarLinea, onActualizarLinea, onUsarLoteGenerico,
+    onAbrirCreacionProducto, onCerrarCreacionProducto, onTerminoProductoChange, onAgregarLinea,
+    onPasoSiguienteProducto, onPasoAnteriorProducto, onGuardarProductoYAgregarLinea,
+    onEliminarLinea, onActualizarLinea, onUsarLoteGenerico,
     onUsarLoteReal, onConfirmarIngreso, onCancelar, onLimpiarError,
   }
 }

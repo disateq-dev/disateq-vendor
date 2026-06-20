@@ -2,6 +2,7 @@ import { Truck, X } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { BuscadorProductoIngreso } from './components/BuscadorProductoIngreso'
 import { LineaIngresoCard } from './components/LineaIngresoCard'
+import { NuevoProductoStepper } from './components/NuevoProductoStepper'
 import { SelectorProveedorIngreso } from './components/SelectorProveedorIngreso'
 import { useIngresosMercaderia } from './hooks/useIngresosMercaderia'
 
@@ -71,7 +72,34 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
         onTerminoChange={ingresos.onTerminoProductoChange}
         onSeleccionar={ingresos.onAgregarLinea}
         onCerrar={ingresos.onCerrarBuscadorProducto}
+        onCrearNuevo={ingresos.onAbrirCreacionProducto}
       />
+      {ingresos.creandoProductoAbierto && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <header className="flex h-16 items-center justify-between border-b border-[#EAF3DE] bg-white px-6">
+            <span className="text-[14px] font-bold text-slate-900">
+              Registrando producto recibido de {ingresos.proveedorSeleccionado?.razonSocial ?? 'proveedor sin confirmar'}
+            </span>
+            <button
+              type="button"
+              onClick={ingresos.onCerrarCreacionProducto}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#639922]"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </header>
+          <NuevoProductoStepper
+            paso={ingresos.pasoNuevoProducto}
+            terminoBusqueda={ingresos.terminoProducto}
+            cargando={ingresos.cargando}
+            error={ingresos.error}
+            onPasoSiguiente={ingresos.onPasoSiguienteProducto}
+            onPasoAnterior={ingresos.onPasoAnteriorProducto}
+            onCancelar={ingresos.onCerrarCreacionProducto}
+            onGuardar={ingresos.onGuardarProductoYAgregarLinea}
+          />
+        </div>
+      )}
     </div>
   )
 }
