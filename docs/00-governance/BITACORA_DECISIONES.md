@@ -547,4 +547,89 @@ derecho 65% (vacío↔creación), ambos visibles siempre. Razón explícita de
 Fernando: "le da al operador un contexto real de todo el proceso" — prioridad
 sobre el riesgo de saturación visual considerado al inicio.
 
-**Estado:** RESUELTO — commit *(pendiente)*.
+**Estado:** RESUELTO — commit `82336ad`.
+
+---
+
+## 2026-06-21 — Arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora como componente real
+
+**Contexto:** Al revisar ABASTECIMIENTO FARMACIA contra la jerarquía documentada
+en `03-arquitectura/arquitectura.md` y `design-system/operational-visual-architecture.md`
+(`Topbar → ContextBar → SubContextBar → Workspace → SheetWorks → Footbar`,
+donde SheetWorks compone `SheetHeader`/`SheetBody`(Sections→Blocks)/`SheetFooter`),
+Fernando notó que ABASTECIMIENTO no la sigue. Verificación exhaustiva en código
+real (`directory_tree` completo de `apps/vendor-desktop/src`) confirmó que
+`SheetWork`, `SubContextBar` y `Footbar` como entidad unificada **no existen como
+archivos en ningún lugar del proyecto** — ni en ABASTECIMIENTO ni en ningún otro
+de los nueve módulos existentes (`CashWorkspace`, `SalesWorkspace`,
+`PreVentaWorkspace`, `ComprobantesWorkspace`, `ConfigWorkspace`,
+`InventoryWorkspace`, `PurchasesWorkspace` incluidos — TURNO/CAJA y VENTAS, ya
+maduros y auditados, también siguen el patrón plano `XWorkspace.tsx` sin capa
+SheetWork). `Topbar` y `ContextBar` sí son reales. La jerarquía completa fue
+diseñada conceptualmente en algún punto temprano del proyecto y nunca se
+contrastó contra lo que cada sesión fue construyendo — ninguna sesión la
+desobedeció a propósito; cada una siguió la doctrina de "repo real manda"
+(`00-governance/reglas.md`, `CLAUDE.md`) mirando el código existente, que ya no
+la reflejaba.
+
+Fernando aclaró el motivo real detrás de `SheetWork`: necesidad de que dos o
+más "sheets" convivan dentro de un mismo Workspace sin pisarse, incluyendo
+sheets con hijos que se reemplazan sobre su misma ubicación. Verificado en
+código real que esa necesidad **ya está resuelta en producción, dos veces, en
+VENTAS** — sin haberse extraído nunca como pieza reutilizable: (1)
+`PreVentaWorkspace.tsx` swapea `PreVentaGrid`/`CobroPanel` en el mismo lugar
+según `cobroOpen`; (2) dentro de `CobroPanel.tsx`, `cobroView` swapea
+main/cliente y `confirmSheet` swapea hacia la pantalla de confirmación —
+anidamiento de sheets sobre la misma ubicación. El código de `CobroPanel.tsx`
+incluso contiene comentarios literales `{/* SheetHeader */}` y referencias a
+"SheetTopbar" — el concepto estaba presente en la mente de quien lo escribió,
+solo nunca se formalizó como componente.
+
+**Decisión:** Opción A — cerrar formalmente la brecha documentando la realidad,
+no reabrir un proyecto de retrofit sobre código que ya funciona. Se extrae
+`SheetWork`/`SheetHeader`/`SheetBody`/`SheetFooter` como componentes reales y
+reutilizables en `apps/vendor-desktop/src/components/sheet/` (fuera de
+`modules/`, para que cualquier módulo lo importe sin depender de VENTAS),
+usando como referencia exacta el chrome ya probado de `CobroPanel.tsx`.
+`SheetWork` solo estandariza el *chrome* visual (contenedor, header, body
+scrolleable, footer) — no gestiona el estado de swapeo, que sigue siendo
+responsabilidad de cada módulo, exactamente como ya funciona hoy. Prop
+`accent` (hex) reemplaza el verde `#45b356` hardcodeado para que el componente
+sirva igual a FARMACIA (`#639922`) que a VENTAS.
+
+Como validación de que el componente reproduce el chrome real sin romper nada,
+se migró la vista "main" de `CobroPanel.tsx` para usarlo (sin tocar la vista de
+confirmación, la vista cliente, ni `PreVentaWorkspace.tsx`).
+
+**Razón doctrinal derivada:** Consistente con `philosophy/EVOLUTION_AND_CONSOLIDATION.md`
+("la sofisticación debe emerger de necesidad real, no de arquitectura
+especulativa") y con `00-governance/reglas.md`/`CLAUDE.md` ("repo real manda").
+Nueve módulos consistentes en el patrón plano es evidencia fuerte de que ese
+patrón es el que el equipo —humano e IA, sesión tras sesión— construye
+naturalmente; la capa SheetWork documentada nunca demostró ser necesaria hasta
+que se identificó el caso real de swap-en-mismo-lugar, que ya estaba resuelto
+ad hoc en VENTAS.
+
+**Auditoría:** timestamps verificados (`CobroPanel.tsx` modificado en la
+fecha del commit, `PreVentaWorkspace.tsx` sin tocar), lectura línea por línea
+de los 4 componentes nuevos contra el chrome original, cálculo manual exacto
+del tinte de header (`tint(#45b356)` = `rgb(242,247,243)` = `#F2F7F3`, el
+valor hardcodeado original), verificación visual en la ventana nativa de Tauri
+confirmada por Fernando como idéntica al original.
+
+**Deuda registrada (no bloqueante):** la fórmula `tint()` en `SheetHeader.tsx`
+está calibrada por reconstrucción inversa contra el único punto de datos
+conocido (`#45b356`→`#F2F7F3`); para `#639922` (farmacia) produce un resultado
+razonable pero no validado visualmente. El slot `right` de `SheetHeader` no
+tiene espaciador hacia el borde derecho (no usado aún, sin impacto actual).
+
+**Pendiente — decisión de Fernando:** si se adopta `SheetWork` en
+ABASTECIMIENTO FARMACIA (el motivo original de esta auditoría) o se deja
+disponible solo para módulos nuevos hacia adelante. La consolidación de
+documentación (`DOCTRINA.md` + `ARQUITECTURA_UX.md`, ver auditoría doctrinal
+2026-06-20 más arriba) sigue pausada — debe retomarse describiendo el patrón
+`SheetWork` real, no la jerarquía conceptual original.
+
+**Estado:** RESUELTO — commit `6a19279`. Componente disponible en
+`apps/vendor-desktop/src/components/sheet/`. `CobroPanel.tsx` migrado como
+primer caso de uso real.

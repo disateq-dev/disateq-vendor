@@ -2,7 +2,7 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2)
+* **Último commit:** `82336ad` — feat(abastecimiento): Catálogo en dos paneles (layout de split)
 * **Commits de la jornada 19-20 Jun:**
   * `95cc297` — feat(sqlite): tauri-plugin-sql v2 + schema CORE + FARMACIA + comandos DB iniciales
   * `cc23da3` — feat(sqlite): 18 comandos Tauri dominio farmacia
@@ -17,6 +17,8 @@
   * `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos (fase 1 de 2 — ver auditoría doctrinal 2026-06-20 en BITACORA_DECISIONES.md)
   * `bc0083f` — fix(farmacia): traducción snake_case→camelCase en obtenerProveedores() (hallazgo colateral de la auditoría doctrinal, quedaba fuera de b888909)
   * `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2 de 2 — cierra la auditoría doctrinal 2026-06-20)
+  * `6a19279` — feat(sheet): extraer SheetWork como componente compartido (ver BITACORA_DECISIONES.md 2026-06-21 — la arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora a partir del patrón real ya usado en VENTAS)
+  * `82336ad` — feat(abastecimiento): Catálogo en dos paneles (layout de split)
 * **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente ambos flujos nuevos en Ingresos: (1) producto — buscar uno inexistente, confirmar botón "Este producto no existe — regístralo ahora", completar el stepper, verificar que la línea se agrega automáticamente; (2) proveedor — buscar uno inexistente, confirmar botones "Consultar SUNAT por RUC" y "Registrar manualmente", completar cualquiera de los dos caminos, verificar que el proveedor queda seleccionado automáticamente en el ingreso.
 
 ---
@@ -135,8 +137,7 @@ como layout de split: `CatalogoFarmaciaWorkspace` pasa de un único `modo`
 Archivos: `hooks/useCatalogoFarmacia.ts` (modo→panelIzquierdo,
 +creandoAbierto, +onCerrarCreacion), `CatalogoFarmaciaWorkspace.tsx`.
 Razón explícita de Fernando: "le da al operador un contexto real de todo
-el proceso." Auditado en código. Commit: *(pendiente — se completa tras
-confirmar git log)*.
+el proceso." Auditado en código. Commit: `82336ad`.
 
 ---
 
@@ -160,6 +161,9 @@ SQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)
   ↓ 31 comandos Tauri en Rust (snake_case en Rust, sin cambios)
   ↓ farmacia.service.ts (23 funciones, camelCase en argumentos de invoke)
   ↓ farmacia.store.ts (Zustand)
+  ↓ components/sheet/ — SheetWork/SheetHeader/SheetBody/SheetFooter (commit 6a19279,
+      ver BITACORA_DECISIONES.md 2026-06-21), disponible para cualquier módulo, primer
+      uso real en CobroPanel.tsx (VENTAS), AUN NO adoptado en ABASTECIMIENTO FARMACIA
   ↓ modules/abastecimiento/farmacia/
       CatalogoFarmaciaWorkspace.tsx        ✅ producto de prueba creado, búsqueda IFA corregida
       ProveedoresWorkspace.tsx            ✅ proveedor de prueba creado y verificado
@@ -171,18 +175,25 @@ SQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)
 
 ## Próxima ventana de trabajo — Prioridad ordenada
 1. **Verificar visualmente** que "Paracetamol" ahora encuentra "Panadol" con categoría ANALGESICO
-2. **Resolver conversación de diseño pendiente**: ¿sheets separadas en Catálogo? (ver sección arriba)
-3. **Probar IngresosMercaderiaWorkspace end-to-end real**: usar el proveedor Lab. Portugal
+2. **Decisión pendiente — SheetWork:** ¿se adopta en ABASTECIMIENTO FARMACIA (motivo original
+   de su creación) o se deja disponible solo para módulos nuevos? Ver BITACORA_DECISIONES.md
+   2026-06-21.
+3. **Retomar consolidación de documentación** (`DOCTRINA.md` + `ARQUITECTURA_UX.md`,
+   pausada por el hallazgo de SheetWork) — debe describir el patrón SheetWork real,
+   no la jerarquía conceptual original. Incluye registrar entidades de ABASTECIMIENTO
+   FARMACIA en GLOSARIO.md (nunca pasaron por el proceso de aprobación formal), fusionar
+   DOMAIN_LANGUAGE.md dentro de GLOSARIO.md, y crear el Índice de Documentación.
+4. **Probar IngresosMercaderiaWorkspace end-to-end real**: usar el proveedor Lab. Portugal
    + el producto Panadol ya creados, registrar un ingreso con lote, confirmar en SQLite
    que se creó lote + movimiento tipo "entrada". Incluye probar ambos flujos nuevos de
    creación embebida — producto (commit `6ada611`) y proveedor (commit `838c960`): buscar
    uno inexistente de cada tipo desde Ingresos, completar el sub-flujo correspondiente, y
    verificar que queda agregado/seleccionado automáticamente sin salir de la pantalla.
-4. **Conectar operadorId/runtimeId reales** en useIngresosMercaderia.ts — requiere store sesión/turno
-5. **PresentacionSheet rediseño** — UIX FormaVenta con datos SQLite reales
-6. **ClientesWorkspace** — prerequisito precio FRECUENTE
-7. **Notas de Crédito y Débito**
-8. **Refactoring deuda técnica** — DetalleProducto.tsx, NuevoProductoStepper.tsx, useIngresosMercaderia.ts
+5. **Conectar operadorId/runtimeId reales** en useIngresosMercaderia.ts — requiere store sesión/turno
+6. **PresentacionSheet rediseño** — UIX FormaVenta con datos SQLite reales
+7. **ClientesWorkspace** — prerequisito precio FRECUENTE
+8. **Notas de Crédito y Débito**
+9. **Refactoring deuda técnica** — DetalleProducto.tsx, NuevoProductoStepper.tsx, useIngresosMercaderia.ts
 
 ---
 
