@@ -19,6 +19,7 @@
   * `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2 de 2 — cierra la auditoría doctrinal 2026-06-20)
   * `6a19279` — feat(sheet): extraer SheetWork como componente compartido (ver BITACORA_DECISIONES.md 2026-06-21 — la arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora a partir del patrón real ya usado en VENTAS)
   * `82336ad` — feat(abastecimiento): Catálogo en dos paneles (layout de split)
+  * *(pendiente)* — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0 (ver BITACORA_DECISIONES.md 2026-06-21)
 * **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente ambos flujos nuevos en Ingresos: (1) producto — buscar uno inexistente, confirmar botón "Este producto no existe — regístralo ahora", completar el stepper, verificar que la línea se agrega automáticamente; (2) proveedor — buscar uno inexistente, confirmar botones "Consultar SUNAT por RUC" y "Registrar manualmente", completar cualquiera de los dos caminos, verificar que el proveedor queda seleccionado automáticamente en el ingreso.
 
 ---
@@ -53,11 +54,9 @@
 
 ## DOCTRINA DE CALIDAD — IRREVOCABLE desde 2026-06-19
 
-### SOLID
-- **S:** Un componente/hook/comando = una responsabilidad.
-- **O:** Tipos se extienden, schemas con migración versionada.
-- **I:** Props segregadas.
-- **D:** Componentes dependen de hooks/servicios, no de localStorage ni invoke directo.
+Marco completo de estándares (SOLID, Clean Code, DRY, KISS, YAGNI, Base de
+Datos, Seguridad, CI/SemVer): ver `docs/00-governance/ESTANDARES_TECNICOS.md`
+(creado 2026-06-21, reemplaza el resumen de SOLID que vivía aquí).
 
 ### CONVENCIÓN TAURI — IRREVOCABLE desde 2026-06-20 (commit 966b936)
 **Todo argumento de invoke() del lado TypeScript se envía SIEMPRE en camelCase.**

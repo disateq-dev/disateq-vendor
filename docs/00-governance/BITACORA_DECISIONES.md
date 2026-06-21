@@ -633,3 +633,56 @@ documentación (`DOCTRINA.md` + `ARQUITECTURA_UX.md`, ver auditoría doctrinal
 **Estado:** RESUELTO — commit `6a19279`. Componente disponible en
 `apps/vendor-desktop/src/components/sheet/`. `CobroPanel.tsx` migrado como
 primer caso de uso real.
+
+---
+
+## 2026-06-21 — Evaluación de marcos de buenas prácticas y estándares; ESTANDARES_TECNICOS.md creado
+
+**Contexto:** Fernando señaló que no había nada documentado sobre
+prácticas/estándares más allá de fragmentos dispersos en CURRENT_CONTEXT.md
+(sección DOCTRINA DE CALIDAD) y docs/codex.md. Propuso una lista de doce
+marcos de industria para evaluar: SOLID, Clean Code, DRY, KISS, YAGNI /
+Normalización, Indexación, Mínimo Privilegio / OWASP Top 10, Security by
+Design, Cifrado / The Twelve-Factor App, CI/CD, SemVer.
+
+**Decisión:** Evaluación caso por caso, no adopción ciega del paquete
+completo — varios marcos (OWASP Top 10 completo, Twelve-Factor App completo)
+asumen un contexto (aplicación web con superficie de ataque de red, servicio
+cloud horizontalmente escalable) que DISATEQ Vendor (cliente Tauri
+offline-first, SQLite embebido) no tiene hoy, aunque sí lo tendrá parcialmente
+cuando se construya el backend Nexo de ARQUITECTURA_SYNC.md. Adoptar marcos
+completos fuera de contexto sería la misma sobre-ingeniería que la filosofía
+anti-ERP del proyecto rechaza.
+
+**Resultado de la evaluación:**
+- Adoptados completos: SOLID, Clean Code, DRY (incluyendo documentación),
+  KISS, YAGNI, Normalización, Indexación, Security by Design.
+- Reinterpretado: Mínimo Privilegio → sistema de capacidades operacionales
+  (VEN/GES/SOP/ADMIN), no permisos de BD tradicionales.
+- Adopción parcial: OWASP Top 10 — solo Inyección y Exposición de Datos
+  Sensibles aplican ahora; el resto reservado para Nexo.
+- No adoptado ahora, reservado para Nexo: The Twelve-Factor App completo.
+- Pendiente con trigger explícito: Cifrado en reposo del SQLite local —
+  decisión explícita de Fernando de no exigirlo ahora, pero alertar antes de
+  cualquier release a producción con datos reales de cliente o si se
+  almacenan datos personales sensibles más allá de RUC/razón social.
+- Adoptado desde hoy: CI ligero (type-check + cargo check automatizados en
+  cada push; CD y tests de negocio diferidos a después de Alpha) y SemVer
+  formal empezando en `0.1.0`.
+
+**Acción inmediata — SemVer aplicado:** `package.json` de
+`apps/vendor-desktop` corregido de `0.0.0` a `0.1.0`. `src-tauri/Cargo.toml`
+y `src-tauri/tauri.conf.json` ya estaban en `0.1.0` por defecto del scaffold
+de Tauri — los tres quedan sincronizados.
+
+**Mecanismo para que se aplique de verdad (no solo se documente):** A
+diferencia de la doctrina filosófica que quedó enterrada sin referenciarse
+desde ningún punto de arranque de sesión, se agrega referencia explícita en
+`CLAUDE.md` §4 y en `docs/codex.md` §2, para que tanto Claude como Codex
+consulten `ESTANDARES_TECNICOS.md` como parte del protocolo normal. También
+se eliminó la sub-sección `### SOLID` de CURRENT_CONTEXT.md (duplicada con
+el nuevo documento) — aplicación inmediata de la regla DRY-en-documentación
+recén adoptada en este mismo cambio.
+
+**Estado:** CONSOLIDADO — commit *(pendiente)*. Documento nuevo:
+`docs/00-governance/ESTANDARES_TECNICOS.md`.
