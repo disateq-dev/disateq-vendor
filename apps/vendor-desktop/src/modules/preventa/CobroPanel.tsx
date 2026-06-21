@@ -19,6 +19,7 @@ import { validarComprobante } from "../../domains/documents/comprobante.validato
 import { correlativoStore } from "../../domains/documents/correlativo.store";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
 import ClienteBuscador, { type ReceptorComprobante } from "../sales/ClienteBuscador";
+import { SheetBody, SheetFooter, SheetHeader, SheetWork } from "../../components/sheet";
 
 type DocType     = "nota" | "boleta" | "factura" | "cotizacion";
 type PayMethod   = "efectivo" | "yape" | "tarjeta" | "mixto";
@@ -713,16 +714,11 @@ export function CobroPanel() {
     : "SE IMPRIMIÓ EL DOCUMENTO";
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
+    <SheetWork accent="#45b356">
 
       {/* SheetHeader */}
       {cobroView === "main" && confirmSheet === null && (
-        <header className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#45b356]/20 bg-[#F2F7F3] px-4">
-          <Receipt size={13} strokeWidth={2} className="text-[#45b356]" />
-          <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
-            COBRO
-          </span>
-        </header>
+        <SheetHeader icon={Receipt} label="COBRO" accent="#45b356" />
       )}
 
       {/* BODY */}
@@ -860,7 +856,7 @@ export function CobroPanel() {
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3 flex flex-col gap-3">
+          <SheetBody className="px-4 pt-3 pb-3 flex flex-col gap-3">
 
             {/* AFECTACIÓN TRIBUTARIA */}
             <div className="flex items-center gap-2">
@@ -1086,7 +1082,7 @@ export function CobroPanel() {
               </div>
             )}
 
-          </div>
+          </SheetBody>
         </>
 
       ) : (
@@ -1104,7 +1100,7 @@ export function CobroPanel() {
 
       {/* FOOTER — condicional por sheet activa */}
       {cobroView === "main" && confirmSheet === null && (
-        <div className="shrink-0 border-t border-amber-100/70 bg-[#fffdf8] px-3 py-3">
+        <SheetFooter className="border-amber-100/70 bg-[#fffdf8]">
           <div className="flex gap-1.5 items-stretch">
             <button
               title="Tecla [Ctrl + Insert]"
@@ -1134,9 +1130,9 @@ export function CobroPanel() {
               Imprimir
             </button>
           </div>
-        </div>
+        </SheetFooter>
       )}
 
-    </section>
+    </SheetWork>
   );
 }
