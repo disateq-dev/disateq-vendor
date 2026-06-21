@@ -2,7 +2,7 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `82336ad` — feat(abastecimiento): Catálogo en dos paneles (layout de split)
+* **Último commit:** `17cabb4` — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0
 * **Commits de la jornada 19-20 Jun:**
   * `95cc297` — feat(sqlite): tauri-plugin-sql v2 + schema CORE + FARMACIA + comandos DB iniciales
   * `cc23da3` — feat(sqlite): 18 comandos Tauri dominio farmacia
@@ -19,7 +19,7 @@
   * `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2 de 2 — cierra la auditoría doctrinal 2026-06-20)
   * `6a19279` — feat(sheet): extraer SheetWork como componente compartido (ver BITACORA_DECISIONES.md 2026-06-21 — la arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora a partir del patrón real ya usado en VENTAS)
   * `82336ad` — feat(abastecimiento): Catálogo en dos paneles (layout de split)
-  * *(pendiente)* — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0 (ver BITACORA_DECISIONES.md 2026-06-21)
+  * `17cabb4` — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0 (ver BITACORA_DECISIONES.md 2026-06-21)
 * **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente ambos flujos nuevos en Ingresos: (1) producto — buscar uno inexistente, confirmar botón "Este producto no existe — regístralo ahora", completar el stepper, verificar que la línea se agrega automáticamente; (2) proveedor — buscar uno inexistente, confirmar botones "Consultar SUNAT por RUC" y "Registrar manualmente", completar cualquiera de los dos caminos, verificar que el proveedor queda seleccionado automáticamente en el ingreso.
 
 ---

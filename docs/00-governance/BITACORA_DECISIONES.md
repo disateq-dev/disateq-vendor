@@ -684,5 +684,5 @@ se eliminó la sub-sección `### SOLID` de CURRENT_CONTEXT.md (duplicada con
 el nuevo documento) — aplicación inmediata de la regla DRY-en-documentación
 recén adoptada en este mismo cambio.
 
-**Estado:** CONSOLIDADO — commit *(pendiente)*. Documento nuevo:
+**Estado:** CONSOLIDADO — commit `17cabb4`. Documento nuevo:
 `docs/00-governance/ESTANDARES_TECNICOS.md`.
