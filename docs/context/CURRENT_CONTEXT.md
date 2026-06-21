@@ -13,13 +13,13 @@
   * `a8b7758` — fix(abastecimiento): navegación Catálogo→Proveedores→Ingresos→Compras→Inventarios
   * `966b936` — fix(farmacia): camelCase nativo de Tauri 2.x en invoke()
   * `fc00277` — fix(catalogo): búsqueda por nombre comercial o IFA, categoria_farmacia faltante
-  * `b888909` — fix(farmacia): traducción snake_case→camelCase en 7 funciones de lectura (ver bitácora 2026-06-20)
-  * `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos (fase 1 de 2 — ver auditoría doctrinal 2026-06-20 en BITACORA_DECISIONES.md)
+  * `b888909` — fix(farmacia): traducción snake_case→camelCase en 7 funciones de lectura (ver BITACORA_HISTORICA.md 2026-06-20)
+  * `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos (fase 1 de 2 — ver auditoría doctrinal 2026-06-20 en BITACORA_HISTORICA.md)
   * `bc0083f` — fix(farmacia): traducción snake_case→camelCase en obtenerProveedores() (hallazgo colateral de la auditoría doctrinal, quedaba fuera de b888909)
   * `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2 de 2 — cierra la auditoría doctrinal 2026-06-20)
-  * `6a19279` — feat(sheet): extraer SheetWork como componente compartido (ver BITACORA_DECISIONES.md 2026-06-21 — la arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora a partir del patrón real ya usado en VENTAS)
+  * `6a19279` — feat(sheet): extraer SheetWork como componente compartido (ver BITACORA_HISTORICA.md 2026-06-21 — la arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora a partir del patrón real ya usado en VENTAS)
   * `82336ad` — feat(abastecimiento): Catálogo en dos paneles (layout de split)
-  * `17cabb4` — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0 (ver BITACORA_DECISIONES.md 2026-06-21)
+  * `17cabb4` — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0 (ver BITACORA_HISTORICA.md 2026-06-21)
 * **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente ambos flujos nuevos en Ingresos: (1) producto — buscar uno inexistente, confirmar botón "Este producto no existe — regístralo ahora", completar el stepper, verificar que la línea se agrega automáticamente; (2) proveedor — buscar uno inexistente, confirmar botones "Consultar SUNAT por RUC" y "Registrar manualmente", completar cualquiera de los dos caminos, verificar que el proveedor queda seleccionado automáticamente en el ingreso.
 
 ---
@@ -117,7 +117,7 @@ versión. Todo en una transacción.
 ---
 
 ## A EVALUAR EN USO REAL — IngresosMercaderiaWorkspace
-Tres decisiones abiertas (ver bitácora 2026-06-20 para detalle):
+Tres decisiones abiertas (ver BITACORA_DECISIONES.md 2026-06-20 para detalle):
 1. Flujo de un solo paso (sin recepción parcial)
 2. Lote genérico sin fecha de vencimiento obligatoria
 3. Búsqueda plana de presentaciones (sin selector de 2 pasos)
@@ -161,7 +161,7 @@ SQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)
   ↓ farmacia.service.ts (23 funciones, camelCase en argumentos de invoke)
   ↓ farmacia.store.ts (Zustand)
   ↓ components/sheet/ — SheetWork/SheetHeader/SheetBody/SheetFooter (commit 6a19279,
-      ver BITACORA_DECISIONES.md 2026-06-21), disponible para cualquier módulo, primer
+      ver BITACORA_HISTORICA.md 2026-06-21), disponible para cualquier módulo, primer
       uso real en CobroPanel.tsx (VENTAS), AUN NO adoptado en ABASTECIMIENTO FARMACIA
   ↓ modules/abastecimiento/farmacia/
       CatalogoFarmaciaWorkspace.tsx        ✅ producto de prueba creado, búsqueda IFA corregida
@@ -175,7 +175,7 @@ SQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)
 ## Próxima ventana de trabajo — Prioridad ordenada
 1. **Verificar visualmente** que "Paracetamol" ahora encuentra "Panadol" con categoría ANALGESICO
 2. **Decisión pendiente — SheetWork:** ¿se adopta en ABASTECIMIENTO FARMACIA (motivo original
-   de su creación) o se deja disponible solo para módulos nuevos? Ver BITACORA_DECISIONES.md
+   de su creación) o se deja disponible solo para módulos nuevos? Ver BITACORA_HISTORICA.md
    2026-06-21.
 3. **Retomar consolidación de documentación** (`DOCTRINA.md` + `ARQUITECTURA_UX.md`,
    pausada por el hallazgo de SheetWork) — debe describir el patrón SheetWork real,

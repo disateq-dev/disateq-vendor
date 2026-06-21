@@ -156,6 +156,107 @@ No se requieren comentarios que traduzcan términos. El término correcto en el 
 
 ---
 
+### Alias Operacional
+
+**Qué es:** representación humana visible del Operador en pantalla, comprobantes e impresiones — evita exponer el nombre completo fuera de contextos formales. Fusionado desde `philosophy/DOMAIN_LANGUAGE.md` (21-jun-2026), verificado real en `operator.store.ts`.
+
+**Término canónico:** `alias` (campo de `Operador`)
+
+**Algoritmo de generación:** `<Inicial primer nombre><Primer apellido>` en mayúsculas — `generarAlias()`. Ejemplo: Fernando Miguel Tejada Quevedo → `FTEJADA`.
+
+**Resolución de colisiones:** `<Inicial primer nombre><Primer apellido>_<Inicial segundo apellido>` — `resolverAlias()`. No usa sufijos numéricos (`FTEJADA_2`) por legibilidad. Resolución de colisiones persistentes es manual.
+
+**Ubicación canónica:** `domains/operator/operator.store.ts`
+
+---
+
+### Código Operador
+
+**Qué es:** referencia documental estable e inmutable del Operador — independiente de nombre, alias, rol y bloque. No reemplaza el ID técnico ni el Alias Operacional; no debe usarse como surrogate key. Fusionado desde `philosophy/DOMAIN_LANGUAGE.md` (21-jun-2026), verificado real en `operator.store.ts`.
+
+**Término canónico:** `codigoOperador` (campo de `Operador`)
+
+**Formato:** `OP001`, `OP023` — generado por `siguienteCodigoOperador()`.
+
+**Ubicación canónica:** `domains/operator/operator.store.ts`
+
+**Nota — hallazgo de auditoría (21-jun-2026, confirmado por Fernando):** `Operador` tiene también un campo `codigo` que no corresponde ni a `codigoOperador` ni a `alias` — huérfano, sin propósito distinto confirmado. Ver §8, pendiente de limpieza.
+
+---
+
+### Rol
+
+**Qué es:** función operacional nombrada con un conjunto estándar de capacidades asignadas. Nombra qué hace el operador en términos operacionales; un rol sin capacidades es válido. No es jerarquía de autoridad, cargo laboral, nivel de acceso al sistema ni gate de módulos. Fusionado desde `philosophy/DOMAIN_LANGUAGE.md` (21-jun-2026) bajo el nombre doctrinal "Rol Operacional" — el nombre TypeScript real y canónico es `Rol`, ya correcto, no se renombra.
+
+**Término canónico:** `Rol`
+
+**Tipo TypeScript:** `type Rol = { id, codigo, nombre, descripcion, capacidades: string[], requiereBloque: boolean, activo: boolean, creadoEn, creadoPor }`
+
+**Ubicación canónica:** `domains/operator/roles.store.ts`
+
+**Nota:** las capacidades efectivas de un Operador son la unión de las capacidades de su `Rol` asignado más las capacidades asignadas directamente al operador (`Operador.capacidades`).
+
+---
+
+### AsignacionBloque
+
+**Qué es:** registro de asignación de un bloque operacional a un Operador — marca de tiempo de asignación y, si corresponde, de liberación.
+
+**Término canónico:** `AsignacionBloque`
+
+**Tipo TypeScript:** `type AsignacionBloque = { assignedAt: string; releasedAt?: string }`
+
+**Ubicación canónica:** `domains/operator/operator.store.ts`
+
+---
+
+### Bloque Operacional
+
+**Qué es:** unidad operacional de infraestructura de caja — agrupa un conjunto de cajas bajo reglas de disponibilidad secuencial propias. Puede existir sin operador asignado, sin turno activo, y no desaparece cuando su operador es dado de baja. No es una caja individual, una ubicación física, un atributo del operador ni del turno.
+
+**Término canónico:** `BlockBase` (implementación actual — ver nota)
+
+**Tipo TypeScript:** `type BlockBase = 100 | 200 | 300 | 400 | 500 | 900`
+
+**Composición determinista (fuente: `architecture/bloque-operacional.md`, documento autoridad):**
+
+```
+bloque(base) = {
+  principal:    base
+  auxiliar-1:   base + 1
+  auxiliar-2:   base + 2
+  excepcional:  base + 50
+}
+```
+
+**Ciclo de vida doctrinal:** `Creado → Disponible → Asignado → En Uso → Liberado → Inactivo`. No implementado hoy como estado explícito — ver nota.
+
+**Ubicación canónica:** `domains/operator/blocks.store.ts`
+
+**Nota — fuente corregida (auditoría 21-jun-2026):** la entrada original de esta sección citaba `DOMAIN_LANGUAGE.md` como única fuente. La fuente doctrinal real y más completa es `architecture/bloque-operacional.md` ("DOCUMENTO AUTORIDAD — CONCEPTO DOCTRINAL", may-2026), que define el ciclo de vida de 6 estados arriba. Hoy en código `Bloque Operacional` es solo un número base (`BlockBase`) sin estado explícito propio — el ciclo de vida se infiere indirectamente de `Operador.baseBloque`/`AsignacionBloque`. No es un error, es una implementación más simple que la doctrina. No se fuerza a converger sin que Fernando lo pida.
+
+---
+
+### TipoCaja
+
+**Qué es:** la categoría operacional de cada caja dentro de un Bloque — Principal, Auxiliar o Excepcional. Dentro de Auxiliar, las cajas se numeran secuencialmente (Auxiliar 01, Auxiliar 02...) según `architecture/bloque-operacional.md` — la numeración gobierna el orden de apertura (Auxiliar 02 solo disponible tras cierre de Auxiliar 01), no introduce un cuarto valor de `TipoCaja`.
+
+**Estados canónicos:**
+
+| Estado | Significado operacional |
+|---|---|
+| `PRINCIPAL` | Caja de inicio normal de la jornada, sin prerequisitos ni autorización |
+| `AUXILIAR` | Continuación operacional tras cierre de la caja anterior del bloque, requiere motivo. Apertura secuencial entre auxiliares numeradas |
+| `EXCEPCIONAL` | Apertura de emergencia, solo si la Principal no fue utilizada en la jornada, requiere autorización y motivo. Su apertura impide iniciar la Principal el mismo día |
+
+**Reemplaza definitivamente:** `BoxSlotType` (`"normal" | "contingency-1" | "contingency-2" | "contingencia"`) — ver §8. Fernando confirmó (21-jun-2026) que `contingency-1`/`contingency-2` colapsan en la misma categoría doctrinal `AUXILIAR` — confirmado además por `architecture/bloque-operacional.md`, que ya las trataba como "Auxiliar 01"/"Auxiliar 02" (mismo tipo, secuencia distinta). El patrón `base + 50` para `contingencia` coincide exactamente con la Caja Excepcional documentada.
+
+**Reglas de apertura (fuente: `architecture/bloque-operacional.md`):** apertura secuencial (auxiliar solo abre si la anterior del bloque fue usada y cerrada), apertura excepcional (excepcional solo abre si la principal no se usó, y al abrirse impide la principal el resto del día), exclusividad diaria (una caja cerrada no reabre en la misma jornada), aislamiento de ciclo (el ciclo se reinicia cada jornada). Ninguna de estas reglas está verificada como implementada en `blocks.store.ts` esta sesión — el archivo solo define la composición, no las reglas de transición.
+
+**Ubicación canónica:** `domains/operator/blocks.store.ts`
+
+---
+
 ### ItemOperacional
 
 **Qué es:** un producto físico registrado en el sistema de inventario, identificado por su `itemId`.
@@ -197,7 +298,8 @@ domains/
 ├── clients/        ← Cliente · IdentificacionFiscal
 ├── operator/       ← Operador (antes: OperatorRecord)
 ├── cash/           ← TurnEvent (turno y caja)
-└── reports/        ← Reporte (proyecciones — sin persistencia)
+├── reports/        ← Reporte (proyecciones — sin persistencia)
+└── farmacia/       ← ProductoGenerico · ProductoComercial · PresentacionComercial · Lote · Proveedor · ServicioFarmacia · EjecucionServicio
 ```
 
 ---
@@ -206,14 +308,16 @@ domains/
 
 ```
 modules/
-├── preventa/       ← PreVentaGrid · CobroPanel (antes: ticket/)
-├── sales/          ← SalesWorkspace · ClienteBuscador · PresentacionSheet
-├── comprobantes/   ← ComprobantesWorkspace (conectado a domains/documents/)
-├── inventory/      ← InventoryWorkspace
-├── purchases/      ← PurchasesWorkspace
-├── cash/           ← CashWorkspace
-├── config/         ← ConfigWorkspace · CapacidadesWorkspace · RolesWorkspace
-└── login/          ← LoginWorkspace
+├── preventa/           ← PreVentaGrid · CobroPanel (antes: ticket/)
+├── sales/               ← SalesWorkspace · ClienteBuscador · PresentacionSheet
+├── comprobantes/    ← ComprobantesWorkspace (conectado a domains/documents/)
+├── inventory/          ← InventoryWorkspace
+├── purchases/         ← PurchasesWorkspace
+├── cash/                 ← CashWorkspace
+├── config/               ← ConfigWorkspace · CapacidadesWorkspace · RolesWorkspace
+├── login/                 ← LoginWorkspace
+└── abastecimiento/
+    └── farmacia/        ← CatalogoFarmaciaWorkspace · ProveedoresWorkspace · IngresosMercaderiaWorkspace
 ```
 
 ---
@@ -334,6 +438,9 @@ Registro de los términos que existían antes de este glosario y fueron unificad
 | `saveOperators()` | `domains/operator/` | `guardarOperadores()` | Pendiente de migración |
 | `disponible/bajo_stock/agotado` | `domains/inventory/` | `DISPONIBLE/BAJO_STOCK/AGOTADO` | Pendiente de migración |
 | `disateq:inventory:items` (declarado en §6) | `domains/inventory/persistence.ts` | `inv_v0_items` / `inv_v0_movimientos` | Pendiente de migración |
+| `ActualizarProveedorInput` (auditoría 21-jun-2026) | `domains/farmacia/types.ts` | `ModificarProveedorInput` | Pendiente de migración — verbo `actualizar` no está en §4, canónico es `modificar` |
+| `Operador.codigo` (auditoría 21-jun-2026, confirmado por Fernando) | `domains/operator/operator.store.ts` | Eliminar — no corresponde ni a `codigoOperador` ni a `alias` | Pendiente de migración — campo huérfano, confirmar que ningún consumidor depende de él antes de quitarlo |
+| `BoxSlotType` / `BoxSlotDef` / campo `code` (auditoría 21-jun-2026, confirmado por Fernando) | `domains/operator/blocks.store.ts` | `TipoCaja` (`PRINCIPAL/AUXILIAR/EXCEPCIONAL`) / `DefinicionCaja` / campo `codigo` | Pendiente de migración — viola Regla de Oro del Idioma (dominio de negocio en inglés); además colapsa `contingency-1`/`contingency-2` en un solo valor `AUXILIAR` |
 
 ---
 
@@ -402,6 +509,159 @@ El rol VEN opera "a ciegas" — ningún monto acumulado de sesión debe ser visi
 ### Ejemplo de rol adicional
 
 Un rol CONTADOR creado por el Admin con capacidades [observar_comprobantes_global, ver_reportes] y requiereBloque: false tendría acceso solo a COMPROBANTES e INFORMES, sin poder operar ninguna caja ni modificar datos.
+
+---
+
+## 11. Entidades — Dominio FARMACIA (ABASTECIMIENTO)
+
+Registradas el 21-jun-2026, tras auditoría de `domains/farmacia/types.ts` contra este glosario. Cubre solo las entidades estables del dominio. `NodoFraccionamiento`, `TipoFormaVenta` y los campos `unidadesBase`/`unidadesEnNodoPadre` quedan **deliberadamente fuera** — son el germen del sistema `FormaVenta`/`FormaCompra`/`UnidadBase` pendiente de rediseño profundo (ver `docs/context/CURRENT_CONTEXT.md`). Registrarlos ahora arriesgaría fijar un nombre que ese rediseño va a cambiar.
+
+### ProductoGenerico
+
+**Qué es:** el principio activo farmacéutico en su forma más abstracta — IFA, concentración, forma farmacéutica y categoría, independiente de marca o fabricante.
+
+**Término canónico:** `ProductoGenerico`
+
+**Tipo TypeScript:** `interface ProductoGenerico`
+
+**Reemplaza definitivamente:** N/A — entidad nueva, sin nombre previo en conflicto.
+
+**Ubicación canónica:** `domains/farmacia/types.ts`
+
+---
+
+### ProductoComercial
+
+**Qué es:** la versión comercializada de un `ProductoGenerico` — nombre comercial, fabricante, registro sanitario, condición de venta. Referencia obligatoria vía `productoGenericoId`.
+
+**Término canónico:** `ProductoComercial`
+
+**Tipo TypeScript:** `interface ProductoComercial`
+
+**Reemplaza definitivamente:** N/A — entidad nueva, sin nombre previo en conflicto.
+
+**Ubicación canónica:** `domains/farmacia/types.ts`
+
+---
+
+### PresentacionComercial
+
+**Qué es:** la unidad de empaque física de un `ProductoComercial` — descripción, fracción DIGEMID, unidad de conteo, factor de conversión a unidad base.
+
+**Término canónico:** `PresentacionComercial`
+
+**Tipo TypeScript:** `interface PresentacionComercial`
+
+**Reemplaza definitivamente:** N/A — entidad nueva, sin nombre previo en conflicto.
+
+**Ubicación canónica:** `domains/farmacia/types.ts`
+
+---
+
+### Lote
+
+**Qué es:** el registro de inventario físico real de una `PresentacionComercial` — número de lote, fecha de vencimiento, cantidad ingresada/disponible, trazabilidad de proveedor y costo.
+
+**Término canónico:** `Lote`
+
+**Tipo TypeScript:** `interface Lote`
+
+**Reemplaza definitivamente:** N/A — entidad nueva, sin nombre previo en conflicto.
+
+**Ubicación canónica:** `domains/farmacia/types.ts`
+
+---
+
+### Proveedor
+
+**Qué es:** la entidad comercial externa que suministra mercadería — razón social, RUC, condiciones de pago.
+
+**Término canónico:** `Proveedor`
+
+**Tipo TypeScript:** `interface Proveedor`
+
+**Reemplaza definitivamente:** N/A — entidad nueva, sin nombre previo en conflicto.
+
+**Ubicación canónica:** `domains/farmacia/types.ts`
+
+**Nota:** ver §8 — `ActualizarProveedorInput` debe migrar a `ModificarProveedorInput`.
+
+---
+
+### ServicioFarmacia
+
+**Qué es:** un servicio prestado en el local (inyectable, nebulización, control de glucosa, etc.) distinto de la venta de producto.
+
+**Término canónico:** `ServicioFarmacia`
+
+**Tipo TypeScript:** `interface ServicioFarmacia`
+
+**Reemplaza definitivamente:** N/A — entidad nueva, sin nombre previo en conflicto.
+
+**Ubicación canónica:** `domains/farmacia/types.ts`
+
+---
+
+### EjecucionServicio
+
+**Qué es:** el registro de que un `ServicioFarmacia` fue efectivamente prestado — operador, turno, pedido asociado, marca de tiempo de inicio/fin.
+
+**Término canónico:** `EjecucionServicio`
+
+**Tipo TypeScript:** `interface EjecucionServicio`
+
+**Reemplaza definitivamente:** N/A — entidad nueva, sin nombre previo en conflicto.
+
+**Ubicación canónica:** `domains/farmacia/types.ts`
+
+---
+
+### EstadoProveedor
+
+**Estados canónicos:**
+
+| Estado | Significado operacional |
+|---|---|
+| `ACTIVO` | Puede asociarse a presentaciones, lotes e ingresos |
+| `INACTIVO` | Dado de baja — no debe ofrecerse en selección de nuevos ingresos |
+
+**Estado de implementación (confirmado por Fernando, 21-jun-2026):** `ACTIVO` es el único valor que el backend escribe hoy — `crear_proveedor` en `proveedores.rs` lo hardcodea. `INACTIVO` queda declarado aquí pero sin comando que lo produzca; falta `desactivar_proveedor`. No es deuda de naming, es deuda funcional — anotar aparte, no bloquea el uso de `ACTIVO` en código nuevo.
+
+---
+
+### EstadoProductoComercial
+
+**Estados canónicos:**
+
+| Estado | Significado operacional |
+|---|---|
+| `ACTIVO` | Disponible para presentaciones, venta y búsqueda |
+| `INACTIVO` | Dado de baja — no debe ofrecerse en catálogo ni búsqueda |
+
+**Estado de implementación (confirmado por Fernando, 21-jun-2026):** mismo patrón que `EstadoProveedor` — `crear_producto_comercial` en `productos.rs` solo escribe `ACTIVO`. Falta `desactivar_producto_comercial`.
+
+---
+
+### EstadoServicioFarmacia
+
+**Estados canónicos:**
+
+| Estado | Significado operacional |
+|---|---|
+| `ACTIVO` | Disponible para ejecutar y ofrecer al cliente |
+| `INACTIVO` | Dado de baja — no debe ofrecerse para nueva ejecución |
+
+**Estado de implementación (confirmado por Fernando, 21-jun-2026):** mismo patrón — `crear_servicio_farmacia` en `servicios.rs` solo escribe `ACTIVO`. Falta `desactivar_servicio_farmacia`.
+
+---
+
+### Pendiente de esta sección
+
+`NodoFraccionamiento`, `TipoFormaVenta`, `ValorOperacionalFarmacia` y el resto del árbol de catálogo quedan pendientes del rediseño de VENTAS — no registrar antes de esa sesión. Esto incluye el `estado` de `NodoFraccionamiento` y de `ValorOperacionalFarmacia`, que tampoco se tipificaron aquí por la misma razón.
+
+**Deuda técnica detectada, fuera del alcance de este glosario:** faltan los comandos `desactivar_proveedor`, `desactivar_producto_comercial` y `desactivar_servicio_farmacia` en `src-tauri/src/commands/`. El filtro `solo_activos` ya existe en los tres `obtener_*`, pero ningún flujo de UI puede producir el estado `INACTIVO` todavía. Sugerido para `docs/context/CURRENT_CONTEXT.md` como pendiente, no resuelto aquí.
+
+---
 
 *Documento generado por el Comité de Arquitectura — Junio 2026.*
 *Próxima revisión: al completar la normalización estructural (TAREAS 1–8).*
