@@ -523,5 +523,28 @@ lógica interna, con encabezado contextual y retorno automático al Ingreso en
 curso con la línea ya agregada. Proveedores (mismo patrón, reutilizando
 `ConsultaSunatProveedor` y `FormularioProveedor`) queda como fase atómica 2,
 separada para mantener cada commit auditable de forma aislada.
-**Estado:** PENDIENTE DE IMPLEMENTAR — fase 1 (Catálogo→Ingresos) lista para
-prompt de Codex.
+**Estado:** RESUELTO — fase 1 (Catálogo→Ingresos, producto) en commit `6ada611`,
+fase 2 (Proveedores→Ingresos) en commit `838c960`. Ambas auditadas en código real
+(timestamps + lectura línea por línea) antes de aprobar commit. Pendiente únicamente
+verificación visual en pantalla de ambos flujos (ver CURRENT_CONTEXT.md, próxima
+ventana de trabajo, ítem 3).
+
+---
+
+## 2026-06-21 — Catálogo: layout de split en dos paneles, no sheet superpuesta
+
+**Contexto:** Durante la prueba manual del producto de prueba (Paracetamol/
+Panadol), Fernando propuso dividir `CatalogoFarmaciaWorkspace` en dos paneles
+visuales distintos en vez del esquema de modo único donde búsqueda y creación
+comparten la misma área cambiando de contenido. Quedó pendiente aclarar si
+se refería a una sheet deslizante/superpuesta o a un layout de split con
+ambos paneles visibles simultáneamente — la segunda opción había sido
+descartada al inicio del diseño de Catálogo por riesgo de contaminación
+visual con miles de productos.
+
+**Decisión:** Layout de split, panel izquierdo 35% (búsqueda↔detalle) /
+derecho 65% (vacío↔creación), ambos visibles siempre. Razón explícita de
+Fernando: "le da al operador un contexto real de todo el proceso" — prioridad
+sobre el riesgo de saturación visual considerado al inicio.
+
+**Estado:** RESUELTO — commit *(pendiente)*.

@@ -2,7 +2,7 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos
+* **Último commit:** `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2)
 * **Commits de la jornada 19-20 Jun:**
   * `95cc297` — feat(sqlite): tauri-plugin-sql v2 + schema CORE + FARMACIA + comandos DB iniciales
   * `cc23da3` — feat(sqlite): 18 comandos Tauri dominio farmacia
@@ -16,7 +16,8 @@
   * `b888909` — fix(farmacia): traducción snake_case→camelCase en 7 funciones de lectura (ver bitácora 2026-06-20)
   * `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos (fase 1 de 2 — ver auditoría doctrinal 2026-06-20 en BITACORA_DECISIONES.md)
   * `bc0083f` — fix(farmacia): traducción snake_case→camelCase en obtenerProveedores() (hallazgo colateral de la auditoría doctrinal, quedaba fuera de b888909)
-* **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente el nuevo flujo: en Ingresos, buscar un producto inexistente, confirmar que aparece "Este producto no existe — regístralo ahora", completar el stepper y verificar que la línea se agrega automáticamente al ingreso en curso.
+  * `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2 de 2 — cierra la auditoría doctrinal 2026-06-20)
+* **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente ambos flujos nuevos en Ingresos: (1) producto — buscar uno inexistente, confirmar botón "Este producto no existe — regístralo ahora", completar el stepper, verificar que la línea se agrega automáticamente; (2) proveedor — buscar uno inexistente, confirmar botones "Consultar SUNAT por RUC" y "Registrar manualmente", completar cualquiera de los dos caminos, verificar que el proveedor queda seleccionado automáticamente en el ingreso.
 
 ---
 
@@ -29,7 +30,11 @@
   x 100 Tabletas, Fracción 100, Costo S/25.00 · Nodo raíz: Caja x 100, vendible,
   comprable). Búsqueda por IFA corregida — pendiente reverificación visual.
 * **ABASTECIMIENTO — PROVEEDORES:** ✅ Proveedor de prueba creado y verificado
-  (LABORATORIOS PORTUGAL S.R.L., RUC 20100204330, ACTIVO) — búsqueda confirmada funcionando
+  (LABORATORIOS PORTUGAL S.R.L., RUC 20100204330, ACTIVO) — búsqueda confirmada funcionando.
+  Desde commit `838c960`, si el buscador de proveedor en Ingresos no encuentra resultados,
+  el operador puede consultar SUNAT por RUC o registrar manualmente sin salir del flujo
+  (reutiliza `ConsultaSunatProveedor` y `FormularioProveedor` sin modificarlos) — AUDITADO
+  en código, AÚN NO PROBADO visualmente en pantalla.
 * **ABASTECIMIENTO — INGRESOS:** ✅ Código operativo, AÚN NO PROBADO end-to-end con
   datos reales (proveedor + producto ya existen, falta la prueba de registrar el ingreso).
   Además, desde commit `6ada611`, si la búsqueda de producto no encuentra resultados el
@@ -119,27 +124,19 @@ No tocar sin confirmar con Fernando que hubo prueba real que las cuestionó.
 
 ---
 
-## PROPUESTA DE DISEÑO PENDIENTE DE RESPUESTA — Dos sheets separadas en Catálogo
+## RESUELTO — Catálogo en dos paneles (layout de split)
 
-Fernando propuso durante la prueba manual (tras crear el producto Paracetamol/Panadol):
-dividir visualmente CatalogoFarmaciaWorkspace en dos sheets/paneles distintos —
-"PANEL BÚSQUEDA PRODUCTO" y "PANEL CREAR PRODUCTO" — en lugar del esquema actual
-donde ambos modos viven en la misma área cambiando de contenido.
-
-**Razón explícita de Fernando:** "porque le da al operador un contexto real de
-todo el proceso."
-
-**Estado:** PENDIENTE — Claude pidió pausar esta discusión de diseño para
-resolver primero los dos bugs funcionales descubiertos durante la misma prueba
-(búsqueda solo por nombre comercial sin IFA, categoria_farmacia faltante en
-respuesta — ambos ya resueltos en commit fc00277). Retomar esta conversación
-de diseño en la próxima ventana de trabajo: entender si Fernando se refiere a
-(a) que el stepper de creación debería aparecer como sheet deslizante/superpuesta
-sobre la búsqueda en vez de reemplazar el contenido en la misma área, o (b) un
-layout de split con buscador y formulario visibles simultáneamente (el primer
-mockup que se descartó al inicio del diseño de Catálogo por riesgo de
-contaminación visual con miles de productos). Aclarar con Fernando antes de
-diseñar cualquier cambio.
+Pregunta abierta desde la prueba manual con Paracetamol/Panadol: ¿la creación
+de producto debía ser una sheet superpuesta o un layout de split? Resuelto
+como layout de split: `CatalogoFarmaciaWorkspace` pasa de un único `modo`
+(busqueda/detalle/nuevo) a dos paneles simultáneos — izquierda 35%
+(busqueda↔detalle), derecha 65% (vacío↔creación). `BuscadorProducto`,
+`DetalleProducto`, `NuevoProductoStepper` reutilizados sin modificar.
+Archivos: `hooks/useCatalogoFarmacia.ts` (modo→panelIzquierdo,
++creandoAbierto, +onCerrarCreacion), `CatalogoFarmaciaWorkspace.tsx`.
+Razón explícita de Fernando: "le da al operador un contexto real de todo
+el proceso." Auditado en código. Commit: *(pendiente — se completa tras
+confirmar git log)*.
 
 ---
 
@@ -177,21 +174,15 @@ SQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)
 2. **Resolver conversación de diseño pendiente**: ¿sheets separadas en Catálogo? (ver sección arriba)
 3. **Probar IngresosMercaderiaWorkspace end-to-end real**: usar el proveedor Lab. Portugal
    + el producto Panadol ya creados, registrar un ingreso con lote, confirmar en SQLite
-   que se creó lote + movimiento tipo "entrada". Incluye probar el flujo nuevo de
-   creación embebida (commit `6ada611`): buscar un producto inexistente desde Ingresos,
-   confirmar botón "Este producto no existe — regístralo ahora", completar el stepper
-   y verificar que la línea aparece automáticamente en el ingreso.
-4. **Aplicar mismo patrón de creación embebida a Proveedores (fase 2)** — auditoría
-   doctrinal 2026-06-20 en BITACORA_DECISIONES.md identificó el mismo síntoma
-   (severidad MEDIA) en `ProveedoresWorkspace`: si `SelectorProveedorIngreso` no
-   encuentra resultados, ofrecer inline "Consultar en SUNAT" o "Registrar manualmente",
-   reutilizando `ConsultaSunatProveedor` y `FormularioProveedor` sin modificarlos,
-   mismo patrón de retorno automático al Ingreso en curso.
-5. **Conectar operadorId/runtimeId reales** en useIngresosMercaderia.ts — requiere store sesión/turno
-6. **PresentacionSheet rediseño** — UIX FormaVenta con datos SQLite reales
-7. **ClientesWorkspace** — prerequisito precio FRECUENTE
-8. **Notas de Crédito y Débito**
-9. **Refactoring deuda técnica** — DetalleProducto.tsx, NuevoProductoStepper.tsx, useIngresosMercaderia.ts
+   que se creó lote + movimiento tipo "entrada". Incluye probar ambos flujos nuevos de
+   creación embebida — producto (commit `6ada611`) y proveedor (commit `838c960`): buscar
+   uno inexistente de cada tipo desde Ingresos, completar el sub-flujo correspondiente, y
+   verificar que queda agregado/seleccionado automáticamente sin salir de la pantalla.
+4. **Conectar operadorId/runtimeId reales** en useIngresosMercaderia.ts — requiere store sesión/turno
+5. **PresentacionSheet rediseño** — UIX FormaVenta con datos SQLite reales
+6. **ClientesWorkspace** — prerequisito precio FRECUENTE
+7. **Notas de Crédito y Débito**
+8. **Refactoring deuda técnica** — DetalleProducto.tsx, NuevoProductoStepper.tsx, useIngresosMercaderia.ts
 
 ---
 

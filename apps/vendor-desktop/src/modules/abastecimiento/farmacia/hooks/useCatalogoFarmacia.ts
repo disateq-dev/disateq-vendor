@@ -17,11 +17,11 @@ import type {
   ProductoComercial,
 } from '../../../../domains/farmacia/types'
 
-export type ModoCatalogoFarmacia = 'busqueda' | 'detalle' | 'nuevo'
+export type PanelIzquierdoCatalogo = 'busqueda' | 'detalle'
 export type TabDetalleFarmacia = 'detalle' | 'presentaciones' | 'precios'
 
 interface UseCatalogoFarmaciaResult {
-  modo: ModoCatalogoFarmacia
+  panelIzquierdo: PanelIzquierdoCatalogo
   termino: string
   resultados: ProductoComercial[]
   productoSeleccionado: ProductoComercial | null
@@ -29,12 +29,14 @@ interface UseCatalogoFarmaciaResult {
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
   pasoNuevo: number
+  creandoAbierto: boolean
   cargando: boolean
   error: string | null
   onTerminoChange(t: string): void
   onSeleccionar(p: ProductoComercial): void
   onVolverBusqueda(): void
   onNuevo(): void
+  onCerrarCreacion(): void
   onTabChange(t: TabDetalleFarmacia): void
   onPasoSiguiente(): void
   onPasoAnterior(): void
@@ -53,7 +55,7 @@ function resolverMensajeError(error: unknown): string {
 }
 
 export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
-  const [modo, setModo] = useState<ModoCatalogoFarmacia>('busqueda')
+  const [panelIzquierdo, setPanelIzquierdo] = useState<PanelIzquierdoCatalogo>('busqueda')
   const [termino, setTermino] = useState<string>('')
   const [resultados, setResultados] = useState<ProductoComercial[]>([])
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoComercial | null>(null)
@@ -61,6 +63,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   const [presentaciones, setPresentaciones] = useState<PresentacionComercial[]>([])
   const [nodos, setNodos] = useState<NodoFraccionamiento[]>([])
   const [pasoNuevo, setPasoNuevo] = useState<number>(1)
+  const [creandoAbierto, setCreandoAbierto] = useState<boolean>(false)
   const [buscando, setBuscando] = useState<boolean>(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const timerRef = useRef<number | null>(null)
@@ -96,7 +99,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   }, [])
 
   const onSeleccionar = useCallback((p: ProductoComercial): void => {
-    setModo('detalle')
+    setPanelIzquierdo('detalle')
     setProductoSeleccionado(p)
     setTabDetalle('detalle')
     setBuscando(true)
@@ -114,16 +117,20 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   }, [])
 
   const onVolverBusqueda = useCallback((): void => {
-    setModo('busqueda')
+    setPanelIzquierdo('busqueda')
     setProductoSeleccionado(null)
     setPresentaciones([])
     setNodos([])
   }, [])
 
   const onNuevo = useCallback((): void => {
-    setModo('nuevo')
+    setCreandoAbierto(true)
     setPasoNuevo(1)
-    setProductoSeleccionado(null)
+  }, [])
+
+  const onCerrarCreacion = useCallback((): void => {
+    setCreandoAbierto(false)
+    setPasoNuevo(1)
   }, [])
 
   const onTabChange = useCallback((t: TabDetalleFarmacia): void => setTabDetalle(t), [])
@@ -155,10 +162,8 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
             crearNodo({ ...nodo, presentacionId, nodoPadreId: nodo.nodoPadreId ?? nodoRaizId }),
           ),
         )
-        setModo('busqueda')
-        setProductoSeleccionado(null)
+        setCreandoAbierto(false)
         setPasoNuevo(1)
-        onTerminoChange('')
       } catch (error) {
         setErrorLocal(resolverMensajeError(error))
         throw error
@@ -175,7 +180,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   }, [limpiarError])
 
   return {
-    modo,
+    panelIzquierdo,
     termino,
     resultados,
     productoSeleccionado,
@@ -183,12 +188,14 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     presentaciones,
     nodos,
     pasoNuevo,
+    creandoAbierto,
     cargando: cargandoStore || buscando,
     error: errorStore ?? errorLocal,
     onTerminoChange,
     onSeleccionar,
     onVolverBusqueda,
     onNuevo,
+    onCerrarCreacion,
     onTabChange,
     onPasoSiguiente,
     onPasoAnterior,
