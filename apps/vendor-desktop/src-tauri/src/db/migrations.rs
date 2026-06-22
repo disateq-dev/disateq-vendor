@@ -22,6 +22,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     }
 
     migrar_v2_lote_fecha_opcional(db).await?;
+    migrar_v3_tipo_valor_operacional(db).await?;
 
     Ok(())
 }
@@ -114,6 +115,93 @@ async fn migrar_v2_lote_fecha_opcional(db: &sqlx::SqlitePool) -> Result<(), Stri
         .await
         .map_err(|e| e.to_string())?;
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (2)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v3_tipo_valor_operacional(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_valor_operacional = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'valor_operacional'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_valor_operacional == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 3 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query("UPDATE valor_operacional SET tipo = 'VENTA_NORMAL' WHERE tipo = 'NORMAL'")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("DROP VIEW IF EXISTS reporte_digemid_privado")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE VIEW reporte_digemid_privado AS
+SELECT
+  pc.codigo_digemid AS CodProd,
+  vo_empaque.valor AS Precio1_Empaque,
+  vo_unidad.valor AS Precio2_Unitario,
+  ROUND(CAST(vo_empaque.valor AS REAL) / nf_raiz.unidades_base, 2) AS precio_unitario_derivado,
+  CASE
+    WHEN vo_empaque.valor IS NULL
+      OR vo_unidad.valor IS NULL
+      OR ABS(vo_unidad.valor - ROUND(CAST(vo_empaque.valor AS REAL) / nf_raiz.unidades_base, 2)) > 0.01
+    THEN 'INCONSISTENTE'
+    ELSE 'OK'
+  END AS validacion_digemid,
+  pc.nombre_comercial,
+  pc.registro_sanitario,
+  pg.ifa,
+  pg.concentracion,
+  nf_raiz.unidades_base AS fraccion
+FROM nodo_fraccionamiento nf_raiz
+JOIN presentacion_comercial pcom ON pcom.id = nf_raiz.presentacion_id
+JOIN producto_comercial pc ON pc.id = pcom.producto_comercial_id
+JOIN producto_generico pg ON pg.id = pc.producto_generico_id
+LEFT JOIN valor_operacional vo_empaque ON vo_empaque.nodo_id = nf_raiz.id
+  AND vo_empaque.tipo = 'VENTA_NORMAL'
+  AND vo_empaque.estado = 'ACTIVO'
+LEFT JOIN nodo_fraccionamiento nf_hoja ON nf_hoja.presentacion_id = nf_raiz.presentacion_id
+  AND nf_hoja.tipo_forma_venta = 'FRACCION'
+  AND nf_hoja.unidades_base = 1
+LEFT JOIN valor_operacional vo_unidad ON vo_unidad.nodo_id = nf_hoja.id
+  AND vo_unidad.tipo = 'VENTA_NORMAL'
+  AND vo_unidad.estado = 'ACTIVO'
+WHERE nf_raiz.nodo_padre_id IS NULL
+  AND nf_raiz.estado = 'ACTIVO'
+  AND pc.estado = 'ACTIVO'
+  AND pc.codigo_digemid IS NOT NULL",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (3)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

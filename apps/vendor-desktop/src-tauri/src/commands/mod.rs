@@ -8,3 +8,4 @@ pub mod servicios;
 pub mod reportes;
 pub mod integraciones;
 pub mod ingresos;
+pub mod valores;

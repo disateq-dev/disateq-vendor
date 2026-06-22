@@ -199,13 +199,13 @@ JOIN presentacion_comercial pcom ON pcom.id = nf_raiz.presentacion_id
 JOIN producto_comercial pc ON pc.id = pcom.producto_comercial_id
 JOIN producto_generico pg ON pg.id = pc.producto_generico_id
 LEFT JOIN valor_operacional vo_empaque ON vo_empaque.nodo_id = nf_raiz.id
-  AND vo_empaque.tipo = 'NORMAL'
+  AND vo_empaque.tipo = 'VENTA_NORMAL'
   AND vo_empaque.estado = 'ACTIVO'
 LEFT JOIN nodo_fraccionamiento nf_hoja ON nf_hoja.presentacion_id = nf_raiz.presentacion_id
   AND nf_hoja.tipo_forma_venta = 'FRACCION'
   AND nf_hoja.unidades_base = 1
 LEFT JOIN valor_operacional vo_unidad ON vo_unidad.nodo_id = nf_hoja.id
-  AND vo_unidad.tipo = 'NORMAL'
+  AND vo_unidad.tipo = 'VENTA_NORMAL'
   AND vo_unidad.estado = 'ACTIVO'
 WHERE nf_raiz.nodo_padre_id IS NULL
   AND nf_raiz.estado = 'ACTIVO'
