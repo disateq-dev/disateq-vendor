@@ -13,85 +13,65 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
   const lineasConLote = ingresos.lineas.filter((linea) => linea.requiereLote).length
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-slate-50">
-      <header className="flex h-16 items-center justify-between border-b border-[#EAF3DE] bg-white px-6">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#639922]">
-            <Truck className="h-5 w-5" />
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#639922]/50 bg-[#FDFCF9]">
+      <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#EAF3DE]/60 border-[#639922]/15">
+        <div className="flex items-center gap-2">
+          <Truck size={13} strokeWidth={2} className="shrink-0 text-[#639922]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
+            {ingresos.creandoProductoAbierto && 'REGISTRANDO PRODUCTO'}
+            {!ingresos.creandoProductoAbierto && ingresos.creandoProveedorAbierto && 'REGISTRANDO PROVEEDOR'}
+            {!ingresos.creandoProductoAbierto && !ingresos.creandoProveedorAbierto && 'INGRESOS DE MERCANCÍA'}
           </span>
-          <h1 className="text-[15px] font-bold text-slate-900">Ingresos</h1>
         </div>
         {ingresos.error && (
-          <button type="button" onClick={ingresos.onLimpiarError} className="flex items-center gap-2 rounded-full bg-[#EAF3DE] px-3 py-1.5 text-[11px] font-bold text-[#639922]">
-            {ingresos.error}
-            <X className="h-3.5 w-3.5" />
+          <button
+            type="button"
+            onClick={ingresos.onLimpiarError}
+            className="flex min-w-0 items-center gap-2 rounded-full bg-[#EAF3DE] px-3 py-1 text-[11px] font-bold text-[#639922]"
+          >
+            <span className="truncate">{ingresos.error}</span>
+            <X className="h-3.5 w-3.5 shrink-0" />
           </button>
         )}
-      </header>
-      <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-6 py-5">
-        <SelectorProveedorIngreso
-          proveedorSeleccionado={ingresos.proveedorSeleccionado}
-          termino={ingresos.terminoProveedor}
-          resultados={ingresos.resultadosProveedor}
-          buscando={ingresos.buscandoProveedor}
-          onTerminoChange={ingresos.onTerminoProveedorChange}
-          onSeleccionar={ingresos.onSeleccionarProveedor}
-          onIrSunat={ingresos.onAbrirCreacionProveedorSunat}
-          onIrManual={ingresos.onAbrirCreacionProveedorManual}
-        />
-        <button type="button" onClick={ingresos.onAbrirBuscadorProducto} className="w-fit rounded-xl bg-[#639922] px-4 py-2 text-[12px] font-bold text-white">
-          Agregar producto
-        </button>
-        <div className="space-y-3">
-          {ingresos.lineas.map((linea, index) => (
-            <LineaIngresoCard
-              key={linea.id}
-              linea={linea}
-              numero={index + 1}
-              onActualizar={(cambios) => ingresos.onActualizarLinea(linea.id, cambios)}
-              onEliminar={() => ingresos.onEliminarLinea(linea.id)}
-              onUsarLoteGenerico={() => ingresos.onUsarLoteGenerico(linea.id)}
-              onUsarLoteReal={() => ingresos.onUsarLoteReal(linea.id)}
-            />
-          ))}
-        </div>
-      </main>
-      <footer className="flex items-center justify-between border-t border-[#EAF3DE] bg-white px-6 py-4">
-        <span className="text-[12px] font-bold text-slate-600">
-          {ingresos.lineas.length} líneas · {lineasConLote} con lote
-        </span>
-        <div className="flex gap-3">
-          <button type="button" onClick={ingresos.onCancelar} className="rounded-xl border border-[#EAF3DE] px-4 py-2 text-[12px] font-bold text-slate-600">
-            Cancelar
+      </div>
+
+      {!ingresos.creandoProductoAbierto && !ingresos.creandoProveedorAbierto && (
+        <div className="min-h-0 flex-1 overflow-auto px-6 py-5 flex flex-col gap-4">
+          <SelectorProveedorIngreso
+            proveedorSeleccionado={ingresos.proveedorSeleccionado}
+            termino={ingresos.terminoProveedor}
+            resultados={ingresos.resultadosProveedor}
+            buscando={ingresos.buscandoProveedor}
+            onTerminoChange={ingresos.onTerminoProveedorChange}
+            onSeleccionar={ingresos.onSeleccionarProveedor}
+            onIrSunat={ingresos.onAbrirCreacionProveedorSunat}
+            onIrManual={ingresos.onAbrirCreacionProveedorManual}
+          />
+          <button
+            type="button"
+            onClick={ingresos.onAbrirBuscadorProducto}
+            className="w-fit rounded-xl bg-[#639922] px-4 py-2 text-[12px] font-bold text-white"
+          >
+            Agregar producto
           </button>
-          <button type="button" onClick={() => void ingresos.onConfirmarIngreso()} disabled={!ingresos.ingresoValido || ingresos.cargando} className="rounded-xl bg-[#639922] px-5 py-2 text-[12px] font-bold text-white disabled:opacity-50">
-            Confirmar ingreso
-          </button>
+          <div className="space-y-3">
+            {ingresos.lineas.map((linea, index) => (
+              <LineaIngresoCard
+                key={linea.id}
+                linea={linea}
+                numero={index + 1}
+                onActualizar={(cambios) => ingresos.onActualizarLinea(linea.id, cambios)}
+                onEliminar={() => ingresos.onEliminarLinea(linea.id)}
+                onUsarLoteGenerico={() => ingresos.onUsarLoteGenerico(linea.id)}
+                onUsarLoteReal={() => ingresos.onUsarLoteReal(linea.id)}
+              />
+            ))}
+          </div>
         </div>
-      </footer>
-      <BuscadorProductoIngreso
-        abierto={ingresos.buscadorProductoAbierto}
-        termino={ingresos.terminoProducto}
-        resultados={ingresos.resultadosProducto}
-        onTerminoChange={ingresos.onTerminoProductoChange}
-        onSeleccionar={ingresos.onAgregarLinea}
-        onCerrar={ingresos.onCerrarBuscadorProducto}
-        onCrearNuevo={ingresos.onAbrirCreacionProducto}
-      />
+      )}
+
       {ingresos.creandoProductoAbierto && (
-        <div className="fixed inset-0 z-50 bg-white">
-          <header className="flex h-16 items-center justify-between border-b border-[#EAF3DE] bg-white px-6">
-            <span className="text-[14px] font-bold text-slate-900">
-              Registrando producto recibido de {ingresos.proveedorSeleccionado?.razonSocial ?? 'proveedor sin confirmar'}
-            </span>
-            <button
-              type="button"
-              onClick={ingresos.onCerrarCreacionProducto}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#639922]"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </header>
+        <div className="min-h-0 flex-1 overflow-auto">
           <NuevoProductoStepper
             paso={ingresos.pasoNuevoProducto}
             terminoBusqueda={ingresos.terminoProducto}
@@ -104,41 +84,68 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
           />
         </div>
       )}
-      {ingresos.creandoProveedorAbierto && (
-        <div className="fixed inset-0 z-50 bg-white">
-          <header className="flex h-16 items-center justify-between border-b border-[#EAF3DE] bg-white px-6">
-            <span className="text-[14px] font-bold text-slate-900">Registrando proveedor para este ingreso</span>
-            <button
-              type="button"
-              onClick={ingresos.onCerrarCreacionProveedor}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#639922]"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </header>
-          {ingresos.modoCreacionProveedor === 'sunat' && (
-            <ConsultaSunatProveedor
-              ruc={ingresos.rucConsultaProveedor}
-              datosRuc={ingresos.datosRucProveedor}
-              consultando={ingresos.consultandoSunatProveedor}
-              error={ingresos.error}
-              onRucChange={ingresos.onRucProveedorChange}
-              onConsultar={ingresos.onConsultarRucProveedor}
-              onGuardar={ingresos.onGuardarProveedorSunatYSeleccionar}
-              onVolver={ingresos.onCerrarCreacionProveedor}
-            />
-          )}
-          {ingresos.modoCreacionProveedor === 'manual' && (
-            <FormularioProveedor
-              titulo="Registrar proveedor recibido"
-              datosIniciales={{ razonSocial: ingresos.terminoProveedor }}
-              cargando={ingresos.cargando}
-              onGuardar={ingresos.onGuardarProveedorManualYSeleccionar}
-              onCancelar={ingresos.onCerrarCreacionProveedor}
-            />
-          )}
+
+      {ingresos.creandoProveedorAbierto && ingresos.modoCreacionProveedor === 'sunat' && (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <ConsultaSunatProveedor
+            ruc={ingresos.rucConsultaProveedor}
+            datosRuc={ingresos.datosRucProveedor}
+            consultando={ingresos.consultandoSunatProveedor}
+            error={ingresos.error}
+            onRucChange={ingresos.onRucProveedorChange}
+            onConsultar={ingresos.onConsultarRucProveedor}
+            onGuardar={ingresos.onGuardarProveedorSunatYSeleccionar}
+            onVolver={ingresos.onCerrarCreacionProveedor}
+          />
         </div>
       )}
+
+      {ingresos.creandoProveedorAbierto && ingresos.modoCreacionProveedor === 'manual' && (
+        <div className="min-h-0 flex-1 overflow-auto px-6 py-5">
+          <FormularioProveedor
+            titulo="Registrar proveedor recibido"
+            datosIniciales={{ razonSocial: ingresos.terminoProveedor }}
+            cargando={ingresos.cargando}
+            onGuardar={ingresos.onGuardarProveedorManualYSeleccionar}
+            onCancelar={ingresos.onCerrarCreacionProveedor}
+          />
+        </div>
+      )}
+
+      {!ingresos.creandoProductoAbierto && !ingresos.creandoProveedorAbierto && (
+        <footer className="shrink-0 flex items-center justify-between border-t border-[#EAF3DE] bg-white px-6 py-4">
+          <span className="text-[12px] font-bold text-slate-600">
+            {ingresos.lineas.length} líneas · {lineasConLote} con lote
+          </span>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={ingresos.onCancelar}
+              className="rounded-xl border border-[#EAF3DE] px-4 py-2 text-[12px] font-bold text-slate-600"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => void ingresos.onConfirmarIngreso()}
+              disabled={!ingresos.ingresoValido || ingresos.cargando}
+              className="rounded-xl bg-[#639922] px-5 py-2 text-[12px] font-bold text-white disabled:opacity-50"
+            >
+              Confirmar ingreso
+            </button>
+          </div>
+        </footer>
+      )}
+
+      <BuscadorProductoIngreso
+        abierto={ingresos.buscadorProductoAbierto}
+        termino={ingresos.terminoProducto}
+        resultados={ingresos.resultadosProducto}
+        onTerminoChange={ingresos.onTerminoProductoChange}
+        onSeleccionar={ingresos.onAgregarLinea}
+        onCerrar={ingresos.onCerrarBuscadorProducto}
+        onCrearNuevo={ingresos.onAbrirCreacionProducto}
+      />
     </div>
   )
 }
