@@ -31,6 +31,7 @@ interface UseCatalogoFarmaciaResult {
   pasoNuevo: number
   creandoAbierto: boolean
   cargando: boolean
+  sinResultados: boolean
   error: string | null
   onTerminoChange(t: string): void
   onSeleccionar(p: ProductoComercial): void
@@ -66,6 +67,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   const [creandoAbierto, setCreandoAbierto] = useState<boolean>(false)
   const [buscando, setBuscando] = useState<boolean>(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
+  const sinResultados = termino.trim().length >= 2 && !buscando && resultados.length === 0
   const timerRef = useRef<number | null>(null)
 
   const cargandoStore = useFarmaciaStore((state) => state.cargando)
@@ -190,6 +192,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     pasoNuevo,
     creandoAbierto,
     cargando: cargandoStore || buscando,
+    sinResultados,
     error: errorStore ?? errorLocal,
     onTerminoChange,
     onSeleccionar,

@@ -1,0 +1,49 @@
+[1mdiff --git a/- b/docs/context/CURRENT_CONTEXT.md[m
+[1mindex 0000000..b0443c3 100644[m
+[1m--- a/-[m
+[1m+++ b/docs/context/CURRENT_CONTEXT.md[m
+[36m@@ -13,13 +13,13 @@[m
+   * `a8b7758` — fix(abastecimiento): navegación Catálogo→Proveedores→Ingresos→Compras→Inventarios[m
+   * `966b936` — fix(farmacia): camelCase nativo de Tauri 2.x en invoke()[m
+   * `fc00277` — fix(catalogo): búsqueda por nombre comercial o IFA, categoria_farmacia faltante[m
+[31m-  * `b888909` — fix(farmacia): traducción snake_case→camelCase en 7 funciones de lectura (ver bitácora 2026-06-20)[m
+[31m-  * `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos (fase 1 de 2 — ver auditoría doctrinal 2026-06-20 en BITACORA_DECISIONES.md)[m
+[32m+[m[32m  * `b888909` — fix(farmacia): traducción snake_case→camelCase en 7 funciones de lectura (ver BITACORA_HISTORICA.md 2026-06-20)[m
+[32m+[m[32m  * `6ada611` — feat(abastecimiento): creación de producto embebida en flujo de Ingresos (fase 1 de 2 — ver auditoría doctrinal 2026-06-20 en BITACORA_HISTORICA.md)[m
+   * `bc0083f` — fix(farmacia): traducción snake_case→camelCase en obtenerProveedores() (hallazgo colateral de la auditoría doctrinal, quedaba fuera de b888909)[m
+   * `838c960` — feat(abastecimiento): creación de proveedor embebida en flujo de Ingresos (fase 2 de 2 — cierra la auditoría doctrinal 2026-06-20)[m
+[31m-  * `6a19279` — feat(sheet): extraer SheetWork como componente compartido (ver BITACORA_DECISIONES.md 2026-06-21 — la arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora a partir del patrón real ya usado en VENTAS)[m
+[32m+[m[32m  * `6a19279` — feat(sheet): extraer SheetWork como componente compartido (ver BITACORA_HISTORICA.md 2026-06-21 — la arquitectura SheetWork documentada nunca se implementó en ningún módulo; extraída ahora a partir del patrón real ya usado en VENTAS)[m
+   * `82336ad` — feat(abastecimiento): Catálogo en dos paneles (layout de split)[m
+[31m-  * `17cabb4` — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0 (ver BITACORA_DECISIONES.md 2026-06-21)[m
+[32m+[m[32m  * `17cabb4` — docs(gobernanza): ESTANDARES_TECNICOS.md + SemVer 0.1.0 (ver BITACORA_HISTORICA.md 2026-06-21)[m
+ * **Próximo paso:** verificar en pantalla — buscar "Paracetamol" en Catálogo debe encontrar "Panadol" con categoría ANALGESICO visible (pendiente desde antes, sin tocar esta sesión). Además, probar manualmente ambos flujos nuevos en Ingresos: (1) producto — buscar uno inexistente, confirmar botón "Este producto no existe — regístralo ahora", completar el stepper, verificar que la línea se agrega automáticamente; (2) proveedor — buscar uno inexistente, confirmar botones "Consultar SUNAT por RUC" y "Registrar manualmente", completar cualquiera de los dos caminos, verificar que el proveedor queda seleccionado automáticamente en el ingreso.[m
+ [m
+ ---[m
+[36m@@ -117,7 +117,7 @@[m [mversión. Todo en una transacción.[m
+ ---[m
+ [m
+ ## A EVALUAR EN USO REAL — IngresosMercaderiaWorkspace[m
+[31m-Tres decisiones abiertas (ver bitácora 2026-06-20 para detalle):[m
+[32m+[m[32mTres decisiones abiertas (ver BITACORA_DECISIONES.md 2026-06-20 para detalle):[m
+ 1. Flujo de un solo paso (sin recepción parcial)[m
+ 2. Lote genérico sin fecha de vencimiento obligatoria[m
+ 3. Búsqueda plana de presentaciones (sin selector de 2 pasos)[m
+[36m@@ -161,7 +161,7 @@[m [mSQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)[m
+   ↓ farmacia.service.ts (23 funciones, camelCase en argumentos de invoke)[m
+   ↓ farmacia.store.ts (Zustand)[m
+   ↓ components/sheet/ — SheetWork/SheetHeader/SheetBody/SheetFooter (commit 6a19279,[m
+[31m-      ver BITACORA_DECISIONES.md 2026-06-21), disponible para cualquier módulo, primer[m
+[32m+[m[32m      ver BITACORA_HISTORICA.md 2026-06-21), disponible para cualquier módulo, primer[m
+       uso real en CobroPanel.tsx (VENTAS), AUN NO adoptado en ABASTECIMIENTO FARMACIA[m
+   ↓ modules/abastecimiento/farmacia/[m
+       CatalogoFarmaciaWorkspace.tsx        ✅ producto de prueba creado, búsqueda IFA corregida[m
+[36m@@ -175,7 +175,7 @@[m [mSQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)[m
+ ## Próxima ventana de trabajo — Prioridad ordenada[m
+ 1. **Verificar visualmente** que "Paracetamol" ahora encuentra "Panadol" con categoría ANALGESICO[m
+ 2. **Decisión pendiente — SheetWork:** ¿se adopta en ABASTECIMIENTO FARMACIA (motivo original[m
+[31m-   de su creación) o se deja disponible solo para módulos nuevos? Ver BITACORA_DECISIONES.md[m
+[32m+[m[32m   de su creación) o se deja disponible solo para módulos nuevos? Ver BITACORA_HISTORICA.md[m
+    2026-06-21.[m
+ 3. **Retomar consolidación de documentación** (`DOCTRINA.md` + `ARQUITECTURA_UX.md`,[m
+    pausada por el hallazgo de SheetWork) — debe describir el patrón SheetWork real,[m
