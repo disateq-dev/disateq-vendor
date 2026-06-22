@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
   AsignacionLote,
-  ActualizarProveedorInput,
+  ModificarProveedorInput,
   CrearNodoInput,
   CrearPresentacionInput,
   CrearProductoComercialInput,
@@ -449,7 +449,7 @@ export async function consultarRuc(ruc: string): Promise<DatosRuc> {
   }
 }
 
-export async function actualizarProveedor(input: ActualizarProveedorInput): Promise<void> {
+export async function actualizarProveedor(input: ModificarProveedorInput): Promise<void> {
   return invoke<void>('actualizar_proveedor', {
     id: input.id,
     razonSocial: input.razonSocial,

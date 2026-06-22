@@ -1,12 +1,12 @@
 import type { ReactElement } from 'react'
-import type { ActualizarProveedorInput, CrearProveedorInput, Proveedor } from '../../../../domains/farmacia/types'
+import type { ModificarProveedorInput, CrearProveedorInput, Proveedor } from '../../../../domains/farmacia/types'
 import { FormularioProveedor } from './FormularioProveedor'
 
 interface DetalleProveedorProps {
   proveedor: Proveedor
   cargando: boolean
   onVolver: () => void
-  onActualizar: (datos: ActualizarProveedorInput) => Promise<void>
+  onActualizar: (datos: ModificarProveedorInput) => Promise<void>
 }
 
 export function DetalleProveedor({

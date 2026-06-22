@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { actualizarProveedor, buscarProveedores, consultarRuc, crearProveedor } from '../../../../domains/farmacia/farmacia.service'
-import type { ActualizarProveedorInput, CrearProveedorInput, DatosRuc, Proveedor } from '../../../../domains/farmacia/types'
+import type { ModificarProveedorInput, CrearProveedorInput, DatosRuc, Proveedor } from '../../../../domains/farmacia/types'
 
 export type ModoProveedores = 'busqueda' | 'detalle' | 'sunat' | 'manual'
 
@@ -16,7 +16,7 @@ interface UseProveedoresResult {
   onTerminoChange(t: string): void; onSeleccionar(p: Proveedor): void; onVolverBusqueda(): void
   onIrSunat(): void; onIrManual(): void; onRucChange(r: string): void; onConsultarRuc(): Promise<void>
   onGuardarDesdeSunat(extras: ExtrasProveedor): Promise<void>; onGuardarManual(datos: CrearProveedorInput): Promise<void>
-  onActualizar(datos: ActualizarProveedorInput): Promise<void>; onLimpiarError(): void
+  onActualizar(datos: ModificarProveedorInput): Promise<void>; onLimpiarError(): void
 }
 
 function resolverMensajeError(error: unknown): string {
@@ -155,7 +155,7 @@ export function useProveedores(): UseProveedoresResult {
   )
 
   const onActualizar = useCallback(
-    async (datos: ActualizarProveedorInput): Promise<void> => {
+    async (datos: ModificarProveedorInput): Promise<void> => {
       setCargando(true)
       setError(null)
       try {

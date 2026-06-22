@@ -311,7 +311,7 @@ export interface DatosRuc {
   tipo: string
 }
 
-export interface ActualizarProveedorInput {
+export interface ModificarProveedorInput {
   id: string
   razonSocial: string
   ruc?: string
