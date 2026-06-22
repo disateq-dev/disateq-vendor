@@ -10,16 +10,27 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
-      {catalogo.creandoAbierto && (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
-            <div className="flex items-center gap-2">
-              <X size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
-              <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-                NUEVO PRODUCTO
-              </span>
-            </div>
-            {catalogo.error && (
+      <div className="flex flex-[35] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/50 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
+          <div className="flex items-center gap-2">
+            <Pill size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
+            <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
+              CATÁLOGO
+            </span>
+          </div>
+          <div className="flex min-w-0 items-center gap-2">
+            {catalogo.termino.trim().length >= 2 &&
+              catalogo.resultados.length > 0 &&
+              !catalogo.creandoAbierto && (
+                <button
+                  type="button"
+                  onClick={catalogo.onNuevo}
+                  className="rounded-full bg-[#E6F7F6] px-3 py-1 text-[11px] font-bold text-[#0D9488]"
+                >
+                  + NUEVO
+                </button>
+              )}
+            {catalogo.error !== null && (
               <button
                 type="button"
                 onClick={catalogo.onLimpiarError}
@@ -30,7 +41,33 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               </button>
             )}
           </div>
-          <div className="min-h-0 flex-1 overflow-auto">
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          <BuscadorProducto
+            termino={catalogo.termino}
+            resultados={catalogo.resultados}
+            cargando={catalogo.cargando}
+            onTerminoChange={catalogo.onTerminoChange}
+            onSeleccionar={catalogo.onSeleccionar}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-[65] min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/30 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
+          {catalogo.creandoAbierto ? (
+            <X size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
+          ) : (
+            <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
+          )}
+          <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
+            {catalogo.creandoAbierto ? 'NUEVO PRODUCTO' : 'DETALLE'}
+          </span>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          {catalogo.creandoAbierto && (
             <NuevoProductoStepper
               paso={catalogo.pasoNuevo}
               terminoBusqueda={catalogo.termino}
@@ -41,183 +78,49 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               onCancelar={catalogo.onCerrarCreacion}
               onGuardar={catalogo.onGuardarProducto}
             />
-          </div>
-        </div>
-      )}
+          )}
 
-      {!catalogo.creandoAbierto && catalogo.productoSeleccionado !== null && (
-        <>
-          <div className="flex flex-[30] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
-              <div className="flex items-center gap-2">
-                <Pill size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
-                <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-                  CATÁLOGO
-                </span>
-              </div>
-              <div className="flex min-w-0 items-center gap-2">
-                {!catalogo.sinResultados && (
-                  <button
-                    type="button"
-                    onClick={catalogo.onNuevo}
-                    className="rounded-full bg-[#E6F7F6] px-3 py-1 text-[11px] font-bold text-[#0D9488]"
-                  >
-                    + NUEVO
-                  </button>
-                )}
-                {catalogo.error && (
-                  <button
-                    type="button"
-                    onClick={catalogo.onLimpiarError}
-                    className="flex min-w-0 items-center gap-2 rounded-full bg-[#E6F7F6] px-3 py-1 text-[11px] font-bold text-[#0D9488]"
-                  >
-                    <span className="truncate">{catalogo.error}</span>
-                    <X className="h-3.5 w-3.5 shrink-0" />
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <BuscadorProducto
-                termino={catalogo.termino}
-                resultados={catalogo.resultados}
-                cargando={catalogo.cargando}
-                onTerminoChange={catalogo.onTerminoChange}
-                onSeleccionar={catalogo.onSeleccionar}
-              />
-            </div>
-          </div>
-          <div className="flex min-h-0 flex-[70] flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/30 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
-              <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
-              <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-                DETALLE
-              </span>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <DetalleProducto
-                producto={catalogo.productoSeleccionado}
-                presentaciones={catalogo.presentaciones}
-                nodos={catalogo.nodos}
-                tabActiva={catalogo.tabDetalle}
-                cargando={catalogo.cargando}
-                onTabChange={catalogo.onTabChange}
-                onVolver={catalogo.onVolverBusqueda}
-              />
-            </div>
-          </div>
-        </>
-      )}
+          {!catalogo.creandoAbierto && catalogo.productoSeleccionado !== null && (
+            <DetalleProducto
+              producto={catalogo.productoSeleccionado}
+              presentaciones={catalogo.presentaciones}
+              nodos={catalogo.nodos}
+              tabActiva={catalogo.tabDetalle}
+              cargando={catalogo.cargando}
+              onTabChange={catalogo.onTabChange}
+              onVolver={catalogo.onVolverBusqueda}
+            />
+          )}
 
-      {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && catalogo.sinResultados && (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/50 bg-[#FDFCF9]">
-          <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
-            <div className="flex items-center gap-2">
-              <Pill size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
-              <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-                CATÁLOGO
-              </span>
-            </div>
-            {catalogo.error && (
+          {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && catalogo.sinResultados && (
+            <div className="flex flex-col items-center justify-center gap-2 p-6">
+              <p className="text-[12px] text-slate-400">No se encontró «{catalogo.termino}»</p>
               <button
                 type="button"
-                onClick={catalogo.onLimpiarError}
-                className="flex min-w-0 items-center gap-2 rounded-full bg-[#E6F7F6] px-3 py-1 text-[11px] font-bold text-[#0D9488]"
+                onClick={catalogo.onNuevo}
+                className="rounded-xl bg-[#0D9488] px-4 py-2 text-[12px] font-bold text-white"
               >
-                <span className="truncate">{catalogo.error}</span>
-                <X className="h-3.5 w-3.5 shrink-0" />
+                + Crear producto nuevo
               </button>
-            )}
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-auto p-8 text-center">
-            <p className="text-[13px] text-slate-500">
-              No se encontró ningún producto para {catalogo.termino}
-            </p>
-            <button
-              type="button"
-              onClick={catalogo.onNuevo}
-              className="rounded-xl bg-[#0D9488] px-5 py-2.5 text-[12px] font-bold text-white"
-            >
-              + Crear producto nuevo
-            </button>
-            <button
-              type="button"
-              onClick={catalogo.onVolverBusqueda}
-              className="text-[11px] font-semibold text-slate-400"
-            >
-              Volver a buscar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && !catalogo.sinResultados && (
-        <>
-          <div
-            className={`flex shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/50 bg-[#FDFCF9] ${
-              catalogo.termino.trim().length < 2 ? 'flex-1' : 'flex-[30]'
-            }`}
-          >
-            <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
-              <div className="flex items-center gap-2">
-                <Pill size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
-                <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-                  CATÁLOGO
-                </span>
-              </div>
-              <div className="flex min-w-0 items-center gap-2">
-                {catalogo.termino.trim().length >= 2 && catalogo.resultados.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={catalogo.onNuevo}
-                    className="rounded-full bg-[#E6F7F6] px-3 py-1 text-[11px] font-bold text-[#0D9488]"
-                  >
-                    + NUEVO
-                  </button>
-                )}
-                {catalogo.error && (
-                  <button
-                    type="button"
-                    onClick={catalogo.onLimpiarError}
-                    className="flex min-w-0 items-center gap-2 rounded-full bg-[#E6F7F6] px-3 py-1 text-[11px] font-bold text-[#0D9488]"
-                  >
-                    <span className="truncate">{catalogo.error}</span>
-                    <X className="h-3.5 w-3.5 shrink-0" />
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <BuscadorProducto
-                termino={catalogo.termino}
-                resultados={catalogo.resultados}
-                cargando={catalogo.cargando}
-                onTerminoChange={catalogo.onTerminoChange}
-                onSeleccionar={catalogo.onSeleccionar}
-              />
-            </div>
-          </div>
-
-          {catalogo.termino.trim().length >= 2 && (
-            <div className="flex min-h-0 flex-[70] flex-col overflow-hidden rounded-[28px] border border-[#0D9488]/30 bg-[#FDFCF9]">
-              <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E6F7F6]/60 border-[#0D9488]/15">
-                <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#0D9488]" />
-                <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-                  DETALLE
-                </span>
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-auto p-8 text-center">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E6F7F6] text-[#0D9488]">
-                  <BookOpen size={28} />
-                </span>
-                <p className="text-[13px] text-slate-400">
-                  Selecciona un producto de la lista para ver su detalle
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={catalogo.onVolverBusqueda}
+                className="cursor-pointer text-[11px] text-slate-400"
+              >
+                Volver a buscar
+              </button>
             </div>
           )}
-        </>
-      )}
+
+          {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && !catalogo.sinResultados && (
+            <div className="flex flex-col items-center justify-center gap-1 p-6">
+              <p className="text-[12px] text-slate-400">
+                Selecciona un producto para ver su detalle
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   )
 }
