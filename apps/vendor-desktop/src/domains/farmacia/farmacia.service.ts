@@ -1,7 +1,9 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
   AsignacionLote,
+  CrearValorOperacionalInput,
   ModificarProveedorInput,
+  ModificarValorOperacionalInput,
   CrearNodoInput,
   CrearPresentacionInput,
   CrearProductoComercialInput,
@@ -22,6 +24,7 @@ import type {
   ResultadoReporteDIGEMID,
   ResultadoBusquedaPresentacion,
   ServicioFarmacia,
+  ValorOperacionalFarmacia,
 } from './types'
 
 interface ProveedorRespuesta {
@@ -131,6 +134,22 @@ interface ServicioFarmaciaRespuesta {
   duracion_minutos?: number
   estado: string
   creado_en: string
+}
+
+interface ValorOperacionalRespuesta {
+  id: string
+  nodo_id: string
+  tipo: string
+  valor: number
+  moneda: string
+  condicion_cantidad_minima?: number
+  condicion_contexto_id?: string
+  condicion_identidad_id?: string
+  vigencia_desde: string
+  vigencia_hasta?: string
+  estado: string
+  creado_en: string
+  modificado_en: string
 }
 
 function traducirProveedor(respuesta: ProveedorRespuesta): Proveedor {
@@ -247,6 +266,24 @@ function traducirServicioFarmacia(r: ServicioFarmaciaRespuesta): ServicioFarmaci
     duracionMinutos: r.duracion_minutos,
     estado: r.estado,
     creadoEn: r.creado_en,
+  }
+}
+
+function traducirValorOperacional(r: ValorOperacionalRespuesta): ValorOperacionalFarmacia {
+  return {
+    id: r.id,
+    nodoId: r.nodo_id,
+    tipo: r.tipo as ValorOperacionalFarmacia['tipo'],
+    valor: r.valor,
+    moneda: r.moneda,
+    condicionCantidadMinima: r.condicion_cantidad_minima,
+    condicionContextoId: r.condicion_contexto_id,
+    condicionIdentidadId: r.condicion_identidad_id,
+    vigenciaDesde: r.vigencia_desde,
+    vigenciaHasta: r.vigencia_hasta,
+    estado: r.estado as ValorOperacionalFarmacia['estado'],
+    creadoEn: r.creado_en,
+    modificadoEn: r.modificado_en,
   }
 }
 
@@ -505,4 +542,31 @@ export async function desactivarProductoComercial(id: string): Promise<void> {
 
 export async function desactivarServicioFarmacia(id: string): Promise<void> {
   await invoke('desactivar_servicio_farmacia', { id })
+}
+
+export async function obtenerValoresNodo(nodoId: string): Promise<ValorOperacionalFarmacia[]> {
+  const respuesta = await invoke<ValorOperacionalRespuesta[]>('obtener_valores_nodo', { nodoId })
+  return respuesta.map(traducirValorOperacional)
+}
+
+export async function crearValorOperacional(input: CrearValorOperacionalInput): Promise<string> {
+  return invoke<string>('crear_valor_operacional', {
+    nodoId: input.nodoId,
+    tipo: input.tipo,
+    valor: input.valor,
+    moneda: input.moneda ?? null,
+    condicionCantidadMinima: input.condicionCantidadMinima ?? null,
+    vigenciaDesde: input.vigenciaDesde,
+    vigenciaHasta: input.vigenciaHasta ?? null,
+  })
+}
+
+export async function modificarValorOperacional(input: ModificarValorOperacionalInput): Promise<void> {
+  return invoke<void>('modificar_valor_operacional', {
+    id: input.id,
+    valor: input.valor ?? null,
+    condicionCantidadMinima: input.condicionCantidadMinima ?? null,
+    vigenciaHasta: input.vigenciaHasta ?? null,
+    estado: input.estado ?? null,
+  })
 }
