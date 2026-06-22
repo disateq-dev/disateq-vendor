@@ -23,6 +23,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
 
     migrar_v2_lote_fecha_opcional(db).await?;
     migrar_v3_tipo_valor_operacional(db).await?;
+    migrar_v4_stock_minimo_presentacion(db).await?;
 
     Ok(())
 }
@@ -202,6 +203,55 @@ WHERE nf_raiz.nodo_padre_id IS NULL
     .map_err(|e| e.to_string())?;
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (3)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v4_stock_minimo_presentacion(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_presentacion_comercial = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'presentacion_comercial'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_presentacion_comercial == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 4 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let existe_stock_minimo = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('presentacion_comercial') WHERE name = 'stock_minimo'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_stock_minimo == 0 {
+        sqlx::query("ALTER TABLE presentacion_comercial ADD COLUMN stock_minimo REAL NOT NULL DEFAULT 10.0")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (4)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

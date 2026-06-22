@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS presentacion_comercial (
   codigo_barras TEXT,
   proveedor_habitual_id TEXT REFERENCES proveedor(id),
   costo_compra REAL,
+  stock_minimo REAL NOT NULL DEFAULT 10.0,
   creado_en TEXT NOT NULL
 );
 

@@ -1,11 +1,11 @@
 import { Boxes, Package } from 'lucide-react'
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import type { Lote, ResumenInventarioFarmacia } from '../../../domains/farmacia/types'
-import { obtenerInventarioFarmacia, obtenerLotesVigentes } from '../../../domains/farmacia/farmacia.service'
+import { modificarStockMinimo, obtenerInventarioFarmacia, obtenerLotesVigentes } from '../../../domains/farmacia/farmacia.service'
 
-function estadoDisponibilidad(total: number): 'DISPONIBLE' | 'BAJO_STOCK' | 'AGOTADO' {
+function estadoDisponibilidad(total: number, stockMinimo: number): 'DISPONIBLE' | 'BAJO_STOCK' | 'AGOTADO' {
   if (total <= 0) return 'AGOTADO'
-  if (total <= 10) return 'BAJO_STOCK'
+  if (total <= stockMinimo) return 'BAJO_STOCK'
   return 'DISPONIBLE'
 }
 
@@ -17,6 +17,8 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
   const [seleccionado, setSeleccionado] = useState<ResumenInventarioFarmacia | null>(null)
   const [lotes, setLotes] = useState<Lote[]>([])
   const [cargandoLotes, setCargandoLotes] = useState<boolean>(false)
+  const [umbralEdicion, setUmbralEdicion] = useState<string>('')
+  const [guardandoUmbral, setGuardandoUmbral] = useState<boolean>(false)
 
   const inventarioFiltrado = busqueda === ''
     ? inventario
@@ -39,6 +41,7 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
 
   const onSeleccionar = useCallback(async (item: ResumenInventarioFarmacia): Promise<void> => {
     setSeleccionado(item)
+    setUmbralEdicion(item.stockMinimo.toString())
     if (!item.requiereLote) {
       setLotes([])
       return
@@ -53,6 +56,23 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
       setCargandoLotes(false)
     }
   }, [])
+
+  const onGuardarUmbral = useCallback(async (): Promise<void> => {
+    if (seleccionado === null) return
+    const stockMinimo = parseFloat(umbralEdicion)
+    if (Number.isNaN(stockMinimo) || stockMinimo < 0) return
+    setGuardandoUmbral(true)
+    try {
+      await modificarStockMinimo(seleccionado.presentacionId, stockMinimo)
+      const resultado = await obtenerInventarioFarmacia()
+      setInventario(resultado)
+      const actualizado = resultado.find((item) => item.presentacionId === seleccionado.presentacionId)
+      if (actualizado) setSeleccionado(actualizado)
+    } catch {
+    } finally {
+      setGuardandoUmbral(false)
+    }
+  }, [seleccionado, umbralEdicion])
 
   function diasHastaVencimiento(fecha: string): number {
     return Math.floor((new Date(fecha).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -78,7 +98,7 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
           {cargando && <div className="px-4 py-6 text-[13px] font-semibold text-[#639922]">Cargando...</div>}
           {error && <div className="px-4 py-6 text-[13px] text-red-500">{error}</div>}
           {!cargando && !error && inventarioFiltrado.map((item) => {
-            const estado = estadoDisponibilidad(item.totalDisponible)
+            const estado = estadoDisponibilidad(item.totalDisponible, item.stockMinimo)
             return (
               <button
                 key={item.presentacionId}
@@ -141,6 +161,28 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
                   <span className="text-[13px] font-semibold text-slate-500">
                     unidades disponibles · {seleccionado.unidadConteo}
                   </span>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[#EAF3DE] bg-white p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">ALERTA DE STOCK MÍNIMO</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    value={umbralEdicion}
+                    onChange={(event) => setUmbralEdicion(event.target.value)}
+                    className="h-9 w-24 rounded-lg border border-[#EAF3DE] px-3 text-[13px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                  />
+                  <span className="text-[12px] font-semibold text-slate-500">unidades</span>
+                  <button
+                    type="button"
+                    onClick={() => void onGuardarUmbral()}
+                    disabled={guardandoUmbral}
+                    className="rounded-lg bg-[#639922] px-3 py-1.5 text-[12px] font-bold text-white"
+                  >
+                    Guardar
+                  </button>
                 </div>
               </div>
 

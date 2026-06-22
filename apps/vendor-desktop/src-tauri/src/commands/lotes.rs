@@ -137,7 +137,7 @@ pub async fn obtener_inventario_farmacia(
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT pc.id AS producto_id, pc.nombre_comercial, pc.requiere_lote,
-pcom.id AS presentacion_id, pcom.descripcion, pcom.unidad_conteo,
+pcom.id AS presentacion_id, pcom.descripcion, pcom.unidad_conteo, pcom.stock_minimo,
 COALESCE(SUM(l.cantidad_disponible), 0.0) AS total_disponible,
 COUNT(l.id) AS lotes_vigentes,
 MIN(l.fecha_vencimiento) AS proximo_vencimiento
@@ -165,6 +165,7 @@ ORDER BY pc.nombre_comercial",
                 "total_disponible": row.try_get::<f64, _>("total_disponible").map_err(|e| e.to_string())?,
                 "lotes_vigentes": row.try_get::<i64, _>("lotes_vigentes").map_err(|e| e.to_string())?,
                 "proximo_vencimiento": row.try_get::<Option<String>, _>("proximo_vencimiento").unwrap_or(None),
+                "stock_minimo": row.try_get::<f64, _>("stock_minimo").map_err(|e| e.to_string())?,
             }))
         })
         .collect()

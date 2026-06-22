@@ -78,6 +78,7 @@ pub async fn obtener_presentaciones(
                 "codigo_barras": row.try_get::<Option<String>, _>("codigo_barras").unwrap_or(None),
                 "proveedor_habitual_id": row.try_get::<Option<String>, _>("proveedor_habitual_id").unwrap_or(None),
                 "costo_compra": row.try_get::<Option<f64>, _>("costo_compra").unwrap_or(None),
+                "stock_minimo": row.try_get::<f64, _>("stock_minimo").map_err(|e| e.to_string())?,
                 "creado_en": row.try_get::<String, _>("creado_en").map_err(|e| e.to_string())?,
             }))
         })
@@ -157,4 +158,24 @@ pub async fn obtener_nodos_fraccionamiento(
             }))
         })
         .collect()
+}
+
+#[tauri::command]
+pub async fn modificar_stock_minimo(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    presentacion_id: String,
+    stock_minimo: f64,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    sqlx::query("UPDATE presentacion_comercial SET stock_minimo = ? WHERE id = ?")
+        .bind(stock_minimo)
+        .bind(presentacion_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

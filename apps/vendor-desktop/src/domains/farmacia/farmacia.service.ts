@@ -88,6 +88,7 @@ interface PresentacionComercialRespuesta {
   codigo_barras?: string
   proveedor_habitual_id?: string
   costo_compra?: number
+  stock_minimo: number
   creado_en: string
 }
 
@@ -163,6 +164,7 @@ interface ResumenInventarioFarmaciaRespuesta {
   total_disponible: number
   lotes_vigentes: number
   proximo_vencimiento?: string
+  stock_minimo: number
 }
 
 function traducirProveedor(respuesta: ProveedorRespuesta): Proveedor {
@@ -224,6 +226,7 @@ function traducirPresentacionComercial(r: PresentacionComercialRespuesta): Prese
     codigoBarras: r.codigo_barras,
     proveedorHabitualId: r.proveedor_habitual_id,
     costoCompra: r.costo_compra,
+    stockMinimo: r.stock_minimo,
     creadoEn: r.creado_en,
   }
 }
@@ -311,6 +314,7 @@ function traducirResumenInventario(r: ResumenInventarioFarmaciaRespuesta): Resum
     totalDisponible: r.total_disponible,
     lotesVigentes: r.lotes_vigentes,
     proximoVencimiento: r.proximo_vencimiento,
+    stockMinimo: r.stock_minimo,
   }
 }
 
@@ -601,4 +605,8 @@ export async function modificarValorOperacional(input: ModificarValorOperacional
 export async function obtenerInventarioFarmacia(): Promise<ResumenInventarioFarmacia[]> {
   const respuesta = await invoke<ResumenInventarioFarmaciaRespuesta[]>('obtener_inventario_farmacia')
   return respuesta.map(traducirResumenInventario)
+}
+
+export async function modificarStockMinimo(presentacionId: string, stockMinimo: number): Promise<void> {
+  return invoke<void>('modificar_stock_minimo', { presentacionId, stockMinimo })
 }

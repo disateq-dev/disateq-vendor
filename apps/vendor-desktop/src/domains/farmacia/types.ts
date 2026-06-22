@@ -102,6 +102,7 @@ export interface PresentacionComercial {
   codigoBarras?: string
   proveedorHabitualId?: string
   costoCompra?: number
+  stockMinimo: number
   creadoEn: string
 }
 
@@ -392,4 +393,5 @@ export interface ResumenInventarioFarmacia {
   totalDisponible: number
   lotesVigentes: number
   proximoVencimiento?: string
+  stockMinimo: number
 }
