@@ -2,26 +2,24 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `ba13145` — feat(abastecimiento): alinear chrome visual de IngresosMercaderiaWorkspace al patron del sistema
-* **Commits de la jornada 21-22 Jun:**
-  * `5a3ecd9` — docs: consolidacion documental completa (DOCTRINA.md, ARQUITECTURA_UX.md, INDICE.md, 36 archivos archivados, GLOSARIO.md enriquecido, CLAUDE.md actualizado)
-  * `d34e8f7` — feat(abastecimiento): alinear chrome visual de CatalogoFarmaciaWorkspace al patron del sistema
-  * `ba3abbe` — feat(abastecimiento): alinear chrome visual de ProveedoresWorkspace al patron del sistema
-  * `ba13145` — feat(abastecimiento): alinear chrome visual de IngresosMercaderiaWorkspace al patron del sistema
-  * `96c5eaa` — fix(abastecimiento): conectar operadorId y runtimeId reales en useIngresosMercaderia
-  * `a5787d7` — feat(abastecimiento): ocultar subtabs COMPRAS e INVENTARIOS en rubro farmacia
-  * `b5e339d` — feat(farmacia): implementar comandos desactivar para proveedor, producto y servicio
-  * `df7dd35` — refactor(farmacia): renombrar ActualizarProveedorInput a ModificarProveedorInput
+* **Último commit:** `10c8762` — feat(farmacia): stock minimo configurable por presentacion con migracion v4
+* **Commits de la jornada 22 Jun:**
+  * `dc88d94` — feat(farmacia): agregar tipos canonicos TipoValorOperacional y EstadoValorOperacional
+  * `2467724` — feat(farmacia): implementar comandos Rust de precios y migracion v3 VENTA_NORMAL
+  * `c50e84b` — feat(farmacia): implementar tab PRECIOS con carga, creacion y edicion de ValorOperacional
+  * `7b0d655` — feat(farmacia): implementar InventarioFarmaciaWorkspace con disponibilidad y detalle de lotes
+  * `10c8762` — feat(farmacia): stock minimo configurable por presentacion con migracion v4
 
 ---
 
 ## Recorrido de Dominios (Matriz de Estado)
 * **LOGIN:** ✅
 * **TURNO / CAJA:** ✅
-* **ABASTECIMIENTO — CATÁLOGO:** ✅ Chrome alineado al sistema (commit d34e8f7). Producto de prueba creado y persistido en SQLite (Panadol/Paracetamol). Búsqueda por IFA corregida — pendiente reverificación visual.
-* **ABASTECIMIENTO — PROVEEDORES:** ✅ Chrome alineado al sistema (commit ba3abbe). Proveedor de prueba creado y verificado. Flujos SUNAT y manual operativos en código — AÚN NO PROBADOS visualmente.
-* **ABASTECIMIENTO — INGRESOS:** ✅ Chrome alineado al sistema (commit ba13145). Overlays fixed inset-0 eliminados — contenido condicional por estado sin salir del workspace. operadorId/runtimeId conectados a sesión real (commit 96c5eaa). AÚN NO PROBADO end-to-end con datos reales.
-* **ABASTECIMIENTO — COMPRAS / INVENTARIOS (legacy):** 🔶 Ocultos en rubro farmacia (commit a5787d7). Workspaces genéricos intactos para futuros rubros.
+* **ABASTECIMIENTO — CATÁLOGO:** ✅ Chrome alineado. Producto de prueba en SQLite. Tab PRECIOS funcional — carga, creación y edición de ValorOperacional por nodo. Búsqueda por IFA pendiente reverificación visual.
+* **ABASTECIMIENTO — PROVEEDORES:** ✅ Chrome alineado. AÚN NO PROBADO visualmente post-commit.
+* **ABASTECIMIENTO — INGRESOS:** ✅ Chrome alineado, sesión real conectada. AÚN NO PROBADO end-to-end con datos reales.
+* **ABASTECIMIENTO — INVENTARIOS:** ✅ InventarioFarmaciaWorkspace operativo — disponibilidad por presentación, detalle de lotes, alerta de stock mínimo configurable por presentación (DEFAULT 10, migración v4).
+* **ABASTECIMIENTO — COMPRAS (legacy):** 🔶 Oculto en rubro farmacia. Workspace genérico intacto para futuros rubros.
 * **COBRO:** ✅ CERRADO (etapa 1)
 * **PRE-VENTA:** ✅ CERRADO
 * **VENTAS:** 🔶 FormaVenta infraestructura completa — UIX PresentacionSheet pendiente
@@ -57,14 +55,21 @@ posicional — un .bind() por cada "?", aunque el valor sea idéntico.
 `npx tsc --noEmit` debe ejecutarse desde `apps/vendor-desktop`, no desde la
 raíz del repo. La convención de commits desde la raíz sigue intacta.
 
-### Patrón de migración de schema SQLite (commit 2a3940b)
-Tabla schema_migrations → migración idempotente → tabla_temp → INSERT...SELECT
-→ DROP original → RENAME → recrear índices → registrar versión. Todo en una
-transacción.
+### LECCIÓN APRENDIDA — idempotencia de migraciones con ADD COLUMN (commit 10c8762)
+Cuando SCHEMA_FARMACIA crea una columna nueva para bases frescas, la migración
+correspondiente debe verificar si la columna ya existe via
+`pragma_table_info('tabla') WHERE name = 'columna'` antes de ejecutar
+ALTER TABLE ADD COLUMN. Sin esta guarda, bases nuevas fallan al arrancar.
+
+### Patrón de migración de schema SQLite
+- Tabla temporal + INSERT...SELECT + DROP + RENAME: para cambios estructurales complejos.
+- ALTER TABLE ADD COLUMN + pragma_table_info como guarda: para columnas nuevas con DEFAULT.
+- Siempre en transacción. Siempre registrar versión en schema_migrations al final.
+- Versiones aplicadas: v2 (lote fecha opcional), v3 (VENTA_NORMAL), v4 (stock_minimo).
 
 ### CHROME VISUAL CANÓNICO — confirmado en jornada 21-22 Jun
 Patrón compartido por CashWorkspace, ComprobantesWorkspace, ConfigWorkspace y
-ahora los tres workspaces de FARMACIA:
+los cuatro workspaces de FARMACIA (Catálogo, Proveedores, Ingresos, Inventario):
 - Wrapper: `rounded-[28px] border border-{accent}/50 bg-[#FDFCF9]`
 - Header: `h-[42px] bg-{accent-claro}/60 border-b border-{accent}/15`
 - Ícono: 13px, strokeWidth=2, color accent
@@ -77,7 +82,7 @@ ahora los tres workspaces de FARMACIA:
 
 | Archivo | Problema | Prioridad |
 |---|---|---|
-| DetalleProducto.tsx | 203 líneas — extraer PresentacionesTab.tsx | Media |
+| DetalleProducto.tsx | 400+ líneas — extraer PresentacionesTab.tsx y PreciosTab.tsx | Media |
 | NuevoProductoStepper.tsx | 350 líneas — extraer PasoUno/Dos/Tres/Cuatro | Media |
 | OperationalBar.tsx | Doble llamada a usePOS() — cosmético, sin impacto funcional | Baja |
 | parsearHtmlSunat (COBRO) | Heurístico — pendiente comando Rust | Baja |
@@ -86,6 +91,7 @@ ahora los tres workspaces de FARMACIA:
 | ContextBar.tsx (layout/) | Archivo huérfano, no importado activamente | Baja |
 | domains/operator/blocks.store.ts | BoxSlotType/BoxSlotDef en inglés → TipoCaja/DefinicionCaja canónico | Media |
 | operator.store.ts | Operador.codigo campo huérfano — eliminar tras verificar consumidores | Media |
+| actualizarProveedor (service) | Nombre usa verbo no canónico — función llama a invoke('actualizar_proveedor'); pendiente renombrar a modificarProveedor en una sesión de normalización | Baja |
 
 ---
 
@@ -107,9 +113,9 @@ Autoridades vigentes: `docs/DOCTRINA.md`, `docs/ARQUITECTURA_UX.md`,
 
 ---
 
-## ESPECIFICACIÓN DE PRECIOS — aprobada 22 Jun, pendiente de implementar
+## PRECIOS — implementado al 22 Jun (commits dc88d94, 2467724, c50e84b)
 
-### Cuatro tipos canónicos (ValorOperacionalFarmacia.tipo)
+### Cuatro tipos canónicos implementados
 | Tipo | Condición |
 |---|---|
 | `VENTA_NORMAL` | Precio base, sin condición |
@@ -117,29 +123,24 @@ Autoridades vigentes: `docs/DOCTRINA.md`, `docs/ARQUITECTURA_UX.md`,
 | `VENTA_FRECUENTE` | Cliente tipo FRECUENTE + cumple umbral de compras |
 | `VENTA_PROMOCION` | Vigencia explícita, activable/desactivable, estado ACTIVO/INACTIVO |
 
-### Regla de resolución (waterfall)
+### Regla de resolución (waterfall) — implementada en resolver_precio_nodo
 VENTA_PROMOCION vigente > VENTA_FRECUENTE (si cliente califica) > VENTA_MAYOREO (si cantidad califica) > VENTA_NORMAL
 
-### Pendiente de implementar — Bloques en orden
-- **Capa A:** tipos TypeScript — `TipoValorOperacional` y `EstadoValorOperacional` como unions en `types.ts`
-- **Capa B:** 4 comandos Rust — `crear_valor_operacional`, `actualizar_valor_operacional`, `obtener_valores_nodo`, `resolver_precio_nodo`
-- **Capa D:** UI — pestaña PRECIOS en DetalleProducto.tsx (dentro de CatalogoFarmaciaWorkspace)
-- **Capa C:** Schema SQL — tabla `valor_operacional` ya existe; agregar umbral frecuencia en `config_establecimiento` cuando VENTAS migre a SQLite
+### Vista DIGEMID
+Migración v3 corrigió la vista `reporte_digemid_privado` de `tipo = 'NORMAL'` a
+`tipo = 'VENTA_NORMAL'`. Schema actualizado para bases nuevas.
 
-### Notas doctrinales
-- VENTA_FRECUENTE usa `Cliente.tipo === 'FRECUENTE'` como proxy hasta que Pedido migre a SQLite
-- VENTA_PROMOCION no es un módulo separado — es un ValorOperacional con fechas y estado
-- CONVENIO diferido — precios negociados individualmente, fuera de este alcance
-- Integración con flujo VENTAS → sesión de rediseño de VENTAS
+### Pendiente (Capa C)
+Umbral de frecuencia en `config_establecimiento` — diferido a cuando VENTAS migre a SQLite.
 
 ---
 
 ## ABASTECIMIENTO — Decisiones arquitectónicas confirmadas (22 Jun)
 
-- **ABASTECIMIENTO es categoría multi-rubro:** `farmacia/` es el primer inquilino. Nuevos rubros van como `abastecimiento/<rubro>/` hermano, no dentro de farmacia.
-- **INGRESOS es el concepto canónico de compras en farmacia:** COMPRAS genérico permanece como modelo base para otros rubros. No existe ComprasFarmaciaWorkspace.
-- **INVENTARIOS farmacia:** pendiente `InventarioFarmaciaWorkspace` que lea stock desde SQLite/Lotes, no desde localStorage. Routing rubro-consciente en App.tsx cuando esté listo.
-- **NodoFraccionamiento, TipoFormaVenta, ValorOperacionalFarmacia:** deliberadamente fuera de GLOSARIO hasta el rediseño de VENTAS — no registrar antes de esa sesión.
+- **ABASTECIMIENTO es categoría multi-rubro:** `farmacia/` es el primer inquilino. Nuevos rubros van como `abastecimiento/<rubro>/` hermano.
+- **INGRESOS es el concepto canónico de compras en farmacia:** COMPRAS genérico permanece para otros rubros.
+- **INVENTARIOS farmacia:** ✅ InventarioFarmaciaWorkspace operativo. Routing rubro-consciente en App.tsx — farmacia → InventarioFarmaciaWorkspace, otros rubros → InventoryWorkspace (legacy).
+- **NodoFraccionamiento, TipoFormaVenta, ValorOperacionalFarmacia:** deliberadamente fuera de GLOSARIO hasta el rediseño de VENTAS.
 
 ---
 
@@ -158,30 +159,36 @@ VENTA_PROMOCION vigente > VENTA_FRECUENTE (si cliente califica) > VENTA_MAYOREO 
 
 ```
 SQLite (10 tablas + schema_migrations + vista reporte_digemid_privado)
-  ↓ 34 comandos Tauri en Rust (31 originales + 3 desactivar_* commit b5e339d)
-  ↓ farmacia.service.ts (26 funciones — 23 originales + 3 desactivarX)
+  Migraciones aplicadas: v2 (lote fecha opcional) · v3 (VENTA_NORMAL) · v4 (stock_minimo)
+  ↓ 39 comandos Tauri en Rust
+      lotes.rs: registrar_lote, resolver_lote_fefo, obtener_lotes_vigentes,
+                obtener_inventario_farmacia
+      presentaciones.rs: crear_presentacion, obtener_presentaciones, crear_nodo,
+                         obtener_nodos_fraccionamiento, modificar_stock_minimo
+      valores.rs: crear_valor_operacional, modificar_valor_operacional,
+                  obtener_valores_nodo, resolver_precio_nodo
+      (+ 27 comandos en productos, proveedores, movimientos, servicios,
+          reportes, integraciones, ingresos, db_commands)
+  ↓ farmacia.service.ts (33 funciones exportadas)
   ↓ farmacia.store.ts (Zustand)
   ↓ components/sheet/ — SheetWork/SheetHeader/SheetBody/SheetFooter
-      primer uso real en CobroPanel.tsx (VENTAS), AUN NO adoptado en ABASTECIMIENTO
   ↓ modules/abastecimiento/farmacia/
-      CatalogoFarmaciaWorkspace.tsx     ✅ chrome alineado, producto de prueba creado
-      ProveedoresWorkspace.tsx          ✅ chrome alineado, proveedor de prueba creado
-      IngresosMercaderiaWorkspace.tsx   ✅ chrome alineado, overlays eliminados, sesión real conectada
-  ↓ layout/OperationalBar.tsx — rubro-consciente, COMPRAS/INVENTARIOS ocultos en farmacia
+      CatalogoFarmaciaWorkspace.tsx     ✅ chrome, producto prueba, tab PRECIOS funcional
+      ProveedoresWorkspace.tsx          ✅ chrome, proveedor prueba — sin prueba visual post-commit
+      IngresosMercaderiaWorkspace.tsx   ✅ chrome, sesión real — sin prueba end-to-end real
+      InventarioFarmaciaWorkspace.tsx   ✅ disponibilidad, lotes, stock mínimo configurable
+  ↓ layout/OperationalBar.tsx
+      rubro farmacia: oculta COMPRAS, muestra CATÁLOGO/PROVEEDORES/INGRESOS/INVENTARIOS
 ```
 
 ---
 
 ## Próxima ventana de trabajo — Prioridad ordenada
 
-1. **Verificar visualmente en pantalla** los tres workspaces FARMACIA tras el realineamiento de chrome — confirmar que se ven consistentes con el resto del sistema
+1. **Verificar visualmente en pantalla** los cuatro workspaces FARMACIA — confirmar consistencia visual con el resto del sistema
 2. **Probar IngresosMercaderiaWorkspace end-to-end real** — usar Lab. Portugal + Panadol ya creados, registrar ingreso con lote, confirmar en SQLite que se crea lote + movimiento tipo "entrada"
-3. **PRECIOS — Capa A** — agregar `TipoValorOperacional` y `EstadoValorOperacional` como unions en `types.ts`, actualizar `ValorOperacionalFarmacia.tipo` y `.estado`
-4. **PRECIOS — Capa B** — 4 comandos Rust para gestión de precios
-5. **PRECIOS — Capa D** — pestaña PRECIOS en DetalleProducto.tsx
-6. **InventarioFarmaciaWorkspace** — nuevo workspace que lee stock desde SQLite/Lotes
-7. **BoxSlotType → TipoCaja** — migración de naming en blocks.store.ts (deuda de idioma)
-8. **Operador.codigo** — verificar consumidores y eliminar si está huérfano
+3. **BoxSlotType → TipoCaja** — migración de naming en blocks.store.ts (deuda de idioma)
+4. **Operador.codigo** — verificar consumidores y eliminar si está huérfano
 
 ---
 
