@@ -117,6 +117,10 @@ export function ContextBar({
 }: ContextBarProps) {
   // ── Bloqueo operacional — autorización supervisora pendiente sin resolver ──
   const { activeOperator, cashSession, suggestedCashBox, acknowledgedAuthIds } = usePOS();
+  const { rubro } = usePOS();
+  const abastTabsVisibles = ABAST_TABS.filter(t =>
+    rubro === 'farmacia' ? (t.key !== 'compras' && t.key !== 'inventarios') : true
+  )
   const operatorBlockPrefix = cashSession.cashBox?.code[0]
     ?? (activeOperator?.baseBloque != null ? String(activeOperator.baseBloque)[0] : suggestedCashBox?.code[0] ?? "1");
   const pendingAuth = getActiveAuthorizationsForBlock(operatorBlockPrefix)
@@ -141,9 +145,9 @@ export function ContextBar({
   const [navIdx, setNavIdx]   = useState(0);
 
   // Refs — lectura fresca en el handler sin stale closures
-  const stateRef = useRef({ navMode, navIdx, expanded, focusedPillIdx, active });
+  const stateRef = useRef({ navMode, navIdx, expanded, focusedPillIdx, active, abastTabsVisibles });
   useEffect(() => {
-    stateRef.current = { navMode, navIdx, expanded, focusedPillIdx, active };
+    stateRef.current = { navMode, navIdx, expanded, focusedPillIdx, active, abastTabsVisibles };
   });
   const accessRef = useRef({ puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja, puedeVerSales });
   useEffect(() => {
@@ -278,7 +282,7 @@ export function ContextBar({
           ? CASH_TABS.filter(t => t.key !== "supervision-caja" || acc.puedeSupervisarCaja)
           : s.expanded === "config"
             ? CONFIG_TABS
-            : ABAST_TABS.filter(t => !t.placeholder);
+            : s.abastTabsVisibles.filter(t => !t.placeholder);
 
         if (e.code === "ArrowRight") {
           e.preventDefault();
@@ -345,7 +349,7 @@ export function ContextBar({
       isActiveTab = k => active === "config" && configSubView === k;
       onTabClick  = k => { if (active === "config") onConfigSubViewChange(k as ConfigSubView); };
     } else if (expanded === "abastecimiento") {
-      tabs = ABAST_TABS;
+      tabs = abastTabsVisibles;
       isActiveTab = k => active === "abastecimiento" && abastecimientoSubModule === k;
       onTabClick  = k => { if (active === "abastecimiento") onAbastecimientoSubModuleChange(k as AbastecimientoSubModule); };
     }
