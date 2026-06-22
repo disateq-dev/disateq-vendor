@@ -302,6 +302,8 @@ domains/
 └── farmacia/       ← ProductoGenerico · ProductoComercial · PresentacionComercial · Lote · Proveedor · ServicioFarmacia · EjecucionServicio
 ```
 
+**Nota — ABASTECIMIENTO es multi-rubro (confirmado por Fernando, 21-jun-2026):** `farmacia/` es un dominio específico de rubro, no el nombre genérico de abastecimiento. La categoría ABASTECIMIENTO está pensada para alojar más rubros a futuro (ferretería, óptica, restaurante — mercado objetivo del producto), cada uno con su propio `domains/<rubro>/` independiente. Hoy solo tiene un inquilino. No renombrar `domains/farmacia/` a algo genérico — el nombre específico ya es correcto.
+
 ---
 
 ## 3. Directorio Canónico de Módulos (UI)
@@ -319,6 +321,8 @@ modules/
 └── abastecimiento/
     └── farmacia/        ← CatalogoFarmaciaWorkspace · ProveedoresWorkspace · IngresosMercaderiaWorkspace
 ```
+
+**Nota — misma aclaración que §2:** `abastecimiento/` es la carpeta contenedora multi-rubro; `farmacia/` es el primer y único inquilino hoy. Nuevos rubros de abastecimiento van como `abastecimiento/<rubro>/` hermano, no dentro de `farmacia/`.
 
 ---
 
