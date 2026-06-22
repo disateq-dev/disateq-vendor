@@ -13,6 +13,7 @@ import type {
   RegistrarIngresoInput,
   ResultadoBusquedaPresentacion,
 } from '../../../../domains/farmacia/types'
+import { usePOS } from '../../../../context/POSContext'
 
 export interface LineaIngresoDraft extends LineaIngreso {
   id: string
@@ -100,6 +101,8 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
   const [cargando, setCargando] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const crearProductoCompleto = useFarmaciaStore((state) => state.crearProductoCompleto)
+  const { activeOperator, cashSession } = usePOS()
+  const runtimeIdSesion = activeOperator ? `${activeOperator.id}-${cashSession.openedAt?.toISOString() ?? 'sin-turno'}` : 'sin-operador'
   const timerProveedorRef = useRef<number | null>(null)
   const timerProductoRef = useRef<number | null>(null)
   const historialReciente: unknown[] = [] // TODO: cargar historial cuando exista comando de listado.
@@ -368,8 +371,8 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
     try {
       const input: RegistrarIngresoInput = {
         proveedorId: proveedorSeleccionado.id,
-        operadorId: 'operador-actual',
-        runtimeId: crypto.randomUUID(),
+        operadorId: activeOperator?.id ?? 'sin-operador',
+        runtimeId: runtimeIdSesion,
         lineas: lineas.map((linea) => ({
           presentacionId: linea.presentacionId,
           cantidad: linea.cantidad,
@@ -387,7 +390,7 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
     } finally {
       setCargando(false)
     }
-  }, [ingresoValido, lineas, limpiarEstado, proveedorSeleccionado])
+  }, [activeOperator, ingresoValido, lineas, limpiarEstado, proveedorSeleccionado, runtimeIdSesion])
 
   const onCancelar = useCallback((): void => limpiarEstado(), [limpiarEstado])
   const onLimpiarError = useCallback((): void => setError(null), [])
