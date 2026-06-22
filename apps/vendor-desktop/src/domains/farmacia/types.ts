@@ -141,10 +141,18 @@ export interface AsignacionLote {
   unidadesAsignadas: number
 }
 
+export type TipoValorOperacional =
+  | 'VENTA_NORMAL'
+  | 'VENTA_MAYOREO'
+  | 'VENTA_FRECUENTE'
+  | 'VENTA_PROMOCION'
+
+export type EstadoValorOperacional = 'ACTIVO' | 'INACTIVO'
+
 export interface ValorOperacionalFarmacia {
   id: string
   nodoId: string
-  tipo: string
+  tipo: TipoValorOperacional
   valor: number
   moneda: string
   condicionCantidadMinima?: number
@@ -152,7 +160,7 @@ export interface ValorOperacionalFarmacia {
   condicionIdentidadId?: string
   vigenciaDesde: string
   vigenciaHasta?: string
-  estado: string
+  estado: EstadoValorOperacional
   creadoEn: string
   modificadoEn: string
 }
@@ -354,4 +362,22 @@ export interface ResultadoBusquedaPresentacion {
   descripcion: string
   requiereLote: boolean
   fabricante: string
+}
+
+export interface CrearValorOperacionalInput {
+  nodoId: string
+  tipo: TipoValorOperacional
+  valor: number
+  moneda?: string
+  condicionCantidadMinima?: number
+  vigenciaDesde: string
+  vigenciaHasta?: string
+}
+
+export interface ModificarValorOperacionalInput {
+  id: string
+  valor?: number
+  condicionCantidadMinima?: number
+  vigenciaHasta?: string
+  estado?: EstadoValorOperacional
 }
