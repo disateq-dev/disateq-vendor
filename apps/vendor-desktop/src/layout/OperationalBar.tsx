@@ -119,7 +119,7 @@ export function ContextBar({
   const { activeOperator, cashSession, suggestedCashBox, acknowledgedAuthIds } = usePOS();
   const { rubro } = usePOS();
   const abastTabsVisibles = ABAST_TABS.filter(t =>
-    rubro === 'farmacia' ? (t.key !== 'compras' && t.key !== 'inventarios') : true
+    rubro === 'farmacia' ? t.key !== 'compras' : true
   )
   const operatorBlockPrefix = cashSession.cashBox?.code[0]
     ?? (activeOperator?.baseBloque != null ? String(activeOperator.baseBloque)[0] : suggestedCashBox?.code[0] ?? "1");

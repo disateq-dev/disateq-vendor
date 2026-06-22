@@ -381,3 +381,15 @@ export interface ModificarValorOperacionalInput {
   vigenciaHasta?: string
   estado?: EstadoValorOperacional
 }
+
+export interface ResumenInventarioFarmacia {
+  productoId: string
+  nombreComercial: string
+  requiereLote: boolean
+  presentacionId: string
+  descripcion: string
+  unidadConteo: string
+  totalDisponible: number
+  lotesVigentes: number
+  proximoVencimiento?: string
+}

@@ -23,6 +23,7 @@ import type {
   RegistrarMovimientoInput,
   ResultadoReporteDIGEMID,
   ResultadoBusquedaPresentacion,
+  ResumenInventarioFarmacia,
   ServicioFarmacia,
   ValorOperacionalFarmacia,
 } from './types'
@@ -150,6 +151,18 @@ interface ValorOperacionalRespuesta {
   estado: string
   creado_en: string
   modificado_en: string
+}
+
+interface ResumenInventarioFarmaciaRespuesta {
+  producto_id: string
+  nombre_comercial: string
+  requiere_lote: boolean
+  presentacion_id: string
+  descripcion: string
+  unidad_conteo: string
+  total_disponible: number
+  lotes_vigentes: number
+  proximo_vencimiento?: string
 }
 
 function traducirProveedor(respuesta: ProveedorRespuesta): Proveedor {
@@ -284,6 +297,20 @@ function traducirValorOperacional(r: ValorOperacionalRespuesta): ValorOperaciona
     estado: r.estado as ValorOperacionalFarmacia['estado'],
     creadoEn: r.creado_en,
     modificadoEn: r.modificado_en,
+  }
+}
+
+function traducirResumenInventario(r: ResumenInventarioFarmaciaRespuesta): ResumenInventarioFarmacia {
+  return {
+    productoId: r.producto_id,
+    nombreComercial: r.nombre_comercial,
+    requiereLote: r.requiere_lote,
+    presentacionId: r.presentacion_id,
+    descripcion: r.descripcion,
+    unidadConteo: r.unidad_conteo,
+    totalDisponible: r.total_disponible,
+    lotesVigentes: r.lotes_vigentes,
+    proximoVencimiento: r.proximo_vencimiento,
   }
 }
 
@@ -569,4 +596,9 @@ export async function modificarValorOperacional(input: ModificarValorOperacional
     vigenciaHasta: input.vigenciaHasta ?? null,
     estado: input.estado ?? null,
   })
+}
+
+export async function obtenerInventarioFarmacia(): Promise<ResumenInventarioFarmacia[]> {
+  const respuesta = await invoke<ResumenInventarioFarmaciaRespuesta[]>('obtener_inventario_farmacia')
+  return respuesta.map(traducirResumenInventario)
 }

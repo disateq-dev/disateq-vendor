@@ -14,6 +14,7 @@ import { PurchasesWorkspace } from "./modules/purchases/PurchasesWorkspace";
 import { CatalogoFarmaciaWorkspace } from './modules/abastecimiento/farmacia/CatalogoFarmaciaWorkspace'
 import { ProveedoresWorkspace } from './modules/abastecimiento/farmacia/ProveedoresWorkspace'
 import { IngresosMercaderiaWorkspace } from './modules/abastecimiento/farmacia/IngresosMercaderiaWorkspace'
+import { InventarioFarmaciaWorkspace } from './modules/abastecimiento/farmacia/InventarioFarmaciaWorkspace'
 import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
@@ -23,7 +24,7 @@ export type AbastecimientoSubModule = "catalogo" | "proveedores" | "ingresos" | 
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
 
 function AppRoot() {
-  const { activeOperator, cashSession } = usePOS();
+  const { activeOperator, cashSession, rubro } = usePOS();
   const [activeModule,            setActiveModule]            = useState<ActiveModule>("cash");
   const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
   const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("catalogo");
@@ -97,7 +98,8 @@ function AppRoot() {
       {activeModule === "abastecimiento" && abastecimientoSubModule === "catalogo"     && <CatalogoFarmaciaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "proveedores" && <ProveedoresWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "ingresos" && <IngresosMercaderiaWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && <InventoryWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && rubro === 'farmacia' && <InventarioFarmaciaWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && rubro !== 'farmacia' && <InventoryWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "traslados" && (
         <div className="flex flex-1 items-center justify-center">
