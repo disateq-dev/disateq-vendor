@@ -10,66 +10,75 @@ export function ProveedoresWorkspace(): ReactElement {
   const proveedores = useProveedores()
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-slate-50">
-      <header className="flex h-16 items-center justify-between border-b border-[#EAF3DE] bg-white px-6">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#639922]">
-            <Store className="h-5 w-5" />
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#639922]/50 bg-[#FDFCF9]">
+      <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#EAF3DE]/60 border-[#639922]/15">
+        <div className="flex items-center gap-2">
+          <Store size={13} strokeWidth={2} className="shrink-0 text-[#639922]" />
+          <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
+            {proveedores.modo === 'busqueda' && 'PROVEEDORES'}
+            {proveedores.modo === 'sunat' && 'CONSULTA SUNAT'}
+            {proveedores.modo === 'manual' && 'NUEVO PROVEEDOR'}
+            {proveedores.modo === 'detalle' && 'DETALLE PROVEEDOR'}
           </span>
-          <h1 className="text-[15px] font-bold text-slate-900">Proveedores</h1>
         </div>
         {proveedores.error && (
           <button
             type="button"
             onClick={proveedores.onLimpiarError}
-            className="flex items-center gap-2 rounded-full bg-[#EAF3DE] px-3 py-1.5 text-[11px] font-bold text-[#639922]"
+            className="flex min-w-0 items-center gap-2 rounded-full bg-[#EAF3DE] px-3 py-1 text-[11px] font-bold text-[#639922]"
           >
-            {proveedores.error}
-            <X className="h-3.5 w-3.5" />
+            <span className="truncate">{proveedores.error}</span>
+            <X className="h-3.5 w-3.5 shrink-0" />
           </button>
         )}
-      </header>
-      {proveedores.modo === 'busqueda' && (
-        <BuscadorProveedor
-          termino={proveedores.termino}
-          resultados={proveedores.resultados}
-          cargando={proveedores.cargando}
-          onTerminoChange={proveedores.onTerminoChange}
-          onSeleccionar={proveedores.onSeleccionar}
-          onIrSunat={proveedores.onIrSunat}
-          onIrManual={proveedores.onIrManual}
-        />
-      )}
-      {proveedores.modo === 'sunat' && (
-        <ConsultaSunatProveedor
-          ruc={proveedores.rucConsulta}
-          datosRuc={proveedores.datosRuc}
-          consultando={proveedores.consultandoSunat}
-          error={proveedores.error}
-          onRucChange={proveedores.onRucChange}
-          onConsultar={proveedores.onConsultarRuc}
-          onGuardar={proveedores.onGuardarDesdeSunat}
-          onVolver={proveedores.onVolverBusqueda}
-        />
-      )}
-      {proveedores.modo === 'manual' && (
-        <section className="flex flex-1 flex-col gap-5 overflow-auto px-6 py-5">
-          <FormularioProveedor
-            titulo="Registrar proveedor"
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        {proveedores.modo === 'busqueda' && (
+          <BuscadorProveedor
+            termino={proveedores.termino}
+            resultados={proveedores.resultados}
             cargando={proveedores.cargando}
-            onGuardar={proveedores.onGuardarManual}
-            onCancelar={proveedores.onVolverBusqueda}
+            onTerminoChange={proveedores.onTerminoChange}
+            onSeleccionar={proveedores.onSeleccionar}
+            onIrSunat={proveedores.onIrSunat}
+            onIrManual={proveedores.onIrManual}
           />
-        </section>
-      )}
-      {proveedores.modo === 'detalle' && proveedores.proveedorSeleccionado && (
-        <DetalleProveedor
-          proveedor={proveedores.proveedorSeleccionado}
-          cargando={proveedores.cargando}
-          onVolver={proveedores.onVolverBusqueda}
-          onActualizar={proveedores.onActualizar}
-        />
-      )}
+        )}
+
+        {proveedores.modo === 'sunat' && (
+          <ConsultaSunatProveedor
+            ruc={proveedores.rucConsulta}
+            datosRuc={proveedores.datosRuc}
+            consultando={proveedores.consultandoSunat}
+            error={proveedores.error}
+            onRucChange={proveedores.onRucChange}
+            onConsultar={proveedores.onConsultarRuc}
+            onGuardar={proveedores.onGuardarDesdeSunat}
+            onVolver={proveedores.onVolverBusqueda}
+          />
+        )}
+
+        {proveedores.modo === 'manual' && (
+          <section className="flex flex-1 flex-col gap-5 overflow-auto px-6 py-5">
+            <FormularioProveedor
+              titulo="Registrar proveedor"
+              cargando={proveedores.cargando}
+              onGuardar={proveedores.onGuardarManual}
+              onCancelar={proveedores.onVolverBusqueda}
+            />
+          </section>
+        )}
+
+        {proveedores.modo === 'detalle' && proveedores.proveedorSeleccionado && (
+          <DetalleProveedor
+            proveedor={proveedores.proveedorSeleccionado}
+            cargando={proveedores.cargando}
+            onVolver={proveedores.onVolverBusqueda}
+            onActualizar={proveedores.onActualizar}
+          />
+        )}
+      </div>
     </div>
   )
 }
