@@ -494,3 +494,15 @@ export async function buscarPresentacionesParaIngreso(termino: string): Promise<
   )
   return presentacionesPorProducto.flat().slice(0, 8)
 }
+
+export async function desactivarProveedor(id: string): Promise<void> {
+  await invoke('desactivar_proveedor', { id })
+}
+
+export async function desactivarProductoComercial(id: string): Promise<void> {
+  await invoke('desactivar_producto_comercial', { id })
+}
+
+export async function desactivarServicioFarmacia(id: string): Promise<void> {
+  await invoke('desactivar_servicio_farmacia', { id })
+}

@@ -75,6 +75,24 @@ pub async fn obtener_proveedores(
 }
 
 #[tauri::command]
+pub async fn desactivar_proveedor(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    sqlx::query("UPDATE proveedor SET estado = 'INACTIVO' WHERE id = ?")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn actualizar_proveedor(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     id: String,

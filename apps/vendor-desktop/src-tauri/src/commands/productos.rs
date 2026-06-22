@@ -84,6 +84,24 @@ pub async fn obtener_productos_genericos(
 }
 
 #[tauri::command]
+pub async fn desactivar_producto_comercial(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    sqlx::query("UPDATE producto_comercial SET estado = 'INACTIVO', modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn crear_producto_comercial(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     producto_generico_id: String,
