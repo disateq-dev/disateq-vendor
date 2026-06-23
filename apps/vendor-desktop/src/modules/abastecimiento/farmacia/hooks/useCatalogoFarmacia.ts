@@ -34,6 +34,7 @@ interface UseCatalogoFarmaciaResult {
   sinResultados: boolean
   error: string | null
   onTerminoChange(t: string): void
+  onLimpiar(): void
   onSeleccionar(p: ProductoComercial): void
   onVolverBusqueda(): void
   onNuevo(): void
@@ -98,6 +99,14 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
         .catch((error: unknown) => setErrorLocal(resolverMensajeError(error)))
         .finally(() => setBuscando(false))
     }, 300)
+  }, [])
+
+  const onLimpiar = useCallback((): void => {
+    setTermino('')
+    setResultados([])
+    setBuscando(false)
+    setErrorLocal(null)
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current)
   }, [])
 
   const onSeleccionar = useCallback((p: ProductoComercial): void => {
@@ -195,6 +204,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     sinResultados,
     error: errorStore ?? errorLocal,
     onTerminoChange,
+    onLimpiar,
     onSeleccionar,
     onVolverBusqueda,
     onNuevo,
