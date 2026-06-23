@@ -41,7 +41,7 @@ const MOD_ON: Record<ActiveModule, string> = {
   reportes:       `${BASE_MOD} border-[#2154d8]  bg-[rgba(33,84,216,0.07)]`,
   comprobantes:   `${BASE_MOD} border-[#C05050]  bg-[rgba(192,80,80,0.07)]`,
   config:         `${BASE_MOD} border-[#697387]  bg-[rgba(105,115,135,0.07)]`,
-  abastecimiento: `${BASE_MOD} border-[#3D8A8A]  bg-[rgba(61,138,138,0.07)]`,
+  abastecimiento: `${BASE_MOD} border-[#0284C7] bg-[rgba(2,132,199,0.08)]`,
 };
 
 // ── Identidad visual — pills de subtabs ───────────────────────
@@ -52,7 +52,7 @@ const PILL_ON: Record<ActiveModule, string> = {
   reportes:       "bg-[#2154d8] text-white",
   comprobantes:   "bg-[#C05050] text-white",
   config:         "bg-[#697387] text-white",
-  abastecimiento: "bg-[#3D8A8A] text-white",
+  abastecimiento: "bg-[#0284C7] text-white",
 };
 
 // ── Cursor de navegación — línea inferior punteada por módulo ─
@@ -64,7 +64,7 @@ const NAV_FOCUS: Record<ActiveModule, string> = {
   reportes:       `${BASE_MOD} border-[#2154d8]/50  bg-[rgba(33,84,216,0.04)]`,
   comprobantes:   `${BASE_MOD} border-[#C05050]/50  bg-[rgba(192,80,80,0.04)]`,
   config:         `${BASE_MOD} border-[#697387]/50  bg-[rgba(105,115,135,0.04)]`,
-  abastecimiento: `${BASE_MOD} border-[#3D8A8A]/50  bg-[rgba(61,138,138,0.04)]`,
+  abastecimiento: `${BASE_MOD} border-[#0284C7]/50 bg-[rgba(2,132,199,0.05)]`,
 };
 
 const PILL_OFF: Record<ActiveModule, string> = {
@@ -74,7 +74,7 @@ const PILL_OFF: Record<ActiveModule, string> = {
   reportes:       "text-[#2154d8]/60 hover:text-[#2154d8]",
   comprobantes:   "text-[#7a2020]/60 hover:text-[#7a2020]",
   config:         "text-[#697387]/60 hover:text-[#697387]",
-  abastecimiento: "text-[#276565]/60 hover:text-[#276565]",
+  abastecimiento: "text-[#015d94]/60 hover:text-[#015d94]",
 };
 
 // ── Separador entre módulos ───────────────────────────────────
@@ -384,13 +384,13 @@ export function ContextBar({
 
   // ── Iconos por módulo ─────────────────────────────────────
   const ICONS: Record<ActiveModule, React.ReactNode> = {
-    cash:           <ShoppingCart size={15} />,
-    sales:          <Package      size={15} />,
-    clientes:       <Users        size={15} />,
-    reportes:       <BarChart2    size={15} />,
-    comprobantes:   <FileText     size={15} />,
-    config:         <Settings     size={15} />,
-    abastecimiento: <Boxes        size={15} />,
+    cash:           <ShoppingCart size={17} />,
+    sales:          <Package      size={17} />,
+    clientes:       <Users        size={17} />,
+    reportes:       <BarChart2    size={17} />,
+    comprobantes:   <FileText     size={17} />,
+    config:         <Settings     size={17} />,
+    abastecimiento: <Boxes        size={17} />,
   };
 
   const pills = renderPills();
@@ -436,14 +436,14 @@ export function ContextBar({
       <button onClick={() => handleModuleClick("cash")}
         onMouseEnter={() => onHover("cash")}
         className={navMode && MODULES_ORDER[navIdx] === "cash" ? NAV_FOCUS["cash"] : active === "cash" ? MOD_ON["cash"] : MOD_OFF}>
-        <ShoppingCart size={15} /><span>TURNO</span>
+        <ShoppingCart size={17} /><span>TURNO</span>
       </button>
       <button
         onClick={() => handleModuleClick("sales", puedeVerSales)}
         onMouseEnter={puedeVerSales ? () => onHover("sales") : undefined}
         title={puedeVerSales ? undefined : "Regulariza la autorización pendiente en TURNO para continuar"}
         className={navMode && MODULES_ORDER[navIdx] === "sales" ? NAV_FOCUS["sales"] : puedeVerSales ? (active === "sales" ? MOD_ON["sales"] : MOD_OFF) : MOD_PH}>
-        <Package size={15} /><span>VENTAS</span>
+        <Package size={17} /><span>VENTAS</span>
       </button>
 
       <ModSep />
@@ -454,7 +454,7 @@ export function ContextBar({
         title={puedeVerAbastecimiento ? undefined : "Sin acceso"}
         className={navMode && MODULES_ORDER[navIdx] === "abastecimiento" ? NAV_FOCUS["abastecimiento"] : puedeVerAbastecimiento ? (active === "abastecimiento" ? MOD_ON["abastecimiento"] : MOD_OFF) : MOD_PH}
       >
-        <Boxes size={15} /><span>ABASTECIMIENTO</span>
+        <Boxes size={17} /><span>ABASTECIMIENTO</span>
       </button>
 
       <ModSep />
@@ -465,7 +465,7 @@ export function ContextBar({
         title={puedeVerClientes ? undefined : "Sin acceso"}
         className={navMode && MODULES_ORDER[navIdx] === "clientes" ? NAV_FOCUS["clientes"] : puedeVerClientes ? (active === "clientes" ? MOD_ON["clientes"] : MOD_OFF) : MOD_PH}
       >
-        <Users size={15} /><span>CLIENTES</span>
+        <Users size={17} /><span>CLIENTES</span>
       </button>
       <button
         onClick={() => handleModuleClick("reportes", puedeVerReportes)}
@@ -473,7 +473,7 @@ export function ContextBar({
         title={puedeVerReportes ? undefined : "Sin acceso"}
         className={navMode && MODULES_ORDER[navIdx] === "reportes" ? NAV_FOCUS["reportes"] : puedeVerReportes ? (active === "reportes" ? MOD_ON["reportes"] : MOD_OFF) : MOD_PH}
       >
-        <BarChart2 size={15} /><span>REPORTES</span>
+        <BarChart2 size={17} /><span>REPORTES</span>
       </button>
 
       <ModSep />
@@ -484,7 +484,7 @@ export function ContextBar({
         title={puedeVerComprobantes ? undefined : "Sin acceso"}
         className={navMode && MODULES_ORDER[navIdx] === "comprobantes" ? NAV_FOCUS["comprobantes"] : puedeVerComprobantes ? (active === "comprobantes" ? MOD_ON["comprobantes"] : MOD_OFF) : MOD_PH}
       >
-        <FileText size={15} /><span>COMPROBANTES</span>
+        <FileText size={17} /><span>COMPROBANTES</span>
       </button>
 
       <ModSep />
@@ -495,7 +495,7 @@ export function ContextBar({
         title={puedeVerAjustes ? undefined : "Sin acceso"}
         className={navMode && MODULES_ORDER[navIdx] === "config" ? NAV_FOCUS["config"] : puedeVerAjustes ? (active === "config" ? MOD_ON["config"] : MOD_OFF) : MOD_PH}
       >
-        <Settings size={15} /><span>AJUSTES</span>
+        <Settings size={17} /><span>AJUSTES</span>
       </button>
     </section>
   );

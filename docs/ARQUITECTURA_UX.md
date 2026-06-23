@@ -185,6 +185,69 @@ no verificación completa caso por caso.
 
 ---
 
+## SheetHeader — composición canónica
+
+**Regla confirmada por Fernando (23-jun-2026):**
+
+La composición estándar e irrevocable del `SheetHeader` es **ícono + texto**,
+nada más. No se agrega ningún elemento adicional por defecto.
+
+La prop `right?: ReactNode` se mantiene en el contrato del componente
+exclusivamente como válvula de escape para casos extremos futuros. Su uso
+no es rutinario — requiere justificación explícita y aprobación del Director
+de Producto antes de implementarse. No debe proponerse como solución de
+diseño en ningún flujo ordinario.
+
+**Regla de revisión:** si alguien propone colocar un badge, estado, contador
+ou otro elemento en el `SheetHeader`, la respuesta por defecto es no. La
+carga de la prueba recae en quien propone, no en quien rechaza.
+
+---
+
+## Iconografía — librería y tamaño canónico
+
+**Librería canónica:** Lucide React — irrevocable mientras no se decida
+migración explícita.
+
+**Tamaño canónico de íconos en ContextBar (módulos):** `size={17}`.
+El ícono debe ser perceptiblemente más grande que el texto que acompaña
+(`text-[14.5px]`) para cumplir su función de anclaje visual rápido, sin
+llegar a contrastar agresivamente. La relación ícono/texto correcta es
+que destaque sin dominar.
+
+**Tamaño de íconos en SheetHeader:** `size={13}`, `strokeWidth={2}` —
+ya establecido y correcto. No modificar.
+
+**Regla general:** el ícono acompaña al texto, nunca lo reemplaza en
+contextos operacionales con etiqueta visible. En contextos sin etiqueta
+(botones icon-only), el tamaño se define caso a caso con aprobación.
+
+---
+
+## Mapa de color canónico por módulo
+
+Fuente de verdad para accent colors. Verificado contra código real
+(23-jun-2026). Cualquier divergencia entre este mapa y el código
+implica que el código está desactualizado — corregir el código.
+
+| Módulo | Accent | Nota |
+|---|---|---|
+| TURNO / CAJA | `#2A7CA8` | Azul petróleo |
+| VENTAS | `#45b356` | Verde |
+| ABASTECIMIENTO | `#0284C7` | Azul sky-600 — canónico desde 22-jun-2026 |
+| COMPROBANTES | `#C05050` | Terracota |
+| AJUSTES / CONFIG | `#697387` | Gris azulado |
+| CLIENTES | `#1e7e4f` | Verde oscuro |
+| REPORTES | `#2154d8` | Azul índigo |
+
+**Nota ABASTECIMIENTO:** el color `#3D8A8A` (teal) que aparece en
+`OperationalBar.tsx` es un residuo del diseño anterior — no es el color
+canónico. Debe corregirse a `#0284C7` en todos los mapas del componente
+(`MOD_ON`, `PILL_ON`, `NAV_FOCUS`, `PILL_OFF`). Corrección pendiente
+en prompt a Codex (23-jun-2026).
+
+---
+
 ## Nota de archivo
 
 `03-arquitectura/arquitectura.md`, `design-system/operational-visual-architecture.md`
