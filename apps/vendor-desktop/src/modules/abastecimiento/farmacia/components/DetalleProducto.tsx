@@ -1,22 +1,37 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import type {
+  ModificarProductoComercialInput,
   NodoFraccionamiento,
   PresentacionComercial,
   ProductoComercial,
 } from '../../../../domains/farmacia/types'
 import type { CrearValorOperacionalInput, EstadoValorOperacional, ModificarValorOperacionalInput, TipoValorOperacional, ValorOperacionalFarmacia } from '../../../../domains/farmacia/types'
-import { crearValorOperacional, modificarValorOperacional, obtenerValoresNodo } from '../../../../domains/farmacia/farmacia.service'
+import {
+  crearValorOperacional,
+  desactivarProductoComercial,
+  modificarProductoComercial,
+  modificarValorOperacional,
+  obtenerValoresNodo,
+  reactivarProductoComercial,
+  verificarHistorialProducto,
+} from '../../../../domains/farmacia/farmacia.service'
+import { usePOS } from '../../../../context/POSContext'
 import type { TabDetalleFarmacia } from '../hooks/useCatalogoFarmacia'
 
 interface DetalleProductoProps {
   producto: ProductoComercial
+  productoPreview: ProductoComercial | null
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
   tabActiva: TabDetalleFarmacia
   cargando: boolean
   onTabChange: (t: TabDetalleFarmacia) => void
   onVolver: () => void
+  onActualizarProductoSeleccionado: (p: ProductoComercial) => void
+  onNavegaAIngresos: () => void
 }
+
+type ModoDetalle = 'lectura' | 'corrigiendo' | 'desactivando'
 
 interface CampoLecturaProps {
   label: string
@@ -52,7 +67,7 @@ function categoriaProducto(producto: ProductoComercial): string {
 
 function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
   return (
-    <div className="rounded-xl border border-[#EAF3DE] bg-white px-4 py-3">
+    <div className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
       <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</div>
       <div className="mt-1 min-h-5 text-[13px] font-semibold text-slate-800">{valor ?? '-'}</div>
     </div>
@@ -61,22 +76,22 @@ function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
 
 function HeaderProducto({ producto }: HeaderProductoProps): ReactElement {
   return (
-    <header className="rounded-2xl border border-[#EAF3DE] bg-white p-5">
+    <header className="rounded-2xl border border-[#E0F2FE] bg-white p-5">
       <h2 className="text-[20px] font-bold text-slate-900">
         {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
       </h2>
       <p className="mt-1 text-[13px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         {[producto.condicionVenta, categoriaProducto(producto)].map((chip) => (
-          <span key={chip} className="rounded-full bg-[#EAF3DE] px-3 py-1 text-[10px] font-bold uppercase text-[#639922]">
+          <span key={chip} className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
             {chip}
           </span>
         ))}
         {producto.requiereLote && (
-          <span className="rounded-full bg-[#EAF3DE] px-3 py-1 text-[10px] font-bold uppercase text-[#639922]">Lote</span>
+          <span className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[10px] font-bold uppercase text-[#0284C7]">Lote</span>
         )}
         {producto.requiereCadenaFrio && (
-          <span className="rounded-full bg-[#EAF3DE] px-3 py-1 text-[10px] font-bold uppercase text-[#639922]">
+          <span className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
             Cadena de frío
           </span>
         )}
@@ -92,14 +107,14 @@ function TabsProducto({ tabActiva, onTabChange }: TabsProductoProps): ReactEleme
     { id: 'precios', label: 'Precios' },
   ]
   return (
-    <nav className="flex gap-2 border-b border-[#EAF3DE]">
+    <nav className="flex gap-2 border-b border-[#E0F2FE]">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => onTabChange(tab.id)}
           className={`px-4 py-3 text-[12px] font-bold uppercase tracking-wide ${
-            tabActiva === tab.id ? 'border-b-2 border-[#639922] text-[#639922]' : 'text-slate-500'
+            tabActiva === tab.id ? 'border-b-2 border-[#0284C7] text-[#0284C7]' : 'text-slate-500'
           }`}
         >
           {tab.label}
@@ -113,7 +128,7 @@ function PresentacionesTab({ presentaciones, nodos }: PresentacionesTabProps): R
   return (
     <div className="space-y-4">
       {presentaciones.map((presentacion) => (
-        <article key={presentacion.id} className="rounded-2xl border border-[#EAF3DE] bg-white p-4">
+        <article key={presentacion.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-[14px] font-bold text-slate-900">{presentacion.descripcion}</h3>
@@ -124,7 +139,7 @@ function PresentacionesTab({ presentaciones, nodos }: PresentacionesTabProps): R
             <button
               type="button"
               onClick={() => window.alert('Nueva forma de venta pendiente')}
-              className="rounded-full border border-[#EAF3DE] px-3 py-1.5 text-[11px] font-bold text-[#639922]"
+              className="rounded-full border border-[#E0F2FE] px-3 py-1.5 text-[11px] font-bold text-[#0284C7]"
             >
               Agregar forma de venta
             </button>
@@ -133,10 +148,10 @@ function PresentacionesTab({ presentaciones, nodos }: PresentacionesTabProps): R
             {nodos
               .filter((nodo) => nodo.presentacionId === presentacion.id)
               .map((nodo) => (
-                <div key={nodo.id} className={`rounded-xl bg-[#EAF3DE] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
+                <div key={nodo.id} className={`rounded-xl bg-[#E0F2FE] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[12px] font-bold text-slate-800">{nodo.nombreFormaVenta}</span>
-                    <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase text-[#639922]">
+                    <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
                       {nodo.tipoFormaVenta}
                     </span>
                   </div>
@@ -305,7 +320,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
   }, [formularioEdicion, valoresPorNodo])
 
   if (cargando) {
-    return <div className="text-[13px] font-semibold text-[#639922]">Cargando precios...</div>
+    return <div className="text-[13px] font-semibold text-[#0284C7]">Cargando precios...</div>
   }
 
   if (error) {
@@ -324,7 +339,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
         const valorEnEdicion = valoresNodo.find((valor) => valor.id === formularioEdicion?.id)
 
         return (
-          <article key={nodo.id} className="rounded-2xl border border-[#EAF3DE] bg-white p-4">
+          <article key={nodo.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
             <header className="flex justify-between items-center mb-3">
               <h3 className="text-[14px] font-bold text-slate-900">{nodo.nombreFormaVenta}</h3>
               {tiposNodoDisponibles.length > 0 &&
@@ -334,7 +349,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                     type="button"
                     onClick={() => onAbrirFormularioNuevo(nodo.id)}
                     disabled={guardando}
-                    className="rounded-full border border-[#639922] px-3 py-1 text-[11px] font-bold text-[#639922]"
+                    className="rounded-full border border-[#0284C7] px-3 py-1 text-[11px] font-bold text-[#0284C7]"
                   >
                     + Precio
                   </button>
@@ -342,7 +357,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
             </header>
 
             {valoresNodo.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-2 py-2 border-b border-[#EAF3DE] last:border-0">
+              <div key={v.id} className="flex items-center justify-between gap-2 py-2 border-b border-[#E0F2FE] last:border-0">
                 <div>
                   <div className="text-[12px] font-bold text-slate-700">{ETIQUETA_TIPO[v.tipo]}</div>
                   {v.tipo === 'VENTA_MAYOREO' && v.condicionCantidadMinima !== undefined && (
@@ -358,7 +373,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-bold text-[#639922]">S/ {v.valor.toFixed(2)}</span>
+                  <span className="text-[13px] font-bold text-[#0284C7]">S/ {v.valor.toFixed(2)}</span>
                   {v.estado === 'INACTIVO' && (
                     <span className="text-[9px] bg-red-100 text-red-500 rounded px-1">INACTIVO</span>
                   )}
@@ -375,11 +390,11 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
             ))}
 
             {formularioNuevo?.nodoId === nodo.id && (
-              <div className="mt-3 p-3 rounded-xl border border-[#639922]/30 bg-[#EAF3DE]/40 space-y-2">
+              <div className="mt-3 p-3 rounded-xl border border-[#0284C7]/30 bg-[#E0F2FE]/40 space-y-2">
                 <select
                   value={formularioNuevo.tipo}
                   onChange={(event) => setFormularioNuevo({ ...formularioNuevo, tipo: event.target.value as TipoValorOperacional })}
-                  className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                 >
                   {tiposNodoDisponibles.map((tipo) => (
                     <option key={tipo} value={tipo}>{ETIQUETA_TIPO[tipo]}</option>
@@ -390,7 +405,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                   placeholder="Precio S/"
                   value={formularioNuevo.valor}
                   onChange={(event) => setFormularioNuevo({ ...formularioNuevo, valor: event.target.value })}
-                  className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                 />
                 {formularioNuevo.tipo === 'VENTA_MAYOREO' && (
                   <input
@@ -398,7 +413,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                     placeholder="Cantidad mínima"
                     value={formularioNuevo.condicionMinima}
                     onChange={(event) => setFormularioNuevo({ ...formularioNuevo, condicionMinima: event.target.value })}
-                    className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                   />
                 )}
                 {formularioNuevo.tipo === 'VENTA_PROMOCION' && (
@@ -407,7 +422,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                     placeholder="Vigente hasta"
                     value={formularioNuevo.vigenciaHasta}
                     onChange={(event) => setFormularioNuevo({ ...formularioNuevo, vigenciaHasta: event.target.value })}
-                    className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                   />
                 )}
                 <div className="flex gap-2">
@@ -415,14 +430,14 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                     type="button"
                     onClick={() => void onGuardarNuevo()}
                     disabled={guardando}
-                    className="rounded-lg bg-[#639922] px-3 py-1.5 text-[12px] font-bold text-white"
+                    className="rounded-lg bg-[#0284C7] px-3 py-1.5 text-[12px] font-bold text-white"
                   >
                     Guardar
                   </button>
                   <button
                     type="button"
                     onClick={onCancelar}
-                    className="rounded-lg border border-[#EAF3DE] px-3 py-1.5 text-[12px] font-bold text-slate-500"
+                    className="rounded-lg border border-[#E0F2FE] px-3 py-1.5 text-[12px] font-bold text-slate-500"
                   >
                     Cancelar
                   </button>
@@ -431,12 +446,12 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
             )}
 
             {formularioEdicion?.nodoId === nodo.id && (
-              <div className="mt-3 p-3 rounded-xl border border-[#639922]/30 bg-[#EAF3DE]/40 space-y-2">
+              <div className="mt-3 p-3 rounded-xl border border-[#0284C7]/30 bg-[#E0F2FE]/40 space-y-2">
                 <input
                   type="number"
                   value={formularioEdicion.valor}
                   onChange={(event) => setFormularioEdicion({ ...formularioEdicion, valor: event.target.value })}
-                  className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                 />
                 {valorEnEdicion?.tipo === 'VENTA_MAYOREO' && (
                   <input
@@ -444,7 +459,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                     placeholder="Cantidad mínima"
                     value={formularioEdicion.condicionMinima}
                     onChange={(event) => setFormularioEdicion({ ...formularioEdicion, condicionMinima: event.target.value })}
-                    className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                   />
                 )}
                 {valorEnEdicion?.tipo === 'VENTA_PROMOCION' && (
@@ -452,13 +467,13 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                     type="date"
                     value={formularioEdicion.vigenciaHasta}
                     onChange={(event) => setFormularioEdicion({ ...formularioEdicion, vigenciaHasta: event.target.value })}
-                    className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                   />
                 )}
                 <select
                   value={formularioEdicion.estado}
                   onChange={(event) => setFormularioEdicion({ ...formularioEdicion, estado: event.target.value as EstadoValorOperacional })}
-                  className="w-full rounded-lg border border-[#EAF3DE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                 >
                   <option value="ACTIVO">Activa</option>
                   <option value="INACTIVO">Inactiva</option>
@@ -468,14 +483,14 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                     type="button"
                     onClick={() => void onGuardarEdicion()}
                     disabled={guardando}
-                    className="rounded-lg bg-[#639922] px-3 py-1.5 text-[12px] font-bold text-white"
+                    className="rounded-lg bg-[#0284C7] px-3 py-1.5 text-[12px] font-bold text-white"
                   >
                     Guardar
                   </button>
                   <button
                     type="button"
                     onClick={onCancelar}
-                    className="rounded-lg border border-[#EAF3DE] px-3 py-1.5 text-[12px] font-bold text-slate-500"
+                    className="rounded-lg border border-[#E0F2FE] px-3 py-1.5 text-[12px] font-bold text-slate-500"
                   >
                     Cancelar
                   </button>
@@ -491,34 +506,324 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
 
 export function DetalleProducto({
   producto,
+  productoPreview,
   presentaciones,
   nodos,
   tabActiva,
   cargando,
   onTabChange,
-  onVolver,
+  onActualizarProductoSeleccionado,
+  onNavegaAIngresos,
 }: DetalleProductoProps): ReactElement {
+  const { activeOperator } = usePOS()
+  const esAdmin = activeOperator?.codigoRol === 'ADMIN'
+  const [modo, setModo] = useState<ModoDetalle>('lectura')
+  const [tieneHistorial, setTieneHistorial] = useState<boolean>(false)
+  const [verificandoHistorial, setVerificandoHistorial] = useState<boolean>(false)
+  const [guardandoCambios, setGuardandoCambios] = useState<boolean>(false)
+  const [errorAccion, setErrorAccion] = useState<string | null>(null)
+  const [formularioCorreccion, setFormularioCorreccion] = useState<ModificarProductoComercialInput | null>(null)
+
+  useEffect(() => {
+    setModo('lectura')
+    setErrorAccion(null)
+    setFormularioCorreccion(null)
+    if (producto) {
+      setVerificandoHistorial(true)
+      verificarHistorialProducto(producto.id)
+        .then(tiene => setTieneHistorial(tiene))
+        .catch(() => setTieneHistorial(false))
+        .finally(() => setVerificandoHistorial(false))
+    }
+  }, [producto.id])
+
+  const onIniciarCorreccion = (): void => {
+    setFormularioCorreccion({
+      id: producto.id,
+      nombreComercial: producto.nombreComercial,
+      nombreFabricante: producto.nombreFabricante,
+      nombreTitular: producto.nombreTitular,
+      paisOrigen: producto.paisOrigen,
+      registroSanitario: producto.registroSanitario,
+      codigoDIGEMID: producto.codigoDIGEMID,
+    })
+    setModo('corrigiendo')
+    setErrorAccion(null)
+  }
+
+  const onGuardarCorreccion = async (): Promise<void> => {
+    if (!formularioCorreccion) return
+    setGuardandoCambios(true)
+    setErrorAccion(null)
+    try {
+      await modificarProductoComercial(formularioCorreccion)
+      const productoActualizado: ProductoComercial = { ...producto, ...formularioCorreccion }
+      onActualizarProductoSeleccionado(productoActualizado)
+      setModo('lectura')
+      setFormularioCorreccion(null)
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : String(e))
+    } finally {
+      setGuardandoCambios(false)
+    }
+  }
+
+  const onConfirmarDesactivar = async (): Promise<void> => {
+    setGuardandoCambios(true)
+    setErrorAccion(null)
+    try {
+      await desactivarProductoComercial(producto.id)
+      const productoActualizado: ProductoComercial = { ...producto, estado: 'INACTIVO' }
+      onActualizarProductoSeleccionado(productoActualizado)
+      setModo('lectura')
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : String(e))
+    } finally {
+      setGuardandoCambios(false)
+    }
+  }
+
+  const onReactivar = async (): Promise<void> => {
+    setGuardandoCambios(true)
+    setErrorAccion(null)
+    try {
+      await reactivarProductoComercial(producto.id)
+      const productoActualizado: ProductoComercial = { ...producto, estado: 'ACTIVO' }
+      onActualizarProductoSeleccionado(productoActualizado)
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : String(e))
+    } finally {
+      setGuardandoCambios(false)
+    }
+  }
+
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-6 py-5">
-      <button type="button" onClick={onVolver} className="w-fit text-[12px] font-bold text-[#639922]">
-        ← Volver a búsqueda
-      </button>
-      <HeaderProducto producto={producto} />
-      <TabsProducto tabActiva={tabActiva} onTabChange={onTabChange} />
-      {cargando && <p className="text-[13px] font-semibold text-[#639922]">Cargando...</p>}
-      {!cargando && tabActiva === 'detalle' && (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <CampoLectura label="IFA" valor={producto.ifa} />
-          <CampoLectura label="Concentración" valor={producto.concentracion} />
-          <CampoLectura label="Forma farmacéutica" valor={producto.formaFarmaceutica} />
-          <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
-          <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
-          <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
-          <CampoLectura label="Código DIGEMID" valor={producto.codigoDIGEMID} />
+    <section className="flex min-h-0 flex-1 flex-col overflow-auto">
+      {productoPreview !== null && (
+        <div className="mb-4 rounded-2xl border border-[#0284C7]/20 bg-[#E0F2FE]/40 px-4 py-3">
+          <div className="text-[10px] font-bold uppercase text-[#0284C7]">VISTA PREVIA</div>
+          <div className="text-[13px] font-semibold text-slate-700">
+            {[productoPreview.nombreComercial, productoPreview.concentracion, productoPreview.formaFarmaceutica]
+              .filter(Boolean)
+              .join(' · ')}
+          </div>
+          <div className="text-[11px] text-slate-500">{productoPreview.nombreFabricante}</div>
+          <div className="text-[10px] text-slate-400">Presiona Enter para ver el detalle completo</div>
         </div>
       )}
-      {!cargando && tabActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}
-      {!cargando && tabActiva === 'precios' && <PreciosTab nodos={nodos} />}
+
+      <div className="flex flex-col gap-4 px-5 py-4">
+        <header>
+          <h2 className="text-[16px] font-bold text-slate-900">
+            {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
+              .filter(Boolean)
+              .join(' · ')}
+          </h2>
+          <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+          {producto.estado === 'INACTIVO' && (
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
+              INACTIVO
+            </span>
+          )}
+        </header>
+
+        {errorAccion !== null && (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">
+            <span>{errorAccion}</span>
+            <button type="button" onClick={() => setErrorAccion(null)}>X</button>
+          </div>
+        )}
+
+        {modo === 'lectura' && (
+          <div className="flex flex-col gap-3">
+            {producto.estado === 'ACTIVO' ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={onIniciarCorreccion}
+                  disabled={guardandoCambios || verificandoHistorial}
+                  className="rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]"
+                >
+                  CORREGIR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModo('desactivando')}
+                  disabled={guardandoCambios}
+                  className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500"
+                >
+                  DESACTIVAR
+                </button>
+              </div>
+            ) : esAdmin ? (
+              <button
+                type="button"
+                onClick={() => void onReactivar()}
+                disabled={guardandoCambios}
+                className="w-fit rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
+              >
+                REACTIVAR
+              </button>
+            ) : (
+              <p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>
+            )}
+
+            <div className="border-t border-[#E0F2FE] pt-3">
+              <p className="text-[11px] text-slate-400">¿Llegó mercadería de este producto?</p>
+              {producto.estado === 'ACTIVO' && (
+                <button
+                  type="button"
+                  onClick={onNavegaAIngresos}
+                  className="text-[11px] font-bold text-[#0284C7] underline"
+                >
+                  Ir a INGRESOS para registrar un nuevo lote
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {modo === 'corrigiendo' && formularioCorreccion !== null && (
+          <div className="flex flex-col gap-3">
+            <h3 className="text-[12px] font-bold uppercase tracking-wide text-slate-600">CORREGIR DATOS BÁSICOS</h3>
+            {tieneHistorial && (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-600">
+                Este producto tiene movimientos registrados. Los cambios quedarán registrados en el historial.
+              </p>
+            )}
+
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Nombre comercial</span>
+              <input
+                value={formularioCorreccion.nombreComercial}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreComercial: e.target.value } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Fabricante</span>
+              <input
+                value={formularioCorreccion.nombreFabricante}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Titular</span>
+              <input
+                value={formularioCorreccion.nombreTitular}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreTitular: e.target.value } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">País origen</span>
+              <input
+                value={formularioCorreccion.paisOrigen}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, paisOrigen: e.target.value } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Registro sanitario</span>
+              <input
+                value={formularioCorreccion.registroSanitario}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Código DIGEMID</span>
+              <input
+                value={formularioCorreccion.codigoDIGEMID}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              />
+            </label>
+
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA (no editable)</span>
+              <input readOnly value={producto.ifa} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Concentración (no editable)</span>
+              <input readOnly value={producto.concentracion} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Forma farmacéutica (no editable)</span>
+              <input readOnly value={producto.formaFarmaceutica} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Condición venta (no editable)</span>
+              <input readOnly value={producto.condicionVenta} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+            </label>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setModo('lectura')}
+                className="rounded-xl border border-[#E0F2FE] px-4 py-2 text-[12px] font-bold text-slate-500"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="button"
+                onClick={() => void onGuardarCorreccion()}
+                disabled={guardandoCambios}
+                className="rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
+              >
+                GUARDAR CORRECCIÓN
+              </button>
+            </div>
+          </div>
+        )}
+
+        {modo === 'desactivando' && (
+          <div className="flex flex-col gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-4">
+            <p className="text-[13px] font-semibold text-slate-700">
+              Vas a dar de baja «{producto.nombreComercial}». El producto quedará INACTIVO y no aparecerá en
+              búsquedas ni ventas. El historial se conserva.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setModo('lectura')}
+                className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-400"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="button"
+                onClick={() => void onConfirmarDesactivar()}
+                disabled={guardandoCambios}
+                className="rounded-xl bg-red-500 px-4 py-2 text-[12px] font-bold text-white"
+              >
+                CONFIRMAR BAJA
+              </button>
+            </div>
+          </div>
+        )}
+
+        {modo === 'lectura' && productoPreview === null && (
+          <>
+            <TabsProducto tabActiva={tabActiva} onTabChange={onTabChange} />
+            {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
+            {!cargando && tabActiva === 'detalle' && (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <CampoLectura label="IFA" valor={producto.ifa} />
+                <CampoLectura label="Concentración" valor={producto.concentracion} />
+                <CampoLectura label="Forma farmacéutica" valor={producto.formaFarmaceutica} />
+                <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
+                <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
+                <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
+                <CampoLectura label="Código DIGEMID" valor={producto.codigoDIGEMID} />
+              </div>
+            )}
+            {!cargando && tabActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}
+            {!cargando && tabActiva === 'precios' && <PreciosTab nodos={nodos} />}
+          </>
+        )}
+      </div>
     </section>
   )
 }

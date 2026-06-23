@@ -1,5 +1,5 @@
 import { BookOpen, Pill, X } from 'lucide-react'
-import type { ReactElement } from 'react'
+import { useCallback, type ReactElement } from 'react'
 import { BuscadorProducto } from './components/BuscadorProducto'
 import { DetalleProducto } from './components/DetalleProducto'
 import { NuevoProductoStepper } from './components/NuevoProductoStepper'
@@ -7,6 +7,10 @@ import { useCatalogoFarmacia } from './hooks/useCatalogoFarmacia'
 
 export function CatalogoFarmaciaWorkspace(): ReactElement {
   const catalogo = useCatalogoFarmacia()
+  const onNavegaAIngresos = useCallback(() => {
+    // Emitir evento custom que OperationalBar pueda escuchar
+    window.dispatchEvent(new CustomEvent('disateq:navegar', { detail: { destino: 'abastecimiento', subtab: 'ingresos' } }))
+  }, [])
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
@@ -40,6 +44,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             onTerminoChange={catalogo.onTerminoChange}
             onSeleccionar={catalogo.onSeleccionar}
             onLimpiar={catalogo.onLimpiar}
+            onPreview={catalogo.onPreview}
           />
         </div>
       </div>
@@ -70,15 +75,18 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             />
           )}
 
-          {!catalogo.creandoAbierto && catalogo.productoSeleccionado !== null && (
+          {!catalogo.creandoAbierto && (catalogo.productoSeleccionado !== null || catalogo.productoPreview !== null) && (
             <DetalleProducto
-              producto={catalogo.productoSeleccionado}
+              producto={catalogo.productoSeleccionado ?? catalogo.productoPreview!}
+              productoPreview={catalogo.productoPreview}
               presentaciones={catalogo.presentaciones}
               nodos={catalogo.nodos}
               tabActiva={catalogo.tabDetalle}
               cargando={catalogo.cargando}
               onTabChange={catalogo.onTabChange}
               onVolver={catalogo.onVolverBusqueda}
+              onActualizarProductoSeleccionado={catalogo.onActualizarProductoSeleccionado}
+              onNavegaAIngresos={onNavegaAIngresos}
             />
           )}
 

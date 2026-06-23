@@ -11,6 +11,7 @@ interface BuscadorProductoProps {
   onTerminoChange: (t: string) => void
   onSeleccionar: (p: ProductoComercial) => void
   onLimpiar: () => void
+  onPreview: (p: ProductoComercial | null) => void
 }
 
 function textoPrincipal(producto: ProductoComercial): string {
@@ -24,6 +25,7 @@ export function BuscadorProducto({
   onTerminoChange,
   onSeleccionar,
   onLimpiar,
+  onPreview,
 }: BuscadorProductoProps): ReactElement {
   const inputRef = useRef<HTMLInputElement>(null)
   const { activeOperator } = usePOS()
@@ -40,19 +42,31 @@ export function BuscadorProducto({
     if (resultados.length === 0) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setIndiceSeleccionado(i => i + 1 >= resultados.length ? 0 : i + 1)
+      setIndiceSeleccionado(i => {
+        const siguiente = i + 1 >= resultados.length ? 0 : i + 1
+        onPreview(resultados[siguiente] ?? null)
+        return siguiente
+      })
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setIndiceSeleccionado(i => i <= 0 ? resultados.length - 1 : i - 1)
+      setIndiceSeleccionado(i => {
+        const anterior = i <= 0 ? resultados.length - 1 : i - 1
+        onPreview(resultados[anterior] ?? null)
+        return anterior
+      })
     } else if (e.key === 'Enter') {
       e.preventDefault()
       const producto = indiceSeleccionado >= 0 ? resultados[indiceSeleccionado] : resultados[0]
-      if (producto) onSeleccionar(producto)
+      if (producto) {
+        onPreview(null)
+        onSeleccionar(producto)
+      }
     } else if (e.key === 'Escape') {
       e.preventDefault()
+      onPreview(null)
       onLimpiar()
     }
-  }, [resultados, indiceSeleccionado, onSeleccionar, onLimpiar])
+  }, [resultados, indiceSeleccionado, onSeleccionar, onLimpiar, onPreview])
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-3 py-3">
@@ -104,7 +118,7 @@ export function BuscadorProducto({
                 key={producto.id}
                 type="button"
                 ref={estaSeleccionado ? (el => el?.scrollIntoView({ block: 'nearest' })) : null}
-                onClick={() => onSeleccionar(producto)}
+                onClick={() => { onPreview(null); onSeleccionar(producto) }}
                 className={`block w-full border-b border-[#E0F2FE] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E0F2FE]' : 'hover:bg-[#E0F2FE]'}`}
               >
                 <div className="text-[13px] font-semibold text-slate-800">{textoPrincipal(producto)}</div>

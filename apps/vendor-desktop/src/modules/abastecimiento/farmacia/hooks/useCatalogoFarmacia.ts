@@ -25,6 +25,7 @@ interface UseCatalogoFarmaciaResult {
   termino: string
   resultados: ProductoComercial[]
   productoSeleccionado: ProductoComercial | null
+  productoPreview: ProductoComercial | null
   tabDetalle: TabDetalleFarmacia
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
@@ -36,6 +37,8 @@ interface UseCatalogoFarmaciaResult {
   onTerminoChange(t: string): void
   onLimpiar(): void
   onSeleccionar(p: ProductoComercial): void
+  onPreview(p: ProductoComercial | null): void
+  onActualizarProductoSeleccionado(p: ProductoComercial): void
   onVolverBusqueda(): void
   onNuevo(): void
   onCerrarCreacion(): void
@@ -61,6 +64,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   const [termino, setTermino] = useState<string>('')
   const [resultados, setResultados] = useState<ProductoComercial[]>([])
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoComercial | null>(null)
+  const [productoPreview, setProductoPreview] = useState<ProductoComercial | null>(null)
   const [tabDetalle, setTabDetalle] = useState<TabDetalleFarmacia>('detalle')
   const [presentaciones, setPresentaciones] = useState<PresentacionComercial[]>([])
   const [nodos, setNodos] = useState<NodoFraccionamiento[]>([])
@@ -125,6 +129,15 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
       })
       .catch((error: unknown) => setErrorLocal(resolverMensajeError(error)))
       .finally(() => setBuscando(false))
+  }, [])
+
+  const onPreview = useCallback((p: ProductoComercial | null): void => {
+    setProductoPreview(p)
+  }, [])
+
+  const onActualizarProductoSeleccionado = useCallback((p: ProductoComercial): void => {
+    setProductoSeleccionado(p)
+    setProductoPreview(null)
   }, [])
 
   const onVolverBusqueda = useCallback((): void => {
@@ -195,6 +208,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     termino,
     resultados,
     productoSeleccionado,
+    productoPreview,
     tabDetalle,
     presentaciones,
     nodos,
@@ -206,6 +220,8 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     onTerminoChange,
     onLimpiar,
     onSeleccionar,
+    onPreview,
+    onActualizarProductoSeleccionado,
     onVolverBusqueda,
     onNuevo,
     onCerrarCreacion,
