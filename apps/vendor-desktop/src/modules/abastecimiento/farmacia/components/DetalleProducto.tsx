@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
 import type {
   ModificarProductoComercialInput,
   NodoFraccionamiento,
@@ -29,6 +29,7 @@ interface DetalleProductoProps {
   onVolver: () => void
   onActualizarProductoSeleccionado: (p: ProductoComercial) => void
   onNavegaAIngresos: () => void
+  onLimpiar: () => void
 }
 
 type ModoDetalle = 'lectura' | 'corrigiendo' | 'desactivando'
@@ -63,6 +64,16 @@ interface ProductoComercialConCategoria extends ProductoComercial {
 function categoriaProducto(producto: ProductoComercial): string {
   const productoConCategoria = producto as ProductoComercialConCategoria
   return productoConCategoria.categoriaFarmacia ?? 'SIN CATEGORIA'
+}
+
+function formatearFecha(iso: string): string {
+  const d = new Date(iso)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const hh = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`
 }
 
 function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
@@ -514,9 +525,11 @@ export function DetalleProducto({
   onTabChange,
   onActualizarProductoSeleccionado,
   onNavegaAIngresos,
+  onLimpiar,
 }: DetalleProductoProps): ReactElement {
   const { activeOperator } = usePOS()
   const esAdmin = activeOperator?.codigoRol === 'ADMIN'
+  const corregirRef = useRef<HTMLButtonElement>(null)
   const [modo, setModo] = useState<ModoDetalle>('lectura')
   const [tieneHistorial, setTieneHistorial] = useState<boolean>(false)
   const [verificandoHistorial, setVerificandoHistorial] = useState<boolean>(false)
@@ -536,6 +549,29 @@ export function DetalleProducto({
         .finally(() => setVerificandoHistorial(false))
     }
   }, [producto.id])
+
+  useEffect(() => {
+    if (modo === 'lectura' && productoPreview === null && producto) {
+      corregirRef.current?.focus()
+    }
+  }, [producto.id, modo, productoPreview])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      if (modo === 'corrigiendo') {
+        setModo('lectura')
+        setFormularioCorreccion(null)
+      } else if (modo === 'desactivando') {
+        setModo('lectura')
+      } else if (modo === 'lectura') {
+        onLimpiar()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [modo, onLimpiar])
 
   const onIniciarCorreccion = (): void => {
     setFormularioCorreccion({
@@ -601,7 +637,6 @@ export function DetalleProducto({
     <section className="flex min-h-0 flex-1 flex-col overflow-auto">
       {productoPreview !== null && (
         <div className="mb-4 rounded-2xl border border-[#0284C7]/20 bg-[#E0F2FE]/40 px-4 py-3">
-          <div className="text-[10px] font-bold uppercase text-[#0284C7]">VISTA PREVIA</div>
           <div className="text-[13px] font-semibold text-slate-700">
             {[productoPreview.nombreComercial, productoPreview.concentracion, productoPreview.formaFarmaceutica]
               .filter(Boolean)
@@ -639,6 +674,7 @@ export function DetalleProducto({
             {producto.estado === 'ACTIVO' ? (
               <div className="flex gap-2">
                 <button
+                  ref={corregirRef}
                   type="button"
                   onClick={onIniciarCorreccion}
                   disabled={guardandoCambios || verificandoHistorial}
@@ -817,6 +853,8 @@ export function DetalleProducto({
                 <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
                 <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
                 <CampoLectura label="Código DIGEMID" valor={producto.codigoDIGEMID} />
+                <CampoLectura label="Creado" valor={formatearFecha(producto.creadoEn)} />
+                <CampoLectura label="Última modificación" valor={formatearFecha(producto.modificadoEn)} />
               </div>
             )}
             {!cargando && tabActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}

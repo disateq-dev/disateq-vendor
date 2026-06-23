@@ -70,6 +70,14 @@ export function BuscadorProducto({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-3 py-3">
+      <div className="mb-2 flex items-baseline gap-2">
+        <span className="text-[12px] font-bold uppercase tracking-wide text-slate-700">
+          Buscar producto
+        </span>
+        <span className="text-[10px] text-slate-400">
+          Escribe al menos 2 caracteres para ver resultados
+        </span>
+      </div>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#0284C7]" />
         <input
@@ -94,41 +102,42 @@ export function BuscadorProducto({
         )}
       </div>
 
-      {termino.trim().length < 2 && (
-        <p className="mt-1.5 text-[11px] text-slate-400">Escribe al menos 2 caracteres para ver resultados</p>
-      )}
-
       {cargando && termino.trim().length >= 2 && (
         <p className="mt-3 text-[11px] font-semibold text-[#0284C7]">Buscando...</p>
       )}
 
       {!cargando && termino.trim().length >= 2 && resultados.length > 0 && (
-        <div className="mt-2 overflow-hidden rounded-xl border border-[#E0F2FE] bg-white">
-          {resultados.map((producto, idx) => {
-            const estaSeleccionado = idx === indiceSeleccionado
-            const codigoReferencia = producto.codigoDIGEMID ?? `${producto.id.slice(0, 8)}...`
-            const textoSecundario = esAdmin
-              ? `${codigoReferencia} · ${producto.nombreFabricante}`
-              : producto.nombreFabricante
+        <>
+          <p className="mt-0.5 mb-1 text-[11px] text-slate-400">
+            ↑ ↓ para navegar · Enter para ver detalle
+          </p>
+          <div className="mt-2 overflow-hidden rounded-xl border border-[#E0F2FE] bg-white">
+            {resultados.map((producto, idx) => {
+              const estaSeleccionado = idx === indiceSeleccionado
+              const codigoReferencia = producto.codigoDIGEMID ?? `${producto.id.slice(0, 8)}...`
+              const textoSecundario = esAdmin
+                ? `${codigoReferencia} · ${producto.nombreFabricante}`
+                : producto.nombreFabricante
 
-            const textoLote = producto.requiereLote ? 'Lote' : 'Sin lote'
+              const textoLote = producto.requiereLote ? 'Lote' : 'Sin lote'
 
-            return (
-              <button
-                key={producto.id}
-                type="button"
-                ref={estaSeleccionado ? (el => el?.scrollIntoView({ block: 'nearest' })) : null}
-                onClick={() => { onPreview(null); onSeleccionar(producto) }}
-                className={`block w-full border-b border-[#E0F2FE] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E0F2FE]' : 'hover:bg-[#E0F2FE]'}`}
-              >
-                <div className="text-[13px] font-semibold text-slate-800">{textoPrincipal(producto)}</div>
-                <div className="mt-0.5 text-[11px] text-slate-500">
-                  {textoSecundario} · {textoLote}
-                </div>
-              </button>
-            )
-          })}
-        </div>
+              return (
+                <button
+                  key={producto.id}
+                  type="button"
+                  ref={estaSeleccionado ? (el => el?.scrollIntoView({ block: 'nearest' })) : null}
+                  onClick={() => { onPreview(null); onSeleccionar(producto); inputRef.current?.focus() }}
+                  className={`block w-full border-b border-[#E0F2FE] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E0F2FE]' : 'hover:bg-[#E0F2FE]'}`}
+                >
+                  <div className="text-[13px] font-semibold text-slate-800">{textoPrincipal(producto)}</div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">
+                    {textoSecundario} · {textoLote}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </>
       )}
     </section>
   )

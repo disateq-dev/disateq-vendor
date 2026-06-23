@@ -87,6 +87,9 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   }, [])
 
   const onTerminoChange = useCallback((t: string): void => {
+    setProductoSeleccionado(null)
+    setPresentaciones([])
+    setNodos([])
     setTermino(t)
     setErrorLocal(null)
     if (timerRef.current !== null) window.clearTimeout(timerRef.current)
