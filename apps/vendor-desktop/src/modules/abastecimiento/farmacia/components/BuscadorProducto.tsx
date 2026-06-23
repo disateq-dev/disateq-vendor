@@ -1,11 +1,12 @@
 import { Search, X } from 'lucide-react'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import type { ReactElement } from 'react'
 import type { ProductoComercial } from '../../../../domains/farmacia/types'
 import { usePOS } from '../../../../context/POSContext'
 
 interface BuscadorProductoProps {
   termino: string
+  indiceSeleccionado: number
   resultados: ProductoComercial[]
   cargando: boolean
   onTerminoChange: (t: string) => void
@@ -22,6 +23,7 @@ function textoPrincipal(producto: ProductoComercial): string {
 
 export function BuscadorProducto({
   termino,
+  indiceSeleccionado,
   resultados,
   cargando,
   onTerminoChange,
@@ -33,43 +35,18 @@ export function BuscadorProducto({
 }: BuscadorProductoProps): ReactElement {
   const { activeOperator } = usePOS()
   const esAdmin = activeOperator?.codigoRol === 'ADMIN'
-  const [indiceSeleccionado, setIndiceSeleccionado] = useState<number>(-1)
 
   useEffect(() => {
     if (termino === '') inputRef.current?.focus()
   }, [termino])
 
-  useEffect(() => { setIndiceSeleccionado(-1) }, [termino])
-
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (resultados.length === 0) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setIndiceSeleccionado(i => {
-        const siguiente = i + 1 >= resultados.length ? 0 : i + 1
-        onPreview(resultados[siguiente] ?? null)
-        return siguiente
-      })
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setIndiceSeleccionado(i => {
-        const anterior = i <= 0 ? resultados.length - 1 : i - 1
-        onPreview(resultados[anterior] ?? null)
-        return anterior
-      })
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      const producto = indiceSeleccionado >= 0 ? resultados[indiceSeleccionado] : resultados[0]
-      if (producto) {
-        onPreview(null)
-        onSeleccionar(producto)
-      }
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
       e.preventDefault()
       onPreview(null)
       onLimpiar()
     }
-  }, [resultados, indiceSeleccionado, onSeleccionar, onLimpiar, onPreview])
+  }, [onLimpiar, onPreview])
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-3 py-3">

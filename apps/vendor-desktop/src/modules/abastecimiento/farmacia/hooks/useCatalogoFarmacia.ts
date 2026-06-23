@@ -24,6 +24,7 @@ interface UseCatalogoFarmaciaResult {
   inputRef: RefObject<HTMLInputElement | null>
   panelIzquierdo: PanelIzquierdoCatalogo
   termino: string
+  indiceSeleccionado: number
   resultados: ProductoComercial[]
   productoSeleccionado: ProductoComercial | null
   productoPreview: ProductoComercial | null
@@ -40,6 +41,7 @@ interface UseCatalogoFarmaciaResult {
   onSeleccionar(p: ProductoComercial): void
   onPreview(p: ProductoComercial | null): void
   onNavegaTeclado(key: string): void
+  onResetIndice(): void
   onActualizarProductoSeleccionado(p: ProductoComercial): void
   onVolverBusqueda(): void
   onNuevo(): void
@@ -64,6 +66,7 @@ function resolverMensajeError(error: unknown): string {
 export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   const [panelIzquierdo, setPanelIzquierdo] = useState<PanelIzquierdoCatalogo>('busqueda')
   const [termino, setTermino] = useState<string>('')
+  const [indiceSeleccionado, setIndiceSeleccionado] = useState<number>(-1)
   const [resultados, setResultados] = useState<ProductoComercial[]>([])
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoComercial | null>(null)
   const [productoPreview, setProductoPreview] = useState<ProductoComercial | null>(null)
@@ -88,6 +91,10 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    setIndiceSeleccionado(-1)
+  }, [termino])
 
   const onTerminoChange = useCallback((t: string): void => {
     setProductoSeleccionado(null)
@@ -144,12 +151,28 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   }, [])
 
   const onNavegaTeclado = useCallback((key: string): void => {
-    inputRef.current?.focus()
-    inputRef.current?.dispatchEvent(new KeyboardEvent('keydown', {
-      key,
-      bubbles: true,
-      cancelable: true,
-    }))
+    if (key === 'ArrowDown') {
+      const siguiente = indiceSeleccionado + 1 >= resultados.length ? 0 : indiceSeleccionado + 1
+      setIndiceSeleccionado(siguiente)
+      onPreview(resultados[siguiente] ?? null)
+    } else if (key === 'ArrowUp') {
+      const anterior = indiceSeleccionado - 1 < 0 ? resultados.length - 1 : indiceSeleccionado - 1
+      setIndiceSeleccionado(anterior)
+      onPreview(resultados[anterior] ?? null)
+    } else if (key === 'Enter') {
+      const producto = indiceSeleccionado >= 0 ? resultados[indiceSeleccionado] : resultados[0]
+      if (producto) {
+        onPreview(null)
+        onSeleccionar(producto)
+      }
+    } else if (key === 'Escape') {
+      onPreview(null)
+      onLimpiar()
+    }
+  }, [indiceSeleccionado, resultados, onPreview, onSeleccionar, onLimpiar])
+
+  const onResetIndice = useCallback((): void => {
+    setIndiceSeleccionado(-1)
   }, [])
 
   const onActualizarProductoSeleccionado = useCallback((p: ProductoComercial): void => {
@@ -224,6 +247,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     inputRef,
     panelIzquierdo,
     termino,
+    indiceSeleccionado,
     resultados,
     productoSeleccionado,
     productoPreview,
@@ -240,6 +264,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     onSeleccionar,
     onPreview,
     onNavegaTeclado,
+    onResetIndice,
     onActualizarProductoSeleccionado,
     onVolverBusqueda,
     onNuevo,

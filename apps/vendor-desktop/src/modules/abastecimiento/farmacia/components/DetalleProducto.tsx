@@ -1,4 +1,3 @@
-import { X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
 import type {
   EstadoRegistroSanitario,
@@ -665,9 +664,9 @@ export function DetalleProducto({
                   <button
                     type="button"
                     onClick={onLimpiar}
-                    className="px-2 py-2 text-slate-400 hover:text-slate-600"
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-[12px] font-bold text-slate-500 hover:text-slate-700"
                   >
-                    <X size={13} strokeWidth={2} />
+                    LIMPIAR
                   </button>
                 </div>
               )}

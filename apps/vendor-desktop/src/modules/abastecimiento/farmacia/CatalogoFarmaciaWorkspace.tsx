@@ -56,6 +56,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
         <div className="flex-1 overflow-auto">
           <BuscadorProducto
             termino={catalogo.termino}
+            indiceSeleccionado={catalogo.indiceSeleccionado}
             resultados={catalogo.resultados}
             cargando={catalogo.cargando}
             onTerminoChange={catalogo.onTerminoChange}
