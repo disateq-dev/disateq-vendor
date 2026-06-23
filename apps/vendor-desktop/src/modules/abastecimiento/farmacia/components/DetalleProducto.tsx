@@ -836,7 +836,7 @@ export function DetalleProducto({
             <TabsProducto tabActiva={tabActiva} onTabChange={onTabChange} />
             {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
             {!cargando && tabActiva === 'detalle' && (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 <div>
                   <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     IDENTIDAD DEL PRODUCTO
@@ -913,15 +913,6 @@ export function DetalleProducto({
                   )}
                 </div>
 
-                <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    TRAZABILIDAD
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <CampoLectura label="Creado" valor={formatearFecha(producto.creadoEn)} />
-                    <CampoLectura label="Última modificación" valor={formatearFecha(producto.modificadoEn)} />
-                  </div>
-                </div>
               </div>
             )}
             {!cargando && tabActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}
