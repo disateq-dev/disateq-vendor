@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
 import type {
+  EstadoRegistroSanitario,
   ModificarProductoComercialInput,
   NodoFraccionamiento,
   PresentacionComercial,
@@ -566,6 +567,7 @@ export function DetalleProducto({
       nombreTitular: producto.nombreTitular,
       paisOrigen: producto.paisOrigen,
       registroSanitario: producto.registroSanitario,
+      estadoRegistroSanitario: producto.estadoRegistroSanitario,
       codigoDIGEMID: producto.codigoDIGEMID,
     })
     setModo('corrigiendo')
@@ -629,6 +631,9 @@ export function DetalleProducto({
                 .join(' · ')}
             </h2>
             <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+            <p className="text-[10px] text-slate-400">
+              Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
+            </p>
             {producto.estado === 'INACTIVO' && (
               <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
                 INACTIVO
@@ -664,7 +669,7 @@ export function DetalleProducto({
                   onClick={onNavegaAIngresos}
                   className="text-[11px] font-bold text-[#0284C7] underline"
                 >
-                  Ir a INGRESOS para registrar un nuevo lote
+                  Ir a INGRESOS para registrar un nuevo lote →
                 </button>
               )}
               {producto.estado === 'INACTIVO' && (
@@ -740,6 +745,19 @@ export function DetalleProducto({
                 onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
                 className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
               />
+            </label>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estado del registro</span>
+              <select
+                value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: e.target.value as EstadoRegistroSanitario } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              >
+                <option value="VIGENTE">Vigente</option>
+                <option value="SUSPENDIDO">Suspendido</option>
+                <option value="CANCELADO">Cancelado</option>
+                <option value="VENCIDO">Vencido</option>
+              </select>
             </label>
             <label>
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Código DIGEMID</span>
@@ -853,9 +871,21 @@ export function DetalleProducto({
                   </h3>
                   <div className="grid grid-cols-4 gap-3">
                     <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
-                    <CampoLectura label="Titular" valor={producto.nombreTitular} />
-                    <CampoLectura label="País de origen" valor={producto.paisOrigen} />
                     <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
+                    <CampoLectura
+                      label="Estado registro"
+                      valor={
+                        producto.estadoRegistroSanitario === 'VIGENTE'
+                          ? 'Vigente'
+                          : producto.estadoRegistroSanitario === 'SUSPENDIDO'
+                            ? 'Suspendido'
+                            : producto.estadoRegistroSanitario === 'CANCELADO'
+                              ? 'Cancelado'
+                              : producto.estadoRegistroSanitario === 'VENCIDO'
+                                ? 'Vencido'
+                                : producto.estadoRegistroSanitario
+                      }
+                    />
                     {esAdmin && <CampoLectura label="Código DIGEMID" valor={producto.codigoDIGEMID} />}
                   </div>
                 </div>

@@ -24,6 +24,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v2_lote_fecha_opcional(db).await?;
     migrar_v3_tipo_valor_operacional(db).await?;
     migrar_v4_stock_minimo_presentacion(db).await?;
+    migrar_v5_estado_registro_sanitario(db).await?;
 
     Ok(())
 }
@@ -252,6 +253,55 @@ async fn migrar_v4_stock_minimo_presentacion(db: &sqlx::SqlitePool) -> Result<()
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (4)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v5_estado_registro_sanitario(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_producto_comercial = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'producto_comercial'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_producto_comercial == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 5 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let existe_estado_registro_sanitario = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('producto_comercial') WHERE name = 'estado_registro_sanitario'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_estado_registro_sanitario == 0 {
+        sqlx::query("ALTER TABLE producto_comercial ADD COLUMN estado_registro_sanitario TEXT NOT NULL DEFAULT 'VIGENTE'")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (5)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

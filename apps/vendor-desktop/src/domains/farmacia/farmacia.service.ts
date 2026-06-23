@@ -12,6 +12,7 @@ import type {
   CrearProveedorInput,
   CrearServicioFarmaciaInput,
   DatosRuc,
+  EstadoRegistroSanitario,
   Lote,
   NodoFraccionamiento,
   PresentacionComercial,
@@ -66,6 +67,7 @@ interface ProductoComercialRespuesta {
   nombre_titular?: string
   pais_origen: string
   registro_sanitario?: string
+  estado_registro_sanitario: string
   codigo_digemid?: string
   condicion_venta: string
   requiere_lote: boolean
@@ -202,6 +204,7 @@ function traducirProductoComercial(r: ProductoComercialRespuesta): ProductoComer
     nombreTitular: r.nombre_titular,
     paisOrigen: r.pais_origen,
     registroSanitario: r.registro_sanitario,
+    estadoRegistroSanitario: r.estado_registro_sanitario as EstadoRegistroSanitario,
     codigoDIGEMID: r.codigo_digemid,
     condicionVenta: r.condicion_venta as ProductoComercial['condicionVenta'],
     requiereLote: r.requiere_lote,
@@ -624,6 +627,7 @@ export async function modificarProductoComercial(input: ModificarProductoComerci
     nombreTitular: input.nombreTitular ?? null,
     paisOrigen: input.paisOrigen,
     registroSanitario: input.registroSanitario ?? null,
+    estadoRegistroSanitario: input.estadoRegistroSanitario ?? null,
     codigoDigemid: input.codigoDIGEMID ?? null,
   })
 }

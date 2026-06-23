@@ -71,6 +71,8 @@ export interface ProductoGenerico {
   creadoEn: string
 }
 
+export type EstadoRegistroSanitario = 'VIGENTE' | 'SUSPENDIDO' | 'CANCELADO' | 'VENCIDO'
+
 export interface ProductoComercial {
   id: string
   productoGenericoId: string
@@ -79,6 +81,7 @@ export interface ProductoComercial {
   nombreTitular?: string
   paisOrigen: string
   registroSanitario?: string
+  estadoRegistroSanitario: EstadoRegistroSanitario
   codigoDIGEMID?: string
   condicionVenta: CondicionVenta
   requiereLote: boolean
@@ -248,6 +251,7 @@ export interface ModificarProductoComercialInput {
   nombreTitular?: string
   paisOrigen: string
   registroSanitario?: string
+  estadoRegistroSanitario?: EstadoRegistroSanitario
   codigoDIGEMID?: string
 }
 
