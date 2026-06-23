@@ -1,5 +1,5 @@
 import { BookOpen, Pill, X } from 'lucide-react'
-import { useCallback, type ReactElement } from 'react'
+import { useCallback, useEffect, type ReactElement } from 'react'
 import { BuscadorProducto } from './components/BuscadorProducto'
 import { DetalleProducto } from './components/DetalleProducto'
 import { NuevoProductoStepper } from './components/NuevoProductoStepper'
@@ -11,6 +11,23 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
     // Emitir evento custom que OperationalBar pueda escuchar
     window.dispatchEvent(new CustomEvent('disateq:navegar', { detail: { destino: 'abastecimiento', subtab: 'ingresos' } }))
   }, [])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (catalogo.creandoAbierto) return
+      if (event.key === 'Escape') {
+        catalogo.onLimpiar()
+      } else if (
+        (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter')
+        && event.target !== catalogo.inputRef.current
+      ) {
+        catalogo.onNavegaTeclado(event.key)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [catalogo.onLimpiar, catalogo.onNavegaTeclado, catalogo.creandoAbierto])
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
@@ -45,6 +62,8 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             onSeleccionar={catalogo.onSeleccionar}
             onLimpiar={catalogo.onLimpiar}
             onPreview={catalogo.onPreview}
+            inputRef={catalogo.inputRef}
+            onNavegaTeclado={catalogo.onNavegaTeclado}
           />
         </div>
       </div>
@@ -78,7 +97,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
           {!catalogo.creandoAbierto && (catalogo.productoSeleccionado !== null || catalogo.productoPreview !== null) && (
             <DetalleProducto
               producto={catalogo.productoSeleccionado ?? catalogo.productoPreview!}
-              productoPreview={catalogo.productoPreview}
+              productoPreview={null}
               presentaciones={catalogo.presentaciones}
               nodos={catalogo.nodos}
               tabActiva={catalogo.tabDetalle}

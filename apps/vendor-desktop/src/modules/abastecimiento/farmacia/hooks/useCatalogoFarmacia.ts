@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import {
   crearNodo,
   crearPresentacion,
@@ -21,6 +21,7 @@ export type PanelIzquierdoCatalogo = 'busqueda' | 'detalle'
 export type TabDetalleFarmacia = 'detalle' | 'presentaciones' | 'precios'
 
 interface UseCatalogoFarmaciaResult {
+  inputRef: RefObject<HTMLInputElement | null>
   panelIzquierdo: PanelIzquierdoCatalogo
   termino: string
   resultados: ProductoComercial[]
@@ -38,6 +39,7 @@ interface UseCatalogoFarmaciaResult {
   onLimpiar(): void
   onSeleccionar(p: ProductoComercial): void
   onPreview(p: ProductoComercial | null): void
+  onNavegaTeclado(key: string): void
   onActualizarProductoSeleccionado(p: ProductoComercial): void
   onVolverBusqueda(): void
   onNuevo(): void
@@ -73,6 +75,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   const [buscando, setBuscando] = useState<boolean>(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const sinResultados = termino.trim().length >= 2 && !buscando && resultados.length === 0
+  const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<number | null>(null)
 
   const cargandoStore = useFarmaciaStore((state) => state.cargando)
@@ -109,6 +112,8 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   }, [])
 
   const onLimpiar = useCallback((): void => {
+    setProductoSeleccionado(null)
+    setProductoPreview(null)
     setTermino('')
     setResultados([])
     setBuscando(false)
@@ -136,6 +141,15 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
 
   const onPreview = useCallback((p: ProductoComercial | null): void => {
     setProductoPreview(p)
+  }, [])
+
+  const onNavegaTeclado = useCallback((key: string): void => {
+    inputRef.current?.focus()
+    inputRef.current?.dispatchEvent(new KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+    }))
   }, [])
 
   const onActualizarProductoSeleccionado = useCallback((p: ProductoComercial): void => {
@@ -207,6 +221,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   }, [limpiarError])
 
   return {
+    inputRef,
     panelIzquierdo,
     termino,
     resultados,
@@ -224,6 +239,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     onLimpiar,
     onSeleccionar,
     onPreview,
+    onNavegaTeclado,
     onActualizarProductoSeleccionado,
     onVolverBusqueda,
     onNuevo,

@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react'
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { ReactElement } from 'react'
 import type { ProductoComercial } from '../../../../domains/farmacia/types'
 import { usePOS } from '../../../../context/POSContext'
@@ -12,6 +12,8 @@ interface BuscadorProductoProps {
   onSeleccionar: (p: ProductoComercial) => void
   onLimpiar: () => void
   onPreview: (p: ProductoComercial | null) => void
+  inputRef: React.RefObject<HTMLInputElement | null>
+  onNavegaTeclado: (key: string) => void
 }
 
 function textoPrincipal(producto: ProductoComercial): string {
@@ -26,15 +28,16 @@ export function BuscadorProducto({
   onSeleccionar,
   onLimpiar,
   onPreview,
+  inputRef,
+  onNavegaTeclado,
 }: BuscadorProductoProps): ReactElement {
-  const inputRef = useRef<HTMLInputElement>(null)
   const { activeOperator } = usePOS()
   const esAdmin = activeOperator?.codigoRol === 'ADMIN'
   const [indiceSeleccionado, setIndiceSeleccionado] = useState<number>(-1)
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    if (termino === '') inputRef.current?.focus()
+  }, [termino])
 
   useEffect(() => { setIndiceSeleccionado(-1) }, [termino])
 
@@ -112,7 +115,7 @@ export function BuscadorProducto({
 
       {!cargando && termino.trim().length >= 2 && resultados.length > 0 && (
         <>
-          <p className="mt-0.5 mb-1 text-[11px] text-slate-400">
+          <p className="mt-2 mb-1 text-[11px] text-slate-400">
             ↑ ↓ para navegar · Enter para ver detalle
           </p>
           <div className="mt-2 overflow-hidden rounded-xl border border-[#E0F2FE] bg-white">
