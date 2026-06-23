@@ -70,14 +70,6 @@ export function BuscadorProducto({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-3 py-3">
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="text-[12px] font-bold uppercase tracking-wide text-slate-700">
-          Buscar producto
-        </span>
-        <span className="text-[10px] text-slate-400">
-          Escribe al menos 2 caracteres para ver resultados
-        </span>
-      </div>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#0284C7]" />
         <input
@@ -85,7 +77,7 @@ export function BuscadorProducto({
           value={termino}
           onChange={(e) => onTerminoChange(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Código, nombre, principio activo, fabricante o cód. barras..."
+          placeholder="Buscar producto..."
           className="h-[38px] w-full rounded-xl border border-[#E0F2FE] bg-white pl-9 pr-8 text-[13px] font-semibold text-slate-800 outline-none transition focus:border-[#0284C7] focus:ring-2 focus:ring-[#E0F2FE] placeholder:text-[#b8c4cf]"
         />
         {termino.length > 0 && (
@@ -101,6 +93,18 @@ export function BuscadorProducto({
           </button>
         )}
       </div>
+
+      {termino.trim().length === 0 && (
+        <div className="flex flex-col items-center justify-center py-14">
+          <Search size={28} className="text-[#0284C7]/30" />
+          <p className="mt-3 text-center text-[12px] text-slate-400">
+            Código, nombre, principio activo, laboratorio o fabricante, código de barras
+          </p>
+          <p className="mt-1 text-center text-[10px] text-slate-300">
+            Escribe al menos 2 caracteres para ver resultados
+          </p>
+        </div>
+      )}
 
       {cargando && termino.trim().length >= 2 && (
         <p className="mt-3 text-[11px] font-semibold text-[#0284C7]">Buscando...</p>

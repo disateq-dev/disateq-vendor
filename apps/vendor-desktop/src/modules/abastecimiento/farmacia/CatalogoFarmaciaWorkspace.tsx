@@ -112,8 +112,9 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
           )}
 
           {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && !catalogo.sinResultados && (
-            <div className="flex flex-col items-center justify-center gap-1 p-6">
-              <p className="text-[12px] text-slate-400">
+            <div className="flex flex-col items-center justify-center pb-14 pt-[106px]">
+              <BookOpen size={32} className="text-[#0284C7]/30" />
+              <p className="mt-3 text-center text-[12px] text-slate-400">
                 Selecciona un producto para ver su detalle
               </p>
             </div>
