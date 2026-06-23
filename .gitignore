@@ -86,3 +86,4 @@ _playwright-verify/
 verify-*.mjs
 verify-*.png
 verify-*.txt
+seed_*.sql

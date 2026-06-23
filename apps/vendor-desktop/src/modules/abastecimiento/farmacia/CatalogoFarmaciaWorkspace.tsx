@@ -19,17 +19,6 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             </span>
           </div>
           <div className="flex min-w-0 items-center gap-2">
-            {catalogo.termino.trim().length >= 2 &&
-              catalogo.resultados.length > 0 &&
-              !catalogo.creandoAbierto && (
-                <button
-                  type="button"
-                  onClick={catalogo.onNuevo}
-                  className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[11px] font-bold text-[#0284C7]"
-                >
-                  + NUEVO
-                </button>
-              )}
             {catalogo.error !== null && (
               <button
                 type="button"

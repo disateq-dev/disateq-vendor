@@ -13,10 +13,6 @@ interface BuscadorProductoProps {
   onLimpiar: () => void
 }
 
-function categoriaProducto(producto: ProductoComercial): string {
-  return producto.categoriaFarmacia ?? 'SIN CATEGORIA'
-}
-
 function textoPrincipal(producto: ProductoComercial): string {
   return [producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')
 }
@@ -101,6 +97,8 @@ export function BuscadorProducto({
               ? `${codigoReferencia} · ${producto.nombreFabricante}`
               : producto.nombreFabricante
 
+            const textoLote = producto.requiereLote ? 'Lote' : 'Sin lote'
+
             return (
               <button
                 key={producto.id}
@@ -110,24 +108,8 @@ export function BuscadorProducto({
                 className={`block w-full border-b border-[#E0F2FE] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E0F2FE]' : 'hover:bg-[#E0F2FE]'}`}
               >
                 <div className="text-[13px] font-semibold text-slate-800">{textoPrincipal(producto)}</div>
-                <div className="mt-0.5 text-[11px] text-slate-500">{textoSecundario}</div>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <span className="rounded-full bg-[#E0F2FE] px-2 py-0.5 text-[10px] font-bold uppercase text-[#0284C7]">
-                    {producto.condicionVenta}
-                  </span>
-                  <span className="rounded-full bg-[#E0F2FE] px-2 py-0.5 text-[10px] font-bold uppercase text-[#0284C7]">
-                    {categoriaProducto(producto)}
-                  </span>
-                  {producto.requiereLote && (
-                    <span className="rounded-full bg-[#E0F2FE] px-2 py-0.5 text-[10px] font-bold uppercase text-[#0284C7]">
-                      Lote
-                    </span>
-                  )}
-                  {producto.requiereCadenaFrio && (
-                    <span className="rounded-full bg-[#E0F2FE] px-2 py-0.5 text-[10px] font-bold uppercase text-[#0284C7]">
-                      Cadena de frío
-                    </span>
-                  )}
+                <div className="mt-0.5 text-[11px] text-slate-500">
+                  {textoSecundario} · {textoLote}
                 </div>
               </button>
             )
