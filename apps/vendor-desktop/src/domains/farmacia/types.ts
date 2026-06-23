@@ -241,6 +241,16 @@ export interface CrearProductoComercialInput {
   requiereCadenaFrio: boolean
 }
 
+export interface ModificarProductoComercialInput {
+  id: string
+  nombreComercial: string
+  nombreFabricante: string
+  nombreTitular?: string
+  paisOrigen: string
+  registroSanitario?: string
+  codigoDIGEMID?: string
+}
+
 export interface CrearPresentacionInput {
   productoComercialId: string
   descripcion: string

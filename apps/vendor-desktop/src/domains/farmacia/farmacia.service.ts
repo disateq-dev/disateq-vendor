@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import type {
   AsignacionLote,
   CrearValorOperacionalInput,
+  ModificarProductoComercialInput,
   ModificarProveedorInput,
   ModificarValorOperacionalInput,
   CrearNodoInput,
@@ -609,4 +610,24 @@ export async function obtenerInventarioFarmacia(): Promise<ResumenInventarioFarm
 
 export async function modificarStockMinimo(presentacionId: string, stockMinimo: number): Promise<void> {
   return invoke<void>('modificar_stock_minimo', { presentacionId, stockMinimo })
+}
+
+export async function reactivarProductoComercial(id: string): Promise<void> {
+  await invoke('reactivar_producto_comercial', { id })
+}
+
+export async function modificarProductoComercial(input: ModificarProductoComercialInput): Promise<void> {
+  await invoke('modificar_producto_comercial', {
+    id: input.id,
+    nombreComercial: input.nombreComercial,
+    nombreFabricante: input.nombreFabricante,
+    nombreTitular: input.nombreTitular ?? null,
+    paisOrigen: input.paisOrigen,
+    registroSanitario: input.registroSanitario ?? null,
+    codigoDigemid: input.codigoDIGEMID ?? null,
+  })
+}
+
+export async function verificarHistorialProducto(productoComercialId: string): Promise<boolean> {
+  return invoke<boolean>('verificar_historial_producto', { productoComercialId })
 }

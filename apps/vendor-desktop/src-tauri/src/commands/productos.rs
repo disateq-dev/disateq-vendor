@@ -204,3 +204,83 @@ pub async fn obtener_productos_comerciales(
         })
         .collect()
 }
+
+#[tauri::command]
+pub async fn reactivar_producto_comercial(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    sqlx::query("UPDATE producto_comercial SET estado = 'ACTIVO', modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn modificar_producto_comercial(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+    nombre_comercial: String,
+    nombre_fabricante: String,
+    nombre_titular: Option<String>,
+    pais_origen: String,
+    registro_sanitario: Option<String>,
+    codigo_digemid: Option<String>,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    sqlx::query("UPDATE producto_comercial SET nombre_comercial = ?, nombre_fabricante = ?, nombre_titular = ?, pais_origen = ?, registro_sanitario = ?, codigo_digemid = ?, modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
+        .bind(nombre_comercial)
+        .bind(nombre_fabricante)
+        .bind(nombre_titular)
+        .bind(pais_origen)
+        .bind(registro_sanitario)
+        .bind(codigo_digemid)
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn verificar_historial_producto(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    producto_comercial_id: String,
+) -> Result<bool, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    let presentacion_ids = sqlx::query_scalar::<_, String>(
+        "SELECT id FROM presentacion_comercial WHERE producto_comercial_id = ?",
+    )
+    .bind(producto_comercial_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if presentacion_ids.is_empty() {
+        return Ok(false);
+    }
+
+    let placeholders = vec!["?"; presentacion_ids.len()].join(", ");
+    let sql = format!("SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})", placeholders);
+    let mut query = sqlx::query_scalar::<_, i64>(&sql);
+    for presentacion_id in presentacion_ids {
+        query = query.bind(presentacion_id);
+    }
+    let count = query.fetch_one(pool).await.map_err(|e| e.to_string())?;
+
+    Ok(count > 0)
+}
