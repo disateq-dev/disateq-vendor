@@ -92,21 +92,6 @@ function HeaderProducto({ producto }: HeaderProductoProps): ReactElement {
         {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
       </h2>
       <p className="mt-1 text-[13px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {[producto.condicionVenta, categoriaProducto(producto)].map((chip) => (
-          <span key={chip} className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
-            {chip}
-          </span>
-        ))}
-        {producto.requiereLote && (
-          <span className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[10px] font-bold uppercase text-[#0284C7]">Lote</span>
-        )}
-        {producto.requiereCadenaFrio && (
-          <span className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
-            Cadena de frío
-          </span>
-        )}
-      </div>
     </header>
   )
 }
@@ -635,30 +620,41 @@ export function DetalleProducto({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-auto">
-      {productoPreview !== null && (
-        <div className="mb-4 rounded-2xl border border-[#0284C7]/20 bg-[#E0F2FE]/40 px-4 py-3">
-          <div className="text-[13px] font-semibold text-slate-700">
-            {[productoPreview.nombreComercial, productoPreview.concentracion, productoPreview.formaFarmaceutica]
-              .filter(Boolean)
-              .join(' · ')}
-          </div>
-          <div className="text-[11px] text-slate-500">{productoPreview.nombreFabricante}</div>
-          <div className="text-[10px] text-slate-400">Presiona Enter para ver el detalle completo</div>
-        </div>
-      )}
-
       <div className="flex flex-col gap-4 px-5 py-4">
-        <header>
-          <h2 className="text-[16px] font-bold text-slate-900">
-            {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
-              .filter(Boolean)
-              .join(' · ')}
-          </h2>
-          <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-          {producto.estado === 'INACTIVO' && (
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
-              INACTIVO
-            </span>
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-[16px] font-bold text-slate-900">
+              {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
+                .filter(Boolean)
+                .join(' · ')}
+            </h2>
+            <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+            {producto.estado === 'INACTIVO' && (
+              <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
+                INACTIVO
+              </span>
+            )}
+          </div>
+          {modo === 'lectura' && producto.estado === 'ACTIVO' && (
+            <div className="flex gap-2">
+              <button
+                ref={corregirRef}
+                type="button"
+                onClick={onIniciarCorreccion}
+                disabled={guardandoCambios || verificandoHistorial}
+                className="rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]"
+              >
+                CORREGIR
+              </button>
+              <button
+                type="button"
+                onClick={() => setModo('desactivando')}
+                disabled={guardandoCambios}
+                className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500"
+              >
+                DESACTIVAR
+              </button>
+            </div>
           )}
         </header>
 
@@ -671,37 +667,19 @@ export function DetalleProducto({
 
         {modo === 'lectura' && (
           <div className="flex flex-col gap-3">
-            {producto.estado === 'ACTIVO' ? (
-              <div className="flex gap-2">
-                <button
-                  ref={corregirRef}
-                  type="button"
-                  onClick={onIniciarCorreccion}
-                  disabled={guardandoCambios || verificandoHistorial}
-                  className="rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]"
-                >
-                  CORREGIR
-                </button>
+            {producto.estado === 'INACTIVO' && (
+              esAdmin ? (
                 <button
                   type="button"
-                  onClick={() => setModo('desactivando')}
+                  onClick={() => void onReactivar()}
                   disabled={guardandoCambios}
-                  className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500"
+                  className="w-fit rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
                 >
-                  DESACTIVAR
+                  REACTIVAR
                 </button>
-              </div>
-            ) : esAdmin ? (
-              <button
-                type="button"
-                onClick={() => void onReactivar()}
-                disabled={guardandoCambios}
-                className="w-fit rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
-              >
-                REACTIVAR
-              </button>
-            ) : (
-              <p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>
+              ) : (
+                <p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>
+              )
             )}
 
             <div className="border-t border-[#E0F2FE] pt-3">
@@ -845,16 +823,80 @@ export function DetalleProducto({
             <TabsProducto tabActiva={tabActiva} onTabChange={onTabChange} />
             {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
             {!cargando && tabActiva === 'detalle' && (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <CampoLectura label="IFA" valor={producto.ifa} />
-                <CampoLectura label="Concentración" valor={producto.concentracion} />
-                <CampoLectura label="Forma farmacéutica" valor={producto.formaFarmaceutica} />
-                <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
-                <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
-                <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
-                <CampoLectura label="Código DIGEMID" valor={producto.codigoDIGEMID} />
-                <CampoLectura label="Creado" valor={formatearFecha(producto.creadoEn)} />
-                <CampoLectura label="Última modificación" valor={formatearFecha(producto.modificadoEn)} />
+              <div className="space-y-6">
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    IDENTIDAD DEL PRODUCTO
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <CampoLectura label="IFA" valor={producto.ifa} />
+                    <CampoLectura label="Concentración" valor={producto.concentracion} />
+                    <CampoLectura label="Forma farmacéutica" valor={producto.formaFarmaceutica} />
+                    <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
+                    <CampoLectura
+                      label="Condición de venta"
+                      valor={
+                        producto.condicionVenta === 'SIN_RECETA'
+                          ? 'Sin receta'
+                          : producto.condicionVenta === 'CON_RECETA'
+                            ? 'Con receta'
+                            : producto.condicionVenta === 'CONTROLADO'
+                              ? 'Controlado'
+                              : producto.condicionVenta
+                      }
+                    />
+                    <CampoLectura
+                      label="Refrigeración"
+                      valor={producto.requiereCadenaFrio ? 'Requiere cadena de frío' : 'No requiere'}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    REGISTRO Y PROCEDENCIA
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
+                    <CampoLectura label="Titular" valor={producto.nombreTitular} />
+                    <CampoLectura label="País de origen" valor={producto.paisOrigen} />
+                    <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
+                    {esAdmin && <CampoLectura label="Código DIGEMID" valor={producto.codigoDIGEMID} />}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    PRESENTACIONES COMERCIALES
+                  </h3>
+                  {presentaciones.length > 0 ? (
+                    <div className="space-y-2">
+                      {presentaciones.map((presentacion) => (
+                        <div key={presentacion.id} className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
+                          <div className="text-[13px] font-bold text-slate-800">{presentacion.descripcion}</div>
+                          {presentacion.codigoBarras && (
+                            <div className="text-[11px] text-slate-500">Cód. barras {presentacion.codigoBarras}</div>
+                          )}
+                          <div className="text-[11px] text-slate-500">
+                            Stock mínimo {presentacion.stockMinimo} {presentacion.unidadConteo}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-slate-400">Sin presentaciones registradas</p>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    TRAZABILIDAD
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <CampoLectura label="Creado" valor={formatearFecha(producto.creadoEn)} />
+                    <CampoLectura label="Última modificación" valor={formatearFecha(producto.modificadoEn)} />
+                  </div>
+                </div>
               </div>
             )}
             {!cargando && tabActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}
