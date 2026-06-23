@@ -78,9 +78,9 @@ function formatearFecha(iso: string): string {
 
 function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
   return (
-    <div className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</div>
-      <div className="mt-1 min-h-5 text-[13px] font-semibold text-slate-800">{valor ?? '-'}</div>
+    <div className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+      <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{label}</div>
+      <div className="mt-1 min-h-5 text-[11px] font-semibold text-slate-800">{valor ?? '-'}</div>
     </div>
   )
 }
@@ -635,55 +635,29 @@ export function DetalleProducto({
               </span>
             )}
           </div>
-          {modo === 'lectura' && producto.estado === 'ACTIVO' && (
-            <div className="flex gap-2">
-              <button
-                ref={corregirRef}
-                type="button"
-                onClick={onIniciarCorreccion}
-                disabled={guardandoCambios || verificandoHistorial}
-                className="rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]"
-              >
-                CORREGIR
-              </button>
-              <button
-                type="button"
-                onClick={() => setModo('desactivando')}
-                disabled={guardandoCambios}
-                className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500"
-              >
-                DESACTIVAR
-              </button>
-            </div>
-          )}
-        </header>
-
-        {errorAccion !== null && (
-          <div className="flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">
-            <span>{errorAccion}</span>
-            <button type="button" onClick={() => setErrorAccion(null)}>X</button>
-          </div>
-        )}
-
-        {modo === 'lectura' && (
-          <div className="flex flex-col gap-3">
-            {producto.estado === 'INACTIVO' && (
-              esAdmin ? (
-                <button
-                  type="button"
-                  onClick={() => void onReactivar()}
-                  disabled={guardandoCambios}
-                  className="w-fit rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
-                >
-                  REACTIVAR
-                </button>
-              ) : (
-                <p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>
-              )
-            )}
-
-            <div className="border-t border-[#E0F2FE] pt-3">
-              <p className="text-[11px] text-slate-400">¿Llegó mercadería de este producto?</p>
+          {modo === 'lectura' && (
+            <div className="flex flex-col gap-2">
+              {producto.estado === 'ACTIVO' && (
+                <div className="flex gap-2">
+                  <button
+                    ref={corregirRef}
+                    type="button"
+                    onClick={onIniciarCorreccion}
+                    disabled={guardandoCambios || verificandoHistorial}
+                    className="rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]"
+                  >
+                    CORREGIR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModo('desactivando')}
+                    disabled={guardandoCambios}
+                    className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500"
+                  >
+                    DESACTIVAR
+                  </button>
+                </div>
+              )}
               {producto.estado === 'ACTIVO' && (
                 <button
                   type="button"
@@ -693,7 +667,28 @@ export function DetalleProducto({
                   Ir a INGRESOS para registrar un nuevo lote
                 </button>
               )}
+              {producto.estado === 'INACTIVO' && (
+                esAdmin ? (
+                  <button
+                    type="button"
+                    onClick={() => void onReactivar()}
+                    disabled={guardandoCambios}
+                    className="w-fit rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
+                  >
+                    REACTIVAR
+                  </button>
+                ) : (
+                  <p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>
+                )
+              )}
             </div>
+          )}
+        </header>
+
+        {errorAccion !== null && (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">
+            <span>{errorAccion}</span>
+            <button type="button" onClick={() => setErrorAccion(null)}>X</button>
           </div>
         )}
 
@@ -828,7 +823,7 @@ export function DetalleProducto({
                   <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     IDENTIDAD DEL PRODUCTO
                   </h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
                     <CampoLectura label="IFA" valor={producto.ifa} />
                     <CampoLectura label="Concentración" valor={producto.concentracion} />
                     <CampoLectura label="Forma farmacéutica" valor={producto.formaFarmaceutica} />
@@ -856,7 +851,7 @@ export function DetalleProducto({
                   <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     REGISTRO Y PROCEDENCIA
                   </h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
                     <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
                     <CampoLectura label="Titular" valor={producto.nombreTitular} />
                     <CampoLectura label="País de origen" valor={producto.paisOrigen} />
