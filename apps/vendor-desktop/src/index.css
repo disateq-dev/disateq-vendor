@@ -9,3 +9,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+button, a, [role="button"], select, label {
+  cursor: pointer;
+}

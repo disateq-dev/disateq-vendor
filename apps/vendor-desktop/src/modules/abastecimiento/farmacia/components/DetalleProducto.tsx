@@ -588,6 +588,9 @@ export function DetalleProducto({
       } else if (productoConfirmado && event.ctrlKey && event.key === 'Enter' && producto.estado === 'ACTIVO' && modo === 'lectura') {
         event.preventDefault()
         onNavegaAIngresos()
+      } else if (productoConfirmado && event.ctrlKey && event.key === 'Delete' && producto.estado === 'ACTIVO' && modo === 'lectura') {
+        event.preventDefault()
+        setModo('desactivando')
       } else if (productoConfirmado && modo === 'lectura' && indiceAccion >= 0 && event.key === 'Enter') {
         event.preventDefault()
         switch (indiceAccion) {
@@ -684,29 +687,32 @@ export function DetalleProducto({
                     onClick={onIniciarCorreccion}
                     disabled={guardandoCambios || verificandoHistorial}
                     className={indiceAccion === 0
-                      ? 'rounded-xl border border-[#0284C7] bg-[#E0F2FE]/60 px-4 py-2 text-[12px] font-bold text-[#0284C7]'
-                      : 'rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]'}
+                      ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3'
+                      : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}
                   >
-                    CORREGIR
+                    <span>CORREGIR</span>
+                    <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd>
                   </button>
                   <button
                     type="button"
                     onClick={() => setModo('desactivando')}
                     disabled={guardandoCambios}
                     className={indiceAccion === 1
-                      ? 'rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500'
-                      : 'rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500'}
+                      ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'
+                      : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}
                   >
-                    DESACTIVAR
+                    <span>DESACTIVAR</span>
+                    <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd>
                   </button>
                   <button
                     type="button"
                     onClick={onLimpiar}
                     className={indiceAccion === 2
-                      ? 'rounded-xl border border-slate-400 bg-slate-100 px-4 py-2 text-[12px] font-bold text-slate-600'
-                      : 'rounded-xl border border-slate-200 px-4 py-2 text-[12px] font-bold text-slate-500 hover:text-slate-700'}
+                      ? 'group relative rounded-xl border border-[#f97316] bg-[#fff7ed] px-4 py-2 text-[12px] font-bold text-[#f97316] flex items-center gap-3'
+                      : 'group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3'}
                   >
-                    LIMPIAR
+                    <span>LIMPIAR</span>
+                    <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd>
                   </button>
                 </div>
               )}
@@ -725,7 +731,7 @@ export function DetalleProducto({
                     type="button"
                     onClick={() => void onReactivar()}
                     disabled={guardandoCambios}
-                    className="w-fit rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
+                    className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
                   >
                     REACTIVAR
                   </button>
@@ -843,7 +849,7 @@ export function DetalleProducto({
               <button
                 type="button"
                 onClick={() => setModo('lectura')}
-                className="rounded-xl border border-[#E0F2FE] px-4 py-2 text-[12px] font-bold text-slate-500"
+                className="rounded-xl border border-[#dc2626]/40 px-4 py-2 text-[12px] font-bold text-[#dc2626] hover:bg-[#fef2f2]"
               >
                 CANCELAR
               </button>
@@ -851,7 +857,7 @@ export function DetalleProducto({
                 type="button"
                 onClick={() => void onGuardarCorreccion()}
                 disabled={guardandoCambios}
-                className="rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
+                className="rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
               >
                 GUARDAR CORRECCIÓN
               </button>
@@ -869,7 +875,7 @@ export function DetalleProducto({
               <button
                 type="button"
                 onClick={() => setModo('lectura')}
-                className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-400"
+                className="rounded-xl border border-[#dc2626]/40 px-4 py-2 text-[12px] font-bold text-[#dc2626] hover:bg-[#fef2f2]"
               >
                 CANCELAR
               </button>
