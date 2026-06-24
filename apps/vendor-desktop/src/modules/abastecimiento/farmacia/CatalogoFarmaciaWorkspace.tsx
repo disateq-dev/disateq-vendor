@@ -1,5 +1,5 @@
 import { BookOpen, Pill, X } from 'lucide-react'
-import { useCallback, useEffect, type ReactElement } from 'react'
+import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import { BuscadorProducto } from './components/BuscadorProducto'
 import { DetalleProducto } from './components/DetalleProducto'
 import { NuevoProductoStepper } from './components/NuevoProductoStepper'
@@ -11,23 +11,33 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
     // Emitir evento custom que OperationalBar pueda escuchar
     window.dispatchEvent(new CustomEvent('disateq:navegar', { detail: { destino: 'abastecimiento', subtab: 'ingresos' } }))
   }, [])
+  const [modoDetalle, setModoDetalle] = useState<string>('lectura')
+
+  useEffect(() => {
+    function onModoDetalle(e: Event) {
+      setModoDetalle((e as CustomEvent<{ modo: string }>).detail.modo)
+    }
+    document.addEventListener('pos:modoDetalle', onModoDetalle)
+    return () => document.removeEventListener('pos:modoDetalle', onModoDetalle)
+  }, [])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (catalogo.creandoAbierto) return
       if (event.key === 'Escape') {
-        catalogo.onLimpiar()
-      } else if (
-        (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter')
-        && event.target !== catalogo.inputRef.current
-      ) {
+        if (catalogo.productoSeleccionado === null) {
+          catalogo.onLimpiar()
+        }
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+        if (event.target === catalogo.inputRef.current) return
+        event.preventDefault()
         catalogo.onNavegaTeclado(event.key)
       }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [catalogo.onLimpiar, catalogo.onNavegaTeclado, catalogo.creandoAbierto])
+  }, [catalogo.onLimpiar, catalogo.onNavegaTeclado, catalogo.creandoAbierto, catalogo.productoSeleccionado])
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
@@ -36,7 +46,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
           <div className="flex items-center gap-2">
             <Pill size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
             <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-              CATÁLOGO
+              BÚSQUEDA CATÁLOGO
             </span>
           </div>
           <div className="flex min-w-0 items-center gap-2">
@@ -57,6 +67,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
           <BuscadorProducto
             termino={catalogo.termino}
             indiceSeleccionado={catalogo.indiceSeleccionado}
+            productoConfirmado={catalogo.productoSeleccionado !== null}
             resultados={catalogo.resultados}
             cargando={catalogo.cargando}
             onTerminoChange={catalogo.onTerminoChange}
@@ -77,7 +88,13 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
           )}
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-            {catalogo.creandoAbierto ? 'NUEVO PRODUCTO' : 'DETALLE'}
+            {catalogo.creandoAbierto
+              ? 'NUEVO PRODUCTO'
+              : modoDetalle === 'corrigiendo'
+                ? 'CORREGIR DATOS BÁSICOS PRODUCTO'
+                : modoDetalle === 'desactivando'
+                  ? 'DESACTIVAR PRODUCTO CATÁLOGO'
+                  : 'DETALLE PRODUCTO CATÁLOGO'}
           </span>
         </div>
 
@@ -99,6 +116,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             <DetalleProducto
               producto={catalogo.productoSeleccionado ?? catalogo.productoPreview!}
               productoPreview={null}
+              productoConfirmado={catalogo.productoSeleccionado !== null}
               presentaciones={catalogo.presentaciones}
               nodos={catalogo.nodos}
               tabActiva={catalogo.tabDetalle}
@@ -107,7 +125,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               onVolver={catalogo.onVolverBusqueda}
               onActualizarProductoSeleccionado={catalogo.onActualizarProductoSeleccionado}
               onNavegaAIngresos={onNavegaAIngresos}
-              onLimpiar={catalogo.onLimpiar}
+              onLimpiar={catalogo.onLimpiarDetalle}
             />
           )}
 
@@ -131,7 +149,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             </div>
           )}
 
-          {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && !catalogo.sinResultados && (
+          {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && catalogo.productoPreview === null && !catalogo.sinResultados && (
             <div className="flex flex-col items-center justify-center pb-14 pt-[106px]">
               <BookOpen size={32} className="text-[#0284C7]/30" />
               <p className="mt-3 text-center text-[12px] text-slate-400">

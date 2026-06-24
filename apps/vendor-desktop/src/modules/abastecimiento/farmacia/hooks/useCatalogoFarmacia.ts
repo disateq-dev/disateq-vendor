@@ -38,6 +38,7 @@ interface UseCatalogoFarmaciaResult {
   error: string | null
   onTerminoChange(t: string): void
   onLimpiar(): void
+  onLimpiarDetalle(): void
   onSeleccionar(p: ProductoComercial): void
   onPreview(p: ProductoComercial | null): void
   onNavegaTeclado(key: string): void
@@ -126,6 +127,13 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     setBuscando(false)
     setErrorLocal(null)
     if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+  }, [])
+
+  const onLimpiarDetalle = useCallback((): void => {
+    setProductoSeleccionado(null)
+    setProductoPreview(null)
+    setIndiceSeleccionado(-1)
+    inputRef.current?.focus()
   }, [])
 
   const onSeleccionar = useCallback((p: ProductoComercial): void => {
@@ -261,6 +269,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     error: errorStore ?? errorLocal,
     onTerminoChange,
     onLimpiar,
+    onLimpiarDetalle,
     onSeleccionar,
     onPreview,
     onNavegaTeclado,
