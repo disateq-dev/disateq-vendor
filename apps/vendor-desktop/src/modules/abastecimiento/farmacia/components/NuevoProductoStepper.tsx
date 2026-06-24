@@ -1,5 +1,5 @@
 import { Check, Plus, Trash2 } from 'lucide-react'
-import { useState, type ReactElement } from 'react'
+import { useEffect, useState, type ReactElement } from 'react'
 import {
   LABEL_CATEGORIA_FARMACIA,
   LABEL_CATEGORIA_GENERAL,
@@ -7,6 +7,7 @@ import {
   LABEL_FORMA_FARMACEUTICA,
   LABEL_TIPO_SERVICIO,
 } from '../../../../domains/catalog/etiquetas-ui'
+import { obtenerProductosComerciales } from '../../../../domains/farmacia/farmacia.service'
 import type {
   CategoriaFarmacia,
   CategoriaGeneral,
@@ -16,6 +17,7 @@ import type {
   CrearProductoComercialInput,
   CrearProductoGenericoInput,
   FormaFarmaceutica,
+  ProductoComercial,
   TipoFormaVenta,
   TipoRecursoOperacional,
   TipoServicioFarmacia,
@@ -46,6 +48,8 @@ interface PasoMedicamentoVentaProps {
 
 interface PasoComercialProps {
   comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>
+  similares: ProductoComercial[]
+  buscandoSimilares: boolean
   setComercial: (comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>) => void
 }
 
@@ -219,10 +223,32 @@ function PasoMedicamentoVenta({ generico, comercial, setGenerico, setComercial }
   )
 }
 
-function PasoComercial({ comercial, setComercial }: PasoComercialProps): ReactElement {
+function PasoComercial({ comercial, similares, buscandoSimilares, setComercial }: PasoComercialProps): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <input className="h-11 rounded-xl border border-[#E0F2FE] px-3" placeholder="Nombre comercial" value={comercial.nombreComercial} onChange={(e) => setComercial({ ...comercial, nombreComercial: e.target.value })} />
+      {similares.length > 0 ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex flex-col gap-2">
+          <p className="text-[11px] font-bold text-amber-700">
+            ⚠ Ya existe algo similar en el catálogo:
+          </p>
+          {similares.map((similar) => (
+            <div key={similar.id} className="rounded-lg bg-white border border-amber-100 px-3 py-2">
+              <div className="text-[12px] font-bold text-slate-800">
+                {similar.nombreComercial} · {similar.concentracion} · {similar.formaFarmaceutica}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {similar.nombreFabricante}
+              </div>
+            </div>
+          ))}
+          <p className="text-[10px] text-amber-600">
+            ¿Es el mismo producto? Cancela y búscalo en el catálogo. ¿Es diferente? Continúa con el registro.
+          </p>
+        </div>
+      ) : buscandoSimilares ? (
+        <p className="text-[11px] text-slate-400">Buscando similares...</p>
+      ) : null}
       <input className="h-11 rounded-xl border border-[#E0F2FE] px-3" placeholder="Fabricante" value={comercial.nombreFabricante} onChange={(e) => setComercial({ ...comercial, nombreFabricante: e.target.value })} />
       <input className="h-11 rounded-xl border border-[#E0F2FE] px-3" placeholder="Titular (opcional)" value={comercial.nombreTitular ?? ''} onChange={(e) => setComercial({ ...comercial, nombreTitular: e.target.value || undefined })} />
       <input className="h-11 rounded-xl border border-[#E0F2FE] px-3" placeholder="País de origen (opcional)" value={comercial.paisOrigen ?? ''} onChange={(e) => setComercial({ ...comercial, paisOrigen: e.target.value || undefined })} />
@@ -342,6 +368,8 @@ export function NuevoProductoStepper({
   onGuardar,
 }: NuevoProductoStepperProps): ReactElement {
   const [tipoRecurso, setTipoRecurso] = useState<TipoRecursoOperacional | null>(null)
+  const [similares, setSimilares] = useState<ProductoComercial[]>([])
+  const [buscandoSimilares, setBuscandoSimilares] = useState<boolean>(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const [generico, setGenerico] = useState<CrearProductoGenericoInput>({
     ifa: terminoBusqueda,
@@ -376,7 +404,31 @@ export function NuevoProductoStepper({
     tipoServicio: 'INYECTABLE',
   })
 
+  useEffect(() => {
+    if (tipoRecurso !== 'MEDICAMENTO' || comercial.nombreComercial.trim().length < 4) {
+      setSimilares([])
+      return
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setBuscandoSimilares(true)
+      try {
+        const resultados = await obtenerProductosComerciales(comercial.nombreComercial.trim(), false)
+        setSimilares(resultados.slice(0, 3))
+      } finally {
+        setBuscandoSimilares(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }, [comercial.nombreComercial, tipoRecurso])
+
   const totalPasos = tipoRecurso === 'MEDICAMENTO' ? 4 : tipoRecurso === 'PRODUCTO_GENERAL' ? 2 : 1
+
+  const cancelar = (): void => {
+    setSimilares([])
+    onCancelar()
+  }
 
   const validarPaso = (): boolean => {
     if (tipoRecurso === 'MEDICAMENTO') {
@@ -515,7 +567,7 @@ export function NuevoProductoStepper({
             <span><span className="block text-[14px] font-bold text-slate-700">Servicio</span><span className="mt-1 block text-[12px] text-slate-500">Aplicación de inyectables, nebulizaciones, controles y otros servicios.</span></span>
           </button>
         </div>
-        <button type="button" onClick={onCancelar} className="w-fit text-[12px] font-bold text-[#0284C7]">
+        <button type="button" onClick={cancelar} className="w-fit text-[12px] font-bold text-[#0284C7]">
           Cancelar y volver
         </button>
       </section>
@@ -524,14 +576,14 @@ export function NuevoProductoStepper({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-6 py-5">
-      <button type="button" onClick={onCancelar} className="w-fit text-[12px] font-bold text-[#0284C7]">
+      <button type="button" onClick={cancelar} className="w-fit text-[12px] font-bold text-[#0284C7]">
         Cancelar y volver
       </button>
       <div className="rounded-2xl border border-[#E0F2FE] bg-white p-5">
         <StepperHeader paso={paso} totalPasos={totalPasos} />
         <div className="mt-6">
           {tipoRecurso === 'MEDICAMENTO' && paso === 1 && <PasoMedicamentoVenta generico={generico} comercial={comercial} setGenerico={setGenerico} setComercial={setComercial} />}
-          {tipoRecurso === 'MEDICAMENTO' && paso === 2 && <PasoComercial comercial={comercial} setComercial={setComercial} />}
+          {tipoRecurso === 'MEDICAMENTO' && paso === 2 && <PasoComercial comercial={comercial} similares={similares} buscandoSimilares={buscandoSimilares} setComercial={setComercial} />}
           {tipoRecurso === 'MEDICAMENTO' && paso === 3 && <PasoRegulatorio comercial={comercial} estadoRegistroSanitario={estadoRegistroSanitario} setComercial={setComercial} setEstadoRegistroSanitario={setEstadoRegistroSanitario} />}
           {tipoRecurso === 'MEDICAMENTO' && paso === 4 && (
             <div className="space-y-5">

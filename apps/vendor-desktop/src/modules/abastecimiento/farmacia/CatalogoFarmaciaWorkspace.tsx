@@ -28,16 +28,19 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
         if (catalogo.productoSeleccionado === null) {
           catalogo.onLimpiar()
         }
-      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+      } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') || (event.key === 'Enter' && !event.ctrlKey)) {
         if (event.target === catalogo.inputRef.current) return
         event.preventDefault()
         catalogo.onNavegaTeclado(event.key)
+      } else if (event.ctrlKey && event.key === 'Enter' && !catalogo.creandoAbierto) {
+        event.preventDefault()
+        catalogo.onNuevo()
       }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [catalogo.onLimpiar, catalogo.onNavegaTeclado, catalogo.creandoAbierto, catalogo.productoSeleccionado])
+  }, [catalogo.onLimpiar, catalogo.onNavegaTeclado, catalogo.onNuevo, catalogo.creandoAbierto, catalogo.productoSeleccionado])
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
@@ -63,20 +66,34 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto">
-          <BuscadorProducto
-            termino={catalogo.termino}
-            indiceSeleccionado={catalogo.indiceSeleccionado}
-            productoConfirmado={catalogo.productoSeleccionado !== null}
-            resultados={catalogo.resultados}
-            cargando={catalogo.cargando}
-            onTerminoChange={catalogo.onTerminoChange}
-            onSeleccionar={catalogo.onSeleccionar}
-            onLimpiar={catalogo.onLimpiar}
-            onPreview={catalogo.onPreview}
-            inputRef={catalogo.inputRef}
-            onNavegaTeclado={catalogo.onNavegaTeclado}
-          />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            <BuscadorProducto
+              termino={catalogo.termino}
+              indiceSeleccionado={catalogo.indiceSeleccionado}
+              productoConfirmado={catalogo.productoSeleccionado !== null}
+              resultados={catalogo.resultados}
+              cargando={catalogo.cargando}
+              onTerminoChange={catalogo.onTerminoChange}
+              onSeleccionar={catalogo.onSeleccionar}
+              onLimpiar={catalogo.onLimpiar}
+              onPreview={catalogo.onPreview}
+              inputRef={catalogo.inputRef}
+              onNavegaTeclado={catalogo.onNavegaTeclado}
+            />
+          </div>
+          {!catalogo.creandoAbierto && (
+            <div className="shrink-0 px-4 pb-4 pt-2">
+              <button
+                type="button"
+                onClick={catalogo.onNuevo}
+                className="w-full rounded-xl border border-[#0284C7]/40 px-4 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]/60 flex items-center justify-between"
+              >
+                <span>+ Nuevo producto</span>
+                <span className="text-[10px] font-normal opacity-50">Ctrl+Enter</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
