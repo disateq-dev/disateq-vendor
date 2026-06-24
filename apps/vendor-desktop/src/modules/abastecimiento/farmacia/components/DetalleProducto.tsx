@@ -17,11 +17,13 @@ import {
   verificarHistorialProducto,
 } from '../../../../domains/farmacia/farmacia.service'
 import { usePOS } from '../../../../context/POSContext'
+import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
 import type { TabDetalleFarmacia } from '../hooks/useCatalogoFarmacia'
 
 interface DetalleProductoProps {
   producto: ProductoComercial
   productoPreview: ProductoComercial | null
+  productoConfirmado: boolean
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
   tabActiva: TabDetalleFarmacia
@@ -504,6 +506,7 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
 export function DetalleProducto({
   producto,
   productoPreview,
+  productoConfirmado,
   presentaciones,
   nodos,
   tabActiva,
@@ -522,8 +525,10 @@ export function DetalleProducto({
   const [guardandoCambios, setGuardandoCambios] = useState<boolean>(false)
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
   const [formularioCorreccion, setFormularioCorreccion] = useState<ModificarProductoComercialInput | null>(null)
+  const [indiceAccion, setIndiceAccion] = useState<number>(-1)
 
   useEffect(() => {
+    setIndiceAccion(-1)
     setModo('lectura')
     setErrorAccion(null)
     setFormularioCorreccion(null)
@@ -537,27 +542,16 @@ export function DetalleProducto({
   }, [producto.id])
 
   useEffect(() => {
-    if (modo === 'lectura' && productoPreview === null && producto) {
-      corregirRef.current?.focus()
-    }
-  }, [producto.id, modo, productoPreview])
+    setIndiceAccion(productoConfirmado ? 0 : -1)
+  }, [productoConfirmado])
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape') return
-      if (modo === 'corrigiendo') {
-        setModo('lectura')
-        setFormularioCorreccion(null)
-      } else if (modo === 'desactivando') {
-        setModo('lectura')
-      } else if (modo === 'lectura') {
-        onLimpiar()
-      }
-    }
+    document.dispatchEvent(new CustomEvent('pos:detalleActivo', { detail: { active: productoConfirmado } }))
+  }, [productoConfirmado])
 
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [modo, onLimpiar])
+  useEffect(() => {
+    document.dispatchEvent(new CustomEvent('pos:modoDetalle', { detail: { modo } }))
+  }, [modo])
 
   const onIniciarCorreccion = (): void => {
     setFormularioCorreccion({
@@ -573,6 +567,46 @@ export function DetalleProducto({
     setModo('corrigiendo')
     setErrorAccion(null)
   }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        if (modo === 'corrigiendo') {
+          setModo('lectura')
+          setFormularioCorreccion(null)
+        } else if (modo === 'desactivando') {
+          setModo('lectura')
+        } else if (modo === 'lectura') {
+          onLimpiar()
+        }
+      } else if (productoConfirmado && modo === 'lectura' && event.key === 'ArrowRight') {
+        event.preventDefault()
+        setIndiceAccion(prev => (prev + 1) % 3)
+      } else if (productoConfirmado && modo === 'lectura' && event.key === 'ArrowLeft') {
+        event.preventDefault()
+        setIndiceAccion(prev => (prev - 1 + 3) % 3)
+      } else if (productoConfirmado && event.ctrlKey && event.key === 'Enter' && producto.estado === 'ACTIVO' && modo === 'lectura') {
+        event.preventDefault()
+        onNavegaAIngresos()
+      } else if (productoConfirmado && modo === 'lectura' && indiceAccion >= 0 && event.key === 'Enter') {
+        event.preventDefault()
+        switch (indiceAccion) {
+          case 0:
+            if (producto.estado === 'ACTIVO') onIniciarCorreccion()
+            break
+          case 1:
+            if (producto.estado === 'ACTIVO') setModo('desactivando')
+            break
+          case 2:
+            onLimpiar()
+            break
+        }
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [modo, onLimpiar, productoConfirmado, onIniciarCorreccion, onNavegaAIngresos, indiceAccion, producto.estado])
 
   const onGuardarCorreccion = async (): Promise<void> => {
     if (!formularioCorreccion) return
@@ -649,7 +683,9 @@ export function DetalleProducto({
                     type="button"
                     onClick={onIniciarCorreccion}
                     disabled={guardandoCambios || verificandoHistorial}
-                    className="rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]"
+                    className={indiceAccion === 0
+                      ? 'rounded-xl border border-[#0284C7] bg-[#E0F2FE]/60 px-4 py-2 text-[12px] font-bold text-[#0284C7]'
+                      : 'rounded-xl border border-[#0284C7]/30 px-4 py-2 text-[12px] font-bold text-[#0284C7]'}
                   >
                     CORREGIR
                   </button>
@@ -657,14 +693,18 @@ export function DetalleProducto({
                     type="button"
                     onClick={() => setModo('desactivando')}
                     disabled={guardandoCambios}
-                    className="rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500"
+                    className={indiceAccion === 1
+                      ? 'rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500'
+                      : 'rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500'}
                   >
                     DESACTIVAR
                   </button>
                   <button
                     type="button"
                     onClick={onLimpiar}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-[12px] font-bold text-slate-500 hover:text-slate-700"
+                    className={indiceAccion === 2
+                      ? 'rounded-xl border border-slate-400 bg-slate-100 px-4 py-2 text-[12px] font-bold text-slate-600'
+                      : 'rounded-xl border border-slate-200 px-4 py-2 text-[12px] font-bold text-slate-500 hover:text-slate-700'}
                   >
                     LIMPIAR
                   </button>
@@ -706,7 +746,6 @@ export function DetalleProducto({
 
         {modo === 'corrigiendo' && formularioCorreccion !== null && (
           <div className="flex flex-col gap-3">
-            <h3 className="text-[12px] font-bold uppercase tracking-wide text-slate-600">CORREGIR DATOS BÁSICOS</h3>
             {tieneHistorial && (
               <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-600">
                 Este producto tiene movimientos registrados. Los cambios quedarán registrados en el historial.
@@ -721,38 +760,42 @@ export function DetalleProducto({
                 className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
               />
             </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Fabricante</span>
-              <input
-                value={formularioCorreccion.nombreFabricante}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              />
-            </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Titular</span>
-              <input
-                value={formularioCorreccion.nombreTitular}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreTitular: e.target.value } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              />
-            </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">País origen</span>
-              <input
-                value={formularioCorreccion.paisOrigen}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, paisOrigen: e.target.value } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              />
-            </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Registro sanitario</span>
-              <input
-                value={formularioCorreccion.registroSanitario}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              />
-            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Fabricante</span>
+                <input
+                  value={formularioCorreccion.nombreFabricante}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
+                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                />
+              </label>
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Titular</span>
+                <input
+                  value={formularioCorreccion.nombreTitular}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreTitular: e.target.value } : prev)}
+                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">País origen</span>
+                <input
+                  value={formularioCorreccion.paisOrigen}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, paisOrigen: e.target.value } : prev)}
+                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                />
+              </label>
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Registro sanitario</span>
+                <input
+                  value={formularioCorreccion.registroSanitario}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
+                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                />
+              </label>
+            </div>
             <label>
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estado del registro</span>
               <select
@@ -775,22 +818,26 @@ export function DetalleProducto({
               />
             </label>
 
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA (no editable)</span>
-              <input readOnly value={producto.ifa} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
-            </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Concentración (no editable)</span>
-              <input readOnly value={producto.concentracion} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
-            </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Forma farmacéutica (no editable)</span>
-              <input readOnly value={producto.formaFarmaceutica} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
-            </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Condición venta (no editable)</span>
-              <input readOnly value={producto.condicionVenta} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
-            </label>
+            <div className="mt-1 border-t border-[#E0F2FE] pt-3 flex flex-col gap-3">
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA (no editable)</span>
+                <input readOnly value={producto.ifa} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Concentración (no editable)</span>
+                  <input readOnly value={producto.concentracion} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                </label>
+                <label>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Forma farmacéutica (no editable)</span>
+                  <input readOnly value={producto.formaFarmaceutica} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                </label>
+              </div>
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Condición de venta (no editable)</span>
+                <input readOnly value={producto.condicionVenta} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+              </label>
+            </div>
 
             <div className="flex gap-2 pt-2">
               <button
@@ -846,28 +893,38 @@ export function DetalleProducto({
               <div className="space-y-3">
                 <div>
                   <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    PARA LA VENTA
+                  </h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    <CampoLectura
+                      label={LABEL_CAMPO['condicionVenta'].catalogo}
+                      valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta}
+                    />
+                    <CampoLectura
+                      label="Refrigerar"
+                      valor={producto.requiereCadenaFrio ? 'Sí · cadena de frío' : 'No requiere'}
+                    />
+                    <CampoLectura
+                      label="Con vencimiento"
+                      valor={producto.requiereLote ? 'Sí · requiere lote' : 'Sin trazabilidad de lote'}
+                    />
+                    <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     IDENTIDAD DEL PRODUCTO
                   </h3>
                   <div className="grid grid-cols-4 gap-3">
-                    <CampoLectura label="IFA" valor={producto.ifa} />
-                    <CampoLectura label="Concentración" valor={producto.concentracion} />
-                    <CampoLectura label="Forma farmacéutica" valor={producto.formaFarmaceutica} />
-                    <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
+                    <CampoLectura label={LABEL_CAMPO['ifa'].catalogo} valor={producto.ifa} />
                     <CampoLectura
-                      label="Condición de venta"
-                      valor={
-                        producto.condicionVenta === 'SIN_RECETA'
-                          ? 'Sin receta'
-                          : producto.condicionVenta === 'CON_RECETA'
-                            ? 'Con receta'
-                            : producto.condicionVenta === 'CONTROLADO'
-                              ? 'Controlado'
-                              : producto.condicionVenta
-                      }
+                      label={LABEL_CAMPO['concentracion'].catalogo}
+                      valor={producto.concentracion}
                     />
                     <CampoLectura
-                      label="Refrigeración"
-                      valor={producto.requiereCadenaFrio ? 'Requiere cadena de frío' : 'No requiere'}
+                      label={LABEL_CAMPO['formaFarmaceutica'].catalogo}
+                      valor={LABEL_FORMA_FARMACEUTICA[producto.formaFarmaceutica ?? ''] ?? producto.formaFarmaceutica}
                     />
                   </div>
                 </div>
@@ -877,10 +934,10 @@ export function DetalleProducto({
                     REGISTRO Y PROCEDENCIA
                   </h3>
                   <div className="grid grid-cols-4 gap-3">
-                    <CampoLectura label="Fabricante" valor={producto.nombreFabricante} />
+                    <CampoLectura label={LABEL_CAMPO['nombreFabricante'].catalogo} valor={producto.nombreFabricante} />
                     <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
                     <CampoLectura
-                      label="Estado registro"
+                      label="Estado del registro"
                       valor={
                         producto.estadoRegistroSanitario === 'VIGENTE'
                           ? 'Vigente'
@@ -893,7 +950,7 @@ export function DetalleProducto({
                                 : producto.estadoRegistroSanitario
                       }
                     />
-                    {esAdmin && <CampoLectura label="Código DIGEMID" valor={producto.codigoDIGEMID} />}
+                    {esAdmin && <CampoLectura label="Codigo DIGEMID" valor={producto.codigoDIGEMID} />}
                   </div>
                 </div>
 

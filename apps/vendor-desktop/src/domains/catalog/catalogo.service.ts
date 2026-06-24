@@ -38,7 +38,7 @@ export function construirCatalogo(
       operadorTieneCapacidadLibre: contexto.operadorTieneCapacidadLibre,
     })
 
-    const unidadesDisponibles = disponibilidadService.getUnidadesDisponibles(hov.productoId)
+    const unidadesDisponibles = hov.productoId ? disponibilidadService.getUnidadesDisponibles(hov.productoId) : 0
     let disponibilidad: DisponibilidadCatalogo
 
     if (unidadesDisponibles <= 0) {
