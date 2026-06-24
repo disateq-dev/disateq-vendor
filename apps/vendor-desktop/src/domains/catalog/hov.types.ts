@@ -24,7 +24,10 @@ export interface HOV {
 
 export interface CrearHOVInput {
   nombre: string
-  productoId: string
+  productoId?: string
+  servicioId?: string
+  productoGeneralId?: string
+  tipoRecurso?: TipoRecursoOperacional
   unidadDespacho: string
   factorConversion: number
   costoBase: number
