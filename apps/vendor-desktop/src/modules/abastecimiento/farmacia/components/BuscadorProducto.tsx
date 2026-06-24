@@ -7,6 +7,7 @@ import { usePOS } from '../../../../context/POSContext'
 interface BuscadorProductoProps {
   termino: string
   indiceSeleccionado: number
+  productoConfirmado: boolean
   resultados: ProductoComercial[]
   cargando: boolean
   onTerminoChange: (t: string) => void
@@ -24,6 +25,7 @@ function textoPrincipal(producto: ProductoComercial): string {
 export function BuscadorProducto({
   termino,
   indiceSeleccionado,
+  productoConfirmado,
   resultados,
   cargando,
   onTerminoChange,
@@ -43,10 +45,16 @@ export function BuscadorProducto({
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Escape') {
       e.preventDefault()
-      onPreview(null)
-      onLimpiar()
+      if (!productoConfirmado) {
+        onPreview(null)
+        onLimpiar()
+      }
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+      e.preventDefault()
+      if (productoConfirmado && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) return
+      onNavegaTeclado(e.key)
     }
-  }, [onLimpiar, onPreview])
+  }, [onLimpiar, onNavegaTeclado, onPreview, productoConfirmado])
 
   return (
     <section className="flex min-h-0 flex-1 flex-col px-3 py-3">
@@ -111,10 +119,10 @@ export function BuscadorProducto({
                   type="button"
                   ref={estaSeleccionado ? (el => el?.scrollIntoView({ block: 'nearest' })) : null}
                   onClick={() => { onPreview(null); onSeleccionar(producto); inputRef.current?.focus() }}
-                  className={`block w-full border-b border-[#E0F2FE] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E0F2FE]' : 'hover:bg-[#E0F2FE]'}`}
+                  className={`block w-full border-b border-[#E0F2FE] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E0F2FE]' : 'hover:bg-[#E0F2FE]'} ${productoConfirmado && idx !== indiceSeleccionado ? 'opacity-40' : ''}`}
                 >
-                  <div className="text-[13px] font-semibold text-slate-800">{textoPrincipal(producto)}</div>
-                  <div className="mt-0.5 text-[11px] text-slate-500">
+                  <div className="text-[12px] font-semibold text-slate-800">{textoPrincipal(producto)}</div>
+                  <div className="mt-0.5 text-[10px] text-slate-500">
                     {textoSecundario} · {textoLote}
                   </div>
                 </button>

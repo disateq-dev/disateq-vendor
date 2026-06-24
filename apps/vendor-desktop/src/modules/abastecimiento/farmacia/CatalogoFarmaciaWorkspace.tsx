@@ -83,13 +83,22 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             />
           </div>
           {!catalogo.creandoAbierto && (
-            <div className="shrink-0 px-4 pb-4 pt-2">
+            <div className="shrink-0 px-4 pb-4 pt-2 flex gap-2">
+              <button
+                type="button"
+                disabled={catalogo.termino.trim().length === 0 && catalogo.resultados.length === 0}
+                onClick={catalogo.onLimpiar}
+                className="flex-[1] rounded-xl border border-[#f97316]/40 px-2 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-between disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <span>× LIMPIAR</span>
+                <span className="text-[10px] font-normal opacity-50">Esc</span>
+              </button>
               <button
                 type="button"
                 onClick={catalogo.onNuevo}
-                className="w-full rounded-xl border border-[#0284C7]/40 px-4 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]/60 flex items-center justify-between"
+                className="flex-[2] rounded-xl border border-[#45b356]/40 px-3 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center justify-between"
               >
-                <span>+ Nuevo producto</span>
+                <span>+ NUEVO PRODUCTO</span>
                 <span className="text-[10px] font-normal opacity-50">Ctrl+Enter</span>
               </button>
             </div>
