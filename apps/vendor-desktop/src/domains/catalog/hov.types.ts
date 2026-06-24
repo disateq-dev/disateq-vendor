@@ -1,10 +1,15 @@
+import type { TipoRecursoOperacional } from '../farmacia/types'
+
 export type EstadoHOV = 'ACTIVA' | 'SUSPENDIDA' | 'RETIRADA'
 
 export interface HOV {
   id: string
   codigo: string
   nombre: string
-  productoId: string
+  tipoRecurso: TipoRecursoOperacional
+  productoId?: string
+  servicioId?: string
+  productoGeneralId?: string
   unidadDespacho: string
   factorConversion: number
   costoBase: number

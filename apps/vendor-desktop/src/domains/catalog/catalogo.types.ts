@@ -22,6 +22,11 @@ export interface ItemCatalogo {
   requiereAutorizacion: boolean
   disponibilidad: DisponibilidadCatalogo
   unidadesDisponibles: number
+  condicionVenta?: 'SIN_RECETA' | 'CON_RECETA' | 'CONTROLADO'
+  requiereCadenaFrio?: boolean
+  fechaVencimientoProximo?: string
+  duracionMinutos?: number
+  tipoRecurso?: string
   category?: string
   codigoBarras?: string
 }

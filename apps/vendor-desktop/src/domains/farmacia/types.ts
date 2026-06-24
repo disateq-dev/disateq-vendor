@@ -1,3 +1,18 @@
+export type TipoRecursoOperacional = 'MEDICAMENTO' | 'PRODUCTO_GENERAL' | 'SERVICIO'
+
+export type CategoriaGeneral = 'CUIDADO_PERSONAL' | 'BEBE' | 'DISPOSITIVO_MEDICO' | 'SUPLEMENTO' | 'HIGIENE' | 'OTRO'
+
+export interface ProductoGeneral {
+  id: string
+  nombre: string
+  categoriaGeneral: CategoriaGeneral
+  unidadVenta: string
+  codigoBarras?: string
+  estado: string
+  creadoEn: string
+  modificadoEn: string
+}
+
 export type FormaFarmaceutica =
   | 'TABLETA'
   | 'TABLETA_RECUBIERTA'
