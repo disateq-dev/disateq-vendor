@@ -587,6 +587,9 @@ export function DetalleProducto({
         setIndiceAccion(prev => (prev - 1 + 3) % 3)
       } else if (productoConfirmado && event.ctrlKey && event.key === 'Enter' && producto.estado === 'ACTIVO' && modo === 'lectura') {
         event.preventDefault()
+        onIniciarCorreccion()
+      } else if (productoConfirmado && event.ctrlKey && event.key === 'Insert' && producto.estado === 'ACTIVO' && modo === 'lectura') {
+        event.preventDefault()
         onNavegaAIngresos()
       } else if (productoConfirmado && event.ctrlKey && event.key === 'Delete' && producto.estado === 'ACTIVO' && modo === 'lectura') {
         event.preventDefault()
@@ -717,14 +720,7 @@ export function DetalleProducto({
                 </div>
               )}
               {producto.estado === 'ACTIVO' && (
-                <button
-                  type="button"
-                  onClick={onNavegaAIngresos}
-                  className="group relative text-[11px] font-bold text-[#0284C7] underline"
-                >
-                  Ir a INGRESOS para registrar un nuevo lote →
-                  <kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd>
-                </button>
+                <button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button>
               )}
               {producto.estado === 'INACTIVO' && (
                 esAdmin ? (

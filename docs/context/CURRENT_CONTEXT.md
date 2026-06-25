@@ -2,16 +2,15 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `3651038` — fix(abastecimiento): doctrina de color aplicada — accent #0284C7, semantica verde/naranja/rojo en todos los workspaces y subcomponentes
+* **Último commit:** `9c79faa` — fix(catalogo): keytips — tamaño panel busqueda, dirección panel detalle, keytip ir a ingresos
 
-## Commits de la jornada 24 Jun
+## Commits de la jornada 25 Jun
 | Hash | Descripción |
 |---|---|
+| `9c79faa` | fix(catalogo): keytips — tamaño panel busqueda, dirección panel detalle, keytip ir a ingresos |
 | `3651038` | fix(abastecimiento): doctrina color — accent #0284C7, semántica verde/naranja/rojo todo ABASTECIMIENTO |
 | `22804b2` | feat(ux): keytips flotantes hover en botones, cursor pointer global |
 | `f98968b` | fix(catalogo): tipografia resultados reducida, padding botones ajustado |
-| anterior | fix(catalogo): LIMPIAR panel busqueda opera solo en su contexto |
-| anterior | feat(catalogo): semantica color canónica, hints teclado, Ctrl+Supr para desactivar |
 | `a212cca` | feat(catalogo): boton NUEVO siempre visible Ctrl+Enter, similitud debounced paso 2 MEDICAMENTO |
 
 ---
@@ -19,7 +18,7 @@
 ## Recorrido de Dominios (Matriz de Estado)
 * **LOGIN:** ✅
 * **TURNO / CAJA:** ✅
-* **ABASTECIMIENTO — CATÁLOGO:** ✅ Sprint completo cerrado + doctrina de color aplicada
+* **ABASTECIMIENTO — CATÁLOGO:** ✅ Sprint completo cerrado + doctrina de color + keytips canónicos aplicados
 * **ABASTECIMIENTO — PROVEEDORES:** ✅ Doctrina de color aplicada — pendiente evaluación visual
 * **ABASTECIMIENTO — INGRESOS:** ✅ Doctrina de color aplicada — pendiente prueba end-to-end
 * **ABASTECIMIENTO — INVENTARIOS:** ✅ Doctrina de color aplicada
@@ -75,8 +74,11 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 ## KEYTIPS — ESTÁNDAR CANÓNICO
 - Elemento: `<kbd>` (semánticamente correcto para atajos)
 - Comportamiento: flotante, visible solo al hover (`opacity-0 group-hover:opacity-100`)
-- Posición: `absolute -top-7 left-1/2 -translate-x-1/2`
+- Posición por defecto: `absolute -top-7 left-1/2 -translate-x-1/2` (abre hacia arriba)
+- Posición alternativa: `absolute -bottom-7 left-1/2 -translate-x-1/2` (abre hacia abajo — usar cuando el botón está en zona superior sin espacio libre encima, ej. botones del header de DetalleProducto)
+- Posición especial: `absolute -bottom-6 left-1/2 -translate-x-1/2` (link-text sin altura de pastilla, ej. "Ir a INGRESOS")
 - Estilo: `bg-[#fefce8] border border-[#fef08a] text-[#713f12] text-[9px] font-bold rounded px-1.5 py-0.5`
+- Tamaño en panel de búsqueda (footer izquierdo): `text-[10px]` — medio punto más grande por legibilidad
 - Botón padre: debe tener `group relative`
 - `pointer-events-none whitespace-nowrap z-10` en el `<kbd>`
 - Solo se agrega keytip si el atajo está implementado — nunca hints falsos
@@ -92,7 +94,17 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 
 ---
 
-## CATÁLOGO FARMACIA — Estado consolidado al 24 Jun
+## CATÁLOGO FARMACIA — Estado consolidado al 25 Jun
+
+### Keytips — COMPLETOS Y CANÓNICOS
+| Botón | Archivo | Atajo | Dirección |
+|---|---|---|---|
+| × LIMPIAR (panel búsqueda) | CatalogoFarmaciaWorkspace | Esc | -top-7 |
+| + NUEVO PRODUCTO (panel búsqueda) | CatalogoFarmaciaWorkspace | Ctrl+Enter | -top-7 |
+| CORREGIR | DetalleProducto | Ctrl+Enter | -bottom-7 |
+| DESACTIVAR | DetalleProducto | Ctrl+Supr | -bottom-7 |
+| LIMPIAR (panel detalle) | DetalleProducto | Esc | -bottom-7 |
+| Ir a INGRESOS → | DetalleProducto | Ctrl+Enter | -bottom-6 |
 
 ### Navegación teclado — COMPLETA
 | Atajo | Acción |
@@ -188,6 +200,8 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 - **Contexto operacional de botones:** cada LIMPIAR opera solo en su panel
 - **Botonería:** texto en MAYÚSCULAS, keytips flotantes solo si atajo implementado, no tocar py- ni text-size ni iconos
 - **Accent `#639922`:** eliminado — residuo del diseño anterior. Canónico ABASTECIMIENTO = `#0284C7`
+- **Keytips dirección:** usar `-bottom-7` cuando el botón está en zona superior sin espacio libre encima (overflow del contenedor padre recorta `-top-7`)
+- **git commit -am:** incluye todos los archivos con cambios pendientes — verificar con `git diff HEAD~1 HEAD --name-only` si el conteo de archivos es mayor al esperado
 
 ---
 
