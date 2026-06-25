@@ -23,9 +23,9 @@ function esRucValido(ruc: string): boolean {
 }
 
 function claseRuc(ruc: string): string {
-  if (esRucValido(ruc)) return 'border-[#639922]'
+  if (esRucValido(ruc)) return 'border-[#0284C7]'
   if (ruc.length === 11) return 'border-red-500'
-  return 'border-[#EAF3DE]'
+  return 'border-[#E0F2FE]'
 }
 
 export function ConsultaSunatProveedor({
@@ -52,10 +52,10 @@ export function ConsultaSunatProveedor({
 
   return (
     <section className="flex flex-1 flex-col gap-5 overflow-auto px-6 py-5">
-      <button type="button" onClick={onVolver} className="w-fit text-[12px] font-bold text-[#639922]">
+      <button type="button" onClick={onVolver} className="w-fit text-[12px] font-bold text-[#0284C7]">
         ← Volver
       </button>
-      <div className="rounded-2xl border border-[#EAF3DE] bg-white p-5">
+      <div className="rounded-2xl border border-[#E0F2FE] bg-white p-5">
         <label className="block">
           <span className="text-[11px] font-bold uppercase text-slate-500">RUC</span>
           <div className="mt-2 flex gap-3">
@@ -69,7 +69,7 @@ export function ConsultaSunatProveedor({
               type="button"
               disabled={!esRucValido(ruc) || consultando}
               onClick={() => void onConsultar()}
-              className="rounded-xl bg-[#639922] px-5 text-[12px] font-bold text-white disabled:opacity-50"
+              className="rounded-xl border border-[#45b356]/40 px-5 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] disabled:opacity-50"
             >
               {consultando ? 'Consultando...' : 'Consultar'}
             </button>
@@ -79,25 +79,25 @@ export function ConsultaSunatProveedor({
       </div>
 
       {datosRuc && (
-        <div className="rounded-2xl border border-[#EAF3DE] bg-white p-5">
+        <div className="rounded-2xl border border-[#E0F2FE] bg-white p-5">
           <h2 className="text-[18px] font-bold text-slate-900">{datosRuc.razonSocial}</h2>
           <p className="mt-2 text-[13px] font-semibold text-slate-500">{datosRuc.direccion || 'Sin dirección'}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {[datosRuc.estado, datosRuc.condicion].filter(Boolean).map((valor) => (
-              <span key={valor} className="rounded-full bg-[#EAF3DE] px-3 py-1 text-[10px] font-bold uppercase text-[#639922]">
+              <span key={valor} className="rounded-full bg-[#E0F2FE] px-3 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
                 {valor}
               </span>
             ))}
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <input className="h-11 rounded-xl border border-[#EAF3DE] px-3" placeholder="Contacto" value={nombreContacto} onChange={(event: ChangeEvent<HTMLInputElement>) => setNombreContacto(event.target.value)} />
-            <input className="h-11 rounded-xl border border-[#EAF3DE] px-3" placeholder="Teléfono" value={telefono} onChange={(event: ChangeEvent<HTMLInputElement>) => setTelefono(event.target.value)} />
-            <input className="h-11 rounded-xl border border-[#EAF3DE] px-3" placeholder="Condiciones de pago" value={condicionesPago} onChange={(event: ChangeEvent<HTMLInputElement>) => setCondicionesPago(event.target.value)} />
+            <input className="h-11 rounded-xl border border-[#E0F2FE] px-3" placeholder="Contacto" value={nombreContacto} onChange={(event: ChangeEvent<HTMLInputElement>) => setNombreContacto(event.target.value)} />
+            <input className="h-11 rounded-xl border border-[#E0F2FE] px-3" placeholder="Teléfono" value={telefono} onChange={(event: ChangeEvent<HTMLInputElement>) => setTelefono(event.target.value)} />
+            <input className="h-11 rounded-xl border border-[#E0F2FE] px-3" placeholder="Condiciones de pago" value={condicionesPago} onChange={(event: ChangeEvent<HTMLInputElement>) => setCondicionesPago(event.target.value)} />
           </div>
           <button
             type="button"
             onClick={() => void guardar()}
-            className="mt-5 rounded-xl bg-[#639922] px-5 py-2 text-[12px] font-bold text-white"
+            className="mt-5 rounded-xl bg-[#45b356] px-5 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a]"
           >
             Guardar proveedor
           </button>

@@ -80,9 +80,9 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
-      <div className="flex flex-[35] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#639922]/50 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#EAF3DE]/60 border-[#639922]/15">
-          <Boxes size={13} strokeWidth={2} className="shrink-0 text-[#639922]" />
+      <div className="flex flex-[35] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#0284C7]/50 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E0F2FE]/60 border-[#0284C7]/15">
+          <Boxes size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">INVENTARIO</span>
         </div>
         <div className="px-3 pt-3 pb-2 shrink-0">
@@ -91,11 +91,11 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
             placeholder="Buscar producto..."
             value={busqueda}
             onChange={(event) => setBusqueda(event.target.value)}
-            className="w-full h-9 rounded-xl border border-[#EAF3DE] bg-white px-3 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+            className="w-full h-9 rounded-xl border border-[#E0F2FE] bg-white px-3 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
           />
         </div>
         <div className="min-h-0 flex-1 overflow-auto">
-          {cargando && <div className="px-4 py-6 text-[13px] font-semibold text-[#639922]">Cargando...</div>}
+          {cargando && <div className="px-4 py-6 text-[13px] font-semibold text-[#0284C7]">Cargando...</div>}
           {error && <div className="px-4 py-6 text-[13px] text-red-500">{error}</div>}
           {!cargando && !error && inventarioFiltrado.map((item) => {
             const estado = estadoDisponibilidad(item.totalDisponible, item.stockMinimo)
@@ -104,8 +104,8 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
                 key={item.presentacionId}
                 type="button"
                 onClick={() => void onSeleccionar(item)}
-                className={`w-full text-left px-4 py-3 border-b border-[#EAF3DE] transition ${
-                  item.presentacionId === seleccionado?.presentacionId ? 'bg-[#EAF3DE]/40' : ''
+                className={`w-full text-left px-4 py-3 border-b border-[#E0F2FE] transition ${
+                  item.presentacionId === seleccionado?.presentacionId ? 'bg-[#E0F2FE]/40' : ''
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -116,7 +116,7 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
                   <span
                     className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
                       estado === 'DISPONIBLE'
-                        ? 'bg-[#EAF3DE] text-[#639922]'
+                        ? 'bg-[#E0F2FE] text-[#0284C7]'
                         : estado === 'BAJO_STOCK'
                           ? 'bg-orange-100 text-orange-600'
                           : 'bg-red-100 text-red-500'
@@ -134,15 +134,15 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-[65] flex-col overflow-hidden rounded-[28px] border border-[#639922]/30 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#EAF3DE]/60 border-[#639922]/15">
-          <Package size={13} strokeWidth={2} className="shrink-0 text-[#639922]" />
+      <div className="flex min-h-0 flex-[65] flex-col overflow-hidden rounded-[28px] border border-[#0284C7]/30 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E0F2FE]/60 border-[#0284C7]/15">
+          <Package size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">DETALLE</span>
         </div>
         <div className="min-h-0 flex-1 flex flex-col overflow-auto">
           {seleccionado === null && (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF3DE] text-[#639922]">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E0F2FE] text-[#0284C7]">
                 <Package size={28} />
               </span>
               <p className="text-[13px] font-semibold text-slate-400">
@@ -153,18 +153,18 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
 
           {seleccionado !== null && (
             <div className="px-6 py-5 space-y-5">
-              <div className="rounded-2xl border border-[#EAF3DE] bg-white p-5">
+              <div className="rounded-2xl border border-[#E0F2FE] bg-white p-5">
                 <h2 className="text-[18px] font-bold text-slate-900">{seleccionado.nombreComercial}</h2>
                 <p className="text-[13px] font-semibold text-slate-500">{seleccionado.descripcion}</p>
                 <div className="mt-3 flex items-center gap-3">
-                  <span className="text-[22px] font-bold text-[#639922]">{seleccionado.totalDisponible.toFixed(0)}</span>
+                  <span className="text-[22px] font-bold text-[#0284C7]">{seleccionado.totalDisponible.toFixed(0)}</span>
                   <span className="text-[13px] font-semibold text-slate-500">
                     unidades disponibles · {seleccionado.unidadConteo}
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#EAF3DE] bg-white p-4">
+              <div className="rounded-xl border border-[#E0F2FE] bg-white p-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">ALERTA DE STOCK MÍNIMO</p>
                 <div className="flex items-center gap-2">
                   <input
@@ -172,14 +172,14 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
                     min={0}
                     value={umbralEdicion}
                     onChange={(event) => setUmbralEdicion(event.target.value)}
-                    className="h-9 w-24 rounded-lg border border-[#EAF3DE] px-3 text-[13px] font-semibold text-slate-700 outline-none focus:border-[#639922]"
+                    className="h-9 w-24 rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
                   />
                   <span className="text-[12px] font-semibold text-slate-500">unidades</span>
                   <button
                     type="button"
                     onClick={() => void onGuardarUmbral()}
                     disabled={guardandoUmbral}
-                    className="rounded-lg bg-[#639922] px-3 py-1.5 text-[12px] font-bold text-white"
+                    className="rounded-lg bg-[#45b356] px-3 py-1.5 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
                   >
                     Guardar
                   </button>
@@ -187,22 +187,22 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
               </div>
 
               {!seleccionado.requiereLote && (
-                <div className="rounded-xl border border-[#EAF3DE] bg-white p-4">
+                <div className="rounded-xl border border-[#E0F2FE] bg-white p-4">
                   <p className="text-[12px] font-semibold text-slate-400">Este producto no requiere control por lote</p>
                 </div>
               )}
 
               {seleccionado.requiereLote && (
-                <div className="rounded-2xl border border-[#EAF3DE] bg-white p-4">
+                <div className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
                   <h3 className="text-[12px] font-bold uppercase tracking-widest text-slate-400 mb-3">LOTES VIGENTES</h3>
-                  {cargandoLotes && <p className="text-[12px] font-semibold text-[#639922]">Cargando lotes...</p>}
+                  {cargandoLotes && <p className="text-[12px] font-semibold text-[#0284C7]">Cargando lotes...</p>}
                   {!cargandoLotes && lotes.length === 0 && (
                     <p className="text-[12px] font-semibold text-slate-400">Sin lotes vigentes registrados</p>
                   )}
                   {!cargandoLotes && lotes.length > 0 && lotes.map((lote) => {
                     const dias = diasHastaVencimiento(lote.fechaVencimiento)
                     return (
-                      <div key={lote.id} className="py-2 border-b border-[#EAF3DE] last:border-0">
+                      <div key={lote.id} className="py-2 border-b border-[#E0F2FE] last:border-0">
                         <div className="flex items-center justify-between gap-2">
                           <div>
                             <p className="text-[12px] font-bold text-slate-800">{lote.numeroLote}</p>
@@ -216,7 +216,7 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
                               <p className="text-[11px] text-slate-400">{lote.fechaVencimiento}</p>
                             )}
                           </div>
-                          <span className="text-[13px] font-bold text-[#639922]">
+                          <span className="text-[13px] font-bold text-[#0284C7]">
                             {lote.cantidadDisponible.toFixed(0)} unid
                           </span>
                         </div>

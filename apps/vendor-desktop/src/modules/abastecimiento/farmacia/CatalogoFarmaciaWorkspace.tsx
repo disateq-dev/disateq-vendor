@@ -161,7 +161,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               <button
                 type="button"
                 onClick={catalogo.onNuevo}
-                className="rounded-xl bg-[#0284C7] px-4 py-2 text-[12px] font-bold text-white"
+                className="rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3]"
               >
                 + Crear producto nuevo
               </button>

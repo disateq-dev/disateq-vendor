@@ -13,10 +13,10 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
   const lineasConLote = ingresos.lineas.filter((linea) => linea.requiereLote).length
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#639922]/50 bg-[#FDFCF9]">
-      <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#EAF3DE]/60 border-[#639922]/15">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#0284C7]/50 bg-[#FDFCF9]">
+      <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E0F2FE]/60 border-[#0284C7]/15">
         <div className="flex items-center gap-2">
-          <Truck size={13} strokeWidth={2} className="shrink-0 text-[#639922]" />
+          <Truck size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
             {ingresos.creandoProductoAbierto && 'REGISTRANDO PRODUCTO'}
             {!ingresos.creandoProductoAbierto && ingresos.creandoProveedorAbierto && 'REGISTRANDO PROVEEDOR'}
@@ -27,7 +27,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
           <button
             type="button"
             onClick={ingresos.onLimpiarError}
-            className="flex min-w-0 items-center gap-2 rounded-full bg-[#EAF3DE] px-3 py-1 text-[11px] font-bold text-[#639922]"
+            className="flex min-w-0 items-center gap-2 rounded-full bg-[#E0F2FE] px-3 py-1 text-[11px] font-bold text-[#0284C7]"
           >
             <span className="truncate">{ingresos.error}</span>
             <X className="h-3.5 w-3.5 shrink-0" />
@@ -50,7 +50,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
           <button
             type="button"
             onClick={ingresos.onAbrirBuscadorProducto}
-            className="w-fit rounded-xl bg-[#639922] px-4 py-2 text-[12px] font-bold text-white"
+            className="w-fit rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3]"
           >
             Agregar producto
           </button>
@@ -113,7 +113,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
       )}
 
       {!ingresos.creandoProductoAbierto && !ingresos.creandoProveedorAbierto && (
-        <footer className="shrink-0 flex items-center justify-between border-t border-[#EAF3DE] bg-white px-6 py-4">
+        <footer className="shrink-0 flex items-center justify-between border-t border-[#E0F2FE] bg-white px-6 py-4">
           <span className="text-[12px] font-bold text-slate-600">
             {ingresos.lineas.length} líneas · {lineasConLote} con lote
           </span>
@@ -121,7 +121,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
             <button
               type="button"
               onClick={ingresos.onCancelar}
-              className="rounded-xl border border-[#EAF3DE] px-4 py-2 text-[12px] font-bold text-slate-600"
+              className="rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]"
             >
               Cancelar
             </button>
@@ -129,7 +129,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
               type="button"
               onClick={() => void ingresos.onConfirmarIngreso()}
               disabled={!ingresos.ingresoValido || ingresos.cargando}
-              className="rounded-xl bg-[#639922] px-5 py-2 text-[12px] font-bold text-white disabled:opacity-50"
+              className="rounded-xl bg-[#45b356] px-5 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
             >
               Confirmar ingreso
             </button>
