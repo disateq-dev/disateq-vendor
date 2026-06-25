@@ -113,7 +113,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     setBuscando(true)
     timerRef.current = window.setTimeout(() => {
       obtenerProductosComerciales(terminoLimpio, true)
-        .then((productos: ProductoComercial[]) => setResultados(productos.slice(0, 8)))
+        .then((productos: ProductoComercial[]) => setResultados(productos))
         .catch((error: unknown) => setErrorLocal(resolverMensajeError(error)))
         .finally(() => setBuscando(false))
     }, 300)

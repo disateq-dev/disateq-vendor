@@ -164,18 +164,18 @@ pub async fn obtener_productos_comerciales(
         condiciones.push("pc.estado = 'ACTIVO'");
     }
     if filtro_nombre.is_some() {
-        condiciones.push("(pc.nombre_comercial LIKE ? OR pg.ifa LIKE ?)");
+        condiciones.push("(pc.nombre_comercial LIKE ? OR pg.ifa LIKE ? OR pc.nombre_fabricante LIKE ? OR pc.codigo_digemid LIKE ?)");
     }
     if !condiciones.is_empty() {
         sql.push_str(" WHERE ");
         sql.push_str(&condiciones.join(" AND "));
     }
-    sql.push_str(" ORDER BY pc.nombre_comercial");
+    sql.push_str(" ORDER BY pc.nombre_comercial LIMIT 12");
 
     let mut query = sqlx::query(&sql);
     if let Some(filtro) = filtro_nombre {
         let patron = format!("%{}%", filtro);
-        query = query.bind(patron.clone()).bind(patron);
+        query = query.bind(patron.clone()).bind(patron.clone()).bind(patron.clone()).bind(patron);
     }
     let rows = query.fetch_all(pool).await.map_err(|e| e.to_string())?;
 
