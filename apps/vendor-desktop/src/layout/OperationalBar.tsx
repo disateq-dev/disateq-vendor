@@ -143,11 +143,20 @@ export function ContextBar({
   const [focusedPillIdx, setFocusedPillIdx] = useState<number>(0);
   const [navMode, setNavMode] = useState(false);
   const [navIdx, setNavIdx]   = useState(0);
+  const [detalleActivo, setDetalleActivo] = useState(false)
+
+  useEffect(() => {
+    function onDetalleActivo(e: Event) {
+      setDetalleActivo((e as CustomEvent<{ active: boolean }>).detail.active)
+    }
+    document.addEventListener('pos:detalleActivo', onDetalleActivo)
+    return () => document.removeEventListener('pos:detalleActivo', onDetalleActivo)
+  }, [])
 
   // Refs — lectura fresca en el handler sin stale closures
-  const stateRef = useRef({ navMode, navIdx, expanded, focusedPillIdx, active, abastTabsVisibles });
+  const stateRef = useRef({ navMode, navIdx, detalleActivo, expanded, focusedPillIdx, active, abastTabsVisibles });
   useEffect(() => {
-    stateRef.current = { navMode, navIdx, expanded, focusedPillIdx, active, abastTabsVisibles };
+    stateRef.current = { navMode, navIdx, detalleActivo, expanded, focusedPillIdx, active, abastTabsVisibles };
   });
   const accessRef = useRef({ puedeVerAbastecimiento, puedeVerClientes, puedeVerReportes, puedeVerComprobantes, puedeVerAjustes, puedeSupervisarCaja, puedeVerSales });
   useEffect(() => {
@@ -278,6 +287,7 @@ export function ContextBar({
 
       // ── ←→ Enter — navegar pills cuando hay expanded ───────
       if (!s.navMode && !e.ctrlKey && !e.altKey && !e.shiftKey && s.expanded) {
+        if (s.detalleActivo) return
         const tabs = s.expanded === "cash"
           ? CASH_TABS.filter(t => t.key !== "supervision-caja" || acc.puedeSupervisarCaja)
           : s.expanded === "config"

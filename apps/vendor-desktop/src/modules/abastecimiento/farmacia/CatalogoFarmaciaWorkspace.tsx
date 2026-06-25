@@ -91,7 +91,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
                 className="group relative flex-[1] rounded-xl border border-[#f97316]/40 px-2 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>× LIMPIAR</span>
-                <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd>
+                <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[10px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd>
               </button>
               <button
                 type="button"
@@ -99,7 +99,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
                 className="group relative flex-[2] rounded-xl border border-[#45b356]/40 px-3 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center justify-center"
               >
                 <span>+ NUEVO PRODUCTO</span>
-                <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd>
+                <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[10px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd>
               </button>
             </div>
           )}

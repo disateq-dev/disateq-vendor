@@ -65,9 +65,98 @@ bloquear al operador en el mostrador; ajustar tras validar en uso real.
 **Decisión derivada — búsqueda de producto en el ingreso:** el buscador
 muestra cada presentación comercial como fila de resultado independiente
 (no un selector de producto + selector de presentación en dos pasos). Mismo
-criterio: empezar simple, ajustar según uso real antes de sofisticar.
+criterio: empezar simple, ajustar tras validar en uso real antes de sofisticar.
 
 **Estado:** A EVALUAR EN USO REAL — Fernando validó "hay que probarlo para
 ver si conviene, pero por ahora así se maneja". Revisar después de operación
 real en mostrador si el lote genérico sin fecha y el listado plano de
 presentaciones generan fricción o confusión.
+
+---
+
+## 2026-06-23 — Modelo de roles, multi-sucursal y topología operacional
+
+**Contexto:** Durante revisión de la arquitectura multi-rubro / multi-usuario /
+multi-sucursal, Fernando precisó el comportamiento operacional esperado de cada
+rol en un contexto de múltiples locales. Esto modifica y amplía lo registrado
+en GLOSARIO §10 (roles base), que solo contemplaba un local único.
+
+**Decisiones confirmadas por Fernando (Director de Producto):**
+
+1. **ADMINISTRADOR = Gerente General.** El rol ADMIN es el único con acceso
+   al universo operativo completo de VENDOR — sin restricción por local,
+   sucursal ni módulo. Es el techo de la jerarquía. No existe un rol por
+   encima de ADMIN.
+
+2. **GESTOR es por local.** A diferencia del resto de roles, GESTOR está
+   ligado operacionalmente a un local específico. Un GESTOR no puede operar
+   ni supervisar otro local que no sea el suyo. Es el administrador de su
+   local — no del negocio completo.
+
+3. **VEN, SOP y roles adicionales son portables entre sucursales.** Un
+   operador con rol VEN (o cualquier rol distinto de GESTOR) puede trabajar
+   en diferentes sucursales manteniendo sus capacidades inherentes o asignadas.
+   La identidad operacional del operador no cambia al moverse entre locales —
+   solo cambia el contexto de local activo en su sesión.
+
+**Implicaciones arquitectónicas identificadas — pendientes de diseño formal:**
+
+- El modelo de `Operador` necesita distinguir entre vínculo a local
+  (GESTOR, fijo) y contexto de local activo (VEN/SOP, seleccionable al
+  iniciar sesión o al abrir turno).
+- El PORTAL / Nexo necesita una jerarquía `empresa → local → terminal`,
+  no solo `cliente → terminal` como está esbozado hoy en ARQUITECTURA_SYNC.md.
+- Los reportes y la visibilidad de datos deben respetar esta jerarquía:
+  ADMIN ve todo · GESTOR ve solo su local · VEN ve solo su bloque.
+- La asignación de series de comprobante (ya resuelta por terminal en
+  ARQUITECTURA_SYNC §5) es compatible con este modelo — no requiere cambio.
+- La pregunta de si un VEN puede "fichar" en más de un local en el mismo
+  día (turnos parciales en locales distintos) queda abierta — no definida
+  en esta sesión.
+
+**Momento de resolución formal:** después de completar ABASTECIMIENTO y su
+integración real con Turno/Caja y Ventas. El documento a producir en esa
+instancia es la Arquitectura Multi-Sucursal, que responderá estas preguntas
+y actualizará GLOSARIO §10 y ARQUITECTURA_SYNC.md en consecuencia.
+
+**Estado:** PENDIENTE DE IMPLEMENTAR — bases confirmadas, diseño formal diferido.
+No bloquea trabajo inmediato (todo el desarrollo actual ocurre en contexto
+de local único).
+
+---
+
+## 2026-06-23 — Modelo de campos farmacéuticos: simplificación de UI y campos pendientes
+
+**Contexto:** Análisis comparativo entre el estándar DIGEMID (estatal) y el modelo
+operacional de cadenas de boticas privadas peruanas. Contraste aplicado contra
+los campos actuales de DISATEQ.
+
+**Campos ocultados de la UI (mantenidos en tipo y backend):**
+- `nombreTitular` en `ProductoComercial` — sin valor operacional para el
+  operador de una botica independiente. El titular y el fabricante son casi
+  siempre la misma entidad en la práctica peruana.
+- `paisOrigen` en `ProductoComercial` — no influye en ninguna decisión
+  operacional. El operador no toma acciones basadas en el país de origen.
+
+**Campos identificados como relevantes pero pendientes de diseño:**
+- `estadoRegistroSanitario` — el estado legal del registro ante DIGEMID
+  (Vigente, Suspendido, Cancelado, Vencido) es distinto del estado operacional
+  del producto en el sistema (ACTIVO/INACTIVO). Hoy están colapsados. Requiere
+  campo nuevo en `ProductoComercial` y migración de schema.
+- `clasificacionATC` — código internacional de Anatomía, Terapéutica y
+  Química. Más preciso que `categoriaFarmacia`. Diferir hasta integración
+  avanzada con reportes DIGEMID.
+- `flagGenericoObligatorio` — booleano de compliance con lista de genéricos
+  esenciales. Relevante para evitar multas del Estado. Diferir.
+- `precioObservatorio` — precio de referencia del Observatorio de Precios
+  DIGEMID. Campo informativo para contraste con precio de venta. Diferir
+  hasta módulo de precios avanzado.
+
+**Campos correctamente modelados confirmados:** `registroSanitario`,
+`ifa` (equivalente DCI), `concentracion`, `formaFarmaceutica`,
+`condicionVenta`, `codigoDIGEMID`, `PresentacionComercial.codigoBarras`,
+`PresentacionComercial.stockMinimo`, trazabilidad de lote con FEFO.
+
+**Estado:** PENDIENTE DE IMPLEMENTAR — `estadoRegistroSanitario` es el
+único campo de alta relevancia para la fase actual. Los demás se difieren
+a fases posteriores (facturación electrónica, reportes DIGEMID avanzados).

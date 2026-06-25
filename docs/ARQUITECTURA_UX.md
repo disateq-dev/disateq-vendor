@@ -2,7 +2,7 @@
 
 ## Estado del documento
 
-Documento autoridad. Creado 21-jun-2026.
+Documento autoridad. Creado 21-jun-2026. Última actualización 24-jun-2026.
 
 Reemplaza tres documentos que describían una jerarquía conceptual nunca
 implementada: `03-arquitectura/arquitectura.md`,
@@ -123,12 +123,6 @@ El swap entre vistas (`main`/`client`/confirmación) ocurre por estado React
 local del propio `CobroPanel`, montando/desmontando contenido dentro del
 mismo `SheetWork` — no hay API de SheetWork para esto.
 
-### Decisión pendiente activa
-
-Adopción en ABASTECIMIENTO FARMACIA — ver `docs/context/CURRENT_CONTEXT.md`
-→ Próxima ventana de trabajo, punto 2. No se repite aquí para evitar
-duplicar el mismo problema que originó este documento.
-
 ---
 
 ## Color por módulo
@@ -142,46 +136,184 @@ aplica a los módulos que no usan SheetWork.** Verificado leyendo
 `CatalogoFarmaciaWorkspace.tsx` completos: ninguno importa ni usa
 `SheetWork`/`SheetHeader` — cada uno construye su propio chrome con un
 color de borde/encabezado fijo en Tailwind arbitrario, no como prop
-reutilizable. Valores reales encontrados:
+reutilizable.
 
-| Módulo | Color real | Mecanismo |
+---
+
+## Semántica de color de botones — DOCTRINA GLOBAL IRREVOCABLE
+
+**Aprobada por Fernando — 24-jun-2026. Aplica a todo DISATEQ Vendor sin excepción.**
+
+El color no es decoración — comunica acción operacional. El operador lee el
+color antes de leer el texto. Esta semántica debe mantenerse consistente en
+todos los módulos para que el operador construya el reflejo correcto.
+
+| Patrón | Cuándo usar | Color | Valores Tailwind |
+|---|---|---|---|
+| **Outline verde** | Iniciar una acción nueva | Verde | `border-[#45b356]/40 text-[#45b356] hover:bg-[#F2F7F3]` |
+| **Sólido verde** | Confirmar / cerrar una acción ya iniciada | Verde relleno | `bg-[#45b356] text-white hover:bg-[#3a9e4a]` |
+| **Outline naranja** | Salir / limpiar / cancelar **reversible** | Naranja | `border-[#f97316]/40 text-[#f97316] hover:bg-[#fff7ed]` |
+| **Outline rojo** | Cancelar dentro de un flujo destructivo | Rojo | `border-[#dc2626]/40 text-[#dc2626] hover:bg-[#fef2f2]` |
+| **Sólido rojo** | Confirmar acción **irreversible** / destructiva | Rojo relleno | `bg-red-500 text-white` |
+
+### Regla naranja vs rojo — distinción crítica
+
+**Naranja** = el operador puede volver. No hay consecuencias persistentes.
+Ejemplos: `× LIMPIAR`, `× CANCELAR` al salir de un stepper sin datos.
+
+**Rojo outline** = cancelar dentro de un flujo que ya tiene consecuencias
+potenciales o que el sistema considera sensible.
+Ejemplos: `CANCELAR` dentro del formulario CORREGIR, `CANCELAR` dentro del
+formulario DESACTIVAR.
+
+**Rojo sólido** = la acción es irreversible una vez ejecutada. El sistema
+no puede deshacer automáticamente.
+Ejemplos: `CONFIRMAR BAJA`, `ELIMINAR`.
+
+### Ejemplos verificados en código (24-jun-2026)
+
+| Botón | Archivo | Patrón |
 |---|---|---|
-| VENTAS / COBRO | `#45b356` (verde) | Prop `accent` de SheetWork |
-| TURNO / CAJA | `#2A7CA8` (azul-petróleo) en bordes y headers; botones de acción positiva reutilizan `#45b356`, cierre/peligro usa `#dc2626`/`#b91c1c` | Hardcodeado, sin SheetWork — no es un accent único, son varios colores semánticos por acción |
-| COMPROBANTES | `#C05050` (terracota) | Hardcodeado, sin SheetWork |
-| AJUSTES / CONFIG | `#697387` (gris azulado) | Hardcodeado, sin SheetWork |
-| FARMACIA (Catálogo, verificado) | `#639922` (verde oliva) | Hardcodeado, sin SheetWork — header propio de 64px, no el SheetHeader de 42px |
+| `× LIMPIAR` | CatalogoFarmaciaWorkspace.tsx | Outline naranja |
+| `+ NUEVO PRODUCTO` | CatalogoFarmaciaWorkspace.tsx | Outline verde |
+| `CORREGIR` | DetalleProducto.tsx | Outline verde |
+| `DESACTIVAR` | DetalleProducto.tsx | Outline rojo |
+| `LIMPIAR` (detalle) | DetalleProducto.tsx | Outline naranja |
+| `CANCELAR` (formulario corregir) | DetalleProducto.tsx | Outline rojo |
+| `GUARDAR CORRECCIÓN` | DetalleProducto.tsx | Sólido verde |
+| `CANCELAR` (formulario desactivar) | DetalleProducto.tsx | Outline rojo |
+| `CONFIRMAR BAJA` | DetalleProducto.tsx | Sólido rojo |
+| `REACTIVAR` | DetalleProducto.tsx | Sólido verde |
 
-Los valores de `design-system/colors.md` para VENTAS (`#F2A900`) y de
-`visual-philosophy.md` ("azul operacional") quedan invalidados por código
-real en los dos casos verificados. TURNO en `colors.md` (`#78C487`) tampoco
-coincide con el `#2A7CA8` real encontrado — ese documento no debe
-consultarse como fuente de color, está archivado en `docs/_obsoleto/`.
+### Semántica de color de estado operacional (rescatada de `00-governance/reglas.md`)
 
-Proveedores e Ingresos (las otras dos workspaces de FARMACIA), Sales,
-PreVenta, Inventory y Purchases no se verificaron en esta sesión — pendiente
-de auditoría puntual si se necesita su color exacto.
+Complementaria a la semántica de botones — aplica a badges, indicadores y
+estados en listas y paneles, no a botones de acción:
 
-### Semántica de color (rescatada de `00-governance/reglas.md`, auditoría 21-jun-2026)
-
-Esta regla no estaba en ninguno de los 3 documentos que este archivo
-reemplaza, pero sí en uno de los 19 que reemplaza `DOCTRINA.md`. Pertenece
-aquí, no allá, porque es regla de color, no de doctrina de producto.
-El color no es decoración — comunica estado operacional:
-
-| Color | Significado |
+| Color | Significado de estado |
 |---|---|
-| Verde | Confirmar / continuar |
-| Rojo | Cerrar / acción irreversible |
-| Ámbar | Advertencia / revisión |
-| Azul / navy | Navegación / contexto |
+| Verde | Activo / confirmado / continuar |
+| Rojo | Cerrado / inactivo / irreversible |
+| Ámbar | Advertencia / requiere revisión |
+| Azul / navy | Navegación / contexto / información |
 
-Consistente con lo verificado en código: `CashWorkspace.tsx` usa rojo
-(`#dc2626`/`#b91c1c`) exclusivamente para cierre de turno (irreversible) y
-verde para confirmaciones; `ComprobantesWorkspace.tsx` usa ámbar para
-"REFERENCIADO" (estado de revisión) y rojo para "ANULADO". No se auditó
-exhaustivamente cada uso de color contra esta tabla — es regla declarada,
-no verificación completa caso por caso.
+---
+
+## Sistema de input semántico — DOCTRINA GLOBAL IRREVOCABLE
+
+**Aprobado por Fernando — 24-jun-2026.**
+
+### Principio fundamental
+
+No es solo una convención de colores. Es un lenguaje de teclado operacional
+donde cada modificador tiene un peso semántico fijo, independiente de la
+tecla base. El operador aprende una sola regla visual: más denso = más
+definitivo.
+
+**Alcance:** aplica exclusivamente a botones de acción final
+(GUARDAR, CONFIRMAR, CONCRETAR, ELIMINAR, DAR DE BAJA y equivalentes).
+No aplica a botones de navegación, creación, ni formularios intermedios.
+
+---
+
+### Semántica de modificadores
+
+| Modificador | Semántica | Peso visual |
+|---|---|---|
+| Sin modificador | Acción directa e irreversible | Máximo — sólido total |
+| `Ctrl+` | Acción con contexto adicional | Alto — borde denso + fondo semidenso |
+| `Shift+` | Acción con reserva o parcial | Medio — borde denso + fondo atenuado |
+| `Alt+` | Acción mínima / registrar sin comprometer | Bajo — borde denso + fondo blanco |
+
+La tecla base define **qué tipo** de acción.
+El modificador define **cuánto** de esa acción.
+
+---
+
+### Familia ENTER — acciones de avance / confirmación
+
+Verde como color semántico. Densidad decrece con el modificador.
+
+| Atajo | Visual | Descripción | Tailwind |
+|---|---|---|---|
+| `Enter` | Sólido verde total | Confirmar sin retorno — nivel máximo | `bg-[#45b356] text-white` |
+| `Ctrl+Enter` | Borde verde denso + fondo verde semidenso | Confirmar con contexto adicional | `border-[#45b356] bg-[#45b356]/20 text-[#45b356]` |
+| `Shift+Enter` | Borde verde denso + fondo verde atenuado | Avanzar con reserva | `border-[#45b356] bg-[#45b356]/10 text-[#45b356]` |
+| `Alt+Enter` | Borde verde denso + fondo blanco | Registrar sin comprometer | `border-[#45b356] bg-white text-[#45b356]` |
+
+---
+
+### Familia DELETE — acciones de retroceso / eliminación
+
+Rojo como color semántico. Densidad decrece con el modificador.
+
+| Atajo | Visual | Descripción | Tailwind |
+|---|---|---|---|
+| `Delete` | Sólido rojo total | Eliminar de forma irreversible — nivel máximo | `bg-red-500 text-white` |
+| `Ctrl+Delete` | Borde rojo denso + fondo rojo semidenso | Borrar o limpiar con contexto | `border-[#dc2626] bg-[#dc2626]/20 text-[#dc2626]` |
+| `Shift+Delete` | Borde rojo denso + fondo rojo atenuado | Eliminar parcialmente o con reserva | `border-[#dc2626] bg-[#dc2626]/10 text-[#dc2626]` |
+| `Alt+Delete` | Borde rojo denso + fondo blanco | Marcar para eliminación sin ejecutar | `border-[#dc2626] bg-white text-[#dc2626]` |
+
+---
+
+### Estado deshabilitado — regla canónica
+
+**`disabled:opacity-50`** aplicado sobre el color original del botón.
+
+El botón deshabilitado conserva su color semántico al 50% de opacidad.
+El operador sabe que ese botón existe y haría algo, pero no puede ejecutarse
+ahora. Es más informativo que convertirlo en gris genérico, que borra la
+semántica completamente.
+
+No usar `opacity-25` ni `opacity-40` — quedan demasiado invisibles.
+No usar `opacity-75` ni superior — no comunica claramente que está inactivo.
+`opacity-50` es el valor canónico único.
+
+**Aplicación en código:**
+```
+disabled:opacity-50 disabled:cursor-not-allowed
+```
+
+---
+
+## Convención de botones de acción — ESTÁNDAR CANÓNICO
+
+**Aprobado por Fernando — 24-jun-2026.**
+
+### Texto
+- Siempre en MAYÚSCULAS
+- Sin variantes de texto condicionales salvo justificación explícita
+
+### Keytips flotantes
+- Implementados con `<kbd>` — elemento HTML semánticamente correcto
+- Visibles solo al hacer hover (`opacity-0 group-hover:opacity-100`)
+- Posición: flotando encima del botón (`absolute -top-7`)
+- Centrados horizontalmente (`left-1/2 -translate-x-1/2`)
+- Estilo: `bg-[#fefce8] border border-[#fef08a] text-[#713f12] text-[9px] font-bold`
+- El botón debe tener `group relative` para activar el mecanismo
+- `pointer-events-none` en el `<kbd>` para no interferir con el cursor
+- `whitespace-nowrap` para evitar saltos de línea en atajos compuestos
+
+### Restricciones absolutas al modificar botones
+- **Nunca tocar** `py-` (altura)
+- **Nunca tocar** `text-[Npx]` del label (tipografía)
+- **Nunca tocar** `size=` ni `strokeWidth` de íconos
+- Sí se puede ajustar `px-` (ancho) cuando el layout lo requiera
+
+### Par de botones de panel de búsqueda
+Patrón estándar para el fondo del panel izquierdo de cualquier workspace
+con búsqueda. Proporciones `flex-[1]` izquierdo / `flex-[2]` derecho.
+
+```
+[× LIMPIAR] [+ NUEVO PRODUCTO]
+  naranja     verde outline
+  flex-[1]    flex-[2]
+```
+
+- Ambos se ocultan cuando el stepper de creación está abierto
+- Botón izquierdo: `disabled` cuando no hay término ni resultados
+- Botón izquierdo: opera **solo** en su panel — nunca invade el contexto del panel derecho
+- Cada panel tiene su propio LIMPIAR con su propia responsabilidad
 
 ---
 
