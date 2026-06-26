@@ -2,7 +2,15 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `fd4fa66` — feat(catalogo): rediseno panel derecho — VistaCatalogo resumen/detalle/presentaciones/precios, titulo dinamico
+* **Último commit:** `ec715fc` — fix(catalogo): keytips mas visibles text-11px, fechas en topbar datos basicos, overflow-visible botones navegadores
+
+## Commits de la jornada 26 Jun
+| Hash | Descripción |
+|---|---|
+| `ec715fc` | fix(catalogo): keytips mas visibles text-11px, fechas en topbar datos basicos, overflow-visible botones navegadores |
+| `83a7efb` | chore: eliminar directorios fantasma apps/vendor-desktop/apps y src raiz, regla canonica de rutas |
+| (no capturado) | refactor(catalogo): sheetworks autonomas — topbar propia por vista, eliminar header global duplicado y tabs residuales, limpiar HeaderProducto y corregirRef |
+| (no capturado) | fix(catalogo): botones detalle/presentaciones/precios alineados con header producto, color #0284C7, keytips Alt+D/Alt+P/Alt+R |
 
 ## Commits de la jornada 25 Jun
 | Hash | Descripción |
@@ -12,13 +20,6 @@
 | `a0714ae` | fix(catalogo): atajos keytips — Ctrl+Enter corregir, Ctrl+Insert ir a ingresos, link-text self-end |
 | `9c79faa` | fix(catalogo): keytips — tamaño panel busqueda, dirección panel detalle, keytip ir a ingresos |
 | `3651038` | fix(abastecimiento): doctrina color — accent #0284C7, semántica verde/naranja/rojo todo ABASTECIMIENTO |
-
-## Commits de la jornada 26 Jun
-| Hash | Descripción |
-|---|---|
-| pendiente | fix(catalogo): botones detalle/presentaciones/precios alineados con header producto, color #0284C7, keytips Alt+D/Alt+P/Alt+R |
-| pendiente | refactor(catalogo): sheetworks autonomas — topbar propia por vista, eliminar header global duplicado y tabs residuales, limpiar HeaderProducto y corregirRef |
-| pendiente | chore: eliminar directorios fantasma apps/vendor-desktop/apps y src raiz |
 
 ---
 
@@ -42,7 +43,7 @@
 ## Recorrido de Dominios (Matriz de Estado)
 * **LOGIN:** ✅
 * **TURNO / CAJA:** ✅
-* **ABASTECIMIENTO — CATÁLOGO:** ✅ Sprint completo cerrado. Keytips canónicos. Búsqueda 4 campos. Panel derecho rediseñado con 4 vistas. Sheetworks autónomas con topbar propia. Directorios fantasma eliminados.
+* **ABASTECIMIENTO — CATÁLOGO:** ✅ Sprint completo cerrado. Sheetworks autónomas con topbar propia. Keytips canónicos text-11px. Botones navegadores #0284C7 con overflow-visible.
 * **ABASTECIMIENTO — PROVEEDORES:** ✅ Doctrina de color aplicada — pendiente evaluación visual
 * **ABASTECIMIENTO — INGRESOS:** ✅ Doctrina de color aplicada — pendiente prueba end-to-end
 * **ABASTECIMIENTO — INVENTARIOS:** ✅ Doctrina de color aplicada
@@ -60,7 +61,7 @@ El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCa
 
 | Vista | Título headersheet | Topbar | Descripción |
 |---|---|---|---|
-| `resumen` | `DATOS BÁSICOS PRODUCTO` | Nombre + fabricante + botones DETALLE/PRESENTACIONES/PRECIOS (derecha) | Resumen operacional |
+| `resumen` | `DATOS BÁSICOS PRODUCTO` | Nombre + fabricante + fechas + botones DETALLE/PRESENTACIONES/PRECIOS (derecha) | Resumen operacional |
 | `detalle` | `DETALLE DEL PRODUCTO` | Nombre + fabricante + fechas + badge INACTIVO | Todos los datos del producto |
 | `presentaciones` | `ASIGNACIÓN PRESENTACIONES PRODUCTO` | Nombre + fabricante | Formas de venta y nodos de fraccionamiento |
 | `precios` | `ASIGNACIÓN DE PRECIOS PRODUCTO` | Nombre + fabricante | Valores operacionales por forma de venta |
@@ -71,8 +72,18 @@ El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCa
 ### Doctrina de sheetworks — IRREVOCABLE
 - Cada sheetwork es autónoma — gestiona su propia topbar y contenido
 - No existe header global compartido entre sheetworks
-- Los botones DETALLE/PRESENTACIONES/PRECIOS en la sheetwork DATOS BÁSICOS son navegadores de salida — viven en la topbar alineados a la derecha del nombre del producto
+- Los botones DETALLE/PRESENTACIONES/PRECIOS en DATOS BÁSICOS son navegadores de salida — viven en la topbar alineados a la derecha del nombre del producto
 - Color de navegadores: outline `#0284C7` inactivo, sólido `bg-[#0284C7]` activo
+- Contenedor de navegadores: `flex gap-2 overflow-visible` — obligatorio para que keytips -top-7 emerjan
+
+### Keytips — ESTÁNDAR CANÓNICO ACTUALIZADO
+- Tamaño: `text-[11px]`
+- Padding: `px-2 py-1`
+- Estilo completo: `bg-[#fefce8] border border-[#fef08a] text-[#713f12] text-[11px] font-bold rounded px-2 py-1`
+- Comportamiento: `opacity-0 group-hover:opacity-100 transition-opacity duration-150`
+- Posición default (botones en zona inferior): `absolute -bottom-7 left-1/2 -translate-x-1/2`
+- Posición alternativa (botones en zona superior): `absolute -top-7 left-1/2 -translate-x-1/2`
+- `pointer-events-none whitespace-nowrap z-10`
 
 ### Navegación entre sheetworks
 - Seleccionar producto → sheetwork `resumen`
@@ -80,19 +91,6 @@ El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCa
 - LIMPIAR desde cualquier sheetwork → limpia selección y vuelve a BÚSQUEDA CATÁLOGO
 - `onLimpiarDetalle` resetea `vistaActiva` a `'resumen'`
 - `onSeleccionar` inicializa `vistaActiva` en `'resumen'`
-
-### Keytips — COMPLETOS Y CANÓNICOS
-| Botón | Archivo | Atajo | Dirección |
-|---|---|---|---|
-| × LIMPIAR (panel búsqueda) | CatalogoFarmaciaWorkspace | Esc | `-top-7` |
-| + NUEVO PRODUCTO (panel búsqueda) | CatalogoFarmaciaWorkspace | Ctrl+Enter | `-top-7` |
-| DETALLE (topbar resumen) | DetalleProducto | Alt+D | `-top-7` |
-| PRESENTACIONES (topbar resumen) | DetalleProducto | Alt+P | `-top-7` |
-| PRECIOS (topbar resumen) | DetalleProducto | Alt+R | `-top-7` |
-| CORREGIR | DetalleProducto | Ctrl+Enter | `-bottom-7` |
-| DESACTIVAR | DetalleProducto | Ctrl+Supr | `-bottom-7` |
-| LIMPIAR (vista detalle) | DetalleProducto | Esc | `-bottom-7` |
-| Ir a INGRESOS → | DetalleProducto | Ctrl+Insert | `-bottom-6` |
 
 ### Mapa de atajos teclado — CATÁLOGO
 | Atajo | Acción |
@@ -162,20 +160,6 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 | `Ctrl+Delete` | `border-[#dc2626] bg-[#dc2626]/20 text-[#dc2626]` |
 | `Shift+Delete` | `border-[#dc2626] bg-[#dc2626]/10 text-[#dc2626]` |
 | `Alt+Delete` | `border-[#dc2626] bg-white text-[#dc2626]` |
-
----
-
-## KEYTIPS — ESTÁNDAR CANÓNICO
-- Elemento: `<kbd>`
-- Comportamiento: `opacity-0 group-hover:opacity-100`
-- Botón padre: `group relative`
-- Posición por defecto: `absolute -top-7 left-1/2 -translate-x-1/2` (abre arriba)
-- Posición alternativa: `absolute -bottom-7 left-1/2 -translate-x-1/2` (abre abajo — cuando el botón está en zona superior sin espacio libre encima)
-- Posición link-text: `absolute -bottom-6 left-1/2 -translate-x-1/2`
-- Estilo: `bg-[#fefce8] border border-[#fef08a] text-[#713f12] text-[9px] font-bold rounded px-1.5 py-0.5`
-- Tamaño panel búsqueda (footer izquierdo): `text-[10px]`
-- `pointer-events-none whitespace-nowrap z-10`
-- Solo se agrega si el atajo está implementado
 
 ---
 
@@ -257,17 +241,18 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 - **Contexto operacional de botones:** cada LIMPIAR opera solo en su panel
 - **Botonería:** texto en MAYÚSCULAS, keytips flotantes solo si atajo implementado
 - **Accent `#639922`:** eliminado — residuo del diseño anterior. Canónico ABASTECIMIENTO = `#0284C7`
-- **Keytips dirección:** usar `-bottom-7` cuando el botón está en zona superior sin espacio libre encima
+- **Keytips dirección:** usar `-bottom-7` cuando el botón está en zona inferior, `-top-7` cuando está en zona superior
+- **Keytips tamaño canónico:** `text-[11px] px-2 py-1` — actualizado 26 Jun
+- **Contenedor de navegadores de sheetwork:** debe tener `overflow-visible` para que keytips -top-7 emerjan
 - **git commit -am:** incluye todos los archivos con cambios pendientes — verificar con `git diff HEAD~1 HEAD --name-only` si el conteo es mayor al esperado
-- **VistaCatalogo:** el panel derecho de CATÁLOGO no usa tabs — usa sheetworks autónomas controladas por estado `VistaCatalogo`
-- **Directorios fantasma eliminados 26 Jun:** `apps\vendor-desktop\apps` y `src\` en raíz del repo — originados por Codex ejecutando desde directorio incorrecto
-- **Rutas canónicas:** ver sección REGLA CANÓNICA DE RUTAS — nunca ejecutar tsc desde raíz, nunca git desde apps\vendor-desktop
+- **Directorios fantasma eliminados 26 Jun:** `apps\vendor-desktop\apps` y `src\` en raíz del repo
+- **Rutas canónicas:** ver sección REGLA CANÓNICA DE RUTAS
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Evaluación visual** — Panel derecho CATÁLOGO con las 4 sheetworks en la app (continuar)
+1. **Evaluación visual** — Panel derecho CATÁLOGO con las 4 sheetworks (continuar — verificar keytips y fechas)
 2. **Evaluación visual** — NuevoProductoStepper flujo completo
 3. **Evaluación visual** — PROVEEDORES flujo completo
 4. **INGRESOS** — prueba end-to-end
