@@ -114,7 +114,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
           )}
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-            {catalogo.creandoAbierto ? 'NUEVO PRODUCTO' : modoDetalle === 'corrigiendo' ? 'CORREGIR DATOS BÁSICOS PRODUCTO' : modoDetalle === 'desactivando' ? 'DESACTIVAR PRODUCTO CATÁLOGO' : catalogo.vistaActiva === 'detalle' ? 'DETALLE PRODUCTO' : catalogo.vistaActiva === 'presentaciones' ? 'PRESENTACIONES PRODUCTO' : catalogo.vistaActiva === 'precios' ? 'PRECIOS PRODUCTO' : 'DATOS BÁSICOS PRODUCTO'}
+            {catalogo.creandoAbierto ? 'NUEVO PRODUCTO' : modoDetalle === 'corrigiendo' ? 'CORREGIR DATOS BÁSICOS PRODUCTO' : modoDetalle === 'desactivando' ? 'DESACTIVAR PRODUCTO CATÁLOGO' : catalogo.vistaActiva === 'detalle' ? 'DETALLE PRODUCTO' : catalogo.vistaActiva === 'presentaciones' ? 'PRESENTACIONES PRODUCTO' : catalogo.vistaActiva === 'precios' ? 'PRECIOS PRODUCTO' : 'RESUMEN DEL PRODUCTO'}
           </span>
         </div>
 
@@ -175,7 +175,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             <div className="flex flex-col items-center justify-center pb-14 pt-[106px]">
               <BookOpen size={32} className="text-[#0284C7]/30" />
               <p className="mt-3 text-center text-[12px] text-slate-400">
-                Selecciona un producto para ver su detalle
+                Selecciona un producto en los resultados de la búsqueda para ver resumen
               </p>
             </div>
           )}

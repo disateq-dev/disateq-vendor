@@ -2,11 +2,12 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `403e2e1` — fix(catalogo): detalle producto — acciones en topbar, Ir a INGRESOS debajo alineado derecha, footer navegacion PRESENTACIONES/PRECIOS/VOLVER
+* **Último commit:** `494f29a` — fix(catalogo): LIMPIAR fijo en footer inferior datos basicos, sin linea divisoria, LIMPIAR busqueda desactivado al confirmar producto, keytips uniformes text-11px
 
 ## Commits de la jornada 26 Jun
 | Hash | Descripción |
 |---|---|
+| `494f29a` | fix(catalogo): LIMPIAR fijo en footer inferior datos basicos, sin linea divisoria, LIMPIAR busqueda desactivado al confirmar producto, keytips uniformes text-11px |
 | `403e2e1` | fix(catalogo): detalle producto — acciones en topbar, Ir a INGRESOS debajo alineado derecha, footer navegacion PRESENTACIONES/PRECIOS/VOLVER |
 | `ec715fc` | fix(catalogo): flechas y Enter restringidos a vistaActiva detalle, Alt+P renombrado a Alt+E, hover persistente boton DETALLE |
 | `83a7efb` | chore: eliminar directorios fantasma apps/vendor-desktop/apps y src raiz, regla canonica de rutas |
@@ -44,7 +45,7 @@
 ## Recorrido de Dominios (Matriz de Estado)
 * **LOGIN:** ✅
 * **TURNO / CAJA:** ✅
-* **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso — DETALLE DEL PRODUCTO pendiente de verificación visual
+* **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso — DATOS BÁSICOS ✅ · DETALLE pendiente verificación visual completa
 * **ABASTECIMIENTO — PROVEEDORES:** ✅ Doctrina de color aplicada — pendiente evaluación visual
 * **ABASTECIMIENTO — INGRESOS:** ✅ Doctrina de color aplicada — pendiente prueba end-to-end
 * **ABASTECIMIENTO — INVENTARIOS:** ✅ Doctrina de color aplicada
@@ -58,65 +59,68 @@
 ## CATÁLOGO FARMACIA — Estado consolidado al 26 Jun
 
 ### Modelo de sheetworks — panel derecho
-El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCatalogo`. Cada sheetwork tiene su propia topbar, título en headersheet e iconografía.
+El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCatalogo`. Cada sheetwork es autónoma — gestiona su propia topbar, cuerpo y footer. No existe header global compartido.
 
-| Vista | Título headersheet | Topbar | Footer | Descripción |
+| Vista | Título headersheet | Topbar | Cuerpo | Footer |
 |---|---|---|---|---|
-| `resumen` | `DATOS BÁSICOS PRODUCTO` | Nombre + fabricante + fechas · Derecha: DETALLE/PRESENTACIONES/PRECIOS | — | Resumen operacional |
-| `detalle` | `DETALLE DEL PRODUCTO` | Nombre + fabricante + fechas + badge · Derecha: CORREGIR/DESACTIVAR/LIMPIAR + Ir a INGRESOS debajo | PRESENTACIONES · PRECIOS · VOLVER | Todos los datos del producto |
-| `presentaciones` | `ASIGNACIÓN PRESENTACIONES PRODUCTO` | Nombre + fabricante | — | Formas de venta y nodos |
-| `precios` | `ASIGNACIÓN DE PRECIOS PRODUCTO` | Nombre + fabricante | — | Valores operacionales |
-| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | — | LIMPIAR · CANCELAR · GUARDAR CORRECCIÓN | Formulario de corrección inline |
-| `desactivando` | `DESACTIVAR PRODUCTO CATÁLOGO` | — | LIMPIAR · CANCELAR · CONFIRMAR BAJA | Confirmación de baja |
-| `creandoAbierto` | `NUEVO PRODUCTO` | — | — | Stepper de creación |
+| `resumen` | `DATOS BÁSICOS PRODUCTO` | Nombre+fabricante+fechas · Derecha: DETALLE/PRESENTACIONES/PRECIOS | Resumen DETALLE/PRESENTACIONES/PRECIOS | LIMPIAR fijo inferior derecha (sin línea divisoria) |
+| `detalle` | `DETALLE DEL PRODUCTO` | Nombre+fabricante+fechas+badge · Derecha: CORREGIR/DESACTIVAR/LIMPIAR + Ir a INGRESOS debajo | Todos los datos del producto | PRESENTACIONES · PRECIOS · VOLVER |
+| `presentaciones` | `ASIGNACIÓN PRESENTACIONES PRODUCTO` | Nombre + fabricante | Formas de venta y nodos | — |
+| `precios` | `ASIGNACIÓN DE PRECIOS PRODUCTO` | Nombre + fabricante | Valores operacionales | — |
+| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | — | Formulario corrección | LIMPIAR · CANCELAR · GUARDAR CORRECCIÓN |
+| `desactivando` | `DESACTIVAR PRODUCTO CATÁLOGO` | — | Confirmación baja | LIMPIAR · CANCELAR · CONFIRMAR BAJA |
+| `creandoAbierto` | `NUEVO PRODUCTO` | — | Stepper creación | — |
 
-### Doctrina de sheetworks — IRREVOCABLE
-- Cada sheetwork es autónoma — gestiona su propia topbar, cuerpo y footer
-- No existe header global compartido entre sheetworks
-- Botones DETALLE/PRESENTACIONES/PRECIOS en DATOS BÁSICOS: navegadores de salida, topbar derecha, color outline `#0284C7`
-- Botones CORREGIR/DESACTIVAR/LIMPIAR en DETALLE: acciones de la topbar derecha, fila superior
-- Link Ir a INGRESOS: debajo de los botones de acción, alineado a la derecha (`self-end`)
-- Footer de DETALLE: PRESENTACIONES (Alt+E) · PRECIOS (Alt+R) · VOLVER (Esc → onIrAResumen), proporciones `flex-[1]` cada uno
+### Doctrina de layout — IRREVOCABLE
+- `CatalogoFarmaciaWorkspace` wrapper panel derecho: `flex-1 min-h-0 flex flex-col`
+- `DetalleProducto` `<section>`: `flex min-h-0 flex-1 flex-col`
+- Área scrolleable: `flex flex-col gap-4 px-5 py-4 overflow-auto flex-1`
+- Footer fijo LIMPIAR (resumen): `shrink-0 flex justify-end px-5 pb-4` — sin border-t, sin bg
+- Botones navegadores topbar resumen: `flex gap-2 overflow-visible` — obligatorio para keytips -bottom-7
+
+### Comportamiento LIMPIAR — IRREVOCABLE
+- LIMPIAR panel búsqueda: `disabled` cuando `productoSeleccionado !== null` — opera solo sin producto confirmado
+- LIMPIAR sheetwork resumen: footer fijo inferior derecha — opera sobre la selección activa
+- LIMPIAR sheetwork detalle: en topbar junto a CORREGIR/DESACTIVAR — opera igual
 
 ### Mapa de atajos teclado — CATÁLOGO
 | Atajo | Sheetwork | Acción |
 |---|---|---|
-| ↑↓ | Búsqueda | Navegar resultados con preview |
-| Enter | Búsqueda | Confirmar producto seleccionado |
+| ↑↓ | Búsqueda | Navegar resultados |
+| Enter | Búsqueda | Confirmar producto |
 | Escape | Búsqueda | Limpiar todo |
 | Ctrl+Enter | Búsqueda (sin producto) | Abrir stepper NUEVO |
-| Alt+D | Datos Básicos / Detalle | Ir a DETALLE DEL PRODUCTO |
-| Alt+E | Datos Básicos / Detalle | Ir a ASIGNACIÓN PRESENTACIONES |
-| Alt+R | Datos Básicos / Detalle | Ir a ASIGNACIÓN DE PRECIOS |
-| ◄► | Detalle | Navegar entre CORREGIR / DESACTIVAR / LIMPIAR |
-| Enter | Detalle | Ejecutar acción seleccionada con ◄► |
-| Escape | Detalle (lectura) | Limpiar selección |
+| Alt+D | Resumen / Detalle | Ir a DETALLE DEL PRODUCTO |
+| Alt+E | Resumen / Detalle | Ir a ASIGNACIÓN PRESENTACIONES |
+| Alt+R | Resumen / Detalle | Ir a ASIGNACIÓN DE PRECIOS |
+| ◄► | Detalle | Navegar CORREGIR/DESACTIVAR/LIMPIAR |
+| Enter | Detalle | Ejecutar acción seleccionada |
+| Escape | Lectura | Limpiar selección |
 | Ctrl+Enter | Detalle (ACTIVO) | Iniciar CORREGIR |
 | Ctrl+Insert | Detalle (ACTIVO) | Ir a INGRESOS |
 | Ctrl+Supr | Detalle (ACTIVO) | Activar modo DESACTIVAR |
 
-### Keytips — ESTÁNDAR CANÓNICO ACTUALIZADO
+### Keytips — ESTÁNDAR CANÓNICO
 - Tamaño: `text-[11px]` · Padding: `px-2 py-1`
-- Estilo: `bg-[#fefce8] border border-[#fef08a] text-[#713f12] text-[11px] font-bold rounded px-2 py-1`
+- Estilo: `bg-[#fefce8] border border-[#fef08a] text-[#713f12] rounded`
 - Comportamiento: `opacity-0 group-hover:opacity-100 transition-opacity duration-150`
-- Posición botones zona inferior: `absolute -bottom-7 left-1/2 -translate-x-1/2`
-- Posición botones zona superior: `absolute -top-7 left-1/2 -translate-x-1/2`
-- Posición link-text: `absolute -bottom-6 left-1/2 -translate-x-1/2`
+- Posición botones zona inferior: `absolute -bottom-7`
+- Posición botones zona superior: `absolute -top-7`
+- Posición link-text: `absolute -bottom-6`
 - `pointer-events-none whitespace-nowrap z-10`
-- Contenedor de navegadores con keytips `-top-7`: debe tener `overflow-visible`
 
-### Búsqueda de productos — canónico
+### Búsqueda — canónico
 - Campos SQL: `nombre_comercial`, `ifa`, `nombre_fabricante`, `codigo_digemid`
-- Límite: `LIMIT 12` en SQL · Debounce: 300ms · Mínimo: 2 caracteres
+- Límite: `LIMIT 12` · Debounce: 300ms · Mínimo: 2 caracteres
 
 ### Archivos del módulo CATÁLOGO
 | Archivo | Responsabilidad |
 |---|---|
-| `CatalogoFarmaciaWorkspace.tsx` | Layout dos paneles, título dinámico, coordinación |
+| `CatalogoFarmaciaWorkspace.tsx` | Layout, título dinámico, coordinación |
 | `hooks/useCatalogoFarmacia.ts` | Estado, navegación, búsqueda, handlers |
-| `components/BuscadorProducto.tsx` | Lista de resultados, input, navegación teclado |
-| `components/DetalleProducto.tsx` | Sheetworks autónomas completas |
-| `components/NuevoProductoStepper.tsx` | Creación de producto paso a paso |
+| `components/BuscadorProducto.tsx` | Lista resultados, input, navegación teclado |
+| `components/DetalleProducto.tsx` | Todas las sheetworks autónomas |
+| `components/NuevoProductoStepper.tsx` | Creación paso a paso |
 
 ---
 
@@ -127,10 +131,10 @@ El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCa
 | Outline verde | Iniciar acción nueva | `#45b356` / hover `#F2F7F3` |
 | Sólido verde | Confirmar acción | `bg-[#45b356]` texto blanco |
 | Outline naranja | Salir / limpiar / volver | `#f97316` / hover `#fff7ed` |
-| Outline rojo | Cancelar dentro de flujo destructivo | `#dc2626` / hover `#fef2f2` |
+| Outline rojo | Cancelar flujo destructivo | `#dc2626` / hover `#fef2f2` |
 | Sólido rojo | Confirmar acción irreversible | `bg-red-500` texto blanco |
 | Outline azul `#0284C7` | Navegadores de sheetwork | hover `#E0F2FE` |
-| Sólido azul `#0284C7` | Navegador de sheetwork activo | texto blanco |
+| Sólido azul `#0284C7` | Navegador activo | texto blanco |
 
 **Estado deshabilitado canónico:** `disabled:opacity-50 disabled:cursor-not-allowed`
 
@@ -157,11 +161,10 @@ El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCa
 ---
 
 ## CONVENCIÓN DE BOTONES — ESTÁNDAR CANÓNICO
-- Texto en MAYÚSCULAS
-- Par de panel de búsqueda: `flex-[1]` naranja / `flex-[2]` verde
-- Footer sheetwork DETALLE: `flex-[1]` para cada botón
-- LIMPIAR opera solo en su panel — nunca invade contexto ajeno
-- Cursor pointer global vía `index.css`
+- Texto en MAYÚSCULAS · `py-2 text-[12px]` en todos los botones de acción
+- Par panel búsqueda: `flex-[1]` naranja / `flex-[2]` verde
+- Footer sheetwork DETALLE: `flex-[1]` cada botón
+- LIMPIAR opera solo en su panel
 
 ---
 
@@ -200,7 +203,7 @@ El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCa
 
 | Archivo | Problema | Prioridad |
 |---|---|---|
-| DetalleProducto.tsx | 700+ líneas — extraer PresentacionesTab y PreciosTab a archivos propios | Media |
+| DetalleProducto.tsx | 900+ líneas — extraer PresentacionesTab y PreciosTab a archivos propios | Media |
 | DetalleProducto.tsx | Vista PRECIOS en resumen muestra texto fijo — pendiente conectar valor real VENTA_NORMAL | Media |
 | PreciosTab | Botones Guardar/Cancelar fuera de doctrina — usan azul en lugar de verde/naranja | Media |
 | NuevoProductoStepper.tsx | Extraer pasos en componentes | Media |
@@ -229,19 +232,20 @@ El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCa
 - **Prompts Codex:** lenguaje natural puro, sin bloques de código
 - **Codex reenvío:** verificar filesystem si el reporte menciona archivos de entregas anteriores
 - **Claude no escribe código:** Claude genera prompts para Codex — nunca modifica archivos directamente
-- **Botonería:** texto en MAYÚSCULAS, keytips flotantes solo si atajo implementado
-- **Accent `#639922`:** eliminado — residuo del diseño anterior. Canónico ABASTECIMIENTO = `#0284C7`
+- **Botonería:** texto en MAYÚSCULAS, `py-2 text-[12px]` canónico
 - **Keytips tamaño canónico:** `text-[11px] px-2 py-1`
-- **Contenedor de navegadores con keytips -top-7:** debe tener `overflow-visible`
-- **Flechas ◄►  y Enter con indiceAccion:** exclusivos de `vistaActiva === 'detalle'`
-- **onIrAResumen:** prop activa sin alias — botón VOLVER en footer de DETALLE
+- **Contenedor navegadores con keytips -bottom-7:** debe tener `overflow-visible`
+- **Footer fijo en sheetwork:** requiere cadena flex completa — wrapper `flex-1 min-h-0 flex flex-col` → section `flex min-h-0 flex-1 flex-col` → área scroll `overflow-auto flex-1` → footer `shrink-0`
+- **Footer sin separación visual:** usar `shrink-0 flex justify-end px-5 pb-4` sin border-t ni bg
+- **Flechas ◄► y Enter con indiceAccion:** exclusivos de `vistaActiva === 'detalle'`
+- **LIMPIAR panel búsqueda:** `disabled` cuando `productoSeleccionado !== null`
 - **Directorios fantasma eliminados 26 Jun:** `apps\vendor-desktop\apps` y `src\` en raíz
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Evaluación visual** — DETALLE DEL PRODUCTO (verificar topbar acciones + footer navegación)
+1. **Evaluación visual** — DETALLE DEL PRODUCTO (topbar acciones + footer navegación)
 2. **Evaluación visual** — ASIGNACIÓN PRESENTACIONES
 3. **Evaluación visual** — ASIGNACIÓN DE PRECIOS
 4. **Evaluación visual** — NuevoProductoStepper flujo completo
