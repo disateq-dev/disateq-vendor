@@ -506,6 +506,7 @@ export function DetalleProducto({
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
   const [formularioCorreccion, setFormularioCorreccion] = useState<ModificarProductoComercialInput | null>(null)
   const [indiceAccion, setIndiceAccion] = useState<number>(-1)
+  const [indiceNavegacion, setIndiceNavegacion] = useState<number>(-1)
 
   useEffect(() => {
     setIndiceAccion(-1)
@@ -523,6 +524,7 @@ export function DetalleProducto({
 
   useEffect(() => {
     setIndiceAccion(productoConfirmado ? 0 : -1)
+    setIndiceNavegacion(productoConfirmado ? 0 : -1)
   }, [productoConfirmado])
 
   useEffect(() => {
@@ -574,6 +576,25 @@ export function DetalleProducto({
       } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'r') {
         event.preventDefault()
         onIrAPrecios()
+      } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'resumen' && event.key === 'ArrowRight') {
+        event.preventDefault()
+        setIndiceNavegacion(prev => (prev + 1) % 3)
+      } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'resumen' && event.key === 'ArrowLeft') {
+        event.preventDefault()
+        setIndiceNavegacion(prev => (prev - 1 + 3) % 3)
+      } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'resumen' && event.key === 'Enter' && indiceNavegacion >= 0) {
+        event.preventDefault()
+        switch (indiceNavegacion) {
+          case 0:
+            onIrADetalle()
+            break
+          case 1:
+            onIrAPresentaciones()
+            break
+          case 2:
+            onIrAPrecios()
+            break
+        }
       } else if (productoConfirmado && event.ctrlKey && event.key === 'Enter' && producto.estado === 'ACTIVO' && modo === 'lectura') {
         event.preventDefault()
         onIniciarCorreccion()
@@ -601,7 +622,7 @@ export function DetalleProducto({
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, indiceAccion, producto.estado])
+  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, indiceAccion, indiceNavegacion, producto.estado])
 
   const onGuardarCorreccion = async (): Promise<void> => {
     if (!formularioCorreccion) return
@@ -817,15 +838,15 @@ export function DetalleProducto({
                     </p>
                   </div>
                   <div className="flex gap-2 overflow-visible">
-                    <button type="button" onClick={onIrADetalle} className={String(vistaActiva) === 'detalle' ? 'group relative rounded-xl bg-[#0284C7] px-3 py-1.5 text-[11px] font-bold text-white' : productoConfirmado && vistaActiva === 'resumen' ? 'group relative rounded-xl border border-[#0284C7] bg-[#E0F2FE] px-3 py-1.5 text-[11px] font-bold text-[#0284C7]' : 'group relative rounded-xl border border-[#0284C7]/40 px-3 py-1.5 text-[11px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]'}>
+                    <button type="button" onClick={onIrADetalle} className={indiceNavegacion === 0 ? 'group relative rounded-xl border border-[#7C3AED] bg-[#EDE9FE] px-3 py-1.5 text-[11px] font-bold text-[#7C3AED]' : String(vistaActiva) === 'detalle' ? 'group relative rounded-xl bg-[#7C3AED] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#7C3AED]/40 px-3 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-[#EDE9FE]'}>
                       DETALLE
                       <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+D</kbd>
                     </button>
-                    <button type="button" onClick={onIrAPresentaciones} className={String(vistaActiva) === 'presentaciones' ? 'group relative rounded-xl bg-[#0284C7] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#0284C7]/40 px-3 py-1.5 text-[11px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]'}>
+                    <button type="button" onClick={onIrAPresentaciones} className={indiceNavegacion === 1 ? 'group relative rounded-xl border border-[#0891B2] bg-[#ECFEFF] px-3 py-1.5 text-[11px] font-bold text-[#0891B2]' : String(vistaActiva) === 'presentaciones' ? 'group relative rounded-xl bg-[#0891B2] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#0891B2]/40 px-3 py-1.5 text-[11px] font-bold text-[#0891B2] hover:bg-[#ECFEFF]'}>
                       PRESENTACIONES
                       <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd>
                     </button>
-                    <button type="button" onClick={onIrAPrecios} className={String(vistaActiva) === 'precios' ? 'group relative rounded-xl bg-[#0284C7] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#0284C7]/40 px-3 py-1.5 text-[11px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]'}>
+                    <button type="button" onClick={onIrAPrecios} className={indiceNavegacion === 2 ? 'group relative rounded-xl border border-[#D97706] bg-[#FEF3C7] px-3 py-1.5 text-[11px] font-bold text-[#D97706]' : String(vistaActiva) === 'precios' ? 'group relative rounded-xl bg-[#D97706] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#D97706]/40 px-3 py-1.5 text-[11px] font-bold text-[#D97706] hover:bg-[#FEF3C7]'}>
                       PRECIOS
                       <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd>
                     </button>
