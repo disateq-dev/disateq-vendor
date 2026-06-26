@@ -13,12 +13,36 @@
 | `9c79faa` | fix(catalogo): keytips — tamaño panel busqueda, dirección panel detalle, keytip ir a ingresos |
 | `3651038` | fix(abastecimiento): doctrina color — accent #0284C7, semántica verde/naranja/rojo todo ABASTECIMIENTO |
 
+## Commits de la jornada 26 Jun
+| Hash | Descripción |
+|---|---|
+| pendiente | fix(catalogo): botones detalle/presentaciones/precios alineados con header producto, color #0284C7, keytips Alt+D/Alt+P/Alt+R |
+| pendiente | refactor(catalogo): sheetworks autonomas — topbar propia por vista, eliminar header global duplicado y tabs residuales, limpiar HeaderProducto y corregirRef |
+| pendiente | chore: eliminar directorios fantasma apps/vendor-desktop/apps y src raiz |
+
+---
+
+## REGLA CANÓNICA DE RUTAS — IRREVOCABLE
+
+| Operación | Directorio de ejecución |
+|---|---|
+| `npx tsc --noEmit` | `D:\DisateQ-DEV\Proyectos\disateq-vendor\apps\vendor-desktop` |
+| `npm run dev` | `D:\DisateQ-DEV\Proyectos\disateq-vendor\apps\vendor-desktop` |
+| `git` — cualquier operación | `D:\DisateQ-DEV\Proyectos\disateq-vendor` (raíz del repo) |
+| Archivos fuente React/TS | `D:\DisateQ-DEV\Proyectos\disateq-vendor\apps\vendor-desktop\src` |
+| Archivos fuente Rust | `D:\DisateQ-DEV\Proyectos\disateq-vendor\apps\vendor-desktop\src-tauri` |
+| Documentación | `D:\DisateQ-DEV\Proyectos\disateq-vendor\docs` |
+
+**Nunca ejecutar `tsc` desde la raíz del repo.**
+**Nunca ejecutar `git` desde dentro de `apps\vendor-desktop`.**
+**Codex siempre recibe rutas absolutas completas en sus prompts.**
+
 ---
 
 ## Recorrido de Dominios (Matriz de Estado)
 * **LOGIN:** ✅
 * **TURNO / CAJA:** ✅
-* **ABASTECIMIENTO — CATÁLOGO:** ✅ Sprint completo cerrado. Keytips canónicos. Búsqueda 4 campos. Panel derecho rediseñado con 4 vistas.
+* **ABASTECIMIENTO — CATÁLOGO:** ✅ Sprint completo cerrado. Keytips canónicos. Búsqueda 4 campos. Panel derecho rediseñado con 4 vistas. Sheetworks autónomas con topbar propia. Directorios fantasma eliminados.
 * **ABASTECIMIENTO — PROVEEDORES:** ✅ Doctrina de color aplicada — pendiente evaluación visual
 * **ABASTECIMIENTO — INGRESOS:** ✅ Doctrina de color aplicada — pendiente prueba end-to-end
 * **ABASTECIMIENTO — INVENTARIOS:** ✅ Doctrina de color aplicada
@@ -29,31 +53,31 @@
 
 ---
 
-## CATÁLOGO FARMACIA — Estado consolidado al 25 Jun
+## CATÁLOGO FARMACIA — Estado consolidado al 26 Jun
 
-### Modelo de vistas — panel derecho
-El panel derecho ya no usa tabs. Usa un modelo de 4 vistas controladas por `VistaCatalogo`:
+### Modelo de sheetworks — panel derecho
+El panel derecho usa un modelo de sheetworks autónomas controladas por `VistaCatalogo`. Cada sheetwork tiene su propia topbar, título en headersheet e iconografía.
 
-| Vista | Título headersheet | Descripción |
-|---|---|---|
-| `resumen` | `DATOS BÁSICOS PRODUCTO` | Vista de entrada al seleccionar producto. Resumen operacional + botones DETALLE / PRESENTACIONES / PRECIOS |
-| `detalle` | `DETALLE PRODUCTO` | Datos completos + footer con CORREGIR / DESACTIVAR / IR A INGRESOS / LIMPIAR |
-| `presentaciones` | `PRESENTACIONES PRODUCTO` | Formas de venta y nodos de fraccionamiento |
-| `precios` | `PRECIOS PRODUCTO` | Valores operacionales por forma de venta |
-| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | Formulario de corrección inline |
-| `desactivando` | `DESACTIVAR PRODUCTO CATÁLOGO` | Confirmación de baja |
-| `creandoAbierto` | `NUEVO PRODUCTO` | Stepper de creación |
+| Vista | Título headersheet | Topbar | Descripción |
+|---|---|---|---|
+| `resumen` | `DATOS BÁSICOS PRODUCTO` | Nombre + fabricante + botones DETALLE/PRESENTACIONES/PRECIOS (derecha) | Resumen operacional |
+| `detalle` | `DETALLE DEL PRODUCTO` | Nombre + fabricante + fechas + badge INACTIVO | Todos los datos del producto |
+| `presentaciones` | `ASIGNACIÓN PRESENTACIONES PRODUCTO` | Nombre + fabricante | Formas de venta y nodos de fraccionamiento |
+| `precios` | `ASIGNACIÓN DE PRECIOS PRODUCTO` | Nombre + fabricante | Valores operacionales por forma de venta |
+| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | — | Formulario de corrección inline |
+| `desactivando` | `DESACTIVAR PRODUCTO CATÁLOGO` | — | Confirmación de baja |
+| `creandoAbierto` | `NUEVO PRODUCTO` | — | Stepper de creación |
 
-### Vista RESUMEN — contenido canónico
-**De DETALLE:** Condición de venta, Cadena de frío, Vencimiento/lote, Categoría, Estado registro sanitario
-**De PRESENTACIONES:** Cantidad de presentaciones, nombre y stock mínimo de la primera
-**De PRECIOS:** Texto referencial "Consultar precios en la vista Precios" (pendiente conectar valores reales)
-**Botones superiores derechos:** DETALLE / PRESENTACIONES / PRECIOS — outline verde `border-[#45b356]/40`
+### Doctrina de sheetworks — IRREVOCABLE
+- Cada sheetwork es autónoma — gestiona su propia topbar y contenido
+- No existe header global compartido entre sheetworks
+- Los botones DETALLE/PRESENTACIONES/PRECIOS en la sheetwork DATOS BÁSICOS son navegadores de salida — viven en la topbar alineados a la derecha del nombre del producto
+- Color de navegadores: outline `#0284C7` inactivo, sólido `bg-[#0284C7]` activo
 
-### Navegación entre vistas
-- Seleccionar producto → vista `resumen`
-- Botones DETALLE / PRESENTACIONES / PRECIOS → navegan a su vista
-- LIMPIAR desde cualquier vista → limpia selección y vuelve a BÚSQUEDA CATÁLOGO
+### Navegación entre sheetworks
+- Seleccionar producto → sheetwork `resumen`
+- Botones DETALLE (Alt+D) / PRESENTACIONES (Alt+P) / PRECIOS (Alt+R) → navegan a su sheetwork
+- LIMPIAR desde cualquier sheetwork → limpia selección y vuelve a BÚSQUEDA CATÁLOGO
 - `onLimpiarDetalle` resetea `vistaActiva` a `'resumen'`
 - `onSeleccionar` inicializa `vistaActiva` en `'resumen'`
 
@@ -62,6 +86,9 @@ El panel derecho ya no usa tabs. Usa un modelo de 4 vistas controladas por `Vist
 |---|---|---|---|
 | × LIMPIAR (panel búsqueda) | CatalogoFarmaciaWorkspace | Esc | `-top-7` |
 | + NUEVO PRODUCTO (panel búsqueda) | CatalogoFarmaciaWorkspace | Ctrl+Enter | `-top-7` |
+| DETALLE (topbar resumen) | DetalleProducto | Alt+D | `-top-7` |
+| PRESENTACIONES (topbar resumen) | DetalleProducto | Alt+P | `-top-7` |
+| PRECIOS (topbar resumen) | DetalleProducto | Alt+R | `-top-7` |
 | CORREGIR | DetalleProducto | Ctrl+Enter | `-bottom-7` |
 | DESACTIVAR | DetalleProducto | Ctrl+Supr | `-bottom-7` |
 | LIMPIAR (vista detalle) | DetalleProducto | Esc | `-bottom-7` |
@@ -73,12 +100,15 @@ El panel derecho ya no usa tabs. Usa un modelo de 4 vistas controladas por `Vist
 | ↑↓ | Navegar resultados con preview |
 | Enter | Confirmar producto seleccionado |
 | ◄► | Navegar entre CORREGIR / DESACTIVAR / LIMPIAR |
-| Escape (vista detalle) | Limpiar selección, volver a búsqueda |
+| Escape (sheetwork detalle) | Limpiar selección, volver a búsqueda |
 | Escape (buscador) | Limpiar todo |
-| Ctrl+Enter (vista detalle, ACTIVO) | Iniciar CORREGIR |
+| Alt+D | Ir a sheetwork DETALLE DEL PRODUCTO |
+| Alt+P | Ir a sheetwork ASIGNACIÓN PRESENTACIONES |
+| Alt+R | Ir a sheetwork ASIGNACIÓN DE PRECIOS |
+| Ctrl+Enter (sheetwork detalle, ACTIVO) | Iniciar CORREGIR |
 | Ctrl+Enter (sin producto seleccionado) | Abrir stepper NUEVO |
-| Ctrl+Insert (vista detalle, ACTIVO) | Ir a INGRESOS |
-| Ctrl+Supr (vista detalle, ACTIVO) | Activar modo DESACTIVAR |
+| Ctrl+Insert (sheetwork detalle, ACTIVO) | Ir a INGRESOS |
+| Ctrl+Supr (sheetwork detalle, ACTIVO) | Activar modo DESACTIVAR |
 
 ### Búsqueda de productos — canónico
 - Campos SQL: `nombre_comercial`, `ifa`, `nombre_fabricante`, `codigo_digemid`
@@ -92,7 +122,7 @@ El panel derecho ya no usa tabs. Usa un modelo de 4 vistas controladas por `Vist
 | `CatalogoFarmaciaWorkspace.tsx` | Layout dos paneles, título dinámico, coordinación |
 | `hooks/useCatalogoFarmacia.ts` | Estado, navegación, búsqueda, handlers |
 | `components/BuscadorProducto.tsx` | Lista de resultados, input, navegación teclado |
-| `components/DetalleProducto.tsx` | 4 vistas + modos corrigiendo/desactivando |
+| `components/DetalleProducto.tsx` | Sheetworks autónomas — resumen/detalle/presentaciones/precios/corrigiendo/desactivando |
 | `components/NuevoProductoStepper.tsx` | Creación de producto paso a paso |
 
 ---
@@ -107,6 +137,8 @@ Aprobada por Fernando — 24 Jun 2026.
 | Outline naranja | Salir / limpiar / cancelar reversible | `#f97316` / hover `#fff7ed` |
 | Outline rojo | Cancelar dentro de flujo destructivo | `#dc2626` / hover `#fef2f2` |
 | Sólido rojo | Confirmar acción irreversible | `bg-red-500` texto blanco |
+| Outline azul `#0284C7` | Navegadores de sheetwork | hover `#E0F2FE` |
+| Sólido azul `#0284C7` | Navegador de sheetwork activo | texto blanco |
 
 **Estado deshabilitado canónico:** `disabled:opacity-50 disabled:cursor-not-allowed` — nunca gris genérico.
 
@@ -193,6 +225,7 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 | DetalleProducto.tsx | `onIrAResumen` aliasado como `_onIrAResumen` — sin uso interno | Baja |
 | DetalleProducto.tsx | 600+ líneas — extraer PresentacionesTab y PreciosTab a archivos propios | Media |
 | DetalleProducto.tsx | Vista PRECIOS en resumen muestra texto fijo — pendiente conectar valor real VENTA_NORMAL | Media |
+| PreciosTab | Botones Guardar/Cancelar fuera de doctrina — usan azul en lugar de verde/naranja | Media |
 | NuevoProductoStepper.tsx | Extraer pasos en componentes | Media |
 | OperationalBar.tsx | Listener `disateq:navegar` pendiente de conectar | Media |
 | OperationalBar.tsx | Color `#3D8A8A` teal residual → corregir a `#0284C7` | Media |
@@ -203,7 +236,6 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 | farmacia.service.ts | actualizarProveedor → modificarProveedor | Baja |
 | ContextBar.tsx | Archivo huérfano | Baja |
 | DetalleProveedor.tsx | Solo accent corregido — botones sin auditar directamente | Baja |
-| PreciosTab | Botones Guardar/Cancelar fuera de doctrina — usan azul en lugar de verde/naranja | Media |
 
 ---
 
@@ -214,7 +246,7 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 
 ### LECCIONES APRENDIDAS
 - **Subtabs:** todo prompt que agregue subtab debe tocar OperationalBar.tsx explícitamente
-- **TypeScript:** `npx tsc --noEmit` desde `apps/vendor-desktop`, no raíz del repo
+- **TypeScript:** `npx tsc --noEmit` desde `apps\vendor-desktop`, no raíz del repo
 - **Migraciones ADD COLUMN:** verificar con `pragma_table_info` antes de ALTER TABLE
 - **Seeds SQL:** en `.gitignore`. DB real: `disateq.db`
 - **CURRENT_CONTEXT.md:** usar `filesystem:write_file` con parámetro `content` — `edit_file` falla
@@ -227,13 +259,15 @@ Aprobado por Fernando — 24 Jun 2026. Solo para botones de acción final.
 - **Accent `#639922`:** eliminado — residuo del diseño anterior. Canónico ABASTECIMIENTO = `#0284C7`
 - **Keytips dirección:** usar `-bottom-7` cuando el botón está en zona superior sin espacio libre encima
 - **git commit -am:** incluye todos los archivos con cambios pendientes — verificar con `git diff HEAD~1 HEAD --name-only` si el conteo es mayor al esperado
-- **VistaCatalogo:** el panel derecho de CATÁLOGO no usa tabs — usa vistas controladas por estado `VistaCatalogo`
+- **VistaCatalogo:** el panel derecho de CATÁLOGO no usa tabs — usa sheetworks autónomas controladas por estado `VistaCatalogo`
+- **Directorios fantasma eliminados 26 Jun:** `apps\vendor-desktop\apps` y `src\` en raíz del repo — originados por Codex ejecutando desde directorio incorrecto
+- **Rutas canónicas:** ver sección REGLA CANÓNICA DE RUTAS — nunca ejecutar tsc desde raíz, nunca git desde apps\vendor-desktop
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Evaluación visual** — Panel derecho CATÁLOGO con las 4 vistas en la app
+1. **Evaluación visual** — Panel derecho CATÁLOGO con las 4 sheetworks en la app (continuar)
 2. **Evaluación visual** — NuevoProductoStepper flujo completo
 3. **Evaluación visual** — PROVEEDORES flujo completo
 4. **INGRESOS** — prueba end-to-end

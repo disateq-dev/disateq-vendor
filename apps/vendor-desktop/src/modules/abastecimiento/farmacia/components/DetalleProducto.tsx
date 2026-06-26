@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
+import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import type {
   EstadoRegistroSanitario,
   ModificarProductoComercialInput,
@@ -44,17 +44,17 @@ interface CampoLecturaProps {
   valor?: string | number
 }
 
-interface HeaderProductoProps {
-  producto: ProductoComercial
-}
-
 interface PresentacionesTabProps {
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
+  nombreProducto: string
+  nombreFabricante: string
 }
 
 interface PreciosTabProps {
   nodos: NodoFraccionamiento[]
+  nombreProducto: string
+  nombreFabricante: string
 }
 
 interface ProductoComercialConCategoria extends ProductoComercial {
@@ -85,59 +85,56 @@ function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
   )
 }
 
-function HeaderProducto({ producto }: HeaderProductoProps): ReactElement {
+function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabricante }: PresentacionesTabProps): ReactElement {
   return (
-    <header className="rounded-2xl border border-[#E0F2FE] bg-white p-5">
-      <h2 className="text-[20px] font-bold text-slate-900">
-        {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
-      </h2>
-      <p className="mt-1 text-[13px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-    </header>
-  )
-}
-
-function PresentacionesTab({ presentaciones, nodos }: PresentacionesTabProps): ReactElement {
-  return (
-    <div className="space-y-4">
-      {presentaciones.map((presentacion) => (
-        <article key={presentacion.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-[14px] font-bold text-slate-900">{presentacion.descripcion}</h3>
-              <p className="mt-1 text-[12px] font-semibold text-slate-500">
-                Fracción DIGEMID: {presentacion.fraccionDIGEMID} {presentacion.unidadConteo}
-              </p>
+    <>
+      <div className="flex items-start gap-3 mb-4 px-1">
+        <div>
+          <h2 className="text-[16px] font-bold text-slate-900">{nombreProducto}</h2>
+          <p className="text-[12px] font-semibold text-slate-500">{nombreFabricante}</p>
+        </div>
+      </div>
+      <div className="space-y-4">
+        {presentaciones.map((presentacion) => (
+          <article key={presentacion.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-[14px] font-bold text-slate-900">{presentacion.descripcion}</h3>
+                <p className="mt-1 text-[12px] font-semibold text-slate-500">
+                  Fracción DIGEMID: {presentacion.fraccionDIGEMID} {presentacion.unidadConteo}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.alert('Nueva forma de venta pendiente')}
+                className="rounded-full border border-[#E0F2FE] px-3 py-1.5 text-[11px] font-bold text-[#0284C7]"
+              >
+                Agregar forma de venta
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => window.alert('Nueva forma de venta pendiente')}
-              className="rounded-full border border-[#E0F2FE] px-3 py-1.5 text-[11px] font-bold text-[#0284C7]"
-            >
-              Agregar forma de venta
-            </button>
-          </div>
-          <div className="mt-4 space-y-2">
-            {nodos
-              .filter((nodo) => nodo.presentacionId === presentacion.id)
-              .map((nodo) => (
-                <div key={nodo.id} className={`rounded-xl bg-[#E0F2FE] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[12px] font-bold text-slate-800">{nodo.nombreFormaVenta}</span>
-                    <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
-                      {nodo.tipoFormaVenta}
-                    </span>
+            <div className="mt-4 space-y-2">
+              {nodos
+                .filter((nodo) => nodo.presentacionId === presentacion.id)
+                .map((nodo) => (
+                  <div key={nodo.id} className={`rounded-xl bg-[#E0F2FE] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[12px] font-bold text-slate-800">{nodo.nombreFormaVenta}</span>
+                      <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
+                        {nodo.tipoFormaVenta}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] font-semibold text-slate-500">Unidades base: {nodo.unidadesBase}</p>
                   </div>
-                  <p className="mt-1 text-[11px] font-semibold text-slate-500">Unidades base: {nodo.unidadesBase}</p>
-                </div>
-              ))}
-          </div>
-        </article>
-      ))}
-    </div>
+                ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
   )
 }
 
-function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
+function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps): ReactElement {
   const ETIQUETA_TIPO: Record<TipoValorOperacional, string> = {
     VENTA_NORMAL: 'Precio base',
     VENTA_MAYOREO: 'Por mayor',
@@ -304,14 +301,21 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
   }
 
   return (
-    <div className="space-y-4">
-      {nodosVendibles.map((nodo) => {
-        const valoresNodo = valoresPorNodo[nodo.id] ?? []
-        const tiposNodoDisponibles = tiposDisponibles(nodo.id)
-        const valorEnEdicion = valoresNodo.find((valor) => valor.id === formularioEdicion?.id)
+    <>
+      <div className="flex items-start gap-3 mb-4 px-1">
+        <div>
+          <h2 className="text-[16px] font-bold text-slate-900">{nombreProducto}</h2>
+          <p className="text-[12px] font-semibold text-slate-500">{nombreFabricante}</p>
+        </div>
+      </div>
+      <div className="space-y-4">
+        {nodosVendibles.map((nodo) => {
+          const valoresNodo = valoresPorNodo[nodo.id] ?? []
+          const tiposNodoDisponibles = tiposDisponibles(nodo.id)
+          const valorEnEdicion = valoresNodo.find((valor) => valor.id === formularioEdicion?.id)
 
-        return (
-          <article key={nodo.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
+          return (
+            <article key={nodo.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
             <header className="flex justify-between items-center mb-3">
               <h3 className="text-[14px] font-bold text-slate-900">{nodo.nombreFormaVenta}</h3>
               {tiposNodoDisponibles.length > 0 &&
@@ -469,10 +473,11 @@ function PreciosTab({ nodos }: PreciosTabProps): ReactElement {
                 </div>
               </div>
             )}
-          </article>
-        )
-      })}
-    </div>
+            </article>
+          )
+        })}
+      </div>
+    </>
   )
 }
 
@@ -494,7 +499,6 @@ export function DetalleProducto({
 }: DetalleProductoProps): ReactElement {
   const { activeOperator } = usePOS()
   const esAdmin = activeOperator?.codigoRol === 'ADMIN'
-  const corregirRef = useRef<HTMLButtonElement>(null)
   const [modo, setModo] = useState<ModoDetalle>('lectura')
   const [tieneHistorial, setTieneHistorial] = useState<boolean>(false)
   const [verificandoHistorial, setVerificandoHistorial] = useState<boolean>(false)
@@ -648,25 +652,6 @@ export function DetalleProducto({
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-auto">
       <div className="flex flex-col gap-4 px-5 py-4">
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-[16px] font-bold text-slate-900">
-              {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
-                .filter(Boolean)
-                .join(' · ')}
-            </h2>
-            <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-            <p className="text-[10px] text-slate-400">
-              Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
-            </p>
-            {producto.estado === 'INACTIVO' && (
-              <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
-                INACTIVO
-              </span>
-            )}
-          </div>
-        </header>
-
         {errorAccion !== null && (
           <div className="flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">
             <span>{errorAccion}</span>
@@ -868,10 +853,27 @@ export function DetalleProducto({
             )}
             {vistaActiva !== 'resumen' && (
               <>
-                <div className="flex gap-2 border-b border-[#E0F2FE]"><button type="button" onClick={onIrADetalle} className={vistaActiva === 'detalle' ? 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide border-b-2 border-[#0284C7] text-[#0284C7]' : 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-500 hover:text-[#0284C7]'}>Detalle</button><button type="button" onClick={onIrAPresentaciones} className={vistaActiva === 'presentaciones' ? 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide border-b-2 border-[#0284C7] text-[#0284C7]' : 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-500 hover:text-[#0284C7]'}>Presentaciones</button><button type="button" onClick={onIrAPrecios} className={vistaActiva === 'precios' ? 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide border-b-2 border-[#0284C7] text-[#0284C7]' : 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-500 hover:text-[#0284C7]'}>Precios</button></div>
                 {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
                 {!cargando && vistaActiva === 'detalle' && (
                   <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <h2 className="text-[16px] font-bold text-slate-900">
+                          {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </h2>
+                        <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+                        <p className="text-[10px] text-slate-400">
+                          Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
+                        </p>
+                        {producto.estado === 'INACTIVO' && (
+                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
+                            INACTIVO
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <div>
                       <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                         PARA LA VENTA
@@ -958,12 +960,12 @@ export function DetalleProducto({
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E0F2FE]"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button ref={corregirRef} type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}</div><div className="flex items-center gap-3"><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button><button type="button" onClick={onLimpiar} className={indiceAccion === 2 ? 'group relative rounded-xl border border-[#f97316] bg-[#fff7ed] px-4 py-2 text-[12px] font-bold text-[#f97316] flex items-center gap-3' : 'group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3'}><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button></div></div>
+                    <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E0F2FE]"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}</div><div className="flex items-center gap-3"><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button><button type="button" onClick={onLimpiar} className={indiceAccion === 2 ? 'group relative rounded-xl border border-[#f97316] bg-[#fff7ed] px-4 py-2 text-[12px] font-bold text-[#f97316] flex items-center gap-3' : 'group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3'}><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button></div></div>
 
                   </div>
                 )}
-                {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}
-                {!cargando && vistaActiva === 'precios' && <PreciosTab nodos={nodos} />}
+                {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
+                {!cargando && vistaActiva === 'precios' && <PreciosTab nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
               </>
             )}
           </>
