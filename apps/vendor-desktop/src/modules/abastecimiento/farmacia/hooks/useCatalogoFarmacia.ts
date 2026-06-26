@@ -19,6 +19,7 @@ import type {
 
 export type PanelIzquierdoCatalogo = 'busqueda' | 'detalle'
 export type TabDetalleFarmacia = 'detalle' | 'presentaciones' | 'precios'
+export type VistaCatalogo = 'resumen' | 'detalle' | 'presentaciones' | 'precios'
 
 interface UseCatalogoFarmaciaResult {
   inputRef: RefObject<HTMLInputElement | null>
@@ -28,7 +29,7 @@ interface UseCatalogoFarmaciaResult {
   resultados: ProductoComercial[]
   productoSeleccionado: ProductoComercial | null
   productoPreview: ProductoComercial | null
-  tabDetalle: TabDetalleFarmacia
+  vistaActiva: VistaCatalogo
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
   pasoNuevo: number
@@ -47,7 +48,10 @@ interface UseCatalogoFarmaciaResult {
   onVolverBusqueda(): void
   onNuevo(): void
   onCerrarCreacion(): void
-  onTabChange(t: TabDetalleFarmacia): void
+  onIrAResumen(): void
+  onIrADetalle(): void
+  onIrAPresentaciones(): void
+  onIrAPrecios(): void
   onPasoSiguiente(): void
   onPasoAnterior(): void
   onGuardarProducto(
@@ -71,7 +75,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   const [resultados, setResultados] = useState<ProductoComercial[]>([])
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoComercial | null>(null)
   const [productoPreview, setProductoPreview] = useState<ProductoComercial | null>(null)
-  const [tabDetalle, setTabDetalle] = useState<TabDetalleFarmacia>('detalle')
+  const [vistaActiva, setVistaActiva] = useState<VistaCatalogo>('resumen')
   const [presentaciones, setPresentaciones] = useState<PresentacionComercial[]>([])
   const [nodos, setNodos] = useState<NodoFraccionamiento[]>([])
   const [pasoNuevo, setPasoNuevo] = useState<number>(1)
@@ -134,12 +138,13 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     setProductoPreview(null)
     setIndiceSeleccionado(-1)
     inputRef.current?.focus()
+    setVistaActiva('resumen')
   }, [])
 
   const onSeleccionar = useCallback((p: ProductoComercial): void => {
     setPanelIzquierdo('detalle')
     setProductoSeleccionado(p)
-    setTabDetalle('detalle')
+    setVistaActiva('resumen')
     setBuscando(true)
     setErrorLocal(null)
     obtenerPresentaciones(p.id)
@@ -205,7 +210,10 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     setPasoNuevo(1)
   }, [])
 
-  const onTabChange = useCallback((t: TabDetalleFarmacia): void => setTabDetalle(t), [])
+  const onIrAResumen = useCallback((): void => setVistaActiva('resumen'), [])
+  const onIrADetalle = useCallback((): void => setVistaActiva('detalle'), [])
+  const onIrAPresentaciones = useCallback((): void => setVistaActiva('presentaciones'), [])
+  const onIrAPrecios = useCallback((): void => setVistaActiva('precios'), [])
   const onPasoSiguiente = useCallback((): void => setPasoNuevo((actual: number) => Math.min(4, actual + 1)), [])
   const onPasoAnterior = useCallback((): void => setPasoNuevo((actual: number) => Math.max(1, actual - 1)), [])
 
@@ -259,7 +267,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     resultados,
     productoSeleccionado,
     productoPreview,
-    tabDetalle,
+    vistaActiva,
     presentaciones,
     nodos,
     pasoNuevo,
@@ -278,7 +286,10 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     onVolverBusqueda,
     onNuevo,
     onCerrarCreacion,
-    onTabChange,
+    onIrAResumen,
+    onIrADetalle,
+    onIrAPresentaciones,
+    onIrAPrecios,
     onPasoSiguiente,
     onPasoAnterior,
     onGuardarProducto,

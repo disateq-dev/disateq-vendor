@@ -3,10 +3,10 @@ import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import { BuscadorProducto } from './components/BuscadorProducto'
 import { DetalleProducto } from './components/DetalleProducto'
 import { NuevoProductoStepper } from './components/NuevoProductoStepper'
-import { useCatalogoFarmacia } from './hooks/useCatalogoFarmacia'
+import { useCatalogoFarmacia, type VistaCatalogo } from './hooks/useCatalogoFarmacia'
 
 export function CatalogoFarmaciaWorkspace(): ReactElement {
-  const catalogo = useCatalogoFarmacia()
+  const catalogo: ReturnType<typeof useCatalogoFarmacia> & { vistaActiva: VistaCatalogo } = useCatalogoFarmacia()
   const onNavegaAIngresos = useCallback(() => {
     // Emitir evento custom que OperationalBar pueda escuchar
     window.dispatchEvent(new CustomEvent('disateq:navegar', { detail: { destino: 'abastecimiento', subtab: 'ingresos' } }))
@@ -114,13 +114,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
             <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
           )}
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
-            {catalogo.creandoAbierto
-              ? 'NUEVO PRODUCTO'
-              : modoDetalle === 'corrigiendo'
-                ? 'CORREGIR DATOS BÁSICOS PRODUCTO'
-                : modoDetalle === 'desactivando'
-                  ? 'DESACTIVAR PRODUCTO CATÁLOGO'
-                  : 'DETALLE PRODUCTO CATÁLOGO'}
+            {catalogo.creandoAbierto ? 'NUEVO PRODUCTO' : modoDetalle === 'corrigiendo' ? 'CORREGIR DATOS BÁSICOS PRODUCTO' : modoDetalle === 'desactivando' ? 'DESACTIVAR PRODUCTO CATÁLOGO' : catalogo.vistaActiva === 'detalle' ? 'DETALLE PRODUCTO' : catalogo.vistaActiva === 'presentaciones' ? 'PRESENTACIONES PRODUCTO' : catalogo.vistaActiva === 'precios' ? 'PRECIOS PRODUCTO' : 'DATOS BÁSICOS PRODUCTO'}
           </span>
         </div>
 
@@ -145,10 +139,12 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               productoConfirmado={catalogo.productoSeleccionado !== null}
               presentaciones={catalogo.presentaciones}
               nodos={catalogo.nodos}
-              tabActiva={catalogo.tabDetalle}
+              vistaActiva={catalogo.vistaActiva}
               cargando={catalogo.cargando}
-              onTabChange={catalogo.onTabChange}
-              onVolver={catalogo.onVolverBusqueda}
+              onIrADetalle={catalogo.onIrADetalle}
+              onIrAPresentaciones={catalogo.onIrAPresentaciones}
+              onIrAPrecios={catalogo.onIrAPrecios}
+              onIrAResumen={catalogo.onIrAResumen}
               onActualizarProductoSeleccionado={catalogo.onActualizarProductoSeleccionado}
               onNavegaAIngresos={onNavegaAIngresos}
               onLimpiar={catalogo.onLimpiarDetalle}

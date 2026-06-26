@@ -18,7 +18,7 @@ import {
 } from '../../../../domains/farmacia/farmacia.service'
 import { usePOS } from '../../../../context/POSContext'
 import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
-import type { TabDetalleFarmacia } from '../hooks/useCatalogoFarmacia'
+import type { VistaCatalogo } from '../hooks/useCatalogoFarmacia'
 
 interface DetalleProductoProps {
   producto: ProductoComercial
@@ -26,10 +26,12 @@ interface DetalleProductoProps {
   productoConfirmado: boolean
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
-  tabActiva: TabDetalleFarmacia
+  vistaActiva: VistaCatalogo
   cargando: boolean
-  onTabChange: (t: TabDetalleFarmacia) => void
-  onVolver: () => void
+  onIrADetalle: () => void
+  onIrAPresentaciones: () => void
+  onIrAPrecios: () => void
+  onIrAResumen: () => void
   onActualizarProductoSeleccionado: (p: ProductoComercial) => void
   onNavegaAIngresos: () => void
   onLimpiar: () => void
@@ -44,11 +46,6 @@ interface CampoLecturaProps {
 
 interface HeaderProductoProps {
   producto: ProductoComercial
-}
-
-interface TabsProductoProps {
-  tabActiva: TabDetalleFarmacia
-  onTabChange: (t: TabDetalleFarmacia) => void
 }
 
 interface PresentacionesTabProps {
@@ -96,30 +93,6 @@ function HeaderProducto({ producto }: HeaderProductoProps): ReactElement {
       </h2>
       <p className="mt-1 text-[13px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
     </header>
-  )
-}
-
-function TabsProducto({ tabActiva, onTabChange }: TabsProductoProps): ReactElement {
-  const tabs: { id: TabDetalleFarmacia; label: string }[] = [
-    { id: 'detalle', label: 'Detalle' },
-    { id: 'presentaciones', label: 'Presentaciones' },
-    { id: 'precios', label: 'Precios' },
-  ]
-  return (
-    <nav className="flex gap-2 border-b border-[#E0F2FE]">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onTabChange(tab.id)}
-          className={`px-4 py-3 text-[12px] font-bold uppercase tracking-wide ${
-            tabActiva === tab.id ? 'border-b-2 border-[#0284C7] text-[#0284C7]' : 'text-slate-500'
-          }`}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </nav>
   )
 }
 
@@ -509,9 +482,12 @@ export function DetalleProducto({
   productoConfirmado,
   presentaciones,
   nodos,
-  tabActiva,
+  vistaActiva,
   cargando,
-  onTabChange,
+  onIrADetalle,
+  onIrAPresentaciones,
+  onIrAPrecios,
+  onIrAResumen: _onIrAResumen,
   onActualizarProductoSeleccionado,
   onNavegaAIngresos,
   onLimpiar,
@@ -680,64 +656,6 @@ export function DetalleProducto({
               </span>
             )}
           </div>
-          {modo === 'lectura' && (
-            <div className="flex flex-col gap-2">
-              {producto.estado === 'ACTIVO' && (
-                <div className="flex gap-2">
-                  <button
-                    ref={corregirRef}
-                    type="button"
-                    onClick={onIniciarCorreccion}
-                    disabled={guardandoCambios || verificandoHistorial}
-                    className={indiceAccion === 0
-                      ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3'
-                      : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}
-                  >
-                    <span>CORREGIR</span>
-                    <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModo('desactivando')}
-                    disabled={guardandoCambios}
-                    className={indiceAccion === 1
-                      ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'
-                      : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}
-                  >
-                    <span>DESACTIVAR</span>
-                    <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onLimpiar}
-                    className={indiceAccion === 2
-                      ? 'group relative rounded-xl border border-[#f97316] bg-[#fff7ed] px-4 py-2 text-[12px] font-bold text-[#f97316] flex items-center gap-3'
-                      : 'group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3'}
-                  >
-                    <span>LIMPIAR</span>
-                    <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd>
-                  </button>
-                </div>
-              )}
-              {producto.estado === 'ACTIVO' && (
-                <button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button>
-              )}
-              {producto.estado === 'INACTIVO' && (
-                esAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => void onReactivar()}
-                    disabled={guardandoCambios}
-                    className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
-                  >
-                    REACTIVAR
-                  </button>
-                ) : (
-                  <p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>
-                )
-              )}
-            </div>
-          )}
         </header>
 
         {errorAccion !== null && (
@@ -843,6 +761,7 @@ export function DetalleProducto({
             </div>
 
             <div className="flex gap-2 pt-2">
+              <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
               <button
                 type="button"
                 onClick={() => setModo('lectura')}
@@ -869,6 +788,7 @@ export function DetalleProducto({
               búsquedas ni ventas. El historial se conserva.
             </p>
             <div className="flex gap-2">
+              <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
               <button
                 type="button"
                 onClick={() => setModo('lectura')}
@@ -890,100 +810,136 @@ export function DetalleProducto({
 
         {modo === 'lectura' && productoPreview === null && (
           <>
-            <TabsProducto tabActiva={tabActiva} onTabChange={onTabChange} />
-            {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
-            {!cargando && tabActiva === 'detalle' && (
-              <div className="space-y-3">
+            {vistaActiva === 'resumen' && (
+              <div className="space-y-4">
+                <div className="flex justify-end gap-2">
+                  <button type="button" onClick={onIrADetalle} className="rounded-xl border border-[#45b356]/40 px-3 py-1.5 text-[11px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">DETALLE</button>
+                  <button type="button" onClick={onIrAPresentaciones} className="rounded-xl border border-[#45b356]/40 px-3 py-1.5 text-[11px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">PRESENTACIONES</button>
+                  <button type="button" onClick={onIrAPrecios} className="rounded-xl border border-[#45b356]/40 px-3 py-1.5 text-[11px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">PRECIOS</button>
+                </div>
                 <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    PARA LA VENTA
-                  </h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    <CampoLectura
-                      label={LABEL_CAMPO['condicionVenta'].catalogo}
-                      valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta}
-                    />
-                    <CampoLectura
-                      label="Refrigerar"
-                      valor={producto.requiereCadenaFrio ? 'Sí · cadena de frío' : 'No requiere'}
-                    />
-                    <CampoLectura
-                      label="Con vencimiento"
-                      valor={producto.requiereLote ? 'Sí · requiere lote' : 'Sin trazabilidad de lote'}
-                    />
-                    <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">DETALLE</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <CampoLectura label="CONDICIÓN DE VENTA" valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta} />
+                    <CampoLectura label="CADENA DE FRÍO" valor={producto.requiereCadenaFrio ? 'Sí · requiere frío' : 'No requiere'} />
+                    <CampoLectura label="VENCIMIENTO / LOTE" valor={producto.requiereLote ? 'Sí · requiere lote' : 'Sin trazabilidad'} />
+                    <CampoLectura label="CATEGORÍA" valor={categoriaProducto(producto)} />
+                    <CampoLectura label="REGISTRO SANITARIO" valor={producto.estadoRegistroSanitario === 'VIGENTE' ? 'Vigente' : producto.estadoRegistroSanitario === 'VENCIDO' ? '⚠ Vencido' : producto.estadoRegistroSanitario ?? '-'} />
                   </div>
                 </div>
-
                 <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    IDENTIDAD DEL PRODUCTO
-                  </h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    <CampoLectura label={LABEL_CAMPO['ifa'].catalogo} valor={producto.ifa} />
-                    <CampoLectura
-                      label={LABEL_CAMPO['concentracion'].catalogo}
-                      valor={producto.concentracion}
-                    />
-                    <CampoLectura
-                      label={LABEL_CAMPO['formaFarmaceutica'].catalogo}
-                      valor={LABEL_FORMA_FARMACEUTICA[producto.formaFarmaceutica ?? ''] ?? producto.formaFarmaceutica}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    REGISTRO Y PROCEDENCIA
-                  </h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    <CampoLectura label={LABEL_CAMPO['nombreFabricante'].catalogo} valor={producto.nombreFabricante} />
-                    <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
-                    <CampoLectura
-                      label="Estado del registro"
-                      valor={
-                        producto.estadoRegistroSanitario === 'VIGENTE'
-                          ? 'Vigente'
-                          : producto.estadoRegistroSanitario === 'SUSPENDIDO'
-                            ? 'Suspendido'
-                            : producto.estadoRegistroSanitario === 'CANCELADO'
-                              ? 'Cancelado'
-                              : producto.estadoRegistroSanitario === 'VENCIDO'
-                                ? 'Vencido'
-                                : producto.estadoRegistroSanitario
-                      }
-                    />
-                    {esAdmin && <CampoLectura label="Codigo DIGEMID" valor={producto.codigoDIGEMID} />}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    PRESENTACIONES COMERCIALES
-                  </h3>
-                  {presentaciones.length > 0 ? (
-                    <div className="space-y-2">
-                      {presentaciones.map((presentacion) => (
-                        <div key={presentacion.id} className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
-                          <div className="text-[13px] font-bold text-slate-800">{presentacion.descripcion}</div>
-                          {presentacion.codigoBarras && (
-                            <div className="text-[11px] text-slate-500">Cód. barras {presentacion.codigoBarras}</div>
-                          )}
-                          <div className="text-[11px] text-slate-500">
-                            Stock mínimo {presentacion.stockMinimo} {presentacion.unidadConteo}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[13px] text-slate-400">Sin presentaciones registradas</p>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">PRESENTACIONES</h3>
+                  <p className="text-[12px] font-semibold text-slate-700">{presentaciones.length} presentación{presentaciones.length !== 1 ? 'es' : ''} registrada{presentaciones.length !== 1 ? 's' : ''}</p>
+                  {presentaciones.length > 0 && (
+                    <p className="text-[11px] text-slate-500">{presentaciones[0].descripcion} · Stock mínimo {presentaciones[0].stockMinimo} {presentaciones[0].unidadConteo}</p>
                   )}
                 </div>
-
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">PRECIOS</h3>
+                  <p className="text-[12px] text-slate-400">Consultar precios en la vista Precios.</p>
+                </div>
               </div>
             )}
-            {!cargando && tabActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}
-            {!cargando && tabActiva === 'precios' && <PreciosTab nodos={nodos} />}
+            {vistaActiva !== 'resumen' && (
+              <>
+                <div className="flex gap-2 border-b border-[#E0F2FE]"><button type="button" onClick={onIrADetalle} className={vistaActiva === 'detalle' ? 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide border-b-2 border-[#0284C7] text-[#0284C7]' : 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-500 hover:text-[#0284C7]'}>Detalle</button><button type="button" onClick={onIrAPresentaciones} className={vistaActiva === 'presentaciones' ? 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide border-b-2 border-[#0284C7] text-[#0284C7]' : 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-500 hover:text-[#0284C7]'}>Presentaciones</button><button type="button" onClick={onIrAPrecios} className={vistaActiva === 'precios' ? 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide border-b-2 border-[#0284C7] text-[#0284C7]' : 'px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-500 hover:text-[#0284C7]'}>Precios</button></div>
+                {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
+                {!cargando && vistaActiva === 'detalle' && (
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        PARA LA VENTA
+                      </h3>
+                      <div className="grid grid-cols-4 gap-3">
+                        <CampoLectura
+                          label={LABEL_CAMPO['condicionVenta'].catalogo}
+                          valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta}
+                        />
+                        <CampoLectura
+                          label="Refrigerar"
+                          valor={producto.requiereCadenaFrio ? 'Sí · cadena de frío' : 'No requiere'}
+                        />
+                        <CampoLectura
+                          label="Con vencimiento"
+                          valor={producto.requiereLote ? 'Sí · requiere lote' : 'Sin trazabilidad de lote'}
+                        />
+                        <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        IDENTIDAD DEL PRODUCTO
+                      </h3>
+                      <div className="grid grid-cols-4 gap-3">
+                        <CampoLectura label={LABEL_CAMPO['ifa'].catalogo} valor={producto.ifa} />
+                        <CampoLectura
+                          label={LABEL_CAMPO['concentracion'].catalogo}
+                          valor={producto.concentracion}
+                        />
+                        <CampoLectura
+                          label={LABEL_CAMPO['formaFarmaceutica'].catalogo}
+                          valor={LABEL_FORMA_FARMACEUTICA[producto.formaFarmaceutica ?? ''] ?? producto.formaFarmaceutica}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        REGISTRO Y PROCEDENCIA
+                      </h3>
+                      <div className="grid grid-cols-4 gap-3">
+                        <CampoLectura label={LABEL_CAMPO['nombreFabricante'].catalogo} valor={producto.nombreFabricante} />
+                        <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
+                        <CampoLectura
+                          label="Estado del registro"
+                          valor={
+                            producto.estadoRegistroSanitario === 'VIGENTE'
+                              ? 'Vigente'
+                              : producto.estadoRegistroSanitario === 'SUSPENDIDO'
+                                ? 'Suspendido'
+                                : producto.estadoRegistroSanitario === 'CANCELADO'
+                                  ? 'Cancelado'
+                                  : producto.estadoRegistroSanitario === 'VENCIDO'
+                                    ? 'Vencido'
+                                    : producto.estadoRegistroSanitario
+                          }
+                        />
+                        {esAdmin && <CampoLectura label="Codigo DIGEMID" valor={producto.codigoDIGEMID} />}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        PRESENTACIONES COMERCIALES
+                      </h3>
+                      {presentaciones.length > 0 ? (
+                        <div className="space-y-2">
+                          {presentaciones.map((presentacion) => (
+                            <div key={presentacion.id} className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
+                              <div className="text-[13px] font-bold text-slate-800">{presentacion.descripcion}</div>
+                              {presentacion.codigoBarras && (
+                                <div className="text-[11px] text-slate-500">Cód. barras {presentacion.codigoBarras}</div>
+                              )}
+                              <div className="text-[11px] text-slate-500">
+                                Stock mínimo {presentacion.stockMinimo} {presentacion.unidadConteo}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[13px] text-slate-400">Sin presentaciones registradas</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#E0F2FE]"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button ref={corregirRef} type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}</div><div className="flex items-center gap-3"><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button><button type="button" onClick={onLimpiar} className={indiceAccion === 2 ? 'group relative rounded-xl border border-[#f97316] bg-[#fff7ed] px-4 py-2 text-[12px] font-bold text-[#f97316] flex items-center gap-3' : 'group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3'}><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button></div></div>
+
+                  </div>
+                )}
+                {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} />}
+                {!cargando && vistaActiva === 'precios' && <PreciosTab nodos={nodos} />}
+              </>
+            )}
           </>
         )}
       </div>
