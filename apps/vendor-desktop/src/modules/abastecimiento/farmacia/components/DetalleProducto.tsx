@@ -561,6 +561,15 @@ export function DetalleProducto({
       } else if (productoConfirmado && modo === 'lectura' && event.key === 'ArrowLeft') {
         event.preventDefault()
         setIndiceAccion(prev => (prev - 1 + 3) % 3)
+      } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'd') {
+        event.preventDefault()
+        onIrADetalle()
+      } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'p') {
+        event.preventDefault()
+        onIrAPresentaciones()
+      } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'r') {
+        event.preventDefault()
+        onIrAPrecios()
       } else if (productoConfirmado && event.ctrlKey && event.key === 'Enter' && producto.estado === 'ACTIVO' && modo === 'lectura') {
         event.preventDefault()
         onIniciarCorreccion()
@@ -588,7 +597,7 @@ export function DetalleProducto({
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [modo, onLimpiar, productoConfirmado, onIniciarCorreccion, onNavegaAIngresos, indiceAccion, producto.estado])
+  }, [modo, onLimpiar, productoConfirmado, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, indiceAccion, producto.estado])
 
   const onGuardarCorreccion = async (): Promise<void> => {
     if (!formularioCorreccion) return
@@ -812,10 +821,27 @@ export function DetalleProducto({
           <>
             {vistaActiva === 'resumen' && (
               <div className="space-y-4">
-                <div className="flex justify-end gap-2">
-                  <button type="button" onClick={onIrADetalle} className="rounded-xl border border-[#45b356]/40 px-3 py-1.5 text-[11px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">DETALLE</button>
-                  <button type="button" onClick={onIrAPresentaciones} className="rounded-xl border border-[#45b356]/40 px-3 py-1.5 text-[11px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">PRESENTACIONES</button>
-                  <button type="button" onClick={onIrAPrecios} className="rounded-xl border border-[#45b356]/40 px-3 py-1.5 text-[11px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">PRECIOS</button>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-[16px] font-bold text-slate-900">
+                      {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
+                    </h2>
+                    <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={onIrADetalle} className={String(vistaActiva) === 'detalle' ? 'group relative rounded-xl bg-[#0284C7] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#0284C7]/40 px-3 py-1.5 text-[11px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]'}>
+                      DETALLE
+                      <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+D</kbd>
+                    </button>
+                    <button type="button" onClick={onIrAPresentaciones} className={String(vistaActiva) === 'presentaciones' ? 'group relative rounded-xl bg-[#0284C7] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#0284C7]/40 px-3 py-1.5 text-[11px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]'}>
+                      PRESENTACIONES
+                      <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+P</kbd>
+                    </button>
+                    <button type="button" onClick={onIrAPrecios} className={String(vistaActiva) === 'precios' ? 'group relative rounded-xl bg-[#0284C7] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#0284C7]/40 px-3 py-1.5 text-[11px] font-bold text-[#0284C7] hover:bg-[#E0F2FE]'}>
+                      PRECIOS
+                      <kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd>
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">DETALLE</h3>
