@@ -681,7 +681,7 @@ export function DetalleProducto({
         )}
 
         {modo === 'corrigiendo' && formularioCorreccion !== null && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4 mb-1">
               <div>
                 <h2 className="text-[15px] font-bold text-slate-900">
