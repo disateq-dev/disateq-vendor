@@ -704,8 +704,8 @@ export function DetalleProducto({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <label>
+            <div className="flex gap-3 items-end">
+              <label className="w-[130px] shrink-0">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CODIGO INTERNO</span>
                 <input
                   value={formularioCorreccion.codigoInterno ?? ''}
@@ -714,7 +714,7 @@ export function DetalleProducto({
                   className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
                 />
               </label>
-              <label>
+              <label className="w-[190px] shrink-0">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CODIGO DIGEMID</span>
                 {esAdmin ? (
                   <input
@@ -727,7 +727,7 @@ export function DetalleProducto({
                   <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
                 )}
               </label>
-              <label>
+              <label className="flex-1">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">NOMBRE COMERCIAL</span>
                 <input
                   value={formularioCorreccion.nombreComercial}
