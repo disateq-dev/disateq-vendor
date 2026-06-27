@@ -892,28 +892,28 @@ export function DetalleProducto({
 
         {modo === 'desactivando' && (
           <div className="flex flex-col gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-4">
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <div>
+                <h2 className="text-[15px] font-bold text-slate-900">
+                  {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
+                </h2>
+                <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+                <p className="text-[10px] text-slate-400">
+                  Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                {producto.estado === 'ACTIVO' ? (
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700">ACTIVO</span>
+                ) : (
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">INACTIVO</span>
+                )}
+              </div>
+            </div>
             <p className="text-[13px] font-semibold text-slate-700">
               Vas a dar de baja «{producto.nombreComercial}». El producto quedará INACTIVO y no aparecerá en
               búsquedas ni ventas. El historial se conserva.
             </p>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => { onIrAResumen(); setModo('lectura') }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>VOLVER</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
-              <button
-                type="button"
-                onClick={() => setModo('lectura')}
-                className="rounded-xl border border-[#dc2626]/40 px-4 py-2 text-[12px] font-bold text-[#dc2626] hover:bg-[#fef2f2]"
-              >
-                CANCELAR
-              </button>
-              <button
-                type="button"
-                onClick={() => void onConfirmarDesactivar()}
-                disabled={guardandoCambios}
-                className="rounded-xl bg-red-500 px-4 py-2 text-[12px] font-bold text-white"
-              >
-                CONFIRMAR BAJA
-              </button>
-            </div>
           </div>
         )}
 
@@ -1090,14 +1090,27 @@ export function DetalleProducto({
       </div>
       {modo === 'corrigiendo' && (
         <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
-          <button type="button" onClick={() => { onIrAResumen(); setModo('lectura'); setFormularioCorreccion(null) }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER</button>
+          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura'); setFormularioCorreccion(null) }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
           <button
             type="button"
             onClick={() => void onGuardarCorreccion()}
             disabled={guardandoCambios}
-            className="rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
+            className="group relative rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
           >
-            GUARDAR CORRECCION
+            GUARDAR CORRECCION<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Enter</kbd>
+          </button>
+        </div>
+      )}
+      {modo === 'desactivando' && (
+        <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
+          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura') }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+          <button
+            type="button"
+            onClick={() => void onConfirmarDesactivar()}
+            disabled={guardandoCambios}
+            className="group relative rounded-xl bg-red-500 px-4 py-2 text-[12px] font-bold text-white hover:bg-red-600 disabled:opacity-50"
+          >
+            CONFIRMAR BAJA<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd>
           </button>
         </div>
       )}
