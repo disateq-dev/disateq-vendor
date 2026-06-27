@@ -681,96 +681,106 @@ export function DetalleProducto({
 
         {modo === 'corrigiendo' && formularioCorreccion !== null && (
           <div className="flex flex-col gap-3">
-            {tieneHistorial && (
-              <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-600">
-                Este producto tiene movimientos registrados. Los cambios quedarán registrados en el historial.
-              </p>
-            )}
+            <div className="flex items-start justify-between gap-4 mb-1">
+              <div>
+                <h2 className="text-[15px] font-bold text-slate-900">
+                  {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
+                </h2>
+                <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+                <p className="text-[10px] text-slate-400">
+                  Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                {producto.estado === 'ACTIVO' ? (
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700">ACTIVO</span>
+                ) : (
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">INACTIVO</span>
+                )}
+                {tieneHistorial && (
+                  <span className="text-[10px] text-amber-600 font-semibold text-right">Producto con movimientos registrados. Registro de cambios en historial.</span>
+                )}
+              </div>
+            </div>
 
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Nombre comercial</span>
-              <input
-                value={formularioCorreccion.nombreComercial}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreComercial: e.target.value } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              />
-            </label>
             <div className="grid grid-cols-2 gap-3">
               <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Fabricante</span>
-                <input
-                  value={formularioCorreccion.nombreFabricante}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
-                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-                />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ID PRODUCTO</span>
+                <input readOnly value={producto.id} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
               </label>
               <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Titular</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CODIGO DIGEMID</span>
                 <input
-                  value={formularioCorreccion.nombreTitular}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreTitular: e.target.value } : prev)}
-                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                  readOnly={!esAdmin}
+                  value={formularioCorreccion.codigoDIGEMID}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
+                  className={esAdmin ? "h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]" : "h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400"}
                 />
               </label>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">País origen</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">NOMBRE COMERCIAL</span>
                 <input
-                  value={formularioCorreccion.paisOrigen}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, paisOrigen: e.target.value } : prev)}
+                  value={formularioCorreccion.nombreComercial}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreComercial: e.target.value } : prev)}
                   className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
                 />
               </label>
               <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Registro sanitario</span>
-                <input
-                  value={formularioCorreccion.registroSanitario}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
-                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-                />
-              </label>
-            </div>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estado del registro</span>
-              <select
-                value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: e.target.value as EstadoRegistroSanitario } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              >
-                <option value="VIGENTE">Vigente</option>
-                <option value="SUSPENDIDO">Suspendido</option>
-                <option value="CANCELADO">Cancelado</option>
-                <option value="VENCIDO">Vencido</option>
-              </select>
-            </label>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Código DIGEMID</span>
-              <input
-                value={formularioCorreccion.codigoDIGEMID}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              />
-            </label>
-
-            <div className="mt-1 border-t border-[#E0F2FE] pt-3 flex flex-col gap-3">
-              <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA (no editable)</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA / PRINCIPIO ACTIVO</span>
                 <input readOnly value={producto.ifa} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Concentración (no editable)</span>
-                  <input readOnly value={producto.concentracion} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
-                </label>
-                <label>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Forma farmacéutica (no editable)</span>
-                  <input readOnly value={producto.formaFarmaceutica} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
-                </label>
-              </div>
+            </div>
+            <label>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FABRICANTE / LABORATORIO</span>
+              <input
+                value={formularioCorreccion.nombreFabricante}
+                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
+                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
               <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Condición de venta (no editable)</span>
-                <input readOnly value={producto.condicionVenta} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CONCENTRACION / DOSIS</span>
+                <input readOnly value={producto.concentracion} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+              </label>
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FORMA FARMACEUTICA</span>
+                <input readOnly value={producto.formaFarmaceutica} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+              </label>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <CampoLectura label="CONDICION DE VENTA" valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta} />
+              <CampoLectura label="REFRIGERAR" valor={producto.requiereCadenaFrio ? 'Si · requiere frio' : 'No requiere'} />
+              <CampoLectura label="CON VENCIMIENTO" valor={producto.requiereLote ? 'Si · requiere lote' : 'Sin trazabilidad'} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">REGISTRO SANITARIO</span>
+                <input
+                  readOnly={!esAdmin}
+                  value={formularioCorreccion.registroSanitario}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
+                  className={esAdmin ? "h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]" : "h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400"}
+                />
+              </label>
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ESTADO DEL REGISTRO</span>
+                {esAdmin ? (
+                  <select
+                    value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
+                    onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: e.target.value as EstadoRegistroSanitario } : prev)}
+                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                  >
+                    <option value="VIGENTE">Vigente</option>
+                    <option value="SUSPENDIDO">Suspendido</option>
+                    <option value="CANCELADO">Cancelado</option>
+                    <option value="VENCIDO">Vencido</option>
+                  </select>
+                ) : (
+                  <input readOnly value={formularioCorreccion.estadoRegistroSanitario} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                )}
               </label>
             </div>
 
@@ -984,12 +994,6 @@ export function DetalleProducto({
                       )}
                     </div>
 
-                    <div className="flex gap-2 pt-3 mt-2 border-t border-[#E0F2FE]">
-                      <button type="button" onClick={onIrAPresentaciones} className="group relative flex-[1] rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRESENTACIONES<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd></button>
-                      <button type="button" onClick={onIrAPrecios} className="group relative flex-[1] rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRECIOS<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd></button>
-                      <button type="button" onClick={onIrAResumen} className="group relative flex-[1] rounded-xl border border-[#f97316]/40 px-3 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-center">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
-                    </div>
-
                   </div>
                 )}
                 {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
@@ -999,6 +1003,13 @@ export function DetalleProducto({
           </>
         )}
       </div>
+      {vistaActiva === 'detalle' && modo === 'lectura' && (
+        <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
+          <button type="button" onClick={onIrAPresentaciones} className="group relative px-5 rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRESENTACIONES<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd></button>
+          <button type="button" onClick={onIrAPrecios} className="group relative px-5 rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRECIOS<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd></button>
+          <button type="button" onClick={onIrAResumen} className="group relative px-5 rounded-xl border border-[#f97316]/40 px-3 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-center">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+        </div>
+      )}
       {vistaActiva === 'resumen' && modo === 'lectura' && productoPreview === null && (
         <div className="shrink-0 flex justify-end px-5 pb-4">
           <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[#f97316]/40 px-3 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-center">LIMPIAR<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>

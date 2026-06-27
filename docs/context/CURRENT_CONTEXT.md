@@ -2,11 +2,12 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `b3647b2` — fix(catalogo): LIMPIAR resumen conserva resultados via onLimpiarDetalle, Escape en detalle vuelve a resumen via onIrAResumen
+* **Último commit:** `2d39fec` — fix(catalogo): Enter en CORREGIR/DESACTIVAR — bloquear intercepcion en BuscadorProducto y CatalogoFarmaciaWorkspace cuando hay producto confirmado
 
 ## Commits de la jornada 26 Jun
 | Hash | Descripción |
 |---|---|
+| `2d39fec` | fix(catalogo): Enter en CORREGIR/DESACTIVAR — bloquear intercepcion en BuscadorProducto y CatalogoFarmaciaWorkspace cuando hay producto confirmado |
 | `b3647b2` | fix(catalogo): LIMPIAR resumen conserva resultados via onLimpiarDetalle, Escape en detalle vuelve a resumen via onIrAResumen |
 | `35c5008` | refactor(catalogo): LIMPIAR en CORREGIR/DESACTIVAR renombrado a VOLVER con onIrAResumen, LIMPIAR topbar detalle eliminado, indiceAccion cicla entre 2 botones |
 | `6e6ee02` | feat(catalogo): navegacion flechas+Enter en botones DETALLE/PRESENTACIONES/PRECIOS, colores diferenciados violeta/cyan/ambar |
@@ -47,7 +48,7 @@
 ## Recorrido de Dominios (Matriz de Estado)
 * **LOGIN:** ✅
 * **TURNO / CAJA:** ✅
-* **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso — RESUMEN DEL PRODUCTO ✅ · DETALLE DEL PRODUCTO pendiente verificación visual final
+* **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso — RESUMEN DEL PRODUCTO ✅ · DETALLE DEL PRODUCTO ✅ navegación teclado completa (flechas + Enter en CORREGIR/DESACTIVAR confirmado)
 * **ABASTECIMIENTO — PROVEEDORES:** ✅ Doctrina de color aplicada — pendiente evaluación visual
 * **ABASTECIMIENTO — INGRESOS:** ✅ Doctrina de color aplicada — pendiente prueba end-to-end
 * **ABASTECIMIENTO — INVENTARIOS:** ✅ Doctrina de color aplicada
@@ -92,7 +93,7 @@
 | PRESENTACIONES | 1 | `#0891B2` cyan | `#ECFEFF` |
 | PRECIOS | 2 | `#D97706` ámbar | `#FEF3C7` |
 
-- ◄►: cicla `indiceNavegacion` · Enter: navega a sheetwork del índice activo
+- ◄►/Enter: cicla `indiceNavegacion` · Enter: navega a sheetwork del índice activo
 - Alt+D / Alt+E / Alt+R: navegación directa desde cualquier vista en modo lectura
 
 ### indiceAccion en DETALLE DEL PRODUCTO — IRREVOCABLE
@@ -141,6 +142,9 @@
 | `components/BuscadorProducto.tsx` | Lista resultados, input, navegación teclado |
 | `components/DetalleProducto.tsx` | Todas las sheetworks autónomas |
 | `components/NuevoProductoStepper.tsx` | Creación paso a paso |
+
+### Lección aprendida — intercepción de teclado en múltiples listeners
+Patrón de riesgo confirmado: cuando existen múltiples listeners de teclado en la misma página (input onKeyDown React + window listener workspace + window listener DetalleProducto), el orden de evaluación y las guardas de cada uno deben ser exhaustivas. Regla: cuando hay producto confirmado, el input y el workspace deben inhibirse completamente para ArrowDown, ArrowUp y Enter, dejando el control exclusivo a DetalleProducto.
 
 ---
 
@@ -257,21 +261,21 @@
 - **Escape contextual:** en detalle → onIrAResumen / en resumen → onLimpiar / en corrigiendo/desactivando → resetModo
 - **indiceAccion en DETALLE:** módulo 2 (CORREGIR/DESACTIVAR) — sin LIMPIAR
 - **Directorios fantasma eliminados 26 Jun:** `apps\vendor-desktop\apps` y `src\` en raíz
+- **Intercepción de teclado — múltiples listeners:** con producto confirmado, BuscadorProducto y CatalogoFarmaciaWorkspace deben inhibir ArrowDown/ArrowUp/Enter completamente — control exclusivo a DetalleProducto
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Evaluación visual** — DETALLE DEL PRODUCTO (verificar navegación completa)
-2. **Evaluación visual** — ASIGNACIÓN PRESENTACIONES
-3. **Evaluación visual** — ASIGNACIÓN DE PRECIOS
-4. **Evaluación visual** — NuevoProductoStepper flujo completo
-5. **Evaluación visual** — PROVEEDORES flujo completo
-6. **INGRESOS** — prueba end-to-end
-7. **Conectar `disateq:navegar`** — listener en OperationalBar
-8. **OperationalBar** — corregir color `#3D8A8A` → `#0284C7`
-9. **BoxSlotType → TipoCaja**
-10. **Operador.codigo** — verificar y eliminar si huérfano
+1. **Evaluación visual** — ASIGNACIÓN PRESENTACIONES
+2. **Evaluación visual** — ASIGNACIÓN DE PRECIOS
+3. **Evaluación visual** — NuevoProductoStepper flujo completo
+4. **Evaluación visual** — PROVEEDORES flujo completo
+5. **INGRESOS** — prueba end-to-end
+6. **Conectar `disateq:navegar`** — listener en OperationalBar
+7. **OperationalBar** — corregir color `#3D8A8A` → `#0284C7`
+8. **BoxSlotType → TipoCaja**
+9. **Operador.codigo** — verificar y eliminar si huérfano
 
 ---
 
