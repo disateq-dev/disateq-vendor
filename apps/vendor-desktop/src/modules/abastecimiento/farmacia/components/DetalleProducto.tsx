@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import type {
   EstadoRegistroSanitario,
   ModificarProductoComercialInput,
+  CorregirDatosOperacionalesInput,
   NodoFraccionamiento,
   PresentacionComercial,
   ProductoComercial,
@@ -11,6 +12,7 @@ import {
   crearValorOperacional,
   desactivarProductoComercial,
   modificarProductoComercial,
+  corregirDatosOperacionales,
   modificarValorOperacional,
   obtenerValoresNodo,
   reactivarProductoComercial,
@@ -505,6 +507,8 @@ export function DetalleProducto({
   const [guardandoCambios, setGuardandoCambios] = useState<boolean>(false)
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
   const [formularioCorreccion, setFormularioCorreccion] = useState<ModificarProductoComercialInput | null>(null)
+  const [formularioOperacional, setFormularioOperacional] = useState<{ condicionVenta: string; requiereLote: boolean; requiereCadenaFrio: boolean } | null>(null)
+  const [motivoOperacional, setMotivoOperacional] = useState<string>('')
   const [indiceAccion, setIndiceAccion] = useState<number>(-1)
   const [indiceNavegacion, setIndiceNavegacion] = useState<number>(-1)
 
@@ -548,6 +552,8 @@ export function DetalleProducto({
       codigoInterno: producto.codigoInterno,
     })
     setModo('corrigiendo')
+    setFormularioOperacional({ condicionVenta: producto.condicionVenta, requiereLote: producto.requiereLote, requiereCadenaFrio: producto.requiereCadenaFrio })
+    setMotivoOperacional('')
     setErrorAccion(null)
   }
 
@@ -557,6 +563,8 @@ export function DetalleProducto({
         if (modo === 'corrigiendo') {
           setModo('lectura')
           setFormularioCorreccion(null)
+          setFormularioOperacional(null)
+          setMotivoOperacional('')
         } else if (modo === 'desactivando') {
           setModo('lectura')
         } else if (modo === 'lectura' && vistaActiva === 'detalle') {
@@ -634,6 +642,31 @@ export function DetalleProducto({
       onActualizarProductoSeleccionado(productoActualizado)
       setModo('lectura')
       setFormularioCorreccion(null)
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : String(e))
+    } finally {
+      setGuardandoCambios(false)
+    }
+  }
+
+  const onGuardarCorreccionOperacional = async (): Promise<void> => {
+    if (!formularioOperacional) return
+    if (!motivoOperacional.trim()) return
+    if (!activeOperator) return
+    setGuardandoCambios(true)
+    setErrorAccion(null)
+    try {
+      const input: CorregirDatosOperacionalesInput = {
+        id: producto.id,
+        condicionVenta: formularioOperacional.condicionVenta as any,
+        requiereLote: formularioOperacional.requiereLote,
+        requiereCadenaFrio: formularioOperacional.requiereCadenaFrio,
+        motivo: motivoOperacional.trim(),
+        operadorId: activeOperator.id,
+      }
+      await corregirDatosOperacionales(input)
+      const productoActualizado: ProductoComercial = { ...producto, condicionVenta: input.condicionVenta as any, requiereLote: input.requiereLote, requiereCadenaFrio: input.requiereCadenaFrio }
+      onActualizarProductoSeleccionado(productoActualizado)
     } catch (e) {
       setErrorAccion(e instanceof Error ? e.message : String(e))
     } finally {
@@ -760,12 +793,66 @@ export function DetalleProducto({
                 <input readOnly value={producto.formaFarmaceutica ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
               </label>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <CampoLectura label="CONDICION DE VENTA" valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta} />
-              <CampoLectura label="REFRIGERAR" valor={producto.requiereCadenaFrio ? 'Si · requiere frio' : 'No requiere'} />
-              <CampoLectura label="CON VENCIMIENTO" valor={producto.requiereLote ? 'Si · requiere lote' : 'Sin trazabilidad'} />
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-3 gap-3">
+                <label>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CONDICION DE VENTA</span>
+                  <select
+                    value={formularioOperacional?.condicionVenta ?? producto.condicionVenta}
+                    onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, condicionVenta: e.target.value } : prev)}
+                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                  >
+                    <option value="SIN_RECETA">Sin receta</option>
+                    <option value="CON_RECETA">Con receta</option>
+                    <option value="CONTROLADO">Controlado</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">REFRIGERAR</span>
+                  <select
+                    value={formularioOperacional?.requiereCadenaFrio ? '1' : '0'}
+                    onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereCadenaFrio: e.target.value === '1' } : prev)}
+                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                  >
+                    <option value="0">No requiere</option>
+                    <option value="1">Si · requiere frio</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CON VENCIMIENTO</span>
+                  <select
+                    value={formularioOperacional?.requiereLote ? '1' : '0'}
+                    onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereLote: e.target.value === '1' } : prev)}
+                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                  >
+                    <option value="0">Sin trazabilidad</option>
+                    <option value="1">Si · requiere lote</option>
+                  </select>
+                </label>
+              </div>
+              {formularioOperacional !== null && (formularioOperacional.condicionVenta !== producto.condicionVenta || formularioOperacional.requiereLote !== producto.requiereLote || formularioOperacional.requiereCadenaFrio !== producto.requiereCadenaFrio) && (
+                <div className="flex flex-col gap-2 mt-1">
+                  <label>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">MOTIVO DE CORRECCION</span>
+                    <input
+                      type="text"
+                      value={motivoOperacional}
+                      onChange={(e) => setMotivoOperacional(e.target.value)}
+                      placeholder="Describe el motivo de esta correccion"
+                      className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void onGuardarCorreccionOperacional()}
+                    disabled={guardandoCambios || motivoOperacional.trim() === ''}
+                    className="rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50 self-start"
+                  >
+                    GUARDAR CORRECCION OPERACIONAL
+                  </button>
+                </div>
+              )}
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">Para modificar condiciones operacionales se requiere una operacion especial de correccion critica.</p>
             {!esAdmin && (
               <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2">Solo administradores pueden modificar datos de registro sanitario</p>
             )}
