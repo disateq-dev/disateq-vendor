@@ -51,7 +51,7 @@ export function BuscadorProducto({
       }
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
       e.preventDefault()
-      if (productoConfirmado && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) return
+      if (productoConfirmado && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) return
       onNavegaTeclado(e.key)
     }
   }, [onLimpiar, onNavegaTeclado, onPreview, productoConfirmado])

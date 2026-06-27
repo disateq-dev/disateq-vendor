@@ -615,9 +615,6 @@ export function DetalleProducto({
           case 1:
             if (producto.estado === 'ACTIVO') setModo('desactivando')
             break
-          case 2:
-            onIrAResumen()
-            break
         }
       }
     }

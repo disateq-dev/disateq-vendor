@@ -28,7 +28,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
         if (catalogo.productoSeleccionado === null) {
           catalogo.onLimpiar()
         }
-      } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') || (event.key === 'Enter' && !event.ctrlKey)) {
+      } else if (catalogo.productoSeleccionado === null && ((event.key === 'ArrowDown' || event.key === 'ArrowUp') || (event.key === 'Enter' && !event.ctrlKey))) {
         if (event.target === catalogo.inputRef.current) return
         event.preventDefault()
         catalogo.onNavegaTeclado(event.key)

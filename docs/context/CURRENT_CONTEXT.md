@@ -2,11 +2,12 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `35c5008` — refactor(catalogo): LIMPIAR en CORREGIR/DESACTIVAR renombrado a VOLVER con onIrAResumen, LIMPIAR topbar detalle eliminado, indiceAccion cicla entre 2 botones
+* **Último commit:** `b3647b2` — fix(catalogo): LIMPIAR resumen conserva resultados via onLimpiarDetalle, Escape en detalle vuelve a resumen via onIrAResumen
 
 ## Commits de la jornada 26 Jun
 | Hash | Descripción |
 |---|---|
+| `b3647b2` | fix(catalogo): LIMPIAR resumen conserva resultados via onLimpiarDetalle, Escape en detalle vuelve a resumen via onIrAResumen |
 | `35c5008` | refactor(catalogo): LIMPIAR en CORREGIR/DESACTIVAR renombrado a VOLVER con onIrAResumen, LIMPIAR topbar detalle eliminado, indiceAccion cicla entre 2 botones |
 | `6e6ee02` | feat(catalogo): navegacion flechas+Enter en botones DETALLE/PRESENTACIONES/PRECIOS, colores diferenciados violeta/cyan/ambar |
 | `4689630` | fix(catalogo): renombrar DATOS BASICOS a RESUMEN DEL PRODUCTO, actualizar mensaje estado vacio |
@@ -60,58 +61,44 @@
 ## CATÁLOGO FARMACIA — Estado consolidado al 26 Jun
 
 ### Modelo de sheetworks — panel derecho — IRREVOCABLE
-El panel derecho usa sheetworks autónomas controladas por `VistaCatalogo`. Cada sheetwork gestiona su propia topbar, cuerpo y footer. No existe header global compartido.
 
 | Vista | Título headersheet | Topbar | Cuerpo | Footer |
 |---|---|---|---|---|
-| `resumen` | `RESUMEN DEL PRODUCTO` | Nombre+fabricante+fechas · Derecha: DETALLE/PRESENTACIONES/PRECIOS | Resumen DETALLE/PRESENTACIONES/PRECIOS | LIMPIAR fijo inferior derecha (onLimpiar completo) |
+| `resumen` | `RESUMEN DEL PRODUCTO` | Nombre+fabricante+fechas · Derecha: DETALLE/PRESENTACIONES/PRECIOS | Resumen DETALLE/PRESENTACIONES/PRECIOS | LIMPIAR fijo inferior derecha |
 | `detalle` | `DETALLE DEL PRODUCTO` | Nombre+fabricante+fechas+badge · Derecha: CORREGIR/DESACTIVAR + Ir a INGRESOS debajo | Todos los datos del producto | PRESENTACIONES · PRECIOS · VOLVER |
 | `presentaciones` | `ASIGNACIÓN PRESENTACIONES PRODUCTO` | Nombre + fabricante | Formas de venta y nodos | — |
 | `precios` | `ASIGNACIÓN DE PRECIOS PRODUCTO` | Nombre + fabricante | Valores operacionales | — |
-| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | — | Formulario corrección | VOLVER(onIrAResumen) · CANCELAR · GUARDAR CORRECCIÓN |
-| `desactivando` | `DESACTIVAR PRODUCTO CATÁLOGO` | — | Confirmación baja | VOLVER(onIrAResumen) · CANCELAR · CONFIRMAR BAJA |
+| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | — | Formulario corrección | VOLVER · CANCELAR · GUARDAR CORRECCIÓN |
+| `desactivando` | `DESACTIVAR PRODUCTO CATÁLOGO` | — | Confirmación baja | VOLVER · CANCELAR · CONFIRMAR BAJA |
 | `creandoAbierto` | `NUEVO PRODUCTO` | — | Stepper creación | — |
 
-### Semántica de LIMPIAR vs VOLVER — IRREVOCABLE
-| Botón | Ubicación | Acción |
+### Semántica de navegación — IRREVOCABLE
+
+| Acción | Handler | Resultado |
 |---|---|---|
-| × LIMPIAR | Panel búsqueda | `onLimpiar` — limpia todo (término + resultados + producto) |
-| LIMPIAR | Footer RESUMEN DEL PRODUCTO | `onLimpiar` — limpia todo |
-| VOLVER | Footer CORREGIR / DESACTIVAR | `onIrAResumen()` + resetea modo — vuelve a RESUMEN conservando contexto |
-| VOLVER | Footer DETALLE DEL PRODUCTO | `onIrAResumen()` — vuelve a RESUMEN conservando contexto |
+| × LIMPIAR panel búsqueda | `onLimpiar` | Limpia todo: término + resultados + producto |
+| LIMPIAR footer RESUMEN | `onLimpiarDetalle` | Deselecciona producto, conserva resultados, reactiva ↑↓ |
+| VOLVER footer DETALLE | `onIrAResumen` | Regresa a RESUMEN, producto sigue seleccionado |
+| VOLVER en CORREGIR/DESACTIVAR | `onIrAResumen` + resetModo | Regresa a RESUMEN, cancela modo |
+| Escape en `vistaActiva=detalle` | `onIrAResumen` | Regresa a RESUMEN |
+| Escape en `vistaActiva=resumen` | `onLimpiar` | Limpia todo |
+| Escape en `modo=corrigiendo` | resetModo lectura | Cancela corrección, permanece en DETALLE |
+| Escape en `modo=desactivando` | resetModo lectura | Cancela desactivación, permanece en DETALLE |
 
 ### Botones navegadores RESUMEN DEL PRODUCTO — IRREVOCABLE
-| Botón | Índice | Color | Fondo activo/hover |
+| Botón | Índice | Color | Fondo hover/activo |
 |---|---|---|---|
 | DETALLE | 0 | `#7C3AED` violeta | `#EDE9FE` |
 | PRESENTACIONES | 1 | `#0891B2` cyan | `#ECFEFF` |
 | PRECIOS | 2 | `#D97706` ámbar | `#FEF3C7` |
 
-- ◄►: cicla `indiceNavegacion` (0/1/2) · Enter: navega a sheetwork del índice activo
-- LIMPIAR panel búsqueda: `disabled` cuando `productoSeleccionado !== null`
+- ◄►: cicla `indiceNavegacion` · Enter: navega a sheetwork del índice activo
+- Alt+D / Alt+E / Alt+R: navegación directa desde cualquier vista en modo lectura
 
 ### indiceAccion en DETALLE DEL PRODUCTO — IRREVOCABLE
-- Cicla con módulo 2: 0=CORREGIR · 1=DESACTIVAR
-- Enter ejecuta la acción del índice activo
-- No hay LIMPIAR en topbar de DETALLE — se eliminó (VOLVER en footer lo reemplaza)
-
-### Mapa de atajos teclado — CATÁLOGO
-| Atajo | Sheetwork | Acción |
-|---|---|---|
-| ↑↓ | Búsqueda | Navegar resultados |
-| Enter | Búsqueda | Confirmar producto |
-| Escape | Lectura | onLimpiar completo |
-| Ctrl+Enter | Sin producto | Abrir stepper NUEVO |
-| ◄► | Resumen | Ciclar DETALLE/PRESENTACIONES/PRECIOS |
-| Enter | Resumen (índice≥0) | Navegar a sheetwork |
-| Alt+D | Cualquier lectura | Ir a DETALLE DEL PRODUCTO |
-| Alt+E | Cualquier lectura | Ir a ASIGNACIÓN PRESENTACIONES |
-| Alt+R | Cualquier lectura | Ir a ASIGNACIÓN DE PRECIOS |
-| ◄► | Detalle | Ciclar CORREGIR/DESACTIVAR |
-| Enter | Detalle (índice≥0) | Ejecutar acción |
-| Ctrl+Enter | Detalle (ACTIVO) | Iniciar CORREGIR |
-| Ctrl+Insert | Detalle (ACTIVO) | Ir a INGRESOS |
-| Ctrl+Supr | Detalle (ACTIVO) | Activar DESACTIVAR |
+- Módulo 2: 0=CORREGIR · 1=DESACTIVAR
+- ◄►: cicla · Enter: ejecuta acción del índice activo
+- No hay LIMPIAR en topbar de DETALLE
 
 ### Doctrina de layout — IRREVOCABLE
 - Wrapper panel derecho: `flex-1 min-h-0 flex flex-col`
@@ -119,13 +106,32 @@ El panel derecho usa sheetworks autónomas controladas por `VistaCatalogo`. Cada
 - Área scrolleable: `flex flex-col gap-4 px-5 py-4 overflow-auto flex-1`
 - Footer fijo RESUMEN: `shrink-0 flex justify-end px-5 pb-4` — sin border-t, sin bg
 
+### Mapa de atajos teclado — CATÁLOGO
+| Atajo | Contexto | Acción |
+|---|---|---|
+| ↑↓ | Búsqueda | Navegar resultados |
+| Enter | Búsqueda | Confirmar producto |
+| Escape | Resumen/lectura | onLimpiar completo |
+| Escape | Detalle/lectura | onIrAResumen |
+| Escape | Corrigiendo | Cancelar corrección → lectura |
+| Escape | Desactivando | Cancelar → lectura |
+| Ctrl+Enter | Sin producto | Abrir stepper NUEVO |
+| ◄► | Resumen | Ciclar DETALLE/PRESENTACIONES/PRECIOS |
+| Enter | Resumen (índice≥0) | Navegar a sheetwork |
+| Alt+D | Cualquier lectura | Ir a DETALLE |
+| Alt+E | Cualquier lectura | Ir a PRESENTACIONES |
+| Alt+R | Cualquier lectura | Ir a PRECIOS |
+| ◄► | Detalle | Ciclar CORREGIR/DESACTIVAR |
+| Enter | Detalle (índice≥0) | Ejecutar acción |
+| Ctrl+Enter | Detalle ACTIVO | Iniciar CORREGIR |
+| Ctrl+Insert | Detalle ACTIVO | Ir a INGRESOS |
+| Ctrl+Supr | Detalle ACTIVO | Activar DESACTIVAR |
+
 ### Keytips — ESTÁNDAR CANÓNICO
-- Tamaño: `text-[11px]` · Padding: `px-2 py-1`
-- Estilo: `bg-[#fefce8] border border-[#fef08a] text-[#713f12] rounded`
-- Comportamiento: `opacity-0 group-hover:opacity-100 transition-opacity duration-150`
-- Posición zona inferior: `absolute -bottom-7` · Zona superior: `absolute -top-7`
-- `pointer-events-none whitespace-nowrap z-10`
-- Contenedor con keytips emergentes: debe tener `overflow-visible`
+- `text-[11px] px-2 py-1 bg-[#fefce8] border border-[#fef08a] text-[#713f12] rounded`
+- `opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-10`
+- Zona inferior: `absolute -bottom-7` · Zona superior: `absolute -top-7`
+- Contenedor con keytips emergentes: `overflow-visible`
 
 ### Archivos del módulo CATÁLOGO
 | Archivo | Responsabilidad |
@@ -242,23 +248,21 @@ El panel derecho usa sheetworks autónomas controladas por `VistaCatalogo`. Cada
 
 ### LECCIONES APRENDIDAS
 - **TypeScript:** `npx tsc --noEmit` desde `apps\vendor-desktop`, no raíz del repo
-- **Migraciones ADD COLUMN:** verificar con `pragma_table_info` antes de ALTER TABLE
 - **CURRENT_CONTEXT.md:** usar `filesystem:write_file` con parámetro `content`
 - **Prompts Codex:** lenguaje natural puro, sin bloques de código
-- **Claude no escribe código:** Claude genera prompts para Codex — nunca modifica archivos directamente
-- **Keytips tamaño canónico:** `text-[11px] px-2 py-1`
-- **Contenedor navegadores con keytips:** debe tener `overflow-visible`
-- **Footer fijo en sheetwork:** cadena flex completa — wrapper `flex-1 min-h-0 flex flex-col` → section `flex min-h-0 flex-1 flex-col` → área scroll `overflow-auto flex-1` → footer `shrink-0`
-- **Footer sin separación visual:** `shrink-0 flex justify-end px-5 pb-4` sin border-t ni bg
-- **LIMPIAR vs VOLVER:** LIMPIAR limpia todo — VOLVER regresa a RESUMEN conservando contexto
-- **indiceAccion en DETALLE:** módulo 2 (CORREGIR/DESACTIVAR) — no incluye LIMPIAR
+- **Claude no escribe código:** nunca modifica archivos directamente
+- **Keytips canónicos:** `text-[11px] px-2 py-1` · contenedor: `overflow-visible`
+- **Footer fijo:** cadena flex completa — wrapper `flex-1 min-h-0 flex flex-col` → section `flex min-h-0 flex-1 flex-col` → área scroll `overflow-auto flex-1` → footer `shrink-0`
+- **onLimpiar vs onLimpiarDetalle:** onLimpiar = limpia todo / onLimpiarDetalle = deselecciona producto conservando resultados
+- **Escape contextual:** en detalle → onIrAResumen / en resumen → onLimpiar / en corrigiendo/desactivando → resetModo
+- **indiceAccion en DETALLE:** módulo 2 (CORREGIR/DESACTIVAR) — sin LIMPIAR
 - **Directorios fantasma eliminados 26 Jun:** `apps\vendor-desktop\apps` y `src\` en raíz
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Evaluación visual** — DETALLE DEL PRODUCTO (topbar CORREGIR/DESACTIVAR + footer PRESENTACIONES/PRECIOS/VOLVER)
+1. **Evaluación visual** — DETALLE DEL PRODUCTO (verificar navegación completa)
 2. **Evaluación visual** — ASIGNACIÓN PRESENTACIONES
 3. **Evaluación visual** — ASIGNACIÓN DE PRECIOS
 4. **Evaluación visual** — NuevoProductoStepper flujo completo
