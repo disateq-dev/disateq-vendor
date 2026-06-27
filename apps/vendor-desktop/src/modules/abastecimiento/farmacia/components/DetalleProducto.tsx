@@ -558,6 +558,8 @@ export function DetalleProducto({
           setFormularioCorreccion(null)
         } else if (modo === 'desactivando') {
           setModo('lectura')
+        } else if (modo === 'lectura' && vistaActiva === 'detalle') {
+          onIrAResumen()
         } else if (modo === 'lectura') {
           onLimpiar()
         }

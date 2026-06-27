@@ -147,7 +147,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               onIrAResumen={catalogo.onIrAResumen}
               onActualizarProductoSeleccionado={catalogo.onActualizarProductoSeleccionado}
               onNavegaAIngresos={onNavegaAIngresos}
-              onLimpiar={catalogo.onLimpiar}
+              onLimpiar={catalogo.onLimpiarDetalle}
             />
           )}
 
