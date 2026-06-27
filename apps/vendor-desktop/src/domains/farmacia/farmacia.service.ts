@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
   AsignacionLote,
+  CorregirDatosOperacionalesInput,
   CrearValorOperacionalInput,
   ModificarProductoComercialInput,
   ModificarProveedorInput,
@@ -632,6 +633,17 @@ export async function modificarProductoComercial(input: ModificarProductoComerci
     estadoRegistroSanitario: input.estadoRegistroSanitario ?? null,
     codigoDigemid: input.codigoDIGEMID ?? null,
     codigoInterno: input.codigoInterno ?? null,
+  })
+}
+
+export async function corregirDatosOperacionales(input: CorregirDatosOperacionalesInput): Promise<void> {
+  await invoke('corregir_datos_operacionales', {
+    id: input.id,
+    condicionVenta: input.condicionVenta,
+    requiereLote: input.requiereLote,
+    requiereCadenaFrio: input.requiereCadenaFrio,
+    motivo: input.motivo,
+    operadorId: input.operadorId,
   })
 }
 

@@ -26,6 +26,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v4_stock_minimo_presentacion(db).await?;
     migrar_v5_estado_registro_sanitario(db).await?;
     migrar_v6_codigo_interno(db).await?;
+    migrar_v7_correccion_catalogo(db).await?;
 
     Ok(())
 }
@@ -352,6 +353,76 @@ async fn migrar_v6_codigo_interno(db: &sqlx::SqlitePool) -> Result<(), String> {
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (6)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v7_correccion_catalogo(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_producto_comercial = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'producto_comercial'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_producto_comercial == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 7 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let existe_correccion_catalogo = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'correccion_catalogo'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_correccion_catalogo == 0 {
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS correccion_catalogo (
+  id TEXT PRIMARY KEY,
+  tabla TEXT NOT NULL,
+  entidad_id TEXT NOT NULL,
+  campo TEXT NOT NULL,
+  valor_anterior TEXT NOT NULL,
+  valor_nuevo TEXT NOT NULL,
+  motivo TEXT NOT NULL,
+  operador_id TEXT NOT NULL,
+  creado_en TEXT NOT NULL
+)",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query("CREATE INDEX IF NOT EXISTS idx_correccion_entidad ON correccion_catalogo(tabla, entidad_id)")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        sqlx::query("CREATE INDEX IF NOT EXISTS idx_correccion_operador ON correccion_catalogo(operador_id)")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (7)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

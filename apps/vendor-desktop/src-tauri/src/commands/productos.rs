@@ -264,6 +264,98 @@ pub async fn modificar_producto_comercial(
 }
 
 #[tauri::command]
+pub async fn corregir_datos_operacionales(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+    condicion_venta: String,
+    requiere_lote: bool,
+    requiere_cadena_frio: bool,
+    motivo: String,
+    operador_id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let row = sqlx::query("SELECT condicion_venta, requiere_lote, requiere_cadena_frio FROM producto_comercial WHERE id = ?")
+        .bind(&id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    let condicion_venta_actual = row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?;
+    let requiere_lote_actual = row.try_get::<i64, _>("requiere_lote").map_err(|e| e.to_string())?;
+    let requiere_cadena_frio_actual = row.try_get::<i64, _>("requiere_cadena_frio").map_err(|e| e.to_string())?;
+    let requiere_lote_nuevo = bool_a_i64(requiere_lote);
+    let requiere_cadena_frio_nuevo = bool_a_i64(requiere_cadena_frio);
+    let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if condicion_venta_actual != condicion_venta {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("producto_comercial")
+            .bind(&id)
+            .bind("condicion_venta")
+            .bind(&condicion_venta_actual)
+            .bind(&condicion_venta)
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if requiere_lote_actual != requiere_lote_nuevo {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("producto_comercial")
+            .bind(&id)
+            .bind("requiere_lote")
+            .bind(requiere_lote_actual.to_string())
+            .bind(requiere_lote_nuevo.to_string())
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if requiere_cadena_frio_actual != requiere_cadena_frio_nuevo {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("producto_comercial")
+            .bind(&id)
+            .bind("requiere_cadena_frio")
+            .bind(requiere_cadena_frio_actual.to_string())
+            .bind(requiere_cadena_frio_nuevo.to_string())
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("UPDATE producto_comercial SET condicion_venta = ?, requiere_lote = ?, requiere_cadena_frio = ?, modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
+        .bind(condicion_venta)
+        .bind(requiere_lote_nuevo)
+        .bind(requiere_cadena_frio_nuevo)
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn verificar_historial_producto(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     producto_comercial_id: String,

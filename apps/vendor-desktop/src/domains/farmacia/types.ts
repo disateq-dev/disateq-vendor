@@ -272,6 +272,15 @@ export interface ModificarProductoComercialInput {
   codigoInterno?: string
 }
 
+export interface CorregirDatosOperacionalesInput {
+  id: string
+  condicionVenta: CondicionVenta
+  requiereLote: boolean
+  requiereCadenaFrio: boolean
+  motivo: string
+  operadorId: string
+}
+
 export interface CrearPresentacionInput {
   productoComercialId: string
   descripcion: string

@@ -75,6 +75,21 @@ CREATE INDEX IF NOT EXISTS idx_pc_generico ON producto_comercial(producto_generi
 CREATE INDEX IF NOT EXISTS idx_pc_estado ON producto_comercial(estado);
 CREATE INDEX IF NOT EXISTS idx_pc_reg_san ON producto_comercial(registro_sanitario);
 
+CREATE TABLE IF NOT EXISTS correccion_catalogo (
+  id TEXT PRIMARY KEY,
+  tabla TEXT NOT NULL,
+  entidad_id TEXT NOT NULL,
+  campo TEXT NOT NULL,
+  valor_anterior TEXT NOT NULL,
+  valor_nuevo TEXT NOT NULL,
+  motivo TEXT NOT NULL,
+  operador_id TEXT NOT NULL,
+  creado_en TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_correccion_entidad ON correccion_catalogo(tabla, entidad_id);
+CREATE INDEX IF NOT EXISTS idx_correccion_operador ON correccion_catalogo(operador_id);
+
 CREATE TABLE IF NOT EXISTS presentacion_comercial (
   id TEXT PRIMARY KEY,
   producto_comercial_id TEXT NOT NULL REFERENCES producto_comercial(id),
