@@ -625,48 +625,42 @@ export function DetalleProducto({
             if (producto.estado === 'ACTIVO') setModo('desactivando')
             break
         }
+      } else if (modo === 'corrigiendo' && event.ctrlKey && event.key === 'Enter') {
+        event.preventDefault()
+        void onGuardarCorreccion()
       }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, onIrAResumen, indiceAccion, indiceNavegacion, producto.estado])
+  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, onIrAResumen, indiceAccion, indiceNavegacion, producto.estado, onGuardarCorreccion])
 
-  const onGuardarCorreccion = async (): Promise<void> => {
+  async function onGuardarCorreccion(): Promise<void> {
     if (!formularioCorreccion) return
+    const hayCambioOperacional = formularioOperacional !== null && (formularioOperacional.condicionVenta !== producto.condicionVenta || formularioOperacional.requiereLote !== producto.requiereLote || formularioOperacional.requiereCadenaFrio !== producto.requiereCadenaFrio)
+    if (hayCambioOperacional && motivoOperacional.trim() === '') {
+      setErrorAccion('Los cambios en condicion de venta refrigeracion o vencimiento requieren un motivo. Escribelo y guarda de nuevo')
+      return
+    }
     setGuardandoCambios(true)
     setErrorAccion(null)
     try {
       await modificarProductoComercial(formularioCorreccion)
-      const productoActualizado: ProductoComercial = { ...producto, ...formularioCorreccion }
+      if (hayCambioOperacional && formularioOperacional !== null && activeOperator) {
+        const input: CorregirDatosOperacionalesInput = {
+          id: producto.id,
+          condicionVenta: formularioOperacional.condicionVenta as any,
+          requiereLote: formularioOperacional.requiereLote,
+          requiereCadenaFrio: formularioOperacional.requiereCadenaFrio,
+          motivo: motivoOperacional.trim(),
+          operadorId: activeOperator.id,
+        }
+        await corregirDatosOperacionales(input)
+      }
+      const productoActualizado: ProductoComercial = { ...producto, ...formularioCorreccion, ...(hayCambioOperacional && formularioOperacional !== null ? { condicionVenta: formularioOperacional.condicionVenta as any, requiereLote: formularioOperacional.requiereLote, requiereCadenaFrio: formularioOperacional.requiereCadenaFrio } : {}) }
       onActualizarProductoSeleccionado(productoActualizado)
       setModo('lectura')
       setFormularioCorreccion(null)
-    } catch (e) {
-      setErrorAccion(e instanceof Error ? e.message : String(e))
-    } finally {
-      setGuardandoCambios(false)
-    }
-  }
-
-  const onGuardarCorreccionOperacional = async (): Promise<void> => {
-    if (!formularioOperacional) return
-    if (!motivoOperacional.trim()) return
-    if (!activeOperator) return
-    setGuardandoCambios(true)
-    setErrorAccion(null)
-    try {
-      const input: CorregirDatosOperacionalesInput = {
-        id: producto.id,
-        condicionVenta: formularioOperacional.condicionVenta as any,
-        requiereLote: formularioOperacional.requiereLote,
-        requiereCadenaFrio: formularioOperacional.requiereCadenaFrio,
-        motivo: motivoOperacional.trim(),
-        operadorId: activeOperator.id,
-      }
-      await corregirDatosOperacionales(input)
-      const productoActualizado: ProductoComercial = { ...producto, condicionVenta: input.condicionVenta as any, requiereLote: input.requiereLote, requiereCadenaFrio: input.requiereCadenaFrio }
-      onActualizarProductoSeleccionado(productoActualizado)
     } catch (e) {
       setErrorAccion(e instanceof Error ? e.message : String(e))
     } finally {
@@ -842,14 +836,6 @@ export function DetalleProducto({
                       className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
                     />
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => void onGuardarCorreccionOperacional()}
-                    disabled={guardandoCambios || motivoOperacional.trim() === ''}
-                    className="rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50 self-start"
-                  >
-                    GUARDAR CORRECCION OPERACIONAL
-                  </button>
                 </div>
               )}
             </div>
@@ -1097,7 +1083,7 @@ export function DetalleProducto({
             disabled={guardandoCambios}
             className="group relative rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
           >
-            GUARDAR CORRECCION<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Enter</kbd>
+            GUARDAR CORRECCION<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd>
           </button>
         </div>
       )}
