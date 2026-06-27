@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS producto_comercial (
   pais_origen TEXT NOT NULL DEFAULT 'PE',
   registro_sanitario TEXT,
   codigo_digemid TEXT,
+  codigo_interno TEXT,
   condicion_venta TEXT NOT NULL DEFAULT 'SIN_RECETA',
   requiere_lote INTEGER NOT NULL DEFAULT 0,
   requiere_cadena_frio INTEGER NOT NULL DEFAULT 0,

@@ -69,6 +69,7 @@ interface ProductoComercialRespuesta {
   registro_sanitario?: string
   estado_registro_sanitario: string
   codigo_digemid?: string
+  codigo_interno?: string
   condicion_venta: string
   requiere_lote: boolean
   requiere_cadena_frio: boolean
@@ -206,6 +207,7 @@ function traducirProductoComercial(r: ProductoComercialRespuesta): ProductoComer
     registroSanitario: r.registro_sanitario,
     estadoRegistroSanitario: r.estado_registro_sanitario as EstadoRegistroSanitario,
     codigoDIGEMID: r.codigo_digemid,
+    codigoInterno: r.codigo_interno,
     condicionVenta: r.condicion_venta as ProductoComercial['condicionVenta'],
     requiereLote: r.requiere_lote,
     requiereCadenaFrio: r.requiere_cadena_frio,
@@ -629,6 +631,7 @@ export async function modificarProductoComercial(input: ModificarProductoComerci
     registroSanitario: input.registroSanitario ?? null,
     estadoRegistroSanitario: input.estadoRegistroSanitario ?? null,
     codigoDigemid: input.codigoDIGEMID ?? null,
+    codigoInterno: input.codigoInterno ?? null,
   })
 }
 

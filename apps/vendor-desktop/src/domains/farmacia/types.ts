@@ -98,6 +98,7 @@ export interface ProductoComercial {
   registroSanitario?: string
   estadoRegistroSanitario: EstadoRegistroSanitario
   codigoDIGEMID?: string
+  codigoInterno?: string
   condicionVenta: CondicionVenta
   requiereLote: boolean
   requiereCadenaFrio: boolean
@@ -268,6 +269,7 @@ export interface ModificarProductoComercialInput {
   registroSanitario?: string
   estadoRegistroSanitario?: EstadoRegistroSanitario
   codigoDIGEMID?: string
+  codigoInterno?: string
 }
 
 export interface CrearPresentacionInput {

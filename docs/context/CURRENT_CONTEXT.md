@@ -2,12 +2,17 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `2d39fec` — fix(catalogo): Enter en CORREGIR/DESACTIVAR — bloquear intercepcion en BuscadorProducto y CatalogoFarmaciaWorkspace cuando hay producto confirmado
+* **Último commit:** `6b0f162` — refactor(catalogo): reorganizar formulario CORREGIR — orden por relevancia operacional, campos en grid, aviso historial en header
+
+## Commits de la jornada 27 Jun
+| Hash | Descripción |
+|---|---|
+| `6b0f162` | refactor(catalogo): reorganizar formulario CORREGIR — orden por relevancia operacional, campos en grid, aviso historial en header |
+| `2d39fec` | fix(catalogo): Enter en CORREGIR/DESACTIVAR — bloquear intercepcion en BuscadorProducto y CatalogoFarmaciaWorkspace cuando hay producto confirmado |
 
 ## Commits de la jornada 26 Jun
 | Hash | Descripción |
 |---|---|
-| `2d39fec` | fix(catalogo): Enter en CORREGIR/DESACTIVAR — bloquear intercepcion en BuscadorProducto y CatalogoFarmaciaWorkspace cuando hay producto confirmado |
 | `b3647b2` | fix(catalogo): LIMPIAR resumen conserva resultados via onLimpiarDetalle, Escape en detalle vuelve a resumen via onIrAResumen |
 | `35c5008` | refactor(catalogo): LIMPIAR en CORREGIR/DESACTIVAR renombrado a VOLVER con onIrAResumen, LIMPIAR topbar detalle eliminado, indiceAccion cicla entre 2 botones |
 | `6e6ee02` | feat(catalogo): navegacion flechas+Enter en botones DETALLE/PRESENTACIONES/PRECIOS, colores diferenciados violeta/cyan/ambar |
@@ -16,15 +21,6 @@
 | `403e2e1` | fix(catalogo): detalle producto — acciones en topbar, Ir a INGRESOS debajo alineado derecha, footer navegacion PRESENTACIONES/PRECIOS/VOLVER |
 | `ec715fc` | fix(catalogo): flechas y Enter restringidos a vistaActiva detalle, Alt+P renombrado a Alt+E, hover persistente boton DETALLE |
 | `83a7efb` | chore: eliminar directorios fantasma apps/vendor-desktop/apps y src raiz, regla canonica de rutas |
-
-## Commits de la jornada 25 Jun
-| Hash | Descripción |
-|---|---|
-| `fd4fa66` | feat(catalogo): rediseno panel derecho — VistaCatalogo resumen/detalle/presentaciones/precios, titulo dinamico |
-| `5f54e94` | fix(catalogo): busqueda ampliar campos fabricante y codigo digemid, limite 12 en SQL |
-| `a0714ae` | fix(catalogo): atajos keytips — Ctrl+Enter corregir, Ctrl+Insert ir a ingresos, link-text self-end |
-| `9c79faa` | fix(catalogo): keytips — tamaño panel busqueda, dirección panel detalle, keytip ir a ingresos |
-| `3651038` | fix(abastecimiento): doctrina color — accent #0284C7, semántica verde/naranja/rojo todo ABASTECIMIENTO |
 
 ---
 
@@ -48,7 +44,13 @@
 ## Recorrido de Dominios (Matriz de Estado)
 * **LOGIN:** ✅
 * **TURNO / CAJA:** ✅
-* **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso — RESUMEN DEL PRODUCTO ✅ · DETALLE DEL PRODUCTO ✅ navegación teclado completa (flechas + Enter en CORREGIR/DESACTIVAR confirmado)
+* **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso
+  - RESUMEN DEL PRODUCTO ✅
+  - DETALLE DEL PRODUCTO ✅ navegación teclado completa
+  - CORREGIR DATOS BÁSICOS ✅ reorganizado por relevancia operacional — pendiente evaluación visual completa
+  - ASIGNACIÓN PRESENTACIONES ⬜ pendiente evaluación visual
+  - ASIGNACIÓN DE PRECIOS ⬜ pendiente evaluación visual
+  - NuevoProductoStepper ⬜ pendiente evaluación visual
 * **ABASTECIMIENTO — PROVEEDORES:** ✅ Doctrina de color aplicada — pendiente evaluación visual
 * **ABASTECIMIENTO — INGRESOS:** ✅ Doctrina de color aplicada — pendiente prueba end-to-end
 * **ABASTECIMIENTO — INVENTARIOS:** ✅ Doctrina de color aplicada
@@ -59,7 +61,7 @@
 
 ---
 
-## CATÁLOGO FARMACIA — Estado consolidado al 26 Jun
+## CATÁLOGO FARMACIA — Estado consolidado al 27 Jun
 
 ### Modelo de sheetworks — panel derecho — IRREVOCABLE
 
@@ -69,9 +71,27 @@
 | `detalle` | `DETALLE DEL PRODUCTO` | Nombre+fabricante+fechas+badge · Derecha: CORREGIR/DESACTIVAR + Ir a INGRESOS debajo | Todos los datos del producto | PRESENTACIONES · PRECIOS · VOLVER |
 | `presentaciones` | `ASIGNACIÓN PRESENTACIONES PRODUCTO` | Nombre + fabricante | Formas de venta y nodos | — |
 | `precios` | `ASIGNACIÓN DE PRECIOS PRODUCTO` | Nombre + fabricante | Valores operacionales | — |
-| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | — | Formulario corrección | VOLVER · CANCELAR · GUARDAR CORRECCIÓN |
+| `corrigiendo` | `CORREGIR DATOS BÁSICOS PRODUCTO` | — | Formulario corrección reorganizado | VOLVER · CANCELAR · GUARDAR CORRECCIÓN |
 | `desactivando` | `DESACTIVAR PRODUCTO CATÁLOGO` | — | Confirmación baja | VOLVER · CANCELAR · CONFIRMAR BAJA |
 | `creandoAbierto` | `NUEVO PRODUCTO` | — | Stepper creación | — |
+
+### CORREGIR DATOS BÁSICOS — Orden de campos irrevocable (27 Jun)
+
+| Fila | Campos | Editable |
+|---|---|---|
+| Header | Nombre · Fabricante · Fechas · Badge ACTIVO/INACTIVO · Aviso historial | No |
+| 1 | ID PRODUCTO · CODIGO DIGEMID | No / ADMIN |
+| 2 | NOMBRE COMERCIAL · IFA / PRINCIPIO ACTIVO | Sí / No |
+| 3 | FABRICANTE / LABORATORIO | Sí |
+| 4 | CONCENTRACION / DOSIS · FORMA FARMACEUTICA | No |
+| 5 | CONDICION DE VENTA · REFRIGERAR · CON VENCIMIENTO | Solo lectura (operación especial futura) |
+| 6 | REGISTRO SANITARIO · ESTADO DEL REGISTRO | ADMIN |
+
+**País origen:** eliminado del formulario.
+**Titular:** omitido — pendiente contraste con fuentes externas.
+**Condiciones operacionales:** solo lectura con nota "requiere operación especial de corrección crítica".
+**Registro sanitario:** campos bloqueados para no-ADMIN con aviso ámbar.
+**Aviso historial:** integrado en header lado derecho, debajo del badge, texto abreviado.
 
 ### Semántica de navegación — IRREVOCABLE
 
@@ -93,19 +113,14 @@
 | PRESENTACIONES | 1 | `#0891B2` cyan | `#ECFEFF` |
 | PRECIOS | 2 | `#D97706` ámbar | `#FEF3C7` |
 
-- ◄►/Enter: cicla `indiceNavegacion` · Enter: navega a sheetwork del índice activo
-- Alt+D / Alt+E / Alt+R: navegación directa desde cualquier vista en modo lectura
+### Footer DETALLE DEL PRODUCTO — IRREVOCABLE
+- Posición: `shrink-0 flex justify-end gap-2 px-5 pb-4` — fuera del área scrolleable
+- Botones con `px-5`, sin `flex-[1]`, sin línea divisoria
+- Condición: `vistaActiva === 'detalle' && modo === 'lectura'`
 
 ### indiceAccion en DETALLE DEL PRODUCTO — IRREVOCABLE
 - Módulo 2: 0=CORREGIR · 1=DESACTIVAR
 - ◄►: cicla · Enter: ejecuta acción del índice activo
-- No hay LIMPIAR en topbar de DETALLE
-
-### Doctrina de layout — IRREVOCABLE
-- Wrapper panel derecho: `flex-1 min-h-0 flex flex-col`
-- `<section>` DetalleProducto: `flex min-h-0 flex-1 flex-col`
-- Área scrolleable: `flex flex-col gap-4 px-5 py-4 overflow-auto flex-1`
-- Footer fijo RESUMEN: `shrink-0 flex justify-end px-5 pb-4` — sin border-t, sin bg
 
 ### Mapa de atajos teclado — CATÁLOGO
 | Atajo | Contexto | Acción |
@@ -128,12 +143,6 @@
 | Ctrl+Insert | Detalle ACTIVO | Ir a INGRESOS |
 | Ctrl+Supr | Detalle ACTIVO | Activar DESACTIVAR |
 
-### Keytips — ESTÁNDAR CANÓNICO
-- `text-[11px] px-2 py-1 bg-[#fefce8] border border-[#fef08a] text-[#713f12] rounded`
-- `opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-10`
-- Zona inferior: `absolute -bottom-7` · Zona superior: `absolute -top-7`
-- Contenedor con keytips emergentes: `overflow-visible`
-
 ### Archivos del módulo CATÁLOGO
 | Archivo | Responsabilidad |
 |---|---|
@@ -143,8 +152,26 @@
 | `components/DetalleProducto.tsx` | Todas las sheetworks autónomas |
 | `components/NuevoProductoStepper.tsx` | Creación paso a paso |
 
-### Lección aprendida — intercepción de teclado en múltiples listeners
-Patrón de riesgo confirmado: cuando existen múltiples listeners de teclado en la misma página (input onKeyDown React + window listener workspace + window listener DetalleProducto), el orden de evaluación y las guardas de cada uno deben ser exhaustivas. Regla: cuando hay producto confirmado, el input y el workspace deben inhibirse completamente para ArrowDown, ArrowUp y Enter, dejando el control exclusivo a DetalleProducto.
+### Lecciones aprendidas — teclado y UX
+- Múltiples listeners de teclado: BuscadorProducto y CatalogoFarmaciaWorkspace deben inhibir ArrowDown/ArrowUp/Enter cuando hay producto confirmado — control exclusivo a DetalleProducto
+- Footer fijo fuera del área scrolleable: cadena `shrink-0` obligatoria
+- Aviso historial integrado en header en lugar de banner separado — más limpio y no ocupa espacio vertical
+
+---
+
+## DISEÑO PENDIENTE — LÍNEAS DE LABORATORIO
+
+Concepto identificado: un laboratorio/fabricante organiza su portafolio en **líneas** (ej. Línea Analgésicos, Línea Antibióticos, Línea Pediátricos).
+
+**Relevancia operacional:**
+- Abastecimiento: negociar pedidos por línea con el distribuidor
+- Catálogo: filtrar por línea del laboratorio
+- Reportes: consumo y rotación por línea
+- Ventas: identificar sustitutos dentro de la misma línea
+
+**Decisión diferida:** puede implementarse como tabla maestra de líneas por laboratorio (para establecimientos maduros con reportes) o como texto libre asignable al registrar el producto (para establecimientos pequeños). Ambas formas son válidas.
+
+**Impacto:** requiere campo nuevo en `ProductoComercial` (`lineaLaboratorio`) y posiblemente tabla maestra `lineas_laboratorio`. Se diseñará cuando se retome el módulo de registro de productos.
 
 ---
 
@@ -189,7 +216,7 @@ Patrón de riesgo confirmado: cuando existen múltiples listeners de teclado en 
 ## CONVENCIÓN DE BOTONES — ESTÁNDAR CANÓNICO
 - Texto en MAYÚSCULAS · `py-2 text-[12px]` en botones de acción
 - Par panel búsqueda: `flex-[1]` naranja / `flex-[2]` verde
-- Footer sheetwork DETALLE: `flex-[1]` cada botón
+- Footer sheetwork DETALLE: `px-5` por botón, `justify-end`
 - LIMPIAR opera solo en su panel
 
 ---
@@ -242,6 +269,9 @@ Patrón de riesgo confirmado: cuando existen múltiples listeners de teclado en 
 | farmacia.service.ts | actualizarProveedor → modificarProveedor | Baja |
 | ContextBar.tsx | Archivo huérfano | Baja |
 | DetalleProveedor.tsx | Solo accent corregido — botones sin auditar directamente | Baja |
+| ProductoComercial | Campo `lineaLaboratorio` pendiente de diseño y migración | Pendiente decisión |
+| CORREGIR | Condiciones operacionales (condicionVenta, requiereLote, requiereCadenaFrio) — solo lectura por ahora, requieren operación especial futura | Media |
+| CORREGIR | Fabricante/Titular — contraste con fuentes externas pendiente para definir si Titular es relevante | Baja |
 
 ---
 
@@ -259,23 +289,23 @@ Patrón de riesgo confirmado: cuando existen múltiples listeners de teclado en 
 - **Footer fijo:** cadena flex completa — wrapper `flex-1 min-h-0 flex flex-col` → section `flex min-h-0 flex-1 flex-col` → área scroll `overflow-auto flex-1` → footer `shrink-0`
 - **onLimpiar vs onLimpiarDetalle:** onLimpiar = limpia todo / onLimpiarDetalle = deselecciona producto conservando resultados
 - **Escape contextual:** en detalle → onIrAResumen / en resumen → onLimpiar / en corrigiendo/desactivando → resetModo
-- **indiceAccion en DETALLE:** módulo 2 (CORREGIR/DESACTIVAR) — sin LIMPIAR
-- **Directorios fantasma eliminados 26 Jun:** `apps\vendor-desktop\apps` y `src\` en raíz
-- **Intercepción de teclado — múltiples listeners:** con producto confirmado, BuscadorProducto y CatalogoFarmaciaWorkspace deben inhibir ArrowDown/ArrowUp/Enter completamente — control exclusivo a DetalleProducto
+- **Intercepción de teclado — múltiples listeners:** con producto confirmado, BuscadorProducto y CatalogoFarmaciaWorkspace deben inhibir ArrowDown/ArrowUp/Enter completamente
+- **Backend modificarProductoComercial:** solo soporta nombreComercial, nombreFabricante, nombreTitular, paisOrigen, registroSanitario, estadoRegistroSanitario, codigoDIGEMID — condicionVenta/requiereLote/requiereCadenaFrio NO están en el comando Rust
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Evaluación visual** — ASIGNACIÓN PRESENTACIONES
-2. **Evaluación visual** — ASIGNACIÓN DE PRECIOS
-3. **Evaluación visual** — NuevoProductoStepper flujo completo
-4. **Evaluación visual** — PROVEEDORES flujo completo
-5. **INGRESOS** — prueba end-to-end
-6. **Conectar `disateq:navegar`** — listener en OperationalBar
-7. **OperationalBar** — corregir color `#3D8A8A` → `#0284C7`
-8. **BoxSlotType → TipoCaja**
-9. **Operador.codigo** — verificar y eliminar si huérfano
+1. **Evaluación visual** — CORREGIR DATOS BÁSICOS completa en UI
+2. **Evaluación visual** — ASIGNACIÓN PRESENTACIONES
+3. **Evaluación visual** — ASIGNACIÓN DE PRECIOS
+4. **Evaluación visual** — NuevoProductoStepper flujo completo
+5. **Evaluación visual** — PROVEEDORES flujo completo
+6. **INGRESOS** — prueba end-to-end
+7. **Conectar `disateq:navegar`** — listener en OperationalBar
+8. **OperationalBar** — corregir color `#3D8A8A` → `#0284C7`
+9. **BoxSlotType → TipoCaja**
+10. **Operador.codigo** — verificar y eliminar si huérfano
 
 ---
 

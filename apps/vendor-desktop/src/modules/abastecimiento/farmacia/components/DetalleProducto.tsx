@@ -545,6 +545,7 @@ export function DetalleProducto({
       registroSanitario: producto.registroSanitario,
       estadoRegistroSanitario: producto.estadoRegistroSanitario,
       codigoDIGEMID: producto.codigoDIGEMID,
+      codigoInterno: producto.codigoInterno,
     })
     setModo('corrigiendo')
     setErrorAccion(null)
@@ -703,51 +704,60 @@ export function DetalleProducto({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ID PRODUCTO</span>
-                <input readOnly value={producto.id} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CODIGO INTERNO</span>
+                <input
+                  value={formularioCorreccion.codigoInterno ?? ''}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoInterno: e.target.value.toUpperCase() } : prev)}
+                  maxLength={12}
+                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                />
               </label>
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CODIGO DIGEMID</span>
-                <input
-                  readOnly={!esAdmin}
-                  value={formularioCorreccion.codigoDIGEMID}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
-                  className={esAdmin ? "h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]" : "h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400"}
-                />
+                {esAdmin ? (
+                  <input
+                    value={formularioCorreccion.codigoDIGEMID ?? ''}
+                    onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
+                    maxLength={20}
+                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                  />
+                ) : (
+                  <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                )}
               </label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">NOMBRE COMERCIAL</span>
                 <input
                   value={formularioCorreccion.nombreComercial}
                   onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreComercial: e.target.value } : prev)}
-                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
                 />
               </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA / PRINCIPIO ACTIVO</span>
-                <input readOnly value={producto.ifa} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                <input readOnly value={producto.ifa ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+              </label>
+              <label>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FABRICANTE / LABORATORIO</span>
+                <input
+                  value={formularioCorreccion.nombreFabricante}
+                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
+                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                />
               </label>
             </div>
-            <label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FABRICANTE / LABORATORIO</span>
-              <input
-                value={formularioCorreccion.nombreFabricante}
-                onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
-                className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
-              />
-            </label>
             <div className="grid grid-cols-2 gap-3">
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CONCENTRACION / DOSIS</span>
-                <input readOnly value={producto.concentracion} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                <input readOnly value={producto.concentracion ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
               </label>
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FORMA FARMACEUTICA</span>
-                <input readOnly value={producto.formaFarmaceutica} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                <input readOnly value={producto.formaFarmaceutica ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
               </label>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -755,15 +765,22 @@ export function DetalleProducto({
               <CampoLectura label="REFRIGERAR" valor={producto.requiereCadenaFrio ? 'Si · requiere frio' : 'No requiere'} />
               <CampoLectura label="CON VENCIMIENTO" valor={producto.requiereLote ? 'Si · requiere lote' : 'Sin trazabilidad'} />
             </div>
+            <p className="text-[10px] text-slate-400 mt-1">Para modificar condiciones operacionales se requiere una operacion especial de correccion critica.</p>
+            {!esAdmin && (
+              <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2">Solo administradores pueden modificar datos de registro sanitario</p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">REGISTRO SANITARIO</span>
-                <input
-                  readOnly={!esAdmin}
-                  value={formularioCorreccion.registroSanitario}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
-                  className={esAdmin ? "h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]" : "h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400"}
-                />
+                {esAdmin ? (
+                  <input
+                    value={formularioCorreccion.registroSanitario ?? ''}
+                    onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
+                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                  />
+                ) : (
+                  <input readOnly value={formularioCorreccion.registroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                )}
               </label>
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ESTADO DEL REGISTRO</span>
@@ -771,7 +788,7 @@ export function DetalleProducto({
                   <select
                     value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
                     onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: e.target.value as EstadoRegistroSanitario } : prev)}
-                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7]"
+                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
                   >
                     <option value="VIGENTE">Vigente</option>
                     <option value="SUSPENDIDO">Suspendido</option>
@@ -779,7 +796,7 @@ export function DetalleProducto({
                     <option value="VENCIDO">Vencido</option>
                   </select>
                 ) : (
-                  <input readOnly value={formularioCorreccion.estadoRegistroSanitario} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-slate-50 px-3 text-[13px] font-semibold text-slate-400" />
+                  <input readOnly value={formularioCorreccion.estadoRegistroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
                 )}
               </label>
             </div>

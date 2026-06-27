@@ -112,6 +112,7 @@ pub async fn crear_producto_comercial(
     registro_sanitario: Option<String>,
     estado_registro_sanitario: Option<String>,
     codigo_digemid: Option<String>,
+    codigo_interno: Option<String>,
     condicion_venta: String,
     requiere_lote: bool,
     requiere_cadena_frio: bool,
@@ -123,7 +124,7 @@ pub async fn crear_producto_comercial(
     let creado_en = obtener_timestamp(pool).await?;
 
     sqlx::query(
-        "INSERT INTO producto_comercial (id, producto_generico_id, nombre_comercial, nombre_fabricante, nombre_titular, pais_origen, registro_sanitario, estado_registro_sanitario, codigo_digemid, condicion_venta, requiere_lote, requiere_cadena_frio, estado, creado_en, modificado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO producto_comercial (id, producto_generico_id, nombre_comercial, nombre_fabricante, nombre_titular, pais_origen, registro_sanitario, estado_registro_sanitario, codigo_digemid, codigo_interno, condicion_venta, requiere_lote, requiere_cadena_frio, estado, creado_en, modificado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(producto_generico_id)
@@ -134,6 +135,7 @@ pub async fn crear_producto_comercial(
     .bind(registro_sanitario)
     .bind(estado_registro_sanitario.unwrap_or(String::from("VIGENTE")))
     .bind(codigo_digemid)
+    .bind(codigo_interno)
     .bind(condicion_venta)
     .bind(bool_a_i64(requiere_lote))
     .bind(bool_a_i64(requiere_cadena_frio))
@@ -193,6 +195,7 @@ pub async fn obtener_productos_comerciales(
                 "registro_sanitario": row.try_get::<Option<String>, _>("registro_sanitario").unwrap_or(None),
                 "estado_registro_sanitario": row.try_get::<String, _>("estado_registro_sanitario").map_err(|e| e.to_string())?,
                 "codigo_digemid": row.try_get::<Option<String>, _>("codigo_digemid").unwrap_or(None),
+                "codigo_interno": row.try_get::<Option<String>, _>("codigo_interno").unwrap_or(None),
                 "condicion_venta": row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?,
                 "requiere_lote": requiere_lote,
                 "requiere_cadena_frio": requiere_cadena_frio,
@@ -237,12 +240,13 @@ pub async fn modificar_producto_comercial(
     registro_sanitario: Option<String>,
     estado_registro_sanitario: Option<String>,
     codigo_digemid: Option<String>,
+    codigo_interno: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
     let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    sqlx::query("UPDATE producto_comercial SET nombre_comercial = ?, nombre_fabricante = ?, nombre_titular = ?, pais_origen = ?, registro_sanitario = ?, estado_registro_sanitario = ?, codigo_digemid = ?, modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
+    sqlx::query("UPDATE producto_comercial SET nombre_comercial = ?, nombre_fabricante = ?, nombre_titular = ?, pais_origen = ?, registro_sanitario = ?, estado_registro_sanitario = ?, codigo_digemid = ?, codigo_interno = ?, modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
         .bind(nombre_comercial)
         .bind(nombre_fabricante)
         .bind(nombre_titular)
@@ -250,6 +254,7 @@ pub async fn modificar_producto_comercial(
         .bind(registro_sanitario)
         .bind(estado_registro_sanitario)
         .bind(codigo_digemid)
+        .bind(codigo_interno)
         .bind(id)
         .execute(pool)
         .await
