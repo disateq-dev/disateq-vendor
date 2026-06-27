@@ -757,7 +757,7 @@ export function DetalleProducto({
                     className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
                   />
                 ) : (
-                  <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                  <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
                 )}
               </label>
               <label className="flex-1">
@@ -772,7 +772,7 @@ export function DetalleProducto({
             <div className="grid grid-cols-2 gap-3">
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA / PRINCIPIO ACTIVO</span>
-                <input readOnly value={producto.ifa ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                <input readOnly value={(producto.ifa ?? '').toUpperCase()} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
               </label>
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FABRICANTE / LABORATORIO</span>
@@ -786,11 +786,11 @@ export function DetalleProducto({
             <div className="grid grid-cols-2 gap-3">
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CONCENTRACION / DOSIS</span>
-                <input readOnly value={producto.concentracion ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                <input readOnly value={(producto.concentracion ?? '').toUpperCase()} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
               </label>
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FORMA FARMACEUTICA</span>
-                <input readOnly value={producto.formaFarmaceutica ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                <input readOnly value={(producto.formaFarmaceutica ?? '').toUpperCase()} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
               </label>
             </div>
             <div className="flex flex-col gap-2">
@@ -866,7 +866,7 @@ export function DetalleProducto({
                     className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
                   />
                 ) : (
-                  <input readOnly value={formularioCorreccion.registroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                  <input readOnly value={formularioCorreccion.registroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
                 )}
               </label>
               <label>
@@ -883,28 +883,9 @@ export function DetalleProducto({
                     <option value="VENCIDO">Vencido</option>
                   </select>
                 ) : (
-                  <input readOnly value={formularioCorreccion.estadoRegistroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fefce8] px-3 text-[13px] font-semibold text-slate-500" />
+                  <input readOnly value={formularioCorreccion.estadoRegistroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
                 )}
               </label>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button type="button" onClick={() => { onIrAResumen(); setModo('lectura'); setFormularioCorreccion(null) }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>VOLVER</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
-              <button
-                type="button"
-                onClick={() => setModo('lectura')}
-                className="rounded-xl border border-[#dc2626]/40 px-4 py-2 text-[12px] font-bold text-[#dc2626] hover:bg-[#fef2f2]"
-              >
-                CANCELAR
-              </button>
-              <button
-                type="button"
-                onClick={() => void onGuardarCorreccion()}
-                disabled={guardandoCambios}
-                className="rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
-              >
-                GUARDAR CORRECCIÓN
-              </button>
             </div>
           </div>
         )}
@@ -1107,6 +1088,19 @@ export function DetalleProducto({
           </>
         )}
       </div>
+      {modo === 'corrigiendo' && (
+        <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
+          <button type="button" onClick={() => { onIrAResumen(); setModo('lectura'); setFormularioCorreccion(null) }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER</button>
+          <button
+            type="button"
+            onClick={() => void onGuardarCorreccion()}
+            disabled={guardandoCambios}
+            className="rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
+          >
+            GUARDAR CORRECCION
+          </button>
+        </div>
+      )}
       {vistaActiva === 'detalle' && modo === 'lectura' && (
         <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
           <button type="button" onClick={onIrAPresentaciones} className="group relative px-5 rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRESENTACIONES<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd></button>
