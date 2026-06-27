@@ -563,10 +563,10 @@ export function DetalleProducto({
         }
       } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'detalle' && event.key === 'ArrowRight') {
         event.preventDefault()
-        setIndiceAccion(prev => (prev + 1) % 3)
+        setIndiceAccion(prev => (prev + 1) % 2)
       } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'detalle' && event.key === 'ArrowLeft') {
         event.preventDefault()
-        setIndiceAccion(prev => (prev - 1 + 3) % 3)
+        setIndiceAccion(prev => (prev - 1 + 2) % 2)
       } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'd') {
         event.preventDefault()
         onIrADetalle()
@@ -614,7 +614,7 @@ export function DetalleProducto({
             if (producto.estado === 'ACTIVO') setModo('desactivando')
             break
           case 2:
-            onLimpiar()
+            onIrAResumen()
             break
         }
       }
@@ -622,7 +622,7 @@ export function DetalleProducto({
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, indiceAccion, indiceNavegacion, producto.estado])
+  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, onIrAResumen, indiceAccion, indiceNavegacion, producto.estado])
 
   const onGuardarCorreccion = async (): Promise<void> => {
     if (!formularioCorreccion) return
@@ -776,7 +776,7 @@ export function DetalleProducto({
             </div>
 
             <div className="flex gap-2 pt-2">
-              <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+              <button type="button" onClick={() => { onIrAResumen(); setModo('lectura'); setFormularioCorreccion(null) }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>VOLVER</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
               <button
                 type="button"
                 onClick={() => setModo('lectura')}
@@ -803,7 +803,7 @@ export function DetalleProducto({
               búsquedas ni ventas. El historial se conserva.
             </p>
             <div className="flex gap-2">
-              <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+              <button type="button" onClick={() => { onIrAResumen(); setModo('lectura') }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3"><span>VOLVER</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
               <button
                 type="button"
                 onClick={() => setModo('lectura')}
@@ -897,7 +897,7 @@ export function DetalleProducto({
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-col items-end gap-1 overflow-visible"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}<button type="button" onClick={onLimpiar} className={indiceAccion === 2 ? 'group relative rounded-xl border border-[#f97316] bg-[#fff7ed] px-4 py-2 text-[12px] font-bold text-[#f97316] flex items-center gap-3' : 'group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center gap-3'}><span>LIMPIAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button></div><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button></div>
+                      <div className="flex flex-col items-end gap-1 overflow-visible"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}</div><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button></div>
                     </div>
                     <div>
                       <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
