@@ -394,7 +394,7 @@ pub async fn listar_principios_activos(
     let instances = db_instances.0.read().await;
     let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, activo, es_esencial_minsa, es_psicotropico FROM principio_activo WHERE activo = 1 ORDER BY nombre_dci")
+    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, descripcion_uso, grupo_terapeutico, condicion_venta, activo, es_esencial_minsa, es_psicotropico, es_combinacion FROM principio_activo WHERE activo = 1 ORDER BY nombre_dci")
         .fetch_all(pool)
         .await
         .map_err(|e| e.to_string())?;
@@ -411,6 +411,9 @@ pub async fn listar_principios_activos(
                 "activo": activo,
                 "esEsencialMinsa": es_esencial_minsa,
                 "esPsicotropico": es_psicotropico,
+                "grupoTerapeutico": row.try_get::<String, _>("grupo_terapeutico").map_err(|e| e.to_string())?,
+                "condicionVenta": row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?,
+                "esCombinacion": row.try_get::<i64, _>("es_combinacion").map_err(|e| e.to_string())? == 1,
             }))
         })
         .collect()
@@ -425,7 +428,8 @@ pub async fn buscar_principios_activos(
     let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let patron = format!("%{}%", query.to_uppercase());
-    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, es_esencial_minsa, es_psicotropico FROM principio_activo WHERE activo = 1 AND nombre_dci LIKE ? ORDER BY nombre_dci LIMIT 10")
+    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, descripcion_uso, grupo_terapeutico, condicion_venta, es_esencial_minsa, es_psicotropico, es_combinacion FROM principio_activo WHERE activo = 1 AND (nombre_dci LIKE ? OR grupo_terapeutico LIKE ?) ORDER BY nombre_dci LIMIT 20")
+        .bind(patron.clone())
         .bind(patron)
         .fetch_all(pool)
         .await
@@ -441,6 +445,9 @@ pub async fn buscar_principios_activos(
                 "descripcion": row.try_get::<Option<String>, _>("descripcion").unwrap_or(None),
                 "esEsencialMinsa": es_esencial_minsa,
                 "esPsicotropico": es_psicotropico,
+                "grupoTerapeutico": row.try_get::<String, _>("grupo_terapeutico").map_err(|e| e.to_string())?,
+                "condicionVenta": row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?,
+                "esCombinacion": row.try_get::<i64, _>("es_combinacion").map_err(|e| e.to_string())? == 1,
             }))
         })
         .collect()
@@ -564,6 +571,275 @@ pub async fn asignar_principios_a_producto(
             .await
             .map_err(|e| e.to_string())?;
     }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn obtener_principio_activo(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+) -> Result<Value, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    let row = sqlx::query(
+        "SELECT id, nombre_dci, descripcion, descripcion_uso, grupo_terapeutico, condicion_venta, activo, es_esencial_minsa, es_psicotropico, es_combinacion FROM principio_activo WHERE id = ?",
+    )
+    .bind(&id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?
+    .ok_or_else(|| String::from("PRINCIPIO_NO_ENCONTRADO"))?;
+
+    let productos_rows = sqlx::query(
+        "SELECT pc.id, pc.nombre_comercial, pc.codigo_interno FROM producto_comercial pc JOIN producto_generico pg ON pg.id = pc.producto_generico_id JOIN producto_principio_activo ppa ON ppa.producto_generico_id = pg.id WHERE ppa.principio_activo_id = ? AND pc.estado = 'ACTIVO' ORDER BY pc.nombre_comercial",
+    )
+    .bind(&id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+    let productos_vinculados = productos_rows
+        .into_iter()
+        .map(|producto_row| {
+            Ok(json!({
+                "id": producto_row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
+                "nombreComercial": producto_row.try_get::<String, _>("nombre_comercial").map_err(|e| e.to_string())?,
+                "codigoInterno": producto_row.try_get::<Option<String>, _>("codigo_interno").unwrap_or(None),
+            }))
+        })
+        .collect::<Result<Vec<Value>, String>>()?;
+
+    Ok(json!({
+        "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
+        "nombreDci": row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
+        "descripcion": row.try_get::<Option<String>, _>("descripcion").unwrap_or(None),
+        "descripcionUso": row.try_get::<String, _>("descripcion_uso").map_err(|e| e.to_string())?,
+        "grupoTerapeutico": row.try_get::<String, _>("grupo_terapeutico").map_err(|e| e.to_string())?,
+        "condicionVenta": row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?,
+        "activo": row.try_get::<i64, _>("activo").map_err(|e| e.to_string())? == 1,
+        "esEsencialMinsa": row.try_get::<i64, _>("es_esencial_minsa").map_err(|e| e.to_string())? == 1,
+        "esPsicotropico": row.try_get::<i64, _>("es_psicotropico").map_err(|e| e.to_string())? == 1,
+        "esCombinacion": row.try_get::<i64, _>("es_combinacion").map_err(|e| e.to_string())? == 1,
+        "productosVinculados": productos_vinculados,
+    }))
+}
+
+#[tauri::command]
+pub async fn crear_principio_activo(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    nombre_dci: String,
+    descripcion_uso: String,
+    grupo_terapeutico: String,
+    condicion_venta: String,
+    es_combinacion: bool,
+    es_psicotropico: bool,
+    es_esencial_minsa: bool,
+) -> Result<String, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let id = Uuid::new_v4().to_string();
+    let creado_en = obtener_timestamp(pool).await?;
+
+    let resultado = sqlx::query(
+        "INSERT INTO principio_activo (id, nombre_dci, descripcion_uso, grupo_terapeutico, condicion_venta, es_combinacion, es_psicotropico, es_esencial_minsa, activo, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)",
+    )
+    .bind(&id)
+    .bind(nombre_dci)
+    .bind(descripcion_uso)
+    .bind(grupo_terapeutico)
+    .bind(condicion_venta)
+    .bind(bool_a_i64(es_combinacion))
+    .bind(bool_a_i64(es_psicotropico))
+    .bind(bool_a_i64(es_esencial_minsa))
+    .bind(creado_en)
+    .execute(pool)
+    .await;
+
+    match resultado {
+        Ok(_) => Ok(id),
+        Err(e) => {
+            let mensaje = e.to_string();
+            if mensaje.contains("UNIQUE") {
+                Err(String::from("NOMBRE_DUPLICADO"))
+            } else {
+                Err(mensaje)
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn modificar_principio_activo(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+    nombre_dci: String,
+    descripcion_uso: String,
+    grupo_terapeutico: String,
+    condicion_venta: String,
+    es_combinacion: bool,
+    es_psicotropico: bool,
+    es_esencial_minsa: bool,
+    motivo: String,
+    operador_id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let row = sqlx::query(
+        "SELECT nombre_dci, descripcion_uso, grupo_terapeutico, condicion_venta, es_combinacion, es_psicotropico, es_esencial_minsa FROM principio_activo WHERE id = ?",
+    )
+    .bind(&id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?
+    .ok_or_else(|| String::from("PRINCIPIO_NO_ENCONTRADO"))?;
+
+    let nombre_dci_actual = row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?;
+    let descripcion_uso_actual = row.try_get::<String, _>("descripcion_uso").map_err(|e| e.to_string())?;
+    let grupo_terapeutico_actual = row.try_get::<String, _>("grupo_terapeutico").map_err(|e| e.to_string())?;
+    let condicion_venta_actual = row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?;
+    let es_combinacion_actual = row.try_get::<i64, _>("es_combinacion").map_err(|e| e.to_string())?;
+    let es_psicotropico_actual = row.try_get::<i64, _>("es_psicotropico").map_err(|e| e.to_string())?;
+    let es_esencial_minsa_actual = row.try_get::<i64, _>("es_esencial_minsa").map_err(|e| e.to_string())?;
+    let es_combinacion_nuevo = bool_a_i64(es_combinacion);
+    let es_psicotropico_nuevo = bool_a_i64(es_psicotropico);
+    let es_esencial_minsa_nuevo = bool_a_i64(es_esencial_minsa);
+    let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if nombre_dci_actual != nombre_dci {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("principio_activo")
+            .bind(&id)
+            .bind("nombre_dci")
+            .bind(&nombre_dci_actual)
+            .bind(&nombre_dci)
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if descripcion_uso_actual != descripcion_uso {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("principio_activo")
+            .bind(&id)
+            .bind("descripcion_uso")
+            .bind(&descripcion_uso_actual)
+            .bind(&descripcion_uso)
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if grupo_terapeutico_actual != grupo_terapeutico {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("principio_activo")
+            .bind(&id)
+            .bind("grupo_terapeutico")
+            .bind(&grupo_terapeutico_actual)
+            .bind(&grupo_terapeutico)
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if condicion_venta_actual != condicion_venta {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("principio_activo")
+            .bind(&id)
+            .bind("condicion_venta")
+            .bind(&condicion_venta_actual)
+            .bind(&condicion_venta)
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if es_combinacion_actual != es_combinacion_nuevo {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("principio_activo")
+            .bind(&id)
+            .bind("es_combinacion")
+            .bind(es_combinacion_actual.to_string())
+            .bind(es_combinacion_nuevo.to_string())
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if es_psicotropico_actual != es_psicotropico_nuevo {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("principio_activo")
+            .bind(&id)
+            .bind("es_psicotropico")
+            .bind(es_psicotropico_actual.to_string())
+            .bind(es_psicotropico_nuevo.to_string())
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    if es_esencial_minsa_actual != es_esencial_minsa_nuevo {
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("principio_activo")
+            .bind(&id)
+            .bind("es_esencial_minsa")
+            .bind(es_esencial_minsa_actual.to_string())
+            .bind(es_esencial_minsa_nuevo.to_string())
+            .bind(&motivo)
+            .bind(&operador_id)
+            .bind(&creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("UPDATE principio_activo SET nombre_dci = ?, descripcion_uso = ?, grupo_terapeutico = ?, condicion_venta = ?, es_combinacion = ?, es_psicotropico = ?, es_esencial_minsa = ? WHERE id = ?")
+        .bind(nombre_dci)
+        .bind(descripcion_uso)
+        .bind(grupo_terapeutico)
+        .bind(condicion_venta)
+        .bind(es_combinacion_nuevo)
+        .bind(es_psicotropico_nuevo)
+        .bind(es_esencial_minsa_nuevo)
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
 
     tx.commit().await.map_err(|e| e.to_string())?;
 
