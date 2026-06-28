@@ -10,7 +10,7 @@ import { printTicket, printTicketThermal, printTicketWithDispatch, printReceiptW
 
 import { toCents, moneySum, moneySub, moneyRound, moneyGt, moneyGte, moneyEq } from "../../lib/money";
 import { loadBusinessConfig } from "../../config/business";
-import { inventoryService } from "../../domains/inventory/service";
+import { despacharConFefo } from "../../domains/farmacia/fefo-despacho.service";
 import {
   emitirComprobante,
   construirReceiptData
@@ -406,13 +406,7 @@ export function CobroPanel() {
       addComprobante(buildComprobanteData(dt));
     }
     if (docType !== "cotizacion") {
-      lines.forEach(line => {
-        inventoryService.registrarSalida(
-          line.hovId,
-          line.cantidad,
-          `venta:${docNumber}`
-        );
-      });
+      void despacharConFefo(lines, docNumber, activeOperator?.id ?? 'default');
     }
 
     const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
@@ -554,13 +548,7 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
     if (docType !== "cotizacion") {
-      lines.forEach(line => {
-        inventoryService.registrarSalida(
-          line.hovId,
-          line.cantidad,
-          `venta:${docNumber}`
-        );
-      });
+      void despacharConFefo(lines, docNumber, activeOperator?.id ?? 'default');
     }
 
     const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
