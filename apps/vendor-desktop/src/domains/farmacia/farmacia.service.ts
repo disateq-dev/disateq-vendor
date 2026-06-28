@@ -3,8 +3,10 @@ import type {
   AsignacionPrincipiosInput,
   AsignacionLote,
   CorregirDatosOperacionalesInput,
+  CrearPrincipioActivoInput,
   CrearValorOperacionalInput,
   ModificarProductoComercialInput,
+  ModificarPrincipioActivoInput,
   ModificarProveedorInput,
   ModificarValorOperacionalInput,
   CrearNodoInput,
@@ -19,6 +21,7 @@ import type {
   NodoFraccionamiento,
   PresentacionComercial,
   PrincipioActivo,
+  PrincipioActivoDetalle,
   ProductoComercial,
   ProductoGenerico,
   Proveedor,
@@ -685,4 +688,36 @@ export async function obtenerPrincipiosDeProducto(productoGenericoId: string): P
     descripcion?: string
     orden: number
   }[]
+}
+
+export async function obtenerPrincipioActivo(id: string): Promise<PrincipioActivoDetalle> {
+  const respuesta = await invoke('obtener_principio_activo', { id })
+  return respuesta as PrincipioActivoDetalle
+}
+
+export async function crearPrincipioActivo(input: CrearPrincipioActivoInput): Promise<string> {
+  return invoke<string>('crear_principio_activo', {
+    nombreDci: input.nombreDci,
+    descripcionUso: input.descripcionUso,
+    grupoTerapeutico: input.grupoTerapeutico,
+    condicionVenta: input.condicionVenta,
+    esCombinacion: input.esCombinacion,
+    esPsicotropico: input.esPsicotropico,
+    esEsencialMinsa: input.esEsencialMinsa,
+  })
+}
+
+export async function modificarPrincipioActivo(input: ModificarPrincipioActivoInput): Promise<void> {
+  await invoke('modificar_principio_activo', {
+    id: input.id,
+    nombreDci: input.nombreDci,
+    descripcionUso: input.descripcionUso,
+    grupoTerapeutico: input.grupoTerapeutico,
+    condicionVenta: input.condicionVenta,
+    esCombinacion: input.esCombinacion,
+    esPsicotropico: input.esPsicotropico,
+    esEsencialMinsa: input.esEsencialMinsa,
+    motivo: input.motivo,
+    operadorId: input.operadorId,
+  })
 }
