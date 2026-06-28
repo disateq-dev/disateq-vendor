@@ -4,6 +4,7 @@ import { BuscadorProducto } from './components/BuscadorProducto'
 import { DetalleProducto } from './components/DetalleProducto'
 import { NuevoProductoStepper } from './components/NuevoProductoStepper'
 import { useCatalogoFarmacia, type VistaCatalogo } from './hooks/useCatalogoFarmacia'
+import { PrincipiosActivosWorkspace } from './PrincipiosActivosWorkspace'
 
 export function CatalogoFarmaciaWorkspace(): ReactElement {
   const catalogo: ReturnType<typeof useCatalogoFarmacia> & { vistaActiva: VistaCatalogo } = useCatalogoFarmacia()
@@ -11,6 +12,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
     // Emitir evento custom que OperationalBar pueda escuchar
     window.dispatchEvent(new CustomEvent('disateq:navegar', { detail: { destino: 'abastecimiento', subtab: 'ingresos' } }))
   }, [])
+  const [tabActivo, setTabActivo] = useState<'productos' | 'principios'>('productos')
   const [modoDetalle, setModoDetalle] = useState<string>('lectura')
 
   useEffect(() => {
@@ -43,7 +45,27 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
   }, [catalogo.onLimpiar, catalogo.onNavegaTeclado, catalogo.onNuevo, catalogo.creandoAbierto, catalogo.productoSeleccionado])
 
   return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="shrink-0 flex gap-1 px-1 pt-1">
+        <button
+          type="button"
+          onClick={() => setTabActivo('productos')}
+          className={`rounded-xl px-4 py-1.5 text-[12px] font-bold transition ${tabActivo === 'productos' ? 'bg-[#0284C7] text-white' : 'border border-[#0284C7]/30 text-[#0284C7] hover:bg-[#E0F2FE]'}`}
+        >
+          PRODUCTOS
+        </button>
+        <button
+          type="button"
+          onClick={() => setTabActivo('principios')}
+          className={`rounded-xl px-4 py-1.5 text-[12px] font-bold transition ${tabActivo === 'principios' ? 'bg-[#0284C7] text-white' : 'border border-[#0284C7]/30 text-[#0284C7] hover:bg-[#E0F2FE]'}`}
+        >
+          PRINCIPIOS ACTIVOS IFA
+        </button>
+      </div>
     <section className="flex min-h-0 flex-1 gap-2">
+      {tabActivo === 'principios' && <PrincipiosActivosWorkspace />}
+      {tabActivo === 'productos' && (
+      <>
       <div className="flex flex-[40] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#0284C7]/50 bg-[#FDFCF9]">
         <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E0F2FE]/60 border-[#0284C7]/15">
           <div className="flex items-center gap-2">
@@ -181,6 +203,9 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
           )}
         </div>
       </div>
+      </>
+      )}
     </section>
+    </div>
   )
 }
