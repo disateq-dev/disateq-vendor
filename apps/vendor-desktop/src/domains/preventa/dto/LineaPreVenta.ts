@@ -12,5 +12,6 @@ export interface LineaPreVenta {
   flags?: {
     esPrecioManual?: boolean;
     esRecuperada?:   boolean;
+    requirioReceta?: boolean;
   };
 }

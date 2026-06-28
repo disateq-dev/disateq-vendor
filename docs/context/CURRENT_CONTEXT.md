@@ -2,7 +2,15 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `a8becec` — refactor(catalogo): GUARDAR CORRECCION unificado — datos basicos + condiciones operacionales en un solo handler, Ctrl+Enter como atajo
+* **Último commit:** `2a994cb` — feat(catalogo): SelectorPrincipiosActivos — selector IFA con autocompletado, chips y auditoria integrado en CORREGIR
+
+## Commits de la jornada 28 Jun
+| Hash | Descripción |
+|---|---|
+| `2a994cb` | feat(catalogo): SelectorPrincipiosActivos — selector IFA con autocompletado, chips y auditoria integrado en CORREGIR |
+| `239caea` | feat(catalogo): servicio obtenerPrincipiosDeProducto — desbloqueo selector IFA |
+| `3e40feb` | feat(catalogo): migración v9 — campos regulatorios IFA, tipos PrincipioActivo, servicios listar/buscar/asignar |
+| `22404a8` | feat(catalogo): migracion v8 — tabla maestra principio_activo, producto_principio_activo, migracion de datos IFA, 4 comandos Rust |
 
 ## Commits de la jornada 27 Jun
 | Hash | Descripción |
@@ -10,12 +18,8 @@
 | `a8becec` | refactor(catalogo): GUARDAR CORRECCION unificado — datos basicos + condiciones operacionales en un solo handler, Ctrl+Enter como atajo |
 | `1806517` | fix(catalogo): CORREGIR footer VOLVER->detalle+keytips, DESACTIVAR header+footer fijo+keytips, eliminar CANCELAR |
 | `8580070` | fix(catalogo): readonly bg-[#fffef7] text-slate-400, mayusculas en IFA/Concentracion/Forma, footer fijo VOLVER+GUARDAR, eliminar CANCELAR |
-| `bc87c1e` | feat(catalogo): codigoInterno en ProductoComercial — migration v6, backend Rust, frontend CORREGIR con semántica visual editable/readonly |
+| `bc87c1e` | feat(catalogo): codigoInterno en ProductoComercial — migration v6, backend Rust, frontend CORREGIR con semantica visual editable/readonly |
 | `83bc40e` | feat(catalogo): correccion_catalogo — tabla auditoria v7, comando Rust corregir_datos_operacionales, tipos y service TS |
-| `968f5fe` | fix(catalogo): CORREGIR — reducir espaciado interlineal a gap-2 |
-| `1a9a053` | fix(catalogo): CORREGIR — ancho proporcional CODIGO INTERNO 130px, CODIGO DIGEMID 190px, NOMBRE COMERCIAL flex-1 |
-| `6b0f162` | refactor(catalogo): reorganizar formulario CORREGIR — orden por relevancia operacional, campos en grid, aviso historial en header |
-| `2d39fec` | fix(catalogo): Enter en CORREGIR/DESACTIVAR — bloquear intercepcion en BuscadorProducto y CatalogoFarmaciaWorkspace cuando hay producto confirmado |
 
 ---
 
@@ -38,7 +42,7 @@
 * **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso
   - RESUMEN DEL PRODUCTO ✅
   - DETALLE DEL PRODUCTO ✅ navegación teclado completa
-  - CORREGIR DATOS BÁSICOS ✅ reorganizado, codigoInterno, condiciones operacionales, guardado unificado — pendiente prueba UI final
+  - CORREGIR DATOS BÁSICOS ✅ reorganizado, codigoInterno, condiciones operacionales, guardado unificado, SelectorPrincipiosActivos integrado — pendiente prueba UI final
   - DESACTIVAR PRODUCTO ✅ header, footer fijo, keytips — pendiente prueba UI final
   - ASIGNACIÓN PRESENTACIONES ⬜
   - ASIGNACIÓN DE PRECIOS ⬜
@@ -53,41 +57,97 @@
 
 ---
 
-## ⚠ PRÓXIMA SESIÓN — PARÉNTESIS PRIORITARIO: BRECHAS DIGEMID
+## PARÉNTESIS DIGEMID — Estado al cierre de jornada 28 Jun
 
-Antes de continuar con la evaluación visual del catálogo, la próxima sesión debe abordar las brechas identificadas contra el Estándar DIGEMID Perú. Por su importancia regulatoria y operacional, se tratan como deuda arquitectónica crítica.
+| Brecha | Estado |
+|---|---|
+| 1 — Tabla Maestra IFA + combinaciones + SelectorUI | ✅ CERRADA |
+| 2 — Búsqueda genérica por DCI en ventas | ⬜ |
+| 3 — FEFO en despacho de lotes | ⬜ |
+| 4 — Alerta vencimiento < 6 meses (semáforo 3 niveles) | ⬜ |
+| 5 — Bloqueo/confirmación receta médica en cobro | ⬜ |
+| 6 — Descripción corta autoconcatenada (fórmula DIGEMID) | ⬜ |
+| 7 — Stock mínimo genéricos esenciales — Ley 32033 | ⬜ |
+| 8 — Psicotrópicos/estupefacientes — libro control DIGEMID | ⬜ Registrada nueva |
 
-### Brechas identificadas — prioridad alta
-
-**BRECHA 1 — DCI combinados (requerimiento legal)**
-El campo `ifa` actual es texto libre y no soporta múltiples principios activos (ej. "Paracetamol + Clorfenamina"). Solución: **Tabla Maestra de Principios Activos** con soporte para combinaciones mediante separador `+`. Campo `ifa` en `ProductoComercial` pasa a ser FK o referencia a esta tabla. Impacta: creación de producto, búsqueda en catálogo y ventas.
-
-**BRECHA 2 — Búsqueda genérica obligatoria en ventas (requerimiento legal)**
-El buscador actual no permite buscar por DCI y mostrar todos los productos (genéricos y marcas) que comparten el mismo principio activo. Según normativa peruana, el establecimiento debe informar alternativas económicas al paciente. Impacta: módulo VENTAS — buscador de productos.
-
-**BRECHA 3 — FEFO en despacho de lotes (requerimiento operacional alto)**
-Al despachar un producto con lote, el sistema debe sugerir automáticamente el lote más próximo a vencer (First Expired, First Out). Sin esto, el inventario puede acumular productos vencidos sin control. Impacta: VENTAS e INGRESOS/INVENTARIOS.
-
-**BRECHA 4 — Alerta de vencimiento próximo < 6 meses (requerimiento operacional medio)**
-Al seleccionar un producto en venta, si el lote activo vence en menos de 6 meses, debe aparecer advertencia visual en pantalla del vendedor. Impacta: módulo VENTAS.
-
-**BRECHA 5 — Bloqueo/confirmación por Receta Médica en ventas (requerimiento legal)**
-`condicionVenta` ya existe en el modelo. Falta el flujo de validación en el punto de venta: alerta visual o confirmación obligatoria antes de emitir comprobante para productos CON_RECETA o CONTROLADO. Impacta: módulo VENTAS — flujo de cobro.
-
-### Brechas identificadas — prioridad media
-
-**BRECHA 6 — Descripción Corta de Venta autoconcatenada**
-Fórmula DIGEMID: `[Nombre Comercial] + [Concentración] + [Forma Farmacéutica] + [Presentación]`. Ejemplo: `PARACETAMOL 500mg Tab (Caja x 100)`. Debe formalizarse como campo calculado para la pantalla de ventas. Actualmente la concatenación existe en el topbar del catálogo pero no como estándar de ventas.
-
-**BRECHA 7 — Stock mínimo genéricos esenciales — Ley N° 32033 (30%)**
-Las boticas deben mantener al menos 30% de stock en medicamentos genéricos esenciales. El sistema debe emitir alerta cuando el stock caiga por debajo de la cuota legal. Impacta: módulo INVENTARIOS.
-
-### Brechas ya cubiertas ✅
-Código de barras en PresentacionComercial · Registro Sanitario · Condición de Venta · Lote y Vencimiento · Fraccionamiento DIGEMID · Presentación Comercial · Fabricante
+### Orden de ataque próxima sesión (Brechas 2-7)
+1. **Brecha 5** — Bloqueo receta en cobro — más rápida, infraestructura ya existe
+2. **Brecha 2** — Búsqueda genérica DCI en ventas — depende tabla principio_activo ya construida
+3. **Brecha 3** — FEFO — comando resolver_lote_fefo ya existe en Rust, falta flujo UI ventas
+4. **Brecha 4** — Semáforo vencimiento — CRITICO <60 días, ALERTA <180 días, OK el resto
+5. **Brecha 7** — Stock mínimo esenciales — campo esEsencialMinsa ya en modelo
+6. **Brecha 6** — Descripción autoconcatenada — independiente, puede ir en paralelo
 
 ---
 
-## CATÁLOGO FARMACIA — Estado consolidado al 27 Jun
+## BRECHA 1 — Arquitectura implementada (IRREVOCABLE)
+
+### Modelo de datos
+- **`principio_activo`** — tabla maestra normalizada: id, nombre_dci (UNIQUE), descripcion, activo, es_esencial_minsa, es_psicotropico, creado_en
+- **`producto_principio_activo`** — asociación N:M: producto_generico_id, principio_activo_id, orden. PK compuesta.
+- **`producto_generico.ifa`** — campo denormalizado regenerado automáticamente al asignar principios (concatenación " + " en orden)
+- Índices: idx_ppa_generico, idx_ppa_principio, idx_principio_dci
+
+### Migraciones
+| Version | Cambio |
+|---|---|
+| v2 | lote.fecha_vencimiento nullable |
+| v3 | valor_operacional.tipo VENTA_NORMAL, vista reporte_digemid_privado |
+| v4 | presentacion_comercial.stock_minimo |
+| v5 | producto_comercial.estado_registro_sanitario DEFAULT VIGENTE |
+| v6 | producto_comercial.codigo_interno TEXT (max 12, mayúsculas) |
+| v7 | tabla correccion_catalogo + índices |
+| v8 | tabla principio_activo + producto_principio_activo + migración datos IFA existentes |
+| v9 | principio_activo.es_esencial_minsa + es_psicotropico (INTEGER DEFAULT 0) |
+
+### Comandos Rust (productos.rs)
+| Comando | Propósito |
+|---|---|
+| `listar_principios_activos` | Todos los IFA activos ordenados por nombre_dci |
+| `buscar_principios_activos(query)` | Búsqueda por prefijo LIKE en mayúsculas, LIMIT 10 |
+| `obtener_principios_de_producto(productoGenericoId)` | Lista ordenada por orden para un producto |
+| `asignar_principios_a_producto(productoGenericoId, principioActivoIds, operadorId, motivo)` | Reemplaza asociaciones, regenera ifa, audita si hay motivo |
+
+### Tipos TypeScript (farmacia/types.ts)
+```
+interface PrincipioActivo {
+  id: string
+  nombreDci: string
+  descripcion?: string
+  activo: boolean
+  esEsencialMinsa: boolean
+  esPsicotropico: boolean
+}
+
+interface AsignacionPrincipiosInput {
+  productoGenericoId: string
+  principioActivoIds: string[]
+  operadorId: string
+  motivo?: string
+}
+```
+- `ProductoGenerico` extendida con `principiosActivos?: PrincipioActivo[]`
+
+### Servicios (farmacia.service.ts)
+- `listarPrincipiosActivos()` — sin args
+- `buscarPrincipiosActivos(query)` — autocompletado
+- `asignarPrincipiosAProducto(input)` — escritura con auditoría
+- `obtenerPrincipiosDeProducto(productoGenericoId)` — lectura por producto
+
+### Regla operacional IFA — IRREVOCABLE
+- **Sin historial:** selector editable sin restricción adicional
+- **Con historial:** motivo obligatorio, registro en correccion_catalogo (tabla=producto_generico, campo=composicion_ifa)
+- `verificarHistorialProducto` consulta movimientos existentes para determinar la condición
+
+### SelectorPrincipiosActivos (componente UI)
+- Ubicación: `src/modules/abastecimiento/farmacia/components/SelectorPrincipiosActivos.tsx`
+- Props: productoGenericoId, tieneHistorial, operadorId, onCambio, motivo, disabled
+- Comportamiento: carga principios actuales al montar, búsqueda con debounce 250ms, chips eliminables, dropdown con badges ESENCIAL (verde) y CTRL (rojo), aviso historial en amber
+- Integrado en CORREGIR DATOS BÁSICOS reemplazando el input readonly de IFA
+
+---
+
+## CATÁLOGO FARMACIA — Estado consolidado
 
 ### CORREGIR DATOS BÁSICOS — Orden de campos irrevocable
 
@@ -95,17 +155,16 @@ Código de barras en PresentacionComercial · Registro Sanitario · Condición d
 |---|---|---|
 | Header | Nombre · Fabricante · Fechas · Badge · Aviso historial | No |
 | 1 | CODIGO INTERNO (w-130px) · CODIGO DIGEMID (w-190px) · NOMBRE COMERCIAL (flex-1) | Sí / ADMIN / Sí |
-| 2 | IFA / PRINCIPIO ACTIVO · FABRICANTE / LABORATORIO | No (mayúsculas) / Sí |
+| 2 | IFA / PRINCIPIO ACTIVO (SelectorPrincipiosActivos) · FABRICANTE / LABORATORIO | Selector interactivo / Sí |
 | 3 | CONCENTRACION / DOSIS · FORMA FARMACEUTICA | No (mayúsculas) |
 | 4 | CONDICION DE VENTA · REFRIGERAR · CON VENCIMIENTO | Sí — con MOTIVO obligatorio si hay cambio |
 | 5 | REGISTRO SANITARIO · ESTADO DEL REGISTRO | ADMIN |
 
 ### Doctrina GUARDAR CORRECCIÓN — IRREVOCABLE
-- **Un solo botón GUARDAR CORRECCIÓN** — unifica datos básicos y condiciones operacionales
-- **Flujo:** siempre guarda datos básicos → si hay cambio operacional y motivo vacío muestra error inline y no cierra → si hay cambio con motivo ejecuta corregirDatosOperacionales → cierra formulario
-- **Atajo:** `Ctrl+Enter` — no colisiona con inputs de texto
+- **Un solo botón GUARDAR CORRECCIÓN** — ejecuta en orden: asignarPrincipiosAProducto (si hay ids) → modificarProductoComercial → corregirDatosOperacionales (si hay cambio operacional con motivo)
+- **Atajo:** `Ctrl+Enter`
 - **MOTIVO DE CORRECCION** aparece inline solo cuando hay cambio operacional detectado
-- **Auditoría:** cada campo operacional modificado genera fila en `correccion_catalogo`
+- **Auditoría IFA:** registro en correccion_catalogo solo si tieneHistorial y hay motivo
 
 ### DESACTIVAR PRODUCTO — Estado irrevocable
 - Header con nombre + fabricante + fechas + badge
@@ -118,16 +177,6 @@ Código de barras en PresentacionComercial · Registro Sanitario · Condición d
 | Editable | `bg-white` | `text-slate-800` |
 | Solo lectura crítico | `bg-[#fffef7]` | `text-slate-400` |
 | Solo lectura ADMIN bloqueado | `bg-[#fffef7]` | `text-slate-400` |
-
-### Schema migrations
-| Version | Cambio |
-|---|---|
-| v2 | lote.fecha_vencimiento nullable |
-| v3 | valor_operacional.tipo VENTA_NORMAL, vista reporte_digemid_privado |
-| v4 | presentacion_comercial.stock_minimo |
-| v5 | producto_comercial.estado_registro_sanitario DEFAULT VIGENTE |
-| v6 | producto_comercial.codigo_interno TEXT (max 12, mayúsculas) |
-| v7 | tabla correccion_catalogo + índices |
 
 ### Tabla correccion_catalogo — estructura canónica
 ```
@@ -144,12 +193,27 @@ creado_en TEXT NOT NULL
 
 ---
 
+## CONVIVENCIA DE TIPOS OPERACIONALES — DOCTRINA
+
+```
+TipoRecursoOperacional: MEDICAMENTO | PRODUCTO_GENERAL | SERVICIO
+
+HOV (punto de unificación del catálogo)
+├── tipoRecurso = MEDICAMENTO   → ProductoComercial → ProductoGenerico → principio_activo
+├── tipoRecurso = PRODUCTO_GENERAL → ProductoGeneral (sin IFA, sin lote obligatorio)
+└── tipoRecurso = SERVICIO      → ServicioFarmacia (sin stock, sin lote, tiene duracionMinutos)
+```
+
+La tabla `principio_activo` y `producto_principio_activo` SOLO aplican a MEDICAMENTO. `ProductoGeneral` y `ServicioFarmacia` no se tocan.
+
+---
+
 ## DISEÑOS PENDIENTES
 
-### Tabla Maestra de Principios Activos (IFA)
-Catálogo normalizado de IFA con combinaciones posibles (soporte para `+`) y descripción operacional breve. Requerimiento legal DIGEMID. Campo `ifa` en `ProductoComercial` pasaría a ser FK. Impacta creación de producto, búsqueda en catálogo y ventas. **Abordar en próxima sesión como paréntesis prioritario.**
+### Brecha 8 — Psicotrópicos/Estupefacientes
+Campo `es_psicotropico` ya existe en `principio_activo` (v9). Falta: tabla `libro_control_digemid` y flujo en ventas para productos CONTROLADO con este flag. Diseño diferido.
 
-### Líneas de Laboratorio
+### Tabla Maestra de Líneas de Laboratorio
 Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Implementación diferida — puede ser tabla maestra o texto libre. Campo futuro: `lineaLaboratorio` en `ProductoComercial`.
 
 ---
@@ -199,7 +263,7 @@ Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Im
 | DetalleProducto.tsx | 1000+ líneas — extraer PresentacionesTab y PreciosTab | Media |
 | DetalleProducto.tsx | Vista PRECIOS en resumen muestra texto fijo | Media |
 | PreciosTab | Botones Guardar/Cancelar fuera de doctrina — usan azul | Media |
-| NuevoProductoStepper.tsx | Extraer pasos en componentes | Media |
+| NuevoProductoStepper.tsx | Extraer pasos en componentes + integrar SelectorPrincipiosActivos | Media |
 | OperationalBar.tsx | Listener `disateq:navegar` pendiente | Media |
 | OperationalBar.tsx | Color `#3D8A8A` teal → `#0284C7` | Media |
 | OperationalBar.tsx | Doble llamada a usePOS() | Baja |
@@ -210,14 +274,40 @@ Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Im
 | farmacia.service.ts | actualizarProveedor → modificarProveedor | Baja |
 | ContextBar.tsx | Archivo huérfano | Baja |
 | DetalleProveedor.tsx | Botones sin auditar directamente | Baja |
-| ProductoComercial | ifa como FK a tabla principios_activos — diseño diferido | Pendiente |
 | ProductoComercial | lineaLaboratorio — diseño y migración diferidos | Pendiente |
-| VENTAS | Búsqueda genérica por DCI — requerimiento legal DIGEMID | Alta |
-| VENTAS | Bloqueo/confirmación por Receta Médica en cobro | Alta |
-| VENTAS | Alerta vencimiento < 6 meses al despachar | Media |
-| VENTAS/INVENTARIOS | FEFO — despacho por lote más próximo a vencer | Alta |
-| INVENTARIOS | Alerta stock mínimo genéricos esenciales — Ley 32033 | Media |
-| VENTAS | Descripción Corta de Venta autoconcatenada (fórmula DIGEMID) | Media |
+| VENTAS | Búsqueda genérica por DCI — Brecha 2 | Alta |
+| VENTAS | Bloqueo/confirmación por Receta Médica — Brecha 5 | Alta |
+| VENTAS | Alerta vencimiento semáforo 3 niveles — Brecha 4 | Media |
+| VENTAS/INVENTARIOS | FEFO — despacho por lote más próximo a vencer — Brecha 3 | Alta |
+| INVENTARIOS | Alerta stock mínimo genéricos esenciales — Brecha 7 | Media |
+| VENTAS | Descripción Corta autoconcatenada (fórmula DIGEMID) — Brecha 6 | Media |
+| VENTAS/DIGEMID | Libro control psicotrópicos/estupefacientes — Brecha 8 | Pendiente diseño |
+
+---
+
+## PRÓXIMA VENTANA DE TRABAJO
+
+**Continuar Paréntesis DIGEMID — Brechas 2 a 7:**
+1. Brecha 5 — Bloqueo receta médica en cobro (más rápida)
+2. Brecha 2 — Búsqueda genérica DCI en ventas
+3. Brecha 3 — FEFO en despacho
+4. Brecha 4 — Semáforo vencimiento
+5. Brecha 7 — Stock mínimo esenciales Ley 32033
+6. Brecha 6 — Descripción autoconcatenada
+
+**Post-paréntesis DIGEMID — continuación evaluación visual catálogo:**
+7. Prueba UI — CORREGIR DATOS BÁSICOS completa (incluye SelectorPrincipiosActivos)
+8. Prueba UI — DESACTIVAR PRODUCTO
+9. Evaluación visual — ASIGNACIÓN PRESENTACIONES
+10. Evaluación visual — ASIGNACIÓN DE PRECIOS
+11. Evaluación visual — NuevoProductoStepper (integrar SelectorPrincipiosActivos)
+12. Evaluación visual — PROVEEDORES flujo completo
+13. INGRESOS — prueba end-to-end
+14. BuscadorProducto — agregar codigoInterno a búsqueda SQL
+15. Conectar `disateq:navegar` — listener en OperationalBar
+16. OperationalBar — corregir color `#3D8A8A` → `#0284C7`
+17. BoxSlotType → TipoCaja
+18. Operador.codigo — verificar y eliminar si huérfano
 
 ---
 
@@ -232,35 +322,19 @@ Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Im
 - **Prompts Codex:** lenguaje natural puro, sin bloques de código
 - **Footer fijo:** cadena flex completa — `shrink-0` obligatorio
 - **Intercepción de teclado:** BuscadorProducto y CatalogoFarmaciaWorkspace deben inhibir con producto confirmado
-- **GUARDAR CORRECCIÓN:** unificado — datos básicos siempre, condiciones operacionales si hay cambio con motivo
+- **GUARDAR CORRECCIÓN:** unificado — principios IFA → datos básicos → condiciones operacionales si hay cambio
 - **Enter en formularios:** nunca usar Enter simple como atajo de guardado — usar Ctrl+Enter
 - **correccion_catalogo:** una fila por campo modificado — no JSON agregado
 - **VOLVER en modos corrigiendo/desactivando:** siempre va a onIrADetalle, no onIrAResumen
+- **git commit -am:** no rastrea archivos nuevos — usar `git add` explícito antes del commit
+- **Archivos nuevos Codex:** siempre verificar con `git status` si hay archivos no rastreados antes de commitear
 
----
-
-## PRÓXIMA VENTANA DE TRABAJO
-
-**PARÉNTESIS PRIORITARIO — Brechas DIGEMID:**
-1. Diseño Tabla Maestra de Principios Activos (IFA + combinaciones)
-2. Diseño búsqueda genérica por DCI
-3. Diseño FEFO en despacho de lotes
-4. Diseño bloqueo por Receta Médica en ventas
-5. Diseño alerta vencimiento < 6 meses
-
-**Continuación evaluación visual catálogo (post-paréntesis):**
-6. Prueba UI — CORREGIR DATOS BÁSICOS completa
-7. Prueba UI — DESACTIVAR PRODUCTO
-8. Evaluación visual — ASIGNACIÓN PRESENTACIONES
-9. Evaluación visual — ASIGNACIÓN DE PRECIOS
-10. Evaluación visual — NuevoProductoStepper
-11. Evaluación visual — PROVEEDORES flujo completo
-12. INGRESOS — prueba end-to-end
-13. BuscadorProducto — agregar codigoInterno a búsqueda SQL
-14. Conectar `disateq:navegar` — listener en OperationalBar
-15. OperationalBar — corregir color `#3D8A8A` → `#0284C7`
-16. BoxSlotType → TipoCaja
-17. Operador.codigo — verificar y eliminar si huérfano
+### SEMÁFORO DE VENCIMIENTO — DOCTRINA (del análisis WOLF farma)
+| Días hasta vencimiento | Nivel | Acción en UI |
+|---|---|---|
+| < 60 días | `CRITICO` | Alerta roja bloqueante — requiere confirmación |
+| < 180 días | `ALERTA` | Advertencia naranja informativa |
+| ≥ 180 días | `OK` | Despacho sin interrupción |
 
 ---
 

@@ -15,6 +15,7 @@ import type { TipoValorOperacional } from "../../domains/catalog/valor-operacion
 import { loadBusinessConfig } from "../../config/business";
 import { RUBROS } from "../../data/catalogs";
 import { PresentacionSheet } from "./PresentacionSheet";
+import { ConfirmacionRecetaPanel } from "./components/ConfirmacionRecetaPanel";
 
 function statusChip(p: ProductoBuscable) {
   if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
@@ -147,6 +148,7 @@ export function SalesWorkspace() {
   const [isFocused, setIsFocused] = useState(false);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [grupoActivo, setGrupoActivo] = useState<GrupoProducto | null>(null);
+  const [confirmaReceta, setConfirmaReceta] = useState<{ producto: ProductoBuscable; condicion: "CON_RECETA" | "CONTROLADO" } | null>(null);
   const [puedeEditarPrecio] = useState<boolean>(false);
   const lastAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -249,6 +251,10 @@ export function SalesWorkspace() {
 
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
     if (p.stockStatus === "out") return;
+    if (p.condicionVenta === "CON_RECETA" || p.condicionVenta === "CONTROLADO") {
+      setConfirmaReceta({ producto: p, condicion: p.condicionVenta });
+      return;
+    }
     if (cobroOpen) closeCobro();
     const hov = getHOVById(p.hovId);
     const productoId = hov?.productoId ?? p.hovId;
@@ -303,6 +309,35 @@ export function SalesWorkspace() {
     setSearchQuery("");
     inputRef.current?.focus();
   }, [catalogoActivo, posContext]);
+
+  const handleConfirmarReceta = useCallback(() => {
+    if (confirmaReceta === null) return;
+    preVentaService.agregarProductoDesdeHOV({
+      hovId: confirmaReceta.producto.hovId,
+      descripcion: confirmaReceta.producto.description,
+      cantidad: 1,
+      valorUnitario: confirmaReceta.producto.unitPrice,
+      presentacion: confirmaReceta.producto.presentacion,
+      factorConversion: confirmaReceta.producto.factorConversion,
+      requiereValorManual: confirmaReceta.producto.requiereValorManual,
+      contextoOperacionalId: posContext.contextoOperacionalId ?? "default",
+      identidadOperacionalId: posContext.identidadOperacionalId ?? "default",
+      operadorId: posContext.operadorActivo?.id ?? "default",
+      margenMinimoConfigurable: 0.15,
+      operadorTieneCapacidadLibre: false,
+    });
+    setLastAdded(confirmaReceta.producto.hovId);
+    setTimeout(() => setLastAdded(null), 600);
+    setQuery("");
+    setSearchQuery("");
+    setConfirmaReceta(null);
+    inputRef.current?.focus();
+  }, [confirmaReceta, posContext]);
+
+  const handleCancelarReceta = useCallback(() => {
+    setConfirmaReceta(null);
+    inputRef.current?.focus();
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     // Helper: target line for operations — active (navigated) or fallback to last
@@ -484,6 +519,7 @@ export function SalesWorkspace() {
       )}
 
       {/* RESULTS */}
+      <div className="relative w-full min-h-0 flex-1">
       <div className="min-h-0 flex-1 overflow-y-auto pt-3">
 
         {/* ── DENSE MODE ── */}
@@ -653,6 +689,15 @@ export function SalesWorkspace() {
           </>
         )}
 
+      </div>
+      {confirmaReceta !== null && (
+        <ConfirmacionRecetaPanel
+          nombreProducto={confirmaReceta.producto.description}
+          condicion={confirmaReceta.condicion}
+          onConfirmar={handleConfirmarReceta}
+          onCancelar={handleCancelarReceta}
+        />
+      )}
       </div>
       </section>
       {grupoActivo && (

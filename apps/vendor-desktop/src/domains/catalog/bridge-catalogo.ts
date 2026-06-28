@@ -5,6 +5,7 @@ import { resolverValor } from './valor-operacional.resolver'
 import type { TipoValorOperacional } from './valor-operacional.types'
 import { loadMovimientos } from '../inventory/persistence'
 import { deriveDisponibilidad, useInventoryStore } from '../inventory/store'
+import { useFarmaciaStore } from '../../domains/farmacia/farmacia.store'
 
 export interface ProductoBuscable {
   id: string
@@ -18,6 +19,7 @@ export interface ProductoBuscable {
   requiereValorManual: boolean
   tieneMultiplesFormas: boolean
   category?: string
+  condicionVenta?: 'SIN_RECETA' | 'CON_RECETA' | 'CONTROLADO'
 }
 
 function mapearDisponibilidad(
@@ -69,6 +71,7 @@ export function obtenerProductosBuscables(
       return acc
     }, new Map<string, number>())
 
+    const farmaciaState = useFarmaciaStore.getState()
     return catalogo.items.map(item => ({
       id: item.hovId,
       description: item.nombre,
@@ -81,6 +84,7 @@ export function obtenerProductosBuscables(
       requiereValorManual: item.valorAplicado === null,
       tieneMultiplesFormas: (conteoPorProductoId.get(getHOVById(item.hovId)?.productoId ?? item.hovId) ?? 0) > 1,
       category: item.category,
+      condicionVenta: farmaciaState.productosComerciales.find(producto => producto.id === getHOVById(item.hovId)?.productoId)?.condicionVenta,
     }))
   } catch {
     return []
