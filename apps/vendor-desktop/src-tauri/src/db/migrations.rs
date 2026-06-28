@@ -1,5 +1,4 @@
 use super::schema;
-mod seed_principios;
 
 pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     sqlx::raw_sql(schema::SCHEMA_CORE)
@@ -711,7 +710,7 @@ async fn migrar_v10_campos_catalogo_ifa(db: &sqlx::SqlitePool) -> Result<(), Str
     let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
         .fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
 
-    for item in seed_principios::SEED_PRINCIPIOS_ACTIVOS {
+    for item in super::seed_principios::SEED_PRINCIPIOS_ACTIVOS {
         let id = uuid::Uuid::new_v4().to_string();
         sqlx::query(
             "INSERT OR IGNORE INTO principio_activo
