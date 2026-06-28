@@ -441,9 +441,13 @@ export interface PrincipioActivo {
   id: string
   nombreDci: string
   descripcion?: string
+  descripcionUso: string
+  grupoTerapeutico: string
+  condicionVentaIfa: CondicionVentaIfa
   activo: boolean
   esEsencialMinsa: boolean
   esPsicotropico: boolean
+  esCombinacion: boolean
 }
 
 export interface AsignacionPrincipiosInput {
@@ -451,4 +455,39 @@ export interface AsignacionPrincipiosInput {
   principioActivoIds: string[]
   operadorId: string
   motivo?: string
+}
+
+export type CondicionVentaIfa = 'OTC' | 'OTC_RM' | 'RM' | 'RM_ESPECIAL'
+
+export interface ProductoVinculadoResumen {
+  id: string
+  nombreComercial: string
+  codigoInterno?: string
+}
+
+export interface PrincipioActivoDetalle extends PrincipioActivo {
+  productosVinculados: ProductoVinculadoResumen[]
+}
+
+export interface CrearPrincipioActivoInput {
+  nombreDci: string
+  descripcionUso: string
+  grupoTerapeutico: string
+  condicionVenta: CondicionVentaIfa
+  esCombinacion: boolean
+  esPsicotropico: boolean
+  esEsencialMinsa: boolean
+}
+
+export interface ModificarPrincipioActivoInput {
+  id: string
+  nombreDci: string
+  descripcionUso: string
+  grupoTerapeutico: string
+  condicionVenta: CondicionVentaIfa
+  esCombinacion: boolean
+  esPsicotropico: boolean
+  esEsencialMinsa: boolean
+  motivo: string
+  operadorId: string
 }
