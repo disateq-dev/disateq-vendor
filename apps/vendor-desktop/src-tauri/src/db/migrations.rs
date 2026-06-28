@@ -27,6 +27,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v5_estado_registro_sanitario(db).await?;
     migrar_v6_codigo_interno(db).await?;
     migrar_v7_correccion_catalogo(db).await?;
+    migrar_v8_principios_activos(db).await?;
 
     Ok(())
 }
@@ -423,6 +424,153 @@ async fn migrar_v7_correccion_catalogo(db: &sqlx::SqlitePool) -> Result<(), Stri
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (7)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v8_principios_activos(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_producto_generico = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'producto_generico'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_producto_generico == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 8 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS principio_activo (
+  id TEXT PRIMARY KEY,
+  nombre_dci TEXT NOT NULL UNIQUE,
+  descripcion TEXT,
+  activo INTEGER NOT NULL DEFAULT 1,
+  creado_en TEXT NOT NULL
+)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS producto_principio_activo (
+  producto_generico_id TEXT NOT NULL REFERENCES producto_generico(id),
+  principio_activo_id TEXT NOT NULL REFERENCES principio_activo(id),
+  orden INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (producto_generico_id, principio_activo_id)
+)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_ppa_generico ON producto_principio_activo(producto_generico_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_ppa_principio ON producto_principio_activo(principio_activo_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_principio_dci ON principio_activo(nombre_dci)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let productos = sqlx::query_as::<_, (String, Option<String>)>("SELECT id, ifa FROM producto_generico")
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    for (producto_generico_id, ifa) in productos {
+        let Some(ifa_valor) = ifa else {
+            continue;
+        };
+        if ifa_valor.trim().is_empty() {
+            continue;
+        }
+
+        for (index, segmento) in ifa_valor.split(" + ").enumerate() {
+            let nombre_dci = segmento.trim().to_uppercase();
+            if nombre_dci.is_empty() {
+                continue;
+            }
+
+            let principio_activo_id = sqlx::query_scalar::<_, Option<String>>(
+                "SELECT id FROM principio_activo WHERE nombre_dci = ?",
+            )
+            .bind(&nombre_dci)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?
+            .flatten();
+
+            let principio_activo_id = if let Some(id) = principio_activo_id {
+                id
+            } else {
+                let id = uuid::Uuid::new_v4().to_string();
+                sqlx::query(
+                    "INSERT INTO principio_activo (id, nombre_dci, descripcion, activo, creado_en) VALUES (?, ?, ?, ?, ?)",
+                )
+                .bind(&id)
+                .bind(&nombre_dci)
+                .bind(Option::<String>::None)
+                .bind(1_i64)
+                .bind(&creado_en)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+                id
+            };
+
+            let existe_asociacion = sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM producto_principio_activo WHERE producto_generico_id = ? AND principio_activo_id = ?",
+            )
+            .bind(&producto_generico_id)
+            .bind(&principio_activo_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+            if existe_asociacion == 0 {
+                sqlx::query(
+                    "INSERT INTO producto_principio_activo (producto_generico_id, principio_activo_id, orden) VALUES (?, ?, ?)",
+                )
+                .bind(&producto_generico_id)
+                .bind(&principio_activo_id)
+                .bind((index + 1) as i64)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (8)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

@@ -386,3 +386,178 @@ pub async fn verificar_historial_producto(
 
     Ok(count > 0)
 }
+
+#[tauri::command]
+pub async fn listar_principios_activos(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+) -> Result<Vec<Value>, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, activo FROM principio_activo WHERE activo = 1 ORDER BY nombre_dci")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    rows.into_iter()
+        .map(|row| {
+            let activo = row.try_get::<i64, _>("activo").map_err(|e| e.to_string())? == 1;
+            Ok(json!({
+                "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
+                "nombreDci": row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
+                "descripcion": row.try_get::<Option<String>, _>("descripcion").unwrap_or(None),
+                "activo": activo,
+            }))
+        })
+        .collect()
+}
+
+#[tauri::command]
+pub async fn buscar_principios_activos(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    query: String,
+) -> Result<Vec<Value>, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let patron = format!("%{}%", query.to_uppercase());
+    let rows = sqlx::query("SELECT id, nombre_dci, descripcion FROM principio_activo WHERE activo = 1 AND nombre_dci LIKE ? ORDER BY nombre_dci LIMIT 10")
+        .bind(patron)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    rows.into_iter()
+        .map(|row| {
+            Ok(json!({
+                "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
+                "nombreDci": row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
+                "descripcion": row.try_get::<Option<String>, _>("descripcion").unwrap_or(None),
+            }))
+        })
+        .collect()
+}
+
+#[tauri::command]
+pub async fn obtener_principios_de_producto(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    producto_generico_id: String,
+) -> Result<Vec<Value>, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let rows = sqlx::query(
+        "SELECT pa.id, pa.nombre_dci, pa.descripcion, ppa.orden FROM principio_activo pa JOIN producto_principio_activo ppa ON ppa.principio_activo_id = pa.id WHERE ppa.producto_generico_id = ? ORDER BY ppa.orden",
+    )
+    .bind(producto_generico_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    rows.into_iter()
+        .map(|row| {
+            Ok(json!({
+                "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
+                "nombreDci": row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
+                "descripcion": row.try_get::<Option<String>, _>("descripcion").unwrap_or(None),
+                "orden": row.try_get::<i64, _>("orden").map_err(|e| e.to_string())?,
+            }))
+        })
+        .collect()
+}
+
+#[tauri::command]
+pub async fn asignar_principios_a_producto(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    producto_generico_id: String,
+    principio_activo_ids: Vec<String>,
+    operador_id: String,
+    motivo: Option<String>,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let nombres_anteriores = sqlx::query_scalar::<_, String>(
+        "SELECT pa.nombre_dci FROM principio_activo pa JOIN producto_principio_activo ppa ON ppa.principio_activo_id = pa.id WHERE ppa.producto_generico_id = ? ORDER BY ppa.orden",
+    )
+    .bind(&producto_generico_id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    let ifa_anterior = nombres_anteriores.join(" + ");
+
+    sqlx::query("DELETE FROM producto_principio_activo WHERE producto_generico_id = ?")
+        .bind(&producto_generico_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    for (index, principio_activo_id) in principio_activo_ids.iter().enumerate() {
+        sqlx::query("INSERT INTO producto_principio_activo (producto_generico_id, principio_activo_id, orden) VALUES (?, ?, ?)")
+            .bind(&producto_generico_id)
+            .bind(principio_activo_id)
+            .bind((index + 1) as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let ifa_nuevo = if principio_activo_ids.is_empty() {
+        String::new()
+    } else {
+        let placeholders = vec!["?"; principio_activo_ids.len()].join(", ");
+        let sql = format!("SELECT id, nombre_dci FROM principio_activo WHERE id IN ({})", placeholders);
+        let mut query = sqlx::query(&sql);
+        for principio_activo_id in &principio_activo_ids {
+            query = query.bind(principio_activo_id);
+        }
+        let rows = query.fetch_all(&mut *tx).await.map_err(|e| e.to_string())?;
+        let mut nombres_por_id = std::collections::HashMap::new();
+        for row in rows {
+            nombres_por_id.insert(
+                row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
+                row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
+            );
+        }
+
+        principio_activo_ids
+            .iter()
+            .filter_map(|principio_activo_id| nombres_por_id.get(principio_activo_id).cloned())
+            .collect::<Vec<String>>()
+            .join(" + ")
+    };
+
+    sqlx::query("UPDATE producto_generico SET ifa = ? WHERE id = ?")
+        .bind(&ifa_nuevo)
+        .bind(&producto_generico_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(motivo_valor) = motivo.filter(|value| !value.trim().is_empty()) {
+        let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind("producto_generico")
+            .bind(&producto_generico_id)
+            .bind("composicion_ifa")
+            .bind(&ifa_anterior)
+            .bind(&ifa_nuevo)
+            .bind(motivo_valor)
+            .bind(&operador_id)
+            .bind(creado_en)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+
+    Ok(())
+}

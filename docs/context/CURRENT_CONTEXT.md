@@ -2,16 +2,18 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `9c16d5b` — feat(catalogo): CORREGIR — condiciones operacionales editables con auditoria, motivo obligatorio, deteccion de cambio
+* **Último commit:** `a8becec` — refactor(catalogo): GUARDAR CORRECCION unificado — datos basicos + condiciones operacionales en un solo handler, Ctrl+Enter como atajo
 
 ## Commits de la jornada 27 Jun
 | Hash | Descripción |
 |---|---|
-| `9c16d5b` | feat(catalogo): CORREGIR — condiciones operacionales editables con auditoria, motivo obligatorio, deteccion de cambio |
+| `a8becec` | refactor(catalogo): GUARDAR CORRECCION unificado — datos basicos + condiciones operacionales en un solo handler, Ctrl+Enter como atajo |
+| `1806517` | fix(catalogo): CORREGIR footer VOLVER->detalle+keytips, DESACTIVAR header+footer fijo+keytips, eliminar CANCELAR |
+| `8580070` | fix(catalogo): readonly bg-[#fffef7] text-slate-400, mayusculas en IFA/Concentracion/Forma, footer fijo VOLVER+GUARDAR, eliminar CANCELAR |
+| `bc87c1e` | feat(catalogo): codigoInterno en ProductoComercial — migration v6, backend Rust, frontend CORREGIR con semántica visual editable/readonly |
 | `83bc40e` | feat(catalogo): correccion_catalogo — tabla auditoria v7, comando Rust corregir_datos_operacionales, tipos y service TS |
 | `968f5fe` | fix(catalogo): CORREGIR — reducir espaciado interlineal a gap-2 |
 | `1a9a053` | fix(catalogo): CORREGIR — ancho proporcional CODIGO INTERNO 130px, CODIGO DIGEMID 190px, NOMBRE COMERCIAL flex-1 |
-| `bc87c1e` | feat(catalogo): codigoInterno en ProductoComercial — migration v6, backend Rust, frontend CORREGIR con semántica visual editable/readonly |
 | `6b0f162` | refactor(catalogo): reorganizar formulario CORREGIR — orden por relevancia operacional, campos en grid, aviso historial en header |
 | `2d39fec` | fix(catalogo): Enter en CORREGIR/DESACTIVAR — bloquear intercepcion en BuscadorProducto y CatalogoFarmaciaWorkspace cuando hay producto confirmado |
 
@@ -36,7 +38,8 @@
 * **ABASTECIMIENTO — CATÁLOGO:** 🔶 Evaluación visual en curso
   - RESUMEN DEL PRODUCTO ✅
   - DETALLE DEL PRODUCTO ✅ navegación teclado completa
-  - CORREGIR DATOS BÁSICOS ✅ reorganizado, codigoInterno, condiciones operacionales editables con auditoría — pendiente evaluación visual completa
+  - CORREGIR DATOS BÁSICOS ✅ reorganizado, codigoInterno, condiciones operacionales, guardado unificado — pendiente prueba UI final
+  - DESACTIVAR PRODUCTO ✅ header, footer fijo, keytips — pendiente prueba UI final
   - ASIGNACIÓN PRESENTACIONES ⬜
   - ASIGNACIÓN DE PRECIOS ⬜
   - NuevoProductoStepper ⬜
@@ -50,6 +53,40 @@
 
 ---
 
+## ⚠ PRÓXIMA SESIÓN — PARÉNTESIS PRIORITARIO: BRECHAS DIGEMID
+
+Antes de continuar con la evaluación visual del catálogo, la próxima sesión debe abordar las brechas identificadas contra el Estándar DIGEMID Perú. Por su importancia regulatoria y operacional, se tratan como deuda arquitectónica crítica.
+
+### Brechas identificadas — prioridad alta
+
+**BRECHA 1 — DCI combinados (requerimiento legal)**
+El campo `ifa` actual es texto libre y no soporta múltiples principios activos (ej. "Paracetamol + Clorfenamina"). Solución: **Tabla Maestra de Principios Activos** con soporte para combinaciones mediante separador `+`. Campo `ifa` en `ProductoComercial` pasa a ser FK o referencia a esta tabla. Impacta: creación de producto, búsqueda en catálogo y ventas.
+
+**BRECHA 2 — Búsqueda genérica obligatoria en ventas (requerimiento legal)**
+El buscador actual no permite buscar por DCI y mostrar todos los productos (genéricos y marcas) que comparten el mismo principio activo. Según normativa peruana, el establecimiento debe informar alternativas económicas al paciente. Impacta: módulo VENTAS — buscador de productos.
+
+**BRECHA 3 — FEFO en despacho de lotes (requerimiento operacional alto)**
+Al despachar un producto con lote, el sistema debe sugerir automáticamente el lote más próximo a vencer (First Expired, First Out). Sin esto, el inventario puede acumular productos vencidos sin control. Impacta: VENTAS e INGRESOS/INVENTARIOS.
+
+**BRECHA 4 — Alerta de vencimiento próximo < 6 meses (requerimiento operacional medio)**
+Al seleccionar un producto en venta, si el lote activo vence en menos de 6 meses, debe aparecer advertencia visual en pantalla del vendedor. Impacta: módulo VENTAS.
+
+**BRECHA 5 — Bloqueo/confirmación por Receta Médica en ventas (requerimiento legal)**
+`condicionVenta` ya existe en el modelo. Falta el flujo de validación en el punto de venta: alerta visual o confirmación obligatoria antes de emitir comprobante para productos CON_RECETA o CONTROLADO. Impacta: módulo VENTAS — flujo de cobro.
+
+### Brechas identificadas — prioridad media
+
+**BRECHA 6 — Descripción Corta de Venta autoconcatenada**
+Fórmula DIGEMID: `[Nombre Comercial] + [Concentración] + [Forma Farmacéutica] + [Presentación]`. Ejemplo: `PARACETAMOL 500mg Tab (Caja x 100)`. Debe formalizarse como campo calculado para la pantalla de ventas. Actualmente la concatenación existe en el topbar del catálogo pero no como estándar de ventas.
+
+**BRECHA 7 — Stock mínimo genéricos esenciales — Ley N° 32033 (30%)**
+Las boticas deben mantener al menos 30% de stock en medicamentos genéricos esenciales. El sistema debe emitir alerta cuando el stock caiga por debajo de la cuota legal. Impacta: módulo INVENTARIOS.
+
+### Brechas ya cubiertas ✅
+Código de barras en PresentacionComercial · Registro Sanitario · Condición de Venta · Lote y Vencimiento · Fraccionamiento DIGEMID · Presentación Comercial · Fabricante
+
+---
+
 ## CATÁLOGO FARMACIA — Estado consolidado al 27 Jun
 
 ### CORREGIR DATOS BÁSICOS — Orden de campos irrevocable
@@ -58,36 +95,29 @@
 |---|---|---|
 | Header | Nombre · Fabricante · Fechas · Badge · Aviso historial | No |
 | 1 | CODIGO INTERNO (w-130px) · CODIGO DIGEMID (w-190px) · NOMBRE COMERCIAL (flex-1) | Sí / ADMIN / Sí |
-| 2 | IFA / PRINCIPIO ACTIVO · FABRICANTE / LABORATORIO | No / Sí |
-| 3 | CONCENTRACION / DOSIS · FORMA FARMACEUTICA | No |
-| 4 | CONDICION DE VENTA · REFRIGERAR · CON VENCIMIENTO | Sí — con motivo obligatorio y auditoría |
+| 2 | IFA / PRINCIPIO ACTIVO · FABRICANTE / LABORATORIO | No (mayúsculas) / Sí |
+| 3 | CONCENTRACION / DOSIS · FORMA FARMACEUTICA | No (mayúsculas) |
+| 4 | CONDICION DE VENTA · REFRIGERAR · CON VENCIMIENTO | Sí — con MOTIVO obligatorio si hay cambio |
 | 5 | REGISTRO SANITARIO · ESTADO DEL REGISTRO | ADMIN |
 
-### CONDICIONES OPERACIONALES — Doctrina de corrección con auditoría
-- Tres selects editables siempre visibles
-- Campo MOTIVO DE CORRECCION aparece solo cuando hay cambio detectado (comparando formularioOperacional vs producto)
-- Botón GUARDAR CORRECCION OPERACIONAL deshabilitado hasta que motivo tenga texto
-- Cada campo modificado genera una fila en `correccion_catalogo` con valor_anterior, valor_nuevo, motivo, operador_id
-- Todo en una sola transacción Rust
-- Handler: `onGuardarCorreccionOperacional` — independiente de `onGuardarCorreccion`
+### Doctrina GUARDAR CORRECCIÓN — IRREVOCABLE
+- **Un solo botón GUARDAR CORRECCIÓN** — unifica datos básicos y condiciones operacionales
+- **Flujo:** siempre guarda datos básicos → si hay cambio operacional y motivo vacío muestra error inline y no cierra → si hay cambio con motivo ejecuta corregirDatosOperacionales → cierra formulario
+- **Atajo:** `Ctrl+Enter` — no colisiona con inputs de texto
+- **MOTIVO DE CORRECCION** aparece inline solo cuando hay cambio operacional detectado
+- **Auditoría:** cada campo operacional modificado genera fila en `correccion_catalogo`
 
-### CODIGO INTERNO — Doctrina canónica
-- Campo operacional del establecimiento — no regulatorio
-- Máximo 12 caracteres, alfanumérico, normalizado a mayúsculas en onChange
-- Editable por cualquier operador con acceso a CORREGIR
-- Buscable en catálogo (pendiente conectar en BuscadorProducto)
+### DESACTIVAR PRODUCTO — Estado irrevocable
+- Header con nombre + fabricante + fechas + badge
+- Footer fijo: VOLVER (Esc → onIrADetalle) · CONFIRMAR BAJA (Ctrl+Supr → sólido rojo)
+- Sin CANCELAR
 
-### CODIGO DIGEMID — Doctrina canónica
-- Campo regulatorio DIGEMID — solo ADMIN
-- Máximo 20 caracteres
-- Readonly con fondo `bg-[#fefce8]` para no-ADMIN
-
-### Semántica visual de campos en CORREGIR — IRREVOCABLE
+### Semántica visual de campos CORREGIR — IRREVOCABLE
 | Estado | Fondo | Texto |
 |---|---|---|
 | Editable | `bg-white` | `text-slate-800` |
-| Solo lectura crítico | `bg-[#fefce8]` | `text-slate-500` |
-| Solo lectura ADMIN bloqueado | `bg-[#fefce8]` | `text-slate-500` |
+| Solo lectura crítico | `bg-[#fffef7]` | `text-slate-400` |
+| Solo lectura ADMIN bloqueado | `bg-[#fffef7]` | `text-slate-400` |
 
 ### Schema migrations
 | Version | Cambio |
@@ -96,29 +126,31 @@
 | v3 | valor_operacional.tipo VENTA_NORMAL, vista reporte_digemid_privado |
 | v4 | presentacion_comercial.stock_minimo |
 | v5 | producto_comercial.estado_registro_sanitario DEFAULT VIGENTE |
-| v6 | producto_comercial.codigo_interno TEXT |
+| v6 | producto_comercial.codigo_interno TEXT (max 12, mayúsculas) |
 | v7 | tabla correccion_catalogo + índices |
 
 ### Tabla correccion_catalogo — estructura canónica
 ```
 id TEXT PRIMARY KEY
-tabla TEXT NOT NULL              -- 'producto_comercial'
-entidad_id TEXT NOT NULL         -- id del producto
-campo TEXT NOT NULL              -- 'condicion_venta' | 'requiere_lote' | 'requiere_cadena_frio'
+tabla TEXT NOT NULL
+entidad_id TEXT NOT NULL
+campo TEXT NOT NULL
 valor_anterior TEXT NOT NULL
 valor_nuevo TEXT NOT NULL
 motivo TEXT NOT NULL
 operador_id TEXT NOT NULL
 creado_en TEXT NOT NULL
 ```
-Índices: `idx_correccion_entidad (tabla, entidad_id)` · `idx_correccion_operador (operador_id)`
 
 ---
 
-## DISEÑO PENDIENTE — LÍNEAS DE LABORATORIO
-Concepto: un laboratorio organiza su portafolio en líneas comerciales o terapéuticas.
-Implementación diferida — puede ser tabla maestra o texto libre.
-Campo futuro: `lineaLaboratorio` en `ProductoComercial`.
+## DISEÑOS PENDIENTES
+
+### Tabla Maestra de Principios Activos (IFA)
+Catálogo normalizado de IFA con combinaciones posibles (soporte para `+`) y descripción operacional breve. Requerimiento legal DIGEMID. Campo `ifa` en `ProductoComercial` pasaría a ser FK. Impacta creación de producto, búsqueda en catálogo y ventas. **Abordar en próxima sesión como paréntesis prioritario.**
+
+### Líneas de Laboratorio
+Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Implementación diferida — puede ser tabla maestra o texto libre. Campo futuro: `lineaLaboratorio` en `ProductoComercial`.
 
 ---
 
@@ -157,7 +189,6 @@ Campo futuro: `lineaLaboratorio` en `ProductoComercial`.
 - **Fernando** = Product Owner — decide, ejecuta, commitea
 - **Claude** = Arquitecto Senior — diseña, especifica, genera prompts — **NUNCA escribe código directamente**
 - **Codex** = Desarrollador atómico — ejecuta prompts de Claude
-- Claude no debe intentar editar archivos del proyecto bajo ninguna circunstancia
 
 ---
 
@@ -179,7 +210,14 @@ Campo futuro: `lineaLaboratorio` en `ProductoComercial`.
 | farmacia.service.ts | actualizarProveedor → modificarProveedor | Baja |
 | ContextBar.tsx | Archivo huérfano | Baja |
 | DetalleProveedor.tsx | Botones sin auditar directamente | Baja |
+| ProductoComercial | ifa como FK a tabla principios_activos — diseño diferido | Pendiente |
 | ProductoComercial | lineaLaboratorio — diseño y migración diferidos | Pendiente |
+| VENTAS | Búsqueda genérica por DCI — requerimiento legal DIGEMID | Alta |
+| VENTAS | Bloqueo/confirmación por Receta Médica en cobro | Alta |
+| VENTAS | Alerta vencimiento < 6 meses al despachar | Media |
+| VENTAS/INVENTARIOS | FEFO — despacho por lote más próximo a vencer | Alta |
+| INVENTARIOS | Alerta stock mínimo genéricos esenciales — Ley 32033 | Media |
+| VENTAS | Descripción Corta de Venta autoconcatenada (fórmula DIGEMID) | Media |
 
 ---
 
@@ -194,24 +232,35 @@ Campo futuro: `lineaLaboratorio` en `ProductoComercial`.
 - **Prompts Codex:** lenguaje natural puro, sin bloques de código
 - **Footer fijo:** cadena flex completa — `shrink-0` obligatorio
 - **Intercepción de teclado:** BuscadorProducto y CatalogoFarmaciaWorkspace deben inhibir con producto confirmado
-- **Backend modificarProductoComercial:** no soporta condicionVenta/requiereLote/requiereCadenaFrio — usar corregirDatosOperacionales
+- **GUARDAR CORRECCIÓN:** unificado — datos básicos siempre, condiciones operacionales si hay cambio con motivo
+- **Enter en formularios:** nunca usar Enter simple como atajo de guardado — usar Ctrl+Enter
 - **correccion_catalogo:** una fila por campo modificado — no JSON agregado
+- **VOLVER en modos corrigiendo/desactivando:** siempre va a onIrADetalle, no onIrAResumen
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Evaluación visual** — CORREGIR DATOS BÁSICOS completa en UI
-2. **Evaluación visual** — ASIGNACIÓN PRESENTACIONES
-3. **Evaluación visual** — ASIGNACIÓN DE PRECIOS
-4. **Evaluación visual** — NuevoProductoStepper
-5. **Evaluación visual** — PROVEEDORES flujo completo
-6. **INGRESOS** — prueba end-to-end
-7. **BuscadorProducto** — agregar codigoInterno a la búsqueda SQL
-8. **Conectar `disateq:navegar`** — listener en OperationalBar
-9. **OperationalBar** — corregir color `#3D8A8A` → `#0284C7`
-10. **BoxSlotType → TipoCaja**
-11. **Operador.codigo** — verificar y eliminar si huérfano
+**PARÉNTESIS PRIORITARIO — Brechas DIGEMID:**
+1. Diseño Tabla Maestra de Principios Activos (IFA + combinaciones)
+2. Diseño búsqueda genérica por DCI
+3. Diseño FEFO en despacho de lotes
+4. Diseño bloqueo por Receta Médica en ventas
+5. Diseño alerta vencimiento < 6 meses
+
+**Continuación evaluación visual catálogo (post-paréntesis):**
+6. Prueba UI — CORREGIR DATOS BÁSICOS completa
+7. Prueba UI — DESACTIVAR PRODUCTO
+8. Evaluación visual — ASIGNACIÓN PRESENTACIONES
+9. Evaluación visual — ASIGNACIÓN DE PRECIOS
+10. Evaluación visual — NuevoProductoStepper
+11. Evaluación visual — PROVEEDORES flujo completo
+12. INGRESOS — prueba end-to-end
+13. BuscadorProducto — agregar codigoInterno a búsqueda SQL
+14. Conectar `disateq:navegar` — listener en OperationalBar
+15. OperationalBar — corregir color `#3D8A8A` → `#0284C7`
+16. BoxSlotType → TipoCaja
+17. Operador.codigo — verificar y eliminar si huérfano
 
 ---
 
