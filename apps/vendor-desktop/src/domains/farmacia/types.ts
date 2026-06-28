@@ -84,6 +84,7 @@ export interface ProductoGenerico {
   categoriaFarmacia: CategoriaFarmacia
   permiteFraccion: boolean
   creadoEn: string
+  principiosActivos?: PrincipioActivo[]
 }
 
 export type EstadoRegistroSanitario = 'VIGENTE' | 'SUSPENDIDO' | 'CANCELADO' | 'VENCIDO'
@@ -434,4 +435,20 @@ export interface ResumenInventarioFarmacia {
   lotesVigentes: number
   proximoVencimiento?: string
   stockMinimo: number
+}
+
+export interface PrincipioActivo {
+  id: string
+  nombreDci: string
+  descripcion?: string
+  activo: boolean
+  esEsencialMinsa: boolean
+  esPsicotropico: boolean
+}
+
+export interface AsignacionPrincipiosInput {
+  productoGenericoId: string
+  principioActivoIds: string[]
+  operadorId: string
+  motivo?: string
 }

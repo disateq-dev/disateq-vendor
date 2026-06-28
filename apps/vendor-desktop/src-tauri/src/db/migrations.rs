@@ -28,6 +28,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v6_codigo_interno(db).await?;
     migrar_v7_correccion_catalogo(db).await?;
     migrar_v8_principios_activos(db).await?;
+    migrar_v9_campos_regulatorios_ifa(db).await?;
 
     Ok(())
 }
@@ -571,6 +572,69 @@ async fn migrar_v8_principios_activos(db: &sqlx::SqlitePool) -> Result<(), Strin
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (8)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v9_campos_regulatorios_ifa(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_principio_activo = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'principio_activo'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_principio_activo == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 9 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let existe_es_esencial_minsa = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('principio_activo') WHERE name = 'es_esencial_minsa'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_es_esencial_minsa == 0 {
+        sqlx::query("ALTER TABLE principio_activo ADD COLUMN es_esencial_minsa INTEGER NOT NULL DEFAULT 0")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let existe_es_psicotropico = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('principio_activo') WHERE name = 'es_psicotropico'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_es_psicotropico == 0 {
+        sqlx::query("ALTER TABLE principio_activo ADD COLUMN es_psicotropico INTEGER NOT NULL DEFAULT 0")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (9)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

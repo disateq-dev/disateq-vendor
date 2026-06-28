@@ -394,7 +394,7 @@ pub async fn listar_principios_activos(
     let instances = db_instances.0.read().await;
     let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, activo FROM principio_activo WHERE activo = 1 ORDER BY nombre_dci")
+    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, activo, es_esencial_minsa, es_psicotropico FROM principio_activo WHERE activo = 1 ORDER BY nombre_dci")
         .fetch_all(pool)
         .await
         .map_err(|e| e.to_string())?;
@@ -402,11 +402,15 @@ pub async fn listar_principios_activos(
     rows.into_iter()
         .map(|row| {
             let activo = row.try_get::<i64, _>("activo").map_err(|e| e.to_string())? == 1;
+            let es_esencial_minsa = row.try_get::<i64, _>("es_esencial_minsa").map_err(|e| e.to_string())? == 1;
+            let es_psicotropico = row.try_get::<i64, _>("es_psicotropico").map_err(|e| e.to_string())? == 1;
             Ok(json!({
                 "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
                 "nombreDci": row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
                 "descripcion": row.try_get::<Option<String>, _>("descripcion").unwrap_or(None),
                 "activo": activo,
+                "esEsencialMinsa": es_esencial_minsa,
+                "esPsicotropico": es_psicotropico,
             }))
         })
         .collect()
@@ -421,7 +425,7 @@ pub async fn buscar_principios_activos(
     let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let patron = format!("%{}%", query.to_uppercase());
-    let rows = sqlx::query("SELECT id, nombre_dci, descripcion FROM principio_activo WHERE activo = 1 AND nombre_dci LIKE ? ORDER BY nombre_dci LIMIT 10")
+    let rows = sqlx::query("SELECT id, nombre_dci, descripcion, es_esencial_minsa, es_psicotropico FROM principio_activo WHERE activo = 1 AND nombre_dci LIKE ? ORDER BY nombre_dci LIMIT 10")
         .bind(patron)
         .fetch_all(pool)
         .await
@@ -429,10 +433,14 @@ pub async fn buscar_principios_activos(
 
     rows.into_iter()
         .map(|row| {
+            let es_esencial_minsa = row.try_get::<i64, _>("es_esencial_minsa").map_err(|e| e.to_string())? == 1;
+            let es_psicotropico = row.try_get::<i64, _>("es_psicotropico").map_err(|e| e.to_string())? == 1;
             Ok(json!({
                 "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
                 "nombreDci": row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
                 "descripcion": row.try_get::<Option<String>, _>("descripcion").unwrap_or(None),
+                "esEsencialMinsa": es_esencial_minsa,
+                "esPsicotropico": es_psicotropico,
             }))
         })
         .collect()

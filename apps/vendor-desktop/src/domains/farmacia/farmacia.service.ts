@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
+  AsignacionPrincipiosInput,
   AsignacionLote,
   CorregirDatosOperacionalesInput,
   CrearValorOperacionalInput,
@@ -17,6 +18,7 @@ import type {
   Lote,
   NodoFraccionamiento,
   PresentacionComercial,
+  PrincipioActivo,
   ProductoComercial,
   ProductoGenerico,
   Proveedor,
@@ -649,4 +651,23 @@ export async function corregirDatosOperacionales(input: CorregirDatosOperacional
 
 export async function verificarHistorialProducto(productoComercialId: string): Promise<boolean> {
   return invoke<boolean>('verificar_historial_producto', { productoComercialId })
+}
+
+export async function listarPrincipiosActivos(): Promise<PrincipioActivo[]> {
+  const respuesta = await invoke('listar_principios_activos')
+  return respuesta as PrincipioActivo[]
+}
+
+export async function buscarPrincipiosActivos(query: string): Promise<PrincipioActivo[]> {
+  const respuesta = await invoke('buscar_principios_activos', { query })
+  return respuesta as PrincipioActivo[]
+}
+
+export async function asignarPrincipiosAProducto(input: AsignacionPrincipiosInput): Promise<void> {
+  await invoke('asignar_principios_a_producto', {
+    productoGenericoId: input.productoGenericoId,
+    principioActivoIds: input.principioActivoIds,
+    operadorId: input.operadorId,
+    motivo: input.motivo,
+  })
 }
