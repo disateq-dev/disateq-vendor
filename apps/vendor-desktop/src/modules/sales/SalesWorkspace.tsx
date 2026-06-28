@@ -13,6 +13,7 @@ import {
 } from "../../domains/catalog/bridge-catalogo";
 import type { TipoValorOperacional } from "../../domains/catalog/valor-operacional.types";
 import { useFarmaciaStore } from "../../domains/farmacia/farmacia.store";
+import { calcularAlertasStockEsencial } from "../../domains/farmacia/stock-esencial.utils";
 import { loadBusinessConfig } from "../../config/business";
 import { RUBROS } from "../../data/catalogs";
 import { PresentacionSheet } from "./PresentacionSheet";
@@ -141,6 +142,15 @@ export function SalesWorkspace() {
     return RUBROS[bc.rubro];
   }, []);
 
+  const alertasStockEsencial = useMemo(() => {
+    const farmaciaState = useFarmaciaStore.getState();
+    return calcularAlertasStockEsencial(
+      farmaciaState.resumenInventario,
+      farmaciaState.productosComerciales,
+      farmaciaState.principiosActivos
+    );
+  }, []);
+
   const view = visualMode === "lista" ? "dense" : "visual";
 
   const [visualCategory, setVisualCategory] = useState<string>("all");
@@ -254,6 +264,7 @@ export function SalesWorkspace() {
 
   useEffect(() => {
     void useFarmaciaStore.getState().cargarResumenInventario();
+    void useFarmaciaStore.getState().cargarPrincipiosActivos();
   }, []);
 
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
@@ -555,6 +566,22 @@ export function SalesWorkspace() {
         <div className="shrink-0 flex items-center gap-2 border-b border-[#edf2f8] bg-[#f8fafd] px-5 py-1.5">
           <span className="text-[10px] font-semibold text-[#9ca3af]">=</span>
           <span className="font-mono text-[14px] font-bold tabular-nums text-[#2154d8]">S/ {calcResult.toFixed(2)}</span>
+        </div>
+      )}
+
+      {alertasStockEsencial.length > 0 && (
+        <div className="shrink-0 px-3 pt-2">
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+            <span className="shrink-0 text-[13px] text-amber-500">⚠️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">ALERTA LEY 32033</p>
+              <p className="text-[11px] leading-snug text-amber-700">
+                {alertasStockEsencial.length === 1
+                  ? `Stock minimo insuficiente: ${alertasStockEsencial[0].nombreComercial}`
+                  : `${alertasStockEsencial.length} genericos esenciales bajo stock minimo`}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
