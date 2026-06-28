@@ -87,20 +87,20 @@ function searchCatalog(
 
   for (const p of productos) {
     const n = normalize(p.description);
-    if (n.startsWith(q) || normalize(p.id).startsWith(q)) {
+    if (n.startsWith(q) || normalize(p.id).startsWith(q) || normalize(p.dciTexto ?? '').startsWith(q)) {
       results.push(p); seen.add(p.id);
     }
   }
   for (const p of productos) {
     if (seen.has(p.id)) continue;
-    if (normalize(p.description).split(" ").some(w => w.startsWith(q))) {
+    if (normalize(p.description).split(" ").some(w => w.startsWith(q)) || normalize(p.dciTexto ?? '').split(' ').some(w => w.startsWith(q))) {
       results.push(p); seen.add(p.id);
     }
   }
   for (const p of productos) {
     if (seen.has(p.id)) continue;
     const n = normalize(p.description);
-    if (n.includes(q) || normalize(p.id).includes(q)) {
+    if (n.includes(q) || normalize(p.id).includes(q) || normalize(p.dciTexto ?? '').includes(q)) {
       results.push(p); seen.add(p.id);
     }
   }
@@ -108,7 +108,7 @@ function searchCatalog(
     for (const p of productos) {
       if (seen.has(p.id)) continue;
       const n = normalize(p.description);
-      if (tokens.every(t => n.includes(t))) {
+      if (tokens.every(t => n.includes(t)) || tokens.every(t => normalize(p.dciTexto ?? '').includes(t))) {
         results.push(p); seen.add(p.id);
       }
     }

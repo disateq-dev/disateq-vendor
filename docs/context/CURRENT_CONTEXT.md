@@ -2,11 +2,12 @@
 
 ## Branch & Commit
 * **Branch:** `main`
-* **Último commit:** `2a994cb` — feat(catalogo): SelectorPrincipiosActivos — selector IFA con autocompletado, chips y auditoria integrado en CORREGIR
+* **Último commit:** `f0960ca` — feat(ventas): Brecha DIGEMID 5 — bloqueo/confirmacion receta medica en cobro
 
 ## Commits de la jornada 28 Jun
 | Hash | Descripción |
 |---|---|
+| `f0960ca` | feat(ventas): Brecha DIGEMID 5 — bloqueo/confirmacion receta medica en cobro |
 | `2a994cb` | feat(catalogo): SelectorPrincipiosActivos — selector IFA con autocompletado, chips y auditoria integrado en CORREGIR |
 | `239caea` | feat(catalogo): servicio obtenerPrincipiosDeProducto — desbloqueo selector IFA |
 | `3e40feb` | feat(catalogo): migración v9 — campos regulatorios IFA, tipos PrincipioActivo, servicios listar/buscar/asignar |
@@ -52,7 +53,7 @@
 * **ABASTECIMIENTO — INVENTARIOS:** ✅ Doctrina de color
 * **COBRO:** ✅ CERRADO (etapa 1)
 * **PRE-VENTA:** ✅ CERRADO
-* **VENTAS:** 🔶 FormaVenta infraestructura completa — UX PresentacionSheet pendiente
+* **VENTAS:** 🔶 FormaVenta infraestructura completa — Brecha 5 cerrada — Brecha 2 siguiente
 * **COMPROBANTES / CLIENTES / REPORTES / OPERADORES / CONFIG:** ⬜
 
 ---
@@ -62,21 +63,42 @@
 | Brecha | Estado |
 |---|---|
 | 1 — Tabla Maestra IFA + combinaciones + SelectorUI | ✅ CERRADA |
-| 2 — Búsqueda genérica por DCI en ventas | ⬜ |
+| 2 — Búsqueda genérica por DCI en ventas | ⬜ SIGUIENTE |
 | 3 — FEFO en despacho de lotes | ⬜ |
 | 4 — Alerta vencimiento < 6 meses (semáforo 3 niveles) | ⬜ |
-| 5 — Bloqueo/confirmación receta médica en cobro | ⬜ |
+| 5 — Bloqueo/confirmación receta médica en cobro | ✅ CERRADA — commit f0960ca |
 | 6 — Descripción corta autoconcatenada (fórmula DIGEMID) | ⬜ |
 | 7 — Stock mínimo genéricos esenciales — Ley 32033 | ⬜ |
 | 8 — Psicotrópicos/estupefacientes — libro control DIGEMID | ⬜ Registrada nueva |
 
 ### Orden de ataque próxima sesión (Brechas 2-7)
-1. **Brecha 5** — Bloqueo receta en cobro — más rápida, infraestructura ya existe
-2. **Brecha 2** — Búsqueda genérica DCI en ventas — depende tabla principio_activo ya construida
-3. **Brecha 3** — FEFO — comando resolver_lote_fefo ya existe en Rust, falta flujo UI ventas
-4. **Brecha 4** — Semáforo vencimiento — CRITICO <60 días, ALERTA <180 días, OK el resto
-5. **Brecha 7** — Stock mínimo esenciales — campo esEsencialMinsa ya en modelo
-6. **Brecha 6** — Descripción autoconcatenada — independiente, puede ir en paralelo
+1. **Brecha 2** — Búsqueda genérica DCI en ventas — depende tabla principio_activo ya construida
+2. **Brecha 3** — FEFO — comando resolver_lote_fefo ya existe en Rust, falta flujo UI ventas
+3. **Brecha 4** — Semáforo vencimiento — CRITICO <60 días, ALERTA <180 días, OK el resto
+4. **Brecha 7** — Stock mínimo esenciales — campo esEsencialMinsa ya en modelo
+5. **Brecha 6** — Descripción autoconcatenada — independiente, puede ir en paralelo
+
+---
+
+## BRECHA 5 — Arquitectura implementada (IRREVOCABLE)
+
+### Archivos modificados
+- `domains/catalog/bridge-catalogo.ts` — `ProductoBuscable` extendido con `condicionVenta?: 'SIN_RECETA' | 'CON_RECETA' | 'CONTROLADO'`. Proyección desde `useFarmaciaStore.getState().productosComerciales` vía `HOV.productoId`.
+- `domains/preventa/dto/LineaPreVenta.ts` — `flags.requirioReceta?: boolean` agregado.
+- `modules/sales/components/ConfirmacionRecetaPanel.tsx` — Panel inline nuevo. Props: nombreProducto, condicion, onConfirmar, onCancelar. Teclado: Enter confirma, Escape cancela.
+- `modules/sales/SalesWorkspace.tsx` — Estado `confirmaReceta`, intercepción en `addProductToTicket`, handlers `handleConfirmarReceta` / `handleCancelarReceta`, renderizado condicional del panel.
+
+### Regla operacional — IRREVOCABLE
+- `SIN_RECETA` → agrega inmediatamente, sin interrupción
+- `CON_RECETA` → panel naranja (`#f97316`), confirmación obligatoria del operador
+- `CONTROLADO` → panel rojo (`#dc2626`), confirmación obligatoria del operador
+- Sin modal — doctrina Anti-Modal respetada. Panel inline absoluto sobre zona de resultados.
+- Foco restaurado al buscador tras confirmar o cancelar.
+
+### Diferido (no resuelto en esta brecha)
+- Captura de número de receta (requiere input adicional)
+- Bloqueo por PIN de supervisor para CONTROLADO
+- Tabla libro_control_digemid — Brecha 8
 
 ---
 
@@ -276,7 +298,6 @@ Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Im
 | DetalleProveedor.tsx | Botones sin auditar directamente | Baja |
 | ProductoComercial | lineaLaboratorio — diseño y migración diferidos | Pendiente |
 | VENTAS | Búsqueda genérica por DCI — Brecha 2 | Alta |
-| VENTAS | Bloqueo/confirmación por Receta Médica — Brecha 5 | Alta |
 | VENTAS | Alerta vencimiento semáforo 3 niveles — Brecha 4 | Media |
 | VENTAS/INVENTARIOS | FEFO — despacho por lote más próximo a vencer — Brecha 3 | Alta |
 | INVENTARIOS | Alerta stock mínimo genéricos esenciales — Brecha 7 | Media |
@@ -288,26 +309,25 @@ Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Im
 ## PRÓXIMA VENTANA DE TRABAJO
 
 **Continuar Paréntesis DIGEMID — Brechas 2 a 7:**
-1. Brecha 5 — Bloqueo receta médica en cobro (más rápida)
-2. Brecha 2 — Búsqueda genérica DCI en ventas
-3. Brecha 3 — FEFO en despacho
-4. Brecha 4 — Semáforo vencimiento
-5. Brecha 7 — Stock mínimo esenciales Ley 32033
-6. Brecha 6 — Descripción autoconcatenada
+1. Brecha 2 — Búsqueda genérica DCI en ventas
+2. Brecha 3 — FEFO en despacho
+3. Brecha 4 — Semáforo vencimiento
+4. Brecha 7 — Stock mínimo esenciales Ley 32033
+5. Brecha 6 — Descripción autoconcatenada
 
 **Post-paréntesis DIGEMID — continuación evaluación visual catálogo:**
-7. Prueba UI — CORREGIR DATOS BÁSICOS completa (incluye SelectorPrincipiosActivos)
-8. Prueba UI — DESACTIVAR PRODUCTO
-9. Evaluación visual — ASIGNACIÓN PRESENTACIONES
-10. Evaluación visual — ASIGNACIÓN DE PRECIOS
-11. Evaluación visual — NuevoProductoStepper (integrar SelectorPrincipiosActivos)
-12. Evaluación visual — PROVEEDORES flujo completo
-13. INGRESOS — prueba end-to-end
-14. BuscadorProducto — agregar codigoInterno a búsqueda SQL
-15. Conectar `disateq:navegar` — listener en OperationalBar
-16. OperationalBar — corregir color `#3D8A8A` → `#0284C7`
-17. BoxSlotType → TipoCaja
-18. Operador.codigo — verificar y eliminar si huérfano
+6. Prueba UI — CORREGIR DATOS BÁSICOS completa (incluye SelectorPrincipiosActivos)
+7. Prueba UI — DESACTIVAR PRODUCTO
+8. Evaluación visual — ASIGNACIÓN PRESENTACIONES
+9. Evaluación visual — ASIGNACIÓN DE PRECIOS
+10. Evaluación visual — NuevoProductoStepper (integrar SelectorPrincipiosActivos)
+11. Evaluación visual — PROVEEDORES flujo completo
+12. INGRESOS — prueba end-to-end
+13. BuscadorProducto — agregar codigoInterno a búsqueda SQL
+14. Conectar `disateq:navegar` — listener en OperationalBar
+15. OperationalBar — corregir color `#3D8A8A` → `#0284C7`
+16. BoxSlotType → TipoCaja
+17. Operador.codigo — verificar y eliminar si huérfano
 
 ---
 
@@ -328,6 +348,7 @@ Un laboratorio organiza su portafolio en líneas comerciales o terapéuticas. Im
 - **VOLVER en modos corrigiendo/desactivando:** siempre va a onIrADetalle, no onIrAResumen
 - **git commit -am:** no rastrea archivos nuevos — usar `git add` explícito antes del commit
 - **Archivos nuevos Codex:** siempre verificar con `git status` si hay archivos no rastreados antes de commitear
+- **Comandos git:** siempre con ruta completa `git -C "D:\DisateQ-DEV\Proyectos\disateq-vendor" ...`
 
 ### SEMÁFORO DE VENCIMIENTO — DOCTRINA (del análisis WOLF farma)
 | Días hasta vencimiento | Nivel | Acción en UI |

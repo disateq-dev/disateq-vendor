@@ -20,6 +20,7 @@ export interface ProductoBuscable {
   tieneMultiplesFormas: boolean
   category?: string
   condicionVenta?: 'SIN_RECETA' | 'CON_RECETA' | 'CONTROLADO'
+  dciTexto?: string
 }
 
 function mapearDisponibilidad(
@@ -72,20 +73,24 @@ export function obtenerProductosBuscables(
     }, new Map<string, number>())
 
     const farmaciaState = useFarmaciaStore.getState()
-    return catalogo.items.map(item => ({
-      id: item.hovId,
-      description: item.nombre,
-      barcode: item.codigoBarras ?? '',
-      unitPrice: item.valorAplicado ?? 0,
-      presentacion: item.unidadDespacho,
-      stockStatus: mapearDisponibilidad(item.disponibilidad),
-      hovId: item.hovId,
-      factorConversion: item.factorConversion,
-      requiereValorManual: item.valorAplicado === null,
-      tieneMultiplesFormas: (conteoPorProductoId.get(getHOVById(item.hovId)?.productoId ?? item.hovId) ?? 0) > 1,
-      category: item.category,
-      condicionVenta: farmaciaState.productosComerciales.find(producto => producto.id === getHOVById(item.hovId)?.productoId)?.condicionVenta,
-    }))
+    return catalogo.items.map(item => {
+      const productoComercial = farmaciaState.productosComerciales.find(producto => producto.id === getHOVById(item.hovId)?.productoId)
+      return {
+        id: item.hovId,
+        description: item.nombre,
+        barcode: item.codigoBarras ?? '',
+        unitPrice: item.valorAplicado ?? 0,
+        presentacion: item.unidadDespacho,
+        stockStatus: mapearDisponibilidad(item.disponibilidad),
+        hovId: item.hovId,
+        factorConversion: item.factorConversion,
+        requiereValorManual: item.valorAplicado === null,
+        tieneMultiplesFormas: (conteoPorProductoId.get(getHOVById(item.hovId)?.productoId ?? item.hovId) ?? 0) > 1,
+        category: item.category,
+        condicionVenta: productoComercial?.condicionVenta,
+        dciTexto: productoComercial?.ifa,
+      }
+    })
   } catch {
     return []
   }
