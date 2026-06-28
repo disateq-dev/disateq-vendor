@@ -1,4 +1,5 @@
 use super::schema;
+mod seed_principios;
 
 pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     sqlx::raw_sql(schema::SCHEMA_CORE)
@@ -29,6 +30,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v7_correccion_catalogo(db).await?;
     migrar_v8_principios_activos(db).await?;
     migrar_v9_campos_regulatorios_ifa(db).await?;
+    migrar_v10_campos_catalogo_ifa(db).await?;
 
     Ok(())
 }
@@ -635,6 +637,101 @@ async fn migrar_v9_campos_regulatorios_ifa(db: &sqlx::SqlitePool) -> Result<(), 
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (9)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v10_campos_catalogo_ifa(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'principio_activo'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 10 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    let tiene_descripcion_uso = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('principio_activo') WHERE name = 'descripcion_uso'",
+    )
+    .fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+    if tiene_descripcion_uso == 0 {
+        sqlx::query("ALTER TABLE principio_activo ADD COLUMN descripcion_uso TEXT NOT NULL DEFAULT ''")
+            .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    let tiene_grupo = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('principio_activo') WHERE name = 'grupo_terapeutico'",
+    )
+    .fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+    if tiene_grupo == 0 {
+        sqlx::query("ALTER TABLE principio_activo ADD COLUMN grupo_terapeutico TEXT NOT NULL DEFAULT ''")
+            .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    let tiene_condicion = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('principio_activo') WHERE name = 'condicion_venta'",
+    )
+    .fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+    if tiene_condicion == 0 {
+        sqlx::query("ALTER TABLE principio_activo ADD COLUMN condicion_venta TEXT NOT NULL DEFAULT 'OTC'")
+            .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    let tiene_combinacion = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('principio_activo') WHERE name = 'es_combinacion'",
+    )
+    .fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+    if tiene_combinacion == 0 {
+        sqlx::query("ALTER TABLE principio_activo ADD COLUMN es_combinacion INTEGER NOT NULL DEFAULT 0")
+            .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+        .fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+
+    for item in seed_principios::SEED_PRINCIPIOS_ACTIVOS {
+        let id = uuid::Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT OR IGNORE INTO principio_activo
+                (id, nombre_dci, descripcion_uso, grupo_terapeutico, condicion_venta, es_combinacion, es_psicotropico, es_esencial_minsa, activo, creado_en)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?)",
+        )
+        .bind(&id)
+        .bind(item.nombre_dci)
+        .bind(item.descripcion_uso)
+        .bind(item.grupo_terapeutico)
+        .bind(item.condicion_venta)
+        .bind(item.es_combinacion)
+        .bind(item.es_psicotropico)
+        .bind(&creado_en)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (10)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
