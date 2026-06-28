@@ -8,6 +8,7 @@ import {
   LABEL_TIPO_SERVICIO,
 } from '../../../../domains/catalog/etiquetas-ui'
 import { obtenerProductosComerciales } from '../../../../domains/farmacia/farmacia.service'
+import { construirDescripcionDigemid } from '../../../../domains/farmacia/descripcion-digemid.utils'
 import type {
   CategoriaFarmacia,
   CategoriaGeneral,
@@ -422,6 +423,20 @@ export function NuevoProductoStepper({
 
     return () => clearTimeout(timeoutId)
   }, [comercial.nombreComercial, tipoRecurso])
+
+  useEffect(() => {
+    if (tipoRecurso === 'MEDICAMENTO' && paso === 4 && presentacion.descripcion.trim() === '') {
+      setPresentacion({
+        ...presentacion,
+        descripcion: construirDescripcionDigemid(
+          generico.ifa,
+          generico.concentracion,
+          generico.formaFarmaceutica,
+          '',
+        ),
+      })
+    }
+  }, [tipoRecurso, paso, generico.ifa, generico.concentracion, generico.formaFarmaceutica])
 
   const totalPasos = tipoRecurso === 'MEDICAMENTO' ? 4 : tipoRecurso === 'PRODUCTO_GENERAL' ? 2 : 1
 
