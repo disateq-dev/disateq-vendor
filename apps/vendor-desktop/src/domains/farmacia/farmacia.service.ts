@@ -671,3 +671,18 @@ export async function asignarPrincipiosAProducto(input: AsignacionPrincipiosInpu
     motivo: input.motivo,
   })
 }
+
+export async function obtenerPrincipiosDeProducto(productoGenericoId: string): Promise<{
+  id: string
+  nombreDci: string
+  descripcion?: string
+  orden: number
+}[]> {
+  const respuesta = await invoke('obtener_principios_de_producto', { productoGenericoId })
+  return respuesta as {
+    id: string
+    nombreDci: string
+    descripcion?: string
+    orden: number
+  }[]
+}

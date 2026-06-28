@@ -17,10 +17,12 @@ import {
   obtenerValoresNodo,
   reactivarProductoComercial,
   verificarHistorialProducto,
+  asignarPrincipiosAProducto,
 } from '../../../../domains/farmacia/farmacia.service'
 import { usePOS } from '../../../../context/POSContext'
 import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
 import type { VistaCatalogo } from '../hooks/useCatalogoFarmacia'
+import { SelectorPrincipiosActivos } from './SelectorPrincipiosActivos'
 
 interface DetalleProductoProps {
   producto: ProductoComercial
@@ -511,6 +513,7 @@ export function DetalleProducto({
   const [motivoOperacional, setMotivoOperacional] = useState<string>('')
   const [indiceAccion, setIndiceAccion] = useState<number>(-1)
   const [indiceNavegacion, setIndiceNavegacion] = useState<number>(-1)
+  const [principiosSeleccionadosIds, setPrincipiosSeleccionadosIds] = useState<string[]>([])
 
   useEffect(() => {
     setIndiceAccion(-1)
@@ -645,6 +648,14 @@ export function DetalleProducto({
     setGuardandoCambios(true)
     setErrorAccion(null)
     try {
+      if (principiosSeleccionadosIds.length > 0) {
+        await asignarPrincipiosAProducto({
+          productoGenericoId: producto.productoGenericoId,
+          principioActivoIds: principiosSeleccionadosIds,
+          operadorId: activeOperator?.id ?? '',
+          motivo: tieneHistorial ? motivoOperacional.trim() || undefined : undefined,
+        })
+      }
       await modificarProductoComercial(formularioCorreccion)
       if (hayCambioOperacional && formularioOperacional !== null && activeOperator) {
         const input: CorregirDatosOperacionalesInput = {
@@ -764,10 +775,17 @@ export function DetalleProducto({
               </label>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <label>
+              <div>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA / PRINCIPIO ACTIVO</span>
-                <input readOnly value={(producto.ifa ?? '').toUpperCase()} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
-              </label>
+                <SelectorPrincipiosActivos
+                  productoGenericoId={producto.productoGenericoId}
+                  tieneHistorial={tieneHistorial}
+                  operadorId={activeOperator?.id ?? ''}
+                  onCambio={(ids) => setPrincipiosSeleccionadosIds(ids)}
+                  motivo={motivoOperacional}
+                  disabled={guardandoCambios}
+                />
+              </div>
               <label>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FABRICANTE / LABORATORIO</span>
                 <input
