@@ -6,6 +6,7 @@ import type { TipoValorOperacional } from './valor-operacional.types'
 import { loadMovimientos } from '../inventory/persistence'
 import { deriveDisponibilidad, useInventoryStore } from '../inventory/store'
 import { useFarmaciaStore } from '../../domains/farmacia/farmacia.store'
+import { calcularNivelVencimiento, type NivelVencimiento } from '../farmacia/vencimiento.utils'
 
 export interface ProductoBuscable {
   id: string
@@ -21,6 +22,8 @@ export interface ProductoBuscable {
   category?: string
   condicionVenta?: 'SIN_RECETA' | 'CON_RECETA' | 'CONTROLADO'
   dciTexto?: string
+  nivelVencimiento?: NivelVencimiento
+  diasAlVencimiento?: number
 }
 
 function mapearDisponibilidad(
@@ -75,6 +78,8 @@ export function obtenerProductosBuscables(
     const farmaciaState = useFarmaciaStore.getState()
     return catalogo.items.map(item => {
       const productoComercial = farmaciaState.productosComerciales.find(producto => producto.id === getHOVById(item.hovId)?.productoId)
+      const resumenItem = useFarmaciaStore.getState().resumenInventario.find(itemResumen => itemResumen.productoId === productoComercial?.id)
+      const semaforo = calcularNivelVencimiento(resumenItem?.proximoVencimiento)
       return {
         id: item.hovId,
         description: item.nombre,
@@ -89,6 +94,8 @@ export function obtenerProductosBuscables(
         category: item.category,
         condicionVenta: productoComercial?.condicionVenta,
         dciTexto: productoComercial?.ifa,
+        nivelVencimiento: semaforo.nivel ?? undefined,
+        diasAlVencimiento: semaforo.dias ?? undefined,
       }
     })
   } catch {

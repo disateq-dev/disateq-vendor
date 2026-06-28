@@ -12,10 +12,12 @@ import {
   type ProductoBuscable
 } from "../../domains/catalog/bridge-catalogo";
 import type { TipoValorOperacional } from "../../domains/catalog/valor-operacional.types";
+import { useFarmaciaStore } from "../../domains/farmacia/farmacia.store";
 import { loadBusinessConfig } from "../../config/business";
 import { RUBROS } from "../../data/catalogs";
 import { PresentacionSheet } from "./PresentacionSheet";
 import { ConfirmacionRecetaPanel } from "./components/ConfirmacionRecetaPanel";
+import { ConfirmacionVencimientoPanel } from "./components/ConfirmacionVencimientoPanel";
 
 function statusChip(p: ProductoBuscable) {
   if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
@@ -149,6 +151,7 @@ export function SalesWorkspace() {
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [grupoActivo, setGrupoActivo] = useState<GrupoProducto | null>(null);
   const [confirmaReceta, setConfirmaReceta] = useState<{ producto: ProductoBuscable; condicion: "CON_RECETA" | "CONTROLADO" } | null>(null);
+  const [confirmaVencimiento, setConfirmaVencimiento] = useState<{ producto: ProductoBuscable; nivel: string; dias: number } | null>(null);
   const [puedeEditarPrecio] = useState<boolean>(false);
   const lastAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -249,10 +252,18 @@ export function SalesWorkspace() {
     };
   }, []);
 
+  useEffect(() => {
+    void useFarmaciaStore.getState().cargarResumenInventario();
+  }, []);
+
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
     if (p.stockStatus === "out") return;
     if (p.condicionVenta === "CON_RECETA" || p.condicionVenta === "CONTROLADO") {
       setConfirmaReceta({ producto: p, condicion: p.condicionVenta });
+      return;
+    }
+    if (p.nivelVencimiento === "CRITICO") {
+      setConfirmaVencimiento({ producto: p, nivel: p.nivelVencimiento, dias: p.diasAlVencimiento ?? 0 });
       return;
     }
     if (cobroOpen) closeCobro();
@@ -336,6 +347,35 @@ export function SalesWorkspace() {
 
   const handleCancelarReceta = useCallback(() => {
     setConfirmaReceta(null);
+    inputRef.current?.focus();
+  }, []);
+
+  const handleConfirmarVencimiento = useCallback(() => {
+    if (confirmaVencimiento === null) return;
+    preVentaService.agregarProductoDesdeHOV({
+      hovId: confirmaVencimiento.producto.hovId,
+      descripcion: confirmaVencimiento.producto.description,
+      cantidad: 1,
+      valorUnitario: confirmaVencimiento.producto.unitPrice,
+      presentacion: confirmaVencimiento.producto.presentacion,
+      factorConversion: confirmaVencimiento.producto.factorConversion,
+      requiereValorManual: confirmaVencimiento.producto.requiereValorManual,
+      contextoOperacionalId: posContext.contextoOperacionalId ?? "default",
+      identidadOperacionalId: posContext.identidadOperacionalId ?? "default",
+      operadorId: posContext.operadorActivo?.id ?? "default",
+      margenMinimoConfigurable: 0.15,
+      operadorTieneCapacidadLibre: false,
+    });
+    setLastAdded(confirmaVencimiento.producto.hovId);
+    setTimeout(() => setLastAdded(null), 600);
+    setQuery("");
+    setSearchQuery("");
+    setConfirmaVencimiento(null);
+    inputRef.current?.focus();
+  }, [confirmaVencimiento, posContext]);
+
+  const handleCancelarVencimiento = useCallback(() => {
+    setConfirmaVencimiento(null);
     inputRef.current?.focus();
   }, []);
 
@@ -593,6 +633,16 @@ export function SalesWorkspace() {
                             </span>
                             <span className="text-[#d1d9e1]">·</span>
                             {statusChip(product)}
+                            {product.nivelVencimiento === "CRITICO" && (
+                              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
+                                Vence pronto
+                              </span>
+                            )}
+                            {product.nivelVencimiento === "ALERTA" && (
+                              <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">
+                                Vence pronto
+                              </span>
+                            )}
                             {product.tieneMultiplesFormas && formasCount > 1 && (
                               <span className="rounded-full bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#2563eb]">
                                 {formasCount} formas
@@ -696,6 +746,14 @@ export function SalesWorkspace() {
           condicion={confirmaReceta.condicion}
           onConfirmar={handleConfirmarReceta}
           onCancelar={handleCancelarReceta}
+        />
+      )}
+      {confirmaVencimiento !== null && (
+        <ConfirmacionVencimientoPanel
+          nombreProducto={confirmaVencimiento.producto.description}
+          diasAlVencimiento={confirmaVencimiento.dias}
+          onConfirmar={handleConfirmarVencimiento}
+          onCancelar={handleCancelarVencimiento}
         />
       )}
       </div>

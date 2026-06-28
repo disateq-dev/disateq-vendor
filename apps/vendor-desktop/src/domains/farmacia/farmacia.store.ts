@@ -4,6 +4,7 @@ import type {
   CrearProductoGenericoInput,
   ProductoComercial,
   Proveedor,
+  ResumenInventarioFarmacia,
   ServicioFarmacia,
 } from './types'
 import {
@@ -11,6 +12,7 @@ import {
   crearProductoGenerico,
   obtenerProductosComerciales,
   obtenerProveedores,
+  obtenerInventarioFarmacia,
   obtenerServiciosFarmacia,
 } from './farmacia.service'
 
@@ -20,9 +22,11 @@ interface FarmaciaState {
   servicios: ServicioFarmacia[]
   cargando: boolean
   error: string | null
+  resumenInventario: ResumenInventarioFarmacia[]
   cargarProductosComerciales(filtroNombre?: string, soloActivos?: boolean): Promise<void>
   cargarProveedores(soloActivos?: boolean): Promise<void>
   cargarServicios(soloActivos?: boolean): Promise<void>
+  cargarResumenInventario(): Promise<void>
   crearProductoCompleto(
     generico: CrearProductoGenericoInput,
     comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
@@ -39,6 +43,7 @@ export const useFarmaciaStore = create<FarmaciaState>()((set) => ({
   productosComerciales: [],
   proveedores: [],
   servicios: [],
+  resumenInventario: [],
   cargando: false,
   error: null,
 
@@ -67,6 +72,16 @@ export const useFarmaciaStore = create<FarmaciaState>()((set) => ({
     try {
       const servicios = await obtenerServiciosFarmacia(soloActivos)
       set({ servicios, cargando: false })
+    } catch (error) {
+      set({ error: resolverMensajeError(error), cargando: false })
+    }
+  },
+
+  async cargarResumenInventario(): Promise<void> {
+    set({ cargando: true, error: null })
+    try {
+      const resumenInventario = await obtenerInventarioFarmacia()
+      set({ resumenInventario, cargando: false })
     } catch (error) {
       set({ error: resolverMensajeError(error), cargando: false })
     }
