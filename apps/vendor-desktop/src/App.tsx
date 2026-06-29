@@ -15,19 +15,20 @@ import { CatalogoFarmaciaWorkspace } from './modules/abastecimiento/farmacia/Cat
 import { ProveedoresWorkspace } from './modules/abastecimiento/farmacia/ProveedoresWorkspace'
 import { IngresosMercaderiaWorkspace } from './modules/abastecimiento/farmacia/IngresosMercaderiaWorkspace'
 import { InventarioFarmaciaWorkspace } from './modules/abastecimiento/farmacia/InventarioFarmaciaWorkspace'
+import { PrincipiosActivosWorkspace } from './modules/abastecimiento/farmacia/PrincipiosActivosWorkspace'
 import { POSProvider, usePOS } from "./context/POSContext";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
 export type CashSubView             = "turno" | "supervision-caja";
-export type AbastecimientoSubModule = "catalogo" | "proveedores" | "ingresos" | "compras" | "inventarios" | "traslados";
+export type AbastecimientoSubModule = "productos" | "ifa" | "proveedores" | "laboratorios" | "ingresos" | "inventarios" | "traslados";
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
 
 function AppRoot() {
   const { activeOperator, cashSession, rubro } = usePOS();
   const [activeModule,            setActiveModule]            = useState<ActiveModule>("cash");
   const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
-  const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("catalogo");
+  const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("productos");
   const [configSubView,           setConfigSubView]           = useState<ConfigSubView>("negocio");
   const prevOpId        = useRef<string | null>(null);
   const isInitialMount  = useRef(true);
@@ -95,13 +96,19 @@ function AppRoot() {
       {activeModule === "clientes"  && <ClientesWorkspace />}
       {activeModule === "reportes"  && <ReportesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "catalogo"     && <CatalogoFarmaciaWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "proveedores" && <ProveedoresWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "ingresos" && <IngresosMercaderiaWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && rubro === 'farmacia' && <InventarioFarmaciaWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios" && rubro !== 'farmacia' && <InventoryWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "productos"    && <CatalogoFarmaciaWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "ifa"          && <PrincipiosActivosWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "proveedores"  && <ProveedoresWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "laboratorios" && (
+        <div className="flex flex-1 items-center justify-center">
+          <span className="text-[12px] font-semibold uppercase tracking-wider text-[#9ca3af]">Próximamente</span>
+        </div>
+      )}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "ingresos"     && <IngresosMercaderiaWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && rubro === 'farmacia' && <InventarioFarmaciaWorkspace />}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && rubro !== 'farmacia' && <InventoryWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "traslados" && (
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "traslados"    && (
         <div className="flex flex-1 items-center justify-center">
           <span className="text-[12px] font-semibold uppercase tracking-wider text-[#9ca3af]">Próximamente</span>
         </div>
