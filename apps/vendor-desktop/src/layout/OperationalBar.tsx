@@ -256,8 +256,7 @@ export function ContextBar({
       if (e.ctrlKey && !e.shiftKey && !e.altKey && e.code === "Space") {
         e.preventDefault();
         if (!s.barraActiva) {
-          const currentIdx = MODULES_ORDER.indexOf(s.active);
-          setNavIdx(currentIdx >= 0 ? currentIdx : 0);
+          setNavIdx(0);
           setExpandido(null);
           setFocusOpcion(0);
           setBarraActiva(true);
@@ -367,8 +366,6 @@ export function ContextBar({
           const opcion = opciones[s.focusOpcion];
           if (!opcion) return;
           setOpcionActiva(s.expandido, opcion.key, cbRefs.current.onCashSubViewChange, cbRefs.current.onAbastecimientoSubModuleChange, cbRefs.current.onConfigSubViewChange);
-          setBarraActiva(false);
-          setExpandido(null);
           return;
         }
       }
@@ -438,8 +435,6 @@ export function ContextBar({
           key={opcion.key}
           onClick={() => {
             setOpcionActiva(modulo, opcion.key, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
-            setBarraActiva(false);
-            setExpandido(null);
           }}
           className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold transition outline-none"
           style={
@@ -465,7 +460,6 @@ export function ContextBar({
       {MODULES_ORDER.map((modulo, idx) => {
         const Icon = MODULE_ICON[modulo];
         const acceso = tieneAcceso(modulo);
-        const estaActivo = active === modulo;
         const tieneCursor = barraActiva && navIdx === idx;
         const accent = MODULE_ACCENT[modulo];
 
@@ -495,9 +489,7 @@ export function ContextBar({
                   ? { color: "#121416", opacity: 0.3, borderColor: "transparent", cursor: "default" }
                   : tieneCursor
                     ? { color: accent, borderColor: `${accent}80`, backgroundColor: `${accent}05` }
-                    : estaActivo
-                      ? { color: accent, borderColor: accent, backgroundColor: `${accent}08` }
-                      : { color: "#121416", opacity: 0.7, borderColor: "transparent" }
+                    : { color: "#121416", opacity: 0.7, borderColor: "transparent" }
               }
             >
               <Icon size={17} />
