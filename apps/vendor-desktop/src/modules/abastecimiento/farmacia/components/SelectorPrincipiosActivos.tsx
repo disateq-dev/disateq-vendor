@@ -137,6 +137,23 @@ export function SelectorPrincipiosActivos({
         className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white disabled:opacity-50 disabled:cursor-not-allowed"
       />
 
+      {!disabled && (
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(
+              new CustomEvent('disateq:navegar', {
+                detail: { destino: 'abastecimiento', subtab: 'ifa' },
+              })
+            )
+          }}
+          className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-[#0284C7]/60 hover:text-[#0284C7] transition-colors"
+        >
+          <span>¿No encuentras el IFA?</span>
+          <span className="underline underline-offset-2">Ir al catálogo de principios activos →</span>
+        </button>
+      )}
+
       {mostrandoDropdown && resultados.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-[#E0F2FE] bg-white shadow-lg max-h-48 overflow-auto">
           {resultados.map((principio) => {
