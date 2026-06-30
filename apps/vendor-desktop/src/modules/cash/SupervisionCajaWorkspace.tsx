@@ -267,9 +267,9 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
     <section className="flex min-h-0 flex-1 gap-2">
 
       {/* ── REGISTROS ── */}
-      <div className="flex w-[480px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
-          <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+      <div className="flex w-[480px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
+          <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">REGISTROS</span>
           {pendingCount > 0 && (
             <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold text-white tabular-nums">
@@ -351,7 +351,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
                     className={`flex items-center gap-2 px-4 py-2.5 text-left transition hover:bg-[#f8fafc] ${
                       isSel ? "bg-[#EEF3FD] ring-inset ring-1 ring-[#2154d8]/20" : ""
                     }`}>
-                    <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#1a5f7a]">C{e.boxCode}</span>
+                    <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#7D3C0E]">C{e.boxCode}</span>
                     <span className="truncate flex-1 text-[10px] font-semibold text-[#6b7280]">{e.operator}</span>
                     <div className="flex shrink-0 items-center gap-1 text-[#c0cad4]">
                       <Clock size={9} strokeWidth={2} />
@@ -375,9 +375,9 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
       </div>
 
       {/* ── SUPERVISIÓN DE CAJA ── */}
-      <div className="flex w-[420px] shrink-0 min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/30 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
-          <Shield size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+      <div className="flex w-[420px] shrink-0 min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/30 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
+          <Shield size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SUPERVISIÓN DE CAJA</span>
           {selectedEntry && (
             <span className="ml-auto text-[10px] font-semibold text-[#9ca3af]">
@@ -402,8 +402,8 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 pt-4 pb-5">
 
             {/* ACCIONES SUPERVISOR */}
-            <div className="flex flex-col gap-2.5 rounded-xl border border-[#2A7CA8]/30 bg-[#f8fafd] px-4 py-3">
-              <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#1a5f7a]">Acciones Supervisor</p>
+            <div className="flex flex-col gap-2.5 rounded-xl border border-[#CA6F1E]/30 bg-[#f8fafd] px-4 py-3">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#7D3C0E]">Acciones Supervisor</p>
 
               {/* Estado por cada autorización existente */}
               {sessionAuthorizations.map(auth => (
@@ -450,7 +450,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
               {/* Bloque A: sesión activa */}
               {isActiveSession && !sessionAuthorizations.some(a => a.type === "cierre_activo" && a.status !== "validada") && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-[9.5px] font-bold uppercase tracking-wide text-[#1a5f7a]">Autorizar Cierre</p>
+                  <p className="text-[9.5px] font-bold uppercase tracking-wide text-[#7D3C0E]">Autorizar Cierre</p>
                   <p className="text-[10px] text-[#9ca3af] leading-snug">
                     El turno está activo. La autorización habilita al operador para ejecutar el cierre.
                   </p>
@@ -562,9 +562,9 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
       </div>
 
       {/* ── TRAZABILIDAD ── */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/20 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#F2F7FA] border-b border-[#2A7CA8]/15">
-          <CheckCircle size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/20 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
+          <CheckCircle size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">TRAZABILIDAD</span>
           {selectedEntry && sessionAuthorizations.length > 0 && (
             <span className="ml-auto rounded-full bg-[#e8edf3] px-2 py-0.5 text-[9px] font-bold text-[#6b7280] tabular-nums">

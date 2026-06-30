@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BarChart2, Boxes, FileText, Package, Settings, ShoppingCart, Users } from "lucide-react";
+import { BarChart2, Boxes, Clock, FileText, Settings, ShoppingCart, Users } from "lucide-react";
 import { type ActiveModule, type CashSubView, type AbastecimientoSubModule, type ConfigSubView } from "../App";
 import { useCapacidad } from "../hooks/useCapacidad";
 import { useContextoOperacional } from "../hooks/useContextoOperacional";
@@ -24,7 +24,7 @@ const MODULE_SHORTCUTS: Partial<Record<string, ActiveModule>> = {
 
 // ── Colores canónicos por módulo ──────────────────────────────
 const MODULE_ACCENT: Record<ActiveModule, string> = {
-  cash:           "#2A7CA8",
+  cash:           "#CA6F1E",
   sales:          "#45b356",
   abastecimiento: "#0284C7",
   clientes:       "#1e7e4f",
@@ -34,7 +34,7 @@ const MODULE_ACCENT: Record<ActiveModule, string> = {
 };
 
 const MODULE_BG: Record<ActiveModule, string> = {
-  cash:           "rgba(42,124,168,0.08)",
+  cash:           "#FEF9E7",
   sales:          "rgba(69,179,86,0.07)",
   abastecimiento: "rgba(2,132,199,0.08)",
   clientes:       "rgba(30,126,79,0.07)",
@@ -57,8 +57,8 @@ const MODULE_LABEL: Record<ActiveModule, string> = {
 // ── Iconos por módulo ─────────────────────────────────────────
 import type { LucideIcon } from "lucide-react";
 const MODULE_ICON: Record<ActiveModule, LucideIcon> = {
-  cash:           ShoppingCart,
-  sales:          Package,
+  cash:           Clock,
+  sales:          ShoppingCart,
   abastecimiento: Boxes,
   clientes:       Users,
   reportes:       BarChart2,
@@ -179,6 +179,8 @@ export function ContextBar({
   const [focusOpcion, setFocusOpcion] = useState(0);
   const [detalleActivo, setDetalleActivo] = useState(false);
   const [esperandoAtajo, setEsperandoAtajo] = useState(false);
+  const [hoverModulo, setHoverModulo] = useState<ActiveModule | null>(null);
+  const [moduloActivoVisual, setModuloActivoVisual] = useState<ActiveModule | null>(null);
 
   useEffect(() => {
     function onDetalle(e: Event) {
@@ -205,6 +207,10 @@ export function ContextBar({
   useEffect(() => {
     cbRefs.current = { onChange, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange };
   });
+
+  useEffect(() => {
+    setModuloActivoVisual((actual) => actual === null ? null : active);
+  }, [active]);
 
   // ── Bloqueo operacional ───────────────────────────────────
   useEffect(() => {
@@ -277,6 +283,7 @@ export function ContextBar({
         if (destino && tieneAcceso(destino)) {
           e.preventDefault();
           cbRefs.current.onChange(destino);
+          setModuloActivoVisual(destino);
           if (CON_SECUNDARIAS.has(destino)) {
             const idx = MODULES_ORDER.indexOf(destino);
             setNavIdx(idx);
@@ -300,7 +307,8 @@ export function ContextBar({
         if (s.expandido) {
           setExpandido(null);
           setFocusOpcion(0);
-          setEsperandoAtajo(true);
+          setNavIdx(MODULES_ORDER.indexOf(s.active));
+          setEsperandoAtajo(false);
         } else {
           setBarraActiva(false);
           setExpandido(null);
@@ -336,6 +344,7 @@ export function ContextBar({
           const target = MODULES_ORDER[s.navIdx];
           if (!tieneAcceso(target)) return;
           cbRefs.current.onChange(target);
+          setModuloActivoVisual(target);
           if (CON_SECUNDARIAS.has(target)) {
             setExpandido(target);
             setFocusOpcion(0);
@@ -393,10 +402,10 @@ export function ContextBar({
         <button
           onClick={() => { setExpandido(null); setFocusOpcion(0); setBarraActiva(false); }}
           className="flex shrink-0 h-11 items-center gap-1.5 px-3 text-[14.5px] font-bold transition select-none"
-          style={{ color: accent, borderBottom: `3px solid ${accent}` }}
+          style={{ borderBottom: `3px solid ${accent}` }}
         >
-          {(() => { const Icon = MODULE_ICON[expandido]; return <Icon size={17} />; })()}
-          <span>{MODULE_LABEL[expandido]}</span>
+          {(() => { const Icon = MODULE_ICON[expandido]; return <span style={{ color: accent }}><Icon size={20} /></span>; })()}
+          <span style={{ color: "#201E1E" }}>{MODULE_LABEL[expandido]}</span>
         </button>
 
         <div className="h-5 w-px shrink-0 bg-[#d1d5db]/60" />
@@ -422,7 +431,7 @@ export function ContextBar({
       </section>
     );
 
-    function renderOpcion(opcion: OpcionSecundaria, estaActiva: boolean, tieneFoco: boolean, accent: string, modulo: ActiveModule, _idx: number) {
+    function renderOpcion(opcion: OpcionSecundaria, estaActiva: boolean, tieneFoco: boolean, accent: string, modulo: ActiveModule, idx: number) {
       if (opcion.placeholder) {
         return (
           <span key={opcion.key} className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold select-none cursor-default opacity-30" style={{ color: accent }}>
@@ -436,13 +445,15 @@ export function ContextBar({
           onClick={() => {
             setOpcionActiva(modulo, opcion.key, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
           }}
+          onMouseEnter={() => {
+            if (idx >= 0) setFocusOpcion(idx);
+            setOpcionActiva(modulo, opcion.key, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
+          }}
           className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold transition outline-none"
           style={
-            estaActiva
+            tieneFoco || (!barraActiva && estaActiva)
               ? { backgroundColor: accent, color: "white" }
-              : tieneFoco
-                ? { outline: `2px solid ${accent}`, outlineOffset: "1px", color: accent }
-                : { color: accent, opacity: 0.7 }
+              : { color: "#201E1E", opacity: 0.8 }
           }
         >
           {opcion.label}
@@ -454,8 +465,8 @@ export function ContextBar({
   // ── Vista global — todos los módulos ─────────────────────
   return (
     <section
-      className="flex h-[52px] shrink-0 items-center px-3 gap-1 bg-[#F0F2F5]"
-      onMouseLeave={() => onHover(null)}
+      className="flex h-[52px] shrink-0 items-center px-3 gap-1 bg-[#F2F3F5]"
+      onMouseLeave={() => { setHoverModulo(null); onHover(null); }}
     >
       {MODULES_ORDER.map((modulo, idx) => {
         const Icon = MODULE_ICON[modulo];
@@ -471,6 +482,7 @@ export function ContextBar({
               onClick={() => {
                 if (!acceso) return;
                 cbRefs.current.onChange(modulo);
+                setModuloActivoVisual(modulo);
                 if (CON_SECUNDARIAS.has(modulo)) {
                   setExpandido(modulo);
                   setNavIdx(idx);
@@ -481,19 +493,27 @@ export function ContextBar({
                   setExpandido(null);
                 }
               }}
-              onMouseEnter={() => acceso ? onHover(modulo) : undefined}
+              onMouseEnter={() => {
+                if (!acceso) return;
+                setHoverModulo(modulo);
+                onHover(modulo);
+              }}
               title={!acceso ? "Sin acceso" : undefined}
               className="flex h-11 items-center gap-1.5 px-3 text-[14.5px] font-bold transition select-none border-b-[3px]"
               style={
                 !acceso
-                  ? { color: "#121416", opacity: 0.3, borderColor: "transparent", cursor: "default" }
+                  ? { opacity: 0.3, borderColor: "transparent", cursor: "default" }
                   : tieneCursor
-                    ? { color: accent, borderColor: `${accent}80`, backgroundColor: `${accent}05` }
-                    : { color: "#121416", opacity: 0.7, borderColor: "transparent" }
+                    ? { borderColor: `${accent}80`, backgroundColor: `${accent}05`, cursor: "pointer" }
+                    : hoverModulo === modulo
+                      ? { opacity: 0.9, borderColor: `${accent}80`, cursor: "pointer" }
+                    : moduloActivoVisual === modulo
+                      ? { opacity: 1, borderColor: accent, cursor: "pointer" }
+                      : { opacity: 0.7, borderColor: "transparent", cursor: "pointer" }
               }
             >
-              <Icon size={17} />
-              <span>{MODULE_LABEL[modulo]}</span>
+              <span style={{ color: acceso ? accent : "#121416" }}><Icon size={20} /></span>
+              <span style={{ color: acceso ? "#201E1E" : "#121416" }}>{MODULE_LABEL[modulo]}</span>
             </button>
             {esUltimoAntesSep && <Separador />}
           </div>
