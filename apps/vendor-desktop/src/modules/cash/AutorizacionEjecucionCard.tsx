@@ -156,8 +156,8 @@ export function AutorizacionEjecucionCard({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/50 bg-[#FDFCF9]">
-      <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#F2F7FA] border-[#2A7CA8]/15">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
+      <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#FFF5E6] border-[#C59B6D]/15">
         <ShieldCheck size={13} strokeWidth={2} className="shrink-0 text-[#2154d8]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
           {AUTH_CARD_TITLES[activeAuth.type]}
