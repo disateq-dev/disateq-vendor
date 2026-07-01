@@ -19,7 +19,7 @@ import type {
 
 export type PanelIzquierdoCatalogo = 'busqueda' | 'detalle'
 export type TabDetalleFarmacia = 'detalle' | 'presentaciones' | 'precios'
-export type VistaCatalogo = 'resumen' | 'detalle' | 'presentaciones' | 'precios'
+export type VistaCatalogo = 'detalle' | 'presentaciones' | 'precios'
 
 interface UseCatalogoFarmaciaResult {
   inputRef: RefObject<HTMLInputElement | null>
@@ -48,7 +48,6 @@ interface UseCatalogoFarmaciaResult {
   onVolverBusqueda(): void
   onNuevo(): void
   onCerrarCreacion(): void
-  onIrAResumen(): void
   onIrADetalle(): void
   onIrAPresentaciones(): void
   onIrAPrecios(): void
@@ -75,7 +74,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
   const [resultados, setResultados] = useState<ProductoComercial[]>([])
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoComercial | null>(null)
   const [productoPreview, setProductoPreview] = useState<ProductoComercial | null>(null)
-  const [vistaActiva, setVistaActiva] = useState<VistaCatalogo>('resumen')
+  const [vistaActiva, setVistaActiva] = useState<VistaCatalogo>('detalle')
   const [presentaciones, setPresentaciones] = useState<PresentacionComercial[]>([])
   const [nodos, setNodos] = useState<NodoFraccionamiento[]>([])
   const [pasoNuevo, setPasoNuevo] = useState<number>(1)
@@ -138,13 +137,13 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     setProductoPreview(null)
     setIndiceSeleccionado(-1)
     inputRef.current?.focus()
-    setVistaActiva('resumen')
+    setVistaActiva('detalle')
   }, [])
 
   const onSeleccionar = useCallback((p: ProductoComercial): void => {
     setPanelIzquierdo('detalle')
     setProductoSeleccionado(p)
-    setVistaActiva('resumen')
+    setVistaActiva('detalle')
     setBuscando(true)
     setErrorLocal(null)
     obtenerPresentaciones(p.id)
@@ -210,7 +209,6 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     setPasoNuevo(1)
   }, [])
 
-  const onIrAResumen = useCallback((): void => setVistaActiva('resumen'), [])
   const onIrADetalle = useCallback((): void => setVistaActiva('detalle'), [])
   const onIrAPresentaciones = useCallback((): void => setVistaActiva('presentaciones'), [])
   const onIrAPrecios = useCallback((): void => setVistaActiva('precios'), [])
@@ -286,7 +284,6 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     onVolverBusqueda,
     onNuevo,
     onCerrarCreacion,
-    onIrAResumen,
     onIrADetalle,
     onIrAPresentaciones,
     onIrAPrecios,

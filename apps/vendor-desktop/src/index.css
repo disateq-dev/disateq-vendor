@@ -13,3 +13,43 @@ body {
 button, a, [role="button"], select, label {
   cursor: pointer;
 }
+
+/* DISATEQ VENDOR — Sistema de tokens de color */
+:root {
+  --dv-surface-base: #F7F5F1;
+  --dv-surface-panel: #FAFAF7;
+  --dv-surface-field: #F0EEE9;
+  --dv-border: #C8C4BB;
+  --dv-border-strong: #A09B92;
+  --dv-text-primary: #2C2A26;
+  --dv-text-secondary: #7A7570;
+  --dv-text-muted: #9E9890;
+  --dv-color-confirm: #3B6B34;
+  --dv-color-confirm-text: #FFFFFF;
+  --dv-color-danger: #8B3A2A;
+  --dv-color-danger-bg: #F5E8E3;
+  --dv-color-danger-border: #C9A090;
+  --dv-color-exit: #B85C10;
+  --dv-color-exit-bg: #FDF0E6;
+  --dv-color-exit-border: #E8B98A;
+  --dv-mod-ventas: #2B5EA7;
+  --dv-mod-ventas-bg: #E8EFF9;
+  --dv-mod-ventas-border: #A0B8DC;
+  --dv-mod-abastecimiento: #3B6B34;
+  --dv-mod-abastecimiento-bg: #E8F0E6;
+  --dv-mod-abastecimiento-border: #A8C9A0;
+  --dv-mod-turno: #B85C10;
+  --dv-mod-turno-bg: #FDF0E6;
+  --dv-mod-turno-border: #E8B98A;
+  --dv-mod-config: #4A5265;
+  --dv-mod-config-bg: #EAECF0;
+  --dv-mod-config-border: #A8AEBF;
+  --dv-input-bg: #FFFFFF;
+  --dv-input-border: #C8C4BB;
+  --dv-input-border-focus: #3B6B34;
+  --dv-input-ring-focus: #D6EAD0;
+  --dv-input-text: #2C2A26;
+  --dv-input-placeholder: #9E9890;
+}
+
+/* Uso: var(--dv-surface-base), var(--dv-mod-ventas), etc. */

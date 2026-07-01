@@ -35,7 +35,6 @@ interface DetalleProductoProps {
   onIrADetalle: () => void
   onIrAPresentaciones: () => void
   onIrAPrecios: () => void
-  onIrAResumen: () => void
   onActualizarProductoSeleccionado: (p: ProductoComercial) => void
   onNavegaAIngresos: () => void
   onLimpiar: () => void
@@ -496,7 +495,6 @@ export function DetalleProducto({
   onIrADetalle,
   onIrAPresentaciones,
   onIrAPrecios,
-  onIrAResumen,
   onActualizarProductoSeleccionado,
   onNavegaAIngresos,
   onLimpiar,
@@ -512,7 +510,6 @@ export function DetalleProducto({
   const [formularioOperacional, setFormularioOperacional] = useState<{ condicionVenta: string; requiereLote: boolean; requiereCadenaFrio: boolean } | null>(null)
   const [motivoOperacional, setMotivoOperacional] = useState<string>('')
   const [indiceAccion, setIndiceAccion] = useState<number>(-1)
-  const [indiceNavegacion, setIndiceNavegacion] = useState<number>(-1)
   const [principiosSeleccionadosIds, setPrincipiosSeleccionadosIds] = useState<string[]>([])
 
   useEffect(() => {
@@ -531,7 +528,6 @@ export function DetalleProducto({
 
   useEffect(() => {
     setIndiceAccion(productoConfirmado ? 0 : -1)
-    setIndiceNavegacion(productoConfirmado ? 0 : -1)
   }, [productoConfirmado])
 
   useEffect(() => {
@@ -570,8 +566,6 @@ export function DetalleProducto({
           setMotivoOperacional('')
         } else if (modo === 'desactivando') {
           setModo('lectura')
-        } else if (modo === 'lectura' && vistaActiva === 'detalle') {
-          onIrAResumen()
         } else if (modo === 'lectura') {
           onLimpiar()
         }
@@ -581,34 +575,12 @@ export function DetalleProducto({
       } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'detalle' && event.key === 'ArrowLeft') {
         event.preventDefault()
         setIndiceAccion(prev => (prev - 1 + 2) % 2)
-      } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'd') {
-        event.preventDefault()
-        onIrADetalle()
       } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'e') {
         event.preventDefault()
         onIrAPresentaciones()
       } else if (productoConfirmado && modo === 'lectura' && event.altKey && event.key === 'r') {
         event.preventDefault()
         onIrAPrecios()
-      } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'resumen' && event.key === 'ArrowRight') {
-        event.preventDefault()
-        setIndiceNavegacion(prev => (prev + 1) % 3)
-      } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'resumen' && event.key === 'ArrowLeft') {
-        event.preventDefault()
-        setIndiceNavegacion(prev => (prev - 1 + 3) % 3)
-      } else if (productoConfirmado && modo === 'lectura' && vistaActiva === 'resumen' && event.key === 'Enter' && indiceNavegacion >= 0) {
-        event.preventDefault()
-        switch (indiceNavegacion) {
-          case 0:
-            onIrADetalle()
-            break
-          case 1:
-            onIrAPresentaciones()
-            break
-          case 2:
-            onIrAPrecios()
-            break
-        }
       } else if (productoConfirmado && event.ctrlKey && event.key === 'Enter' && producto.estado === 'ACTIVO' && modo === 'lectura') {
         event.preventDefault()
         onIniciarCorreccion()
@@ -636,7 +608,7 @@ export function DetalleProducto({
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrADetalle, onIrAPresentaciones, onIrAPrecios, onIrAResumen, indiceAccion, indiceNavegacion, producto.estado, onGuardarCorreccion])
+  }, [modo, onLimpiar, productoConfirmado, vistaActiva, onIniciarCorreccion, onNavegaAIngresos, onIrAPresentaciones, onIrAPrecios, indiceAccion, producto.estado, onGuardarCorreccion])
 
   async function onGuardarCorreccion(): Promise<void> {
     if (!formularioCorreccion) return
@@ -718,182 +690,6 @@ export function DetalleProducto({
           </div>
         )}
 
-        {modo === 'corrigiendo' && formularioCorreccion !== null && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-4 mb-1">
-              <div>
-                <h2 className="text-[15px] font-bold text-slate-900">
-                  {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
-                </h2>
-                <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-                <p className="text-[10px] text-slate-400">
-                  Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                {producto.estado === 'ACTIVO' ? (
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700">ACTIVO</span>
-                ) : (
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">INACTIVO</span>
-                )}
-                {tieneHistorial && (
-                  <span className="text-[10px] text-amber-600 font-semibold text-right">Producto con movimientos registrados. Registro de cambios en historial.</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-3 items-end">
-              <label className="w-[130px] shrink-0">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CODIGO INTERNO</span>
-                <input
-                  value={formularioCorreccion.codigoInterno ?? ''}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoInterno: e.target.value.toUpperCase() } : prev)}
-                  maxLength={12}
-                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                />
-              </label>
-              <label className="w-[190px] shrink-0">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CODIGO DIGEMID</span>
-                {esAdmin ? (
-                  <input
-                    value={formularioCorreccion.codigoDIGEMID ?? ''}
-                    onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
-                    maxLength={20}
-                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                  />
-                ) : (
-                  <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
-                )}
-              </label>
-              <label className="flex-1">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">NOMBRE COMERCIAL</span>
-                <input
-                  value={formularioCorreccion.nombreComercial}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreComercial: e.target.value } : prev)}
-                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                />
-              </label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA / PRINCIPIO ACTIVO</span>
-                <SelectorPrincipiosActivos
-                  productoGenericoId={producto.productoGenericoId}
-                  tieneHistorial={tieneHistorial}
-                  operadorId={activeOperator?.id ?? ''}
-                  onCambio={(ids) => setPrincipiosSeleccionadosIds(ids)}
-                  motivo={motivoOperacional}
-                  disabled={guardandoCambios}
-                />
-              </div>
-              <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FABRICANTE / LABORATORIO</span>
-                <input
-                  value={formularioCorreccion.nombreFabricante}
-                  onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
-                  className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                />
-              </label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CONCENTRACION / DOSIS</span>
-                <input readOnly value={(producto.concentracion ?? '').toUpperCase()} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
-              </label>
-              <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FORMA FARMACEUTICA</span>
-                <input readOnly value={(producto.formaFarmaceutica ?? '').toUpperCase()} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
-              </label>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-3 gap-3">
-                <label>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CONDICION DE VENTA</span>
-                  <select
-                    value={formularioOperacional?.condicionVenta ?? producto.condicionVenta}
-                    onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, condicionVenta: e.target.value } : prev)}
-                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                  >
-                    <option value="SIN_RECETA">Sin receta</option>
-                    <option value="CON_RECETA">Con receta</option>
-                    <option value="CONTROLADO">Controlado</option>
-                  </select>
-                </label>
-                <label>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">REFRIGERAR</span>
-                  <select
-                    value={formularioOperacional?.requiereCadenaFrio ? '1' : '0'}
-                    onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereCadenaFrio: e.target.value === '1' } : prev)}
-                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                  >
-                    <option value="0">No requiere</option>
-                    <option value="1">Si · requiere frio</option>
-                  </select>
-                </label>
-                <label>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CON VENCIMIENTO</span>
-                  <select
-                    value={formularioOperacional?.requiereLote ? '1' : '0'}
-                    onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereLote: e.target.value === '1' } : prev)}
-                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                  >
-                    <option value="0">Sin trazabilidad</option>
-                    <option value="1">Si · requiere lote</option>
-                  </select>
-                </label>
-              </div>
-              {formularioOperacional !== null && (formularioOperacional.condicionVenta !== producto.condicionVenta || formularioOperacional.requiereLote !== producto.requiereLote || formularioOperacional.requiereCadenaFrio !== producto.requiereCadenaFrio) && (
-                <div className="flex flex-col gap-2 mt-1">
-                  <label>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">MOTIVO DE CORRECCION</span>
-                    <input
-                      type="text"
-                      value={motivoOperacional}
-                      onChange={(e) => setMotivoOperacional(e.target.value)}
-                      placeholder="Describe el motivo de esta correccion"
-                      className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                    />
-                  </label>
-                </div>
-              )}
-            </div>
-            {!esAdmin && (
-              <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2">Solo administradores pueden modificar datos de registro sanitario</p>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">REGISTRO SANITARIO</span>
-                {esAdmin ? (
-                  <input
-                    value={formularioCorreccion.registroSanitario ?? ''}
-                    onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
-                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                  />
-                ) : (
-                  <input readOnly value={formularioCorreccion.registroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
-                )}
-              </label>
-              <label>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ESTADO DEL REGISTRO</span>
-                {esAdmin ? (
-                  <select
-                    value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
-                    onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: e.target.value as EstadoRegistroSanitario } : prev)}
-                    className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                  >
-                    <option value="VIGENTE">Vigente</option>
-                    <option value="SUSPENDIDO">Suspendido</option>
-                    <option value="CANCELADO">Cancelado</option>
-                    <option value="VENCIDO">Vencido</option>
-                  </select>
-                ) : (
-                  <input readOnly value={formularioCorreccion.estadoRegistroSanitario ?? ''} className="h-[34px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-3 text-[13px] font-semibold text-slate-400" />
-                )}
-              </label>
-            </div>
-          </div>
-        )}
-
         {modo === 'desactivando' && (
           <div className="flex flex-col gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-4">
             <div className="flex items-start justify-between gap-4 mb-2">
@@ -921,108 +717,134 @@ export function DetalleProducto({
           </div>
         )}
 
-        {modo === 'lectura' && productoPreview === null && (
+        {(modo === 'lectura' || modo === 'corrigiendo') && productoPreview === null && (
           <>
-            {vistaActiva === 'resumen' && (
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-4">
+            {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
+            {!cargando && vistaActiva === 'detalle' && (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-4 mb-3">
                   <div>
                     <h2 className="text-[16px] font-bold text-slate-900">
-                      {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
+                      {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </h2>
-                    <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
+                    <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
                     <p className="text-[10px] text-slate-400">
                       Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
                     </p>
+                    {producto.estado === 'INACTIVO' && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
+                        INACTIVO
+                      </span>
+                    )}
                   </div>
-                  <div className="flex gap-2 overflow-visible">
-                    <button type="button" onClick={onIrADetalle} className={indiceNavegacion === 0 ? 'group relative rounded-xl border border-[#7C3AED] bg-[#EDE9FE] px-3 py-1.5 text-[11px] font-bold text-[#7C3AED]' : String(vistaActiva) === 'detalle' ? 'group relative rounded-xl bg-[#7C3AED] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#7C3AED]/40 px-3 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-[#EDE9FE]'}>
-                      DETALLE
-                      <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+D</kbd>
-                    </button>
-                    <button type="button" onClick={onIrAPresentaciones} className={indiceNavegacion === 1 ? 'group relative rounded-xl border border-[#0891B2] bg-[#ECFEFF] px-3 py-1.5 text-[11px] font-bold text-[#0891B2]' : String(vistaActiva) === 'presentaciones' ? 'group relative rounded-xl bg-[#0891B2] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#0891B2]/40 px-3 py-1.5 text-[11px] font-bold text-[#0891B2] hover:bg-[#ECFEFF]'}>
-                      PRESENTACIONES
-                      <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd>
-                    </button>
-                    <button type="button" onClick={onIrAPrecios} className={indiceNavegacion === 2 ? 'group relative rounded-xl border border-[#D97706] bg-[#FEF3C7] px-3 py-1.5 text-[11px] font-bold text-[#D97706]' : String(vistaActiva) === 'precios' ? 'group relative rounded-xl bg-[#D97706] px-3 py-1.5 text-[11px] font-bold text-white' : 'group relative rounded-xl border border-[#D97706]/40 px-3 py-1.5 text-[11px] font-bold text-[#D97706] hover:bg-[#FEF3C7]'}>
-                      PRECIOS
-                      <kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd>
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">DETALLE</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    <CampoLectura label="CONDICIÓN DE VENTA" valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta} />
-                    <CampoLectura label="CADENA DE FRÍO" valor={producto.requiereCadenaFrio ? 'Sí · requiere frío' : 'No requiere'} />
-                    <CampoLectura label="VENCIMIENTO / LOTE" valor={producto.requiereLote ? 'Sí · requiere lote' : 'Sin trazabilidad'} />
-                    <CampoLectura label="CATEGORÍA" valor={categoriaProducto(producto)} />
-                    <CampoLectura label="REGISTRO SANITARIO" valor={producto.estadoRegistroSanitario === 'VIGENTE' ? 'Vigente' : producto.estadoRegistroSanitario === 'VENCIDO' ? '⚠ Vencido' : producto.estadoRegistroSanitario ?? '-'} />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">PRESENTACIONES</h3>
-                  <p className="text-[12px] font-semibold text-slate-700">{presentaciones.length} presentación{presentaciones.length !== 1 ? 'es' : ''} registrada{presentaciones.length !== 1 ? 's' : ''}</p>
-                  {presentaciones.length > 0 && (
-                    <p className="text-[11px] text-slate-500">{presentaciones[0].descripcion} · Stock mínimo {presentaciones[0].stockMinimo} {presentaciones[0].unidadConteo}</p>
+                  {modo === 'lectura' ? (
+                    <div className="flex flex-col items-end gap-1 overflow-visible"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}</div><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button></div>
+                  ) : (
+                    <div className="flex flex-col items-end gap-1">
+                      {producto.estado === 'ACTIVO' ? (
+                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700">ACTIVO</span>
+                      ) : (
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">INACTIVO</span>
+                      )}
+                      {tieneHistorial && (
+                        <span className="text-[10px] text-amber-600 font-semibold text-right">Producto con movimientos registrados. Registro de cambios en historial.</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">PRECIOS</h3>
-                  <p className="text-[12px] text-slate-400">Consultar precios en la vista Precios.</p>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    PARA LA VENTA
+                  </h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    {modo === 'corrigiendo' && formularioCorreccion !== null && !tieneHistorial ? (
+                      <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{LABEL_CAMPO['condicionVenta'].catalogo}</span>
+                        <select
+                          value={formularioOperacional?.condicionVenta ?? producto.condicionVenta}
+                          onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, condicionVenta: e.target.value } : prev)}
+                          className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                        >
+                          <option value="SIN_RECETA">Sin receta</option>
+                          <option value="CON_RECETA">Con receta</option>
+                          <option value="CONTROLADO">Controlado</option>
+                        </select>
+                      </label>
+                    ) : (
+                      <CampoLectura
+                        label={LABEL_CAMPO['condicionVenta'].catalogo}
+                        valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta}
+                      />
+                    )}
+                    {modo === 'corrigiendo' && formularioCorreccion !== null && !tieneHistorial ? (
+                      <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Refrigerar</span>
+                        <select
+                          value={formularioOperacional?.requiereCadenaFrio ? '1' : '0'}
+                          onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereCadenaFrio: e.target.value === '1' } : prev)}
+                          className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                        >
+                          <option value="0">No requiere</option>
+                          <option value="1">Si · requiere frio</option>
+                        </select>
+                      </label>
+                    ) : (
+                      <CampoLectura
+                        label="Refrigerar"
+                        valor={producto.requiereCadenaFrio ? 'Sí · cadena de frío' : 'No requiere'}
+                      />
+                    )}
+                    {modo === 'corrigiendo' && formularioCorreccion !== null && !tieneHistorial ? (
+                      <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Con vencimiento</span>
+                        <select
+                          value={formularioOperacional?.requiereLote ? '1' : '0'}
+                          onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereLote: e.target.value === '1' } : prev)}
+                          className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                        >
+                          <option value="0">Sin trazabilidad</option>
+                          <option value="1">Si · requiere lote</option>
+                        </select>
+                      </label>
+                    ) : (
+                      <CampoLectura
+                        label="Con vencimiento"
+                        valor={producto.requiereLote ? 'Sí · requiere lote' : 'Sin trazabilidad de lote'}
+                      />
+                    )}
+                    <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
+                  </div>
                 </div>
-              </div>
-            )}
-            {vistaActiva !== 'resumen' && (
-              <>
-                {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
-                {!cargando && vistaActiva === 'detalle' && (
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <h2 className="text-[16px] font-bold text-slate-900">
-                          {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </h2>
-                        <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-                        <p className="text-[10px] text-slate-400">
-                          Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
-                        </p>
-                        {producto.estado === 'INACTIVO' && (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-600">
-                            INACTIVO
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-1 overflow-visible"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}</div><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button></div>
-                    </div>
-                    <div>
-                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        PARA LA VENTA
-                      </h3>
-                      <div className="grid grid-cols-4 gap-3">
-                        <CampoLectura
-                          label={LABEL_CAMPO['condicionVenta'].catalogo}
-                          valor={LABEL_CONDICION_VENTA[producto.condicionVenta] ?? producto.condicionVenta}
-                        />
-                        <CampoLectura
-                          label="Refrigerar"
-                          valor={producto.requiereCadenaFrio ? 'Sí · cadena de frío' : 'No requiere'}
-                        />
-                        <CampoLectura
-                          label="Con vencimiento"
-                          valor={producto.requiereLote ? 'Sí · requiere lote' : 'Sin trazabilidad de lote'}
-                        />
-                        <CampoLectura label="Categoría" valor={categoriaProducto(producto)} />
-                      </div>
-                    </div>
 
-                    <div>
-                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        IDENTIDAD DEL PRODUCTO
-                      </h3>
-                      <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    IDENTIDAD DEL PRODUCTO
+                  </h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    {modo === 'corrigiendo' && formularioCorreccion !== null ? (
+                      <>
+                        <CampoLectura label="CODIGO INTERNO" valor={producto.codigoInterno} />
+                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">NOMBRE COMERCIAL</span>
+                          <input
+                            value={formularioCorreccion.nombreComercial}
+                            onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreComercial: e.target.value } : prev)}
+                            className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                          />
+                        </label>
+                        <CampoLectura
+                          label={LABEL_CAMPO['concentracion'].catalogo}
+                          valor={producto.concentracion}
+                        />
+                        <CampoLectura
+                          label={LABEL_CAMPO['formaFarmaceutica'].catalogo}
+                          valor={LABEL_FORMA_FARMACEUTICA[producto.formaFarmaceutica ?? ''] ?? producto.formaFarmaceutica}
+                        />
+                      </>
+                    ) : (
+                      <>
                         <CampoLectura label={LABEL_CAMPO['ifa'].catalogo} valor={producto.ifa} />
                         <CampoLectura
                           label={LABEL_CAMPO['concentracion'].catalogo}
@@ -1032,14 +854,71 @@ export function DetalleProducto({
                           label={LABEL_CAMPO['formaFarmaceutica'].catalogo}
                           valor={LABEL_FORMA_FARMACEUTICA[producto.formaFarmaceutica ?? ''] ?? producto.formaFarmaceutica}
                         />
-                      </div>
-                    </div>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-                    <div>
-                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        REGISTRO Y PROCEDENCIA
-                      </h3>
-                      <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    REGISTRO Y PROCEDENCIA
+                  </h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    {modo === 'corrigiendo' && formularioCorreccion !== null ? (
+                      <>
+                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{LABEL_CAMPO['nombreFabricante'].catalogo}</span>
+                          <input
+                            value={formularioCorreccion.nombreFabricante}
+                            onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
+                            className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                          />
+                        </label>
+                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Registro sanitario</span>
+                          {esAdmin ? (
+                            <input
+                              value={formularioCorreccion.registroSanitario ?? ''}
+                              onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
+                              className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                            />
+                          ) : (
+                            <input readOnly value={formularioCorreccion.registroSanitario ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-2 text-[11px] font-semibold text-slate-400" />
+                          )}
+                        </label>
+                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Estado del registro</span>
+                          {esAdmin ? (
+                            <select
+                              value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
+                              onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: e.target.value as EstadoRegistroSanitario } : prev)}
+                              className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                            >
+                              <option value="VIGENTE">Vigente</option>
+                              <option value="SUSPENDIDO">Suspendido</option>
+                              <option value="CANCELADO">Cancelado</option>
+                              <option value="VENCIDO">Vencido</option>
+                            </select>
+                          ) : (
+                            <input readOnly value={formularioCorreccion.estadoRegistroSanitario ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-2 text-[11px] font-semibold text-slate-400" />
+                          )}
+                        </label>
+                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Codigo DIGEMID</span>
+                          {esAdmin ? (
+                            <input
+                              value={formularioCorreccion.codigoDIGEMID ?? ''}
+                              onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
+                              maxLength={20}
+                              className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                            />
+                          ) : (
+                            <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-2 text-[11px] font-semibold text-slate-400" />
+                          )}
+                        </label>
+                      </>
+                    ) : (
+                      <>
                         <CampoLectura label={LABEL_CAMPO['nombreFabricante'].catalogo} valor={producto.nombreFabricante} />
                         <CampoLectura label="Registro sanitario" valor={producto.registroSanitario} />
                         <CampoLectura
@@ -1057,44 +936,80 @@ export function DetalleProducto({
                           }
                         />
                         {esAdmin && <CampoLectura label="Codigo DIGEMID" valor={producto.codigoDIGEMID} />}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {modo === 'corrigiendo' && formularioCorreccion !== null && (
+                  <>
+                    {tieneHistorial ? (
+                      <CampoLectura label={LABEL_CAMPO['ifa'].catalogo} valor={producto.ifa} />
+                    ) : (
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA / PRINCIPIO ACTIVO</span>
+                        <SelectorPrincipiosActivos
+                          productoGenericoId={producto.productoGenericoId}
+                          tieneHistorial={tieneHistorial}
+                          operadorId={activeOperator?.id ?? ''}
+                          onCambio={(ids) => setPrincipiosSeleccionadosIds(ids)}
+                          motivo={motivoOperacional}
+                          disabled={guardandoCambios}
+                        />
                       </div>
-                    </div>
+                    )}
+                    {formularioOperacional !== null && (formularioOperacional.condicionVenta !== producto.condicionVenta || formularioOperacional.requiereLote !== producto.requiereLote || formularioOperacional.requiereCadenaFrio !== producto.requiereCadenaFrio) && (
+                      <label>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">MOTIVO DE CORRECCION</span>
+                        <input
+                          type="text"
+                          value={motivoOperacional}
+                          onChange={(e) => setMotivoOperacional(e.target.value)}
+                          placeholder="Describe el motivo de esta correccion"
+                          className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                        />
+                      </label>
+                    )}
+                    {!esAdmin && (
+                      <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2">Solo administradores pueden modificar datos de registro sanitario</p>
+                    )}
+                  </>
+                )}
 
-                    <div>
-                      <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        PRESENTACIONES COMERCIALES
-                      </h3>
-                      {presentaciones.length > 0 ? (
-                        <div className="space-y-2">
-                          {presentaciones.map((presentacion) => (
-                            <div key={presentacion.id} className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
-                              <div className="text-[13px] font-bold text-slate-800">{presentacion.descripcion}</div>
-                              {presentacion.codigoBarras && (
-                                <div className="text-[11px] text-slate-500">Cód. barras {presentacion.codigoBarras}</div>
-                              )}
-                              <div className="text-[11px] text-slate-500">
-                                Stock mínimo {presentacion.stockMinimo} {presentacion.unidadConteo}
-                              </div>
+                {modo === 'lectura' && (
+                  <div>
+                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      PRESENTACIONES COMERCIALES
+                    </h3>
+                    {presentaciones.length > 0 ? (
+                      <div className="space-y-2">
+                        {presentaciones.map((presentacion) => (
+                          <div key={presentacion.id} className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
+                            <div className="text-[13px] font-bold text-slate-800">{presentacion.descripcion}</div>
+                            {presentacion.codigoBarras && (
+                              <div className="text-[11px] text-slate-500">Cód. barras {presentacion.codigoBarras}</div>
+                            )}
+                            <div className="text-[11px] text-slate-500">
+                              Stock mínimo {presentacion.stockMinimo} {presentacion.unidadConteo}
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-[13px] text-slate-400">Sin presentaciones registradas</p>
-                      )}
-                    </div>
-
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[13px] text-slate-400">Sin presentaciones registradas</p>
+                    )}
                   </div>
                 )}
-                {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
-                {!cargando && vistaActiva === 'precios' && <PreciosTab nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
-              </>
+              </div>
             )}
+            {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
+            {!cargando && vistaActiva === 'precios' && <PreciosTab nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
           </>
         )}
       </div>
       {modo === 'corrigiendo' && (
         <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
-          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura'); setFormularioCorreccion(null) }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura'); setFormularioCorreccion(null); setFormularioOperacional(null); setMotivoOperacional('') }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
           <button
             type="button"
             onClick={() => void onGuardarCorreccion()}
@@ -1122,11 +1037,6 @@ export function DetalleProducto({
         <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
           <button type="button" onClick={onIrAPresentaciones} className="group relative px-5 rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRESENTACIONES<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd></button>
           <button type="button" onClick={onIrAPrecios} className="group relative px-5 rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRECIOS<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd></button>
-          <button type="button" onClick={onIrAResumen} className="group relative px-5 rounded-xl border border-[#f97316]/40 px-3 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-center">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
-        </div>
-      )}
-      {vistaActiva === 'resumen' && modo === 'lectura' && productoPreview === null && (
-        <div className="shrink-0 flex justify-end px-5 pb-4">
           <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[#f97316]/40 px-3 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-center">LIMPIAR<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
         </div>
       )}
