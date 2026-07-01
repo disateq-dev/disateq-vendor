@@ -33,9 +33,9 @@ button, a, [role="button"], select, label {
   --dv-color-exit: #B85C10;
   --dv-color-exit-bg: #FDF0E6;
   --dv-color-exit-border: #E8B98A;
-  --dv-mod-ventas: #2B5EA7;
-  --dv-mod-ventas-bg: #E8EFF9;
-  --dv-mod-ventas-border: #A0B8DC;
+  --dv-mod-ventas: #128C7E;
+  --dv-mod-ventas-bg: #E2F3F0;
+  --dv-mod-ventas-border: #9BCFC7;
   --dv-mod-abastecimiento: #3B6B34;
   --dv-mod-abastecimiento-bg: #E8F0E6;
   --dv-mod-abastecimiento-border: #A8C9A0;
@@ -44,8 +44,8 @@ button, a, [role="button"], select, label {
   --dv-mod-config: #4A5265;
   --dv-mod-config-bg: #EAECF0;
   --dv-mod-config-border: #A8AEBF;
-  --dv-mod-clientes: #2E7D7A;
-  --dv-mod-clientes-bg: #E3F2F1;
+  --dv-mod-clientes: #1E7E4F;
+  --dv-mod-clientes-bg: #F0FAF4;
   --dv-mod-clientes-border: #8BBFBC;
   --dv-mod-reportes: #5C5FA8;
   --dv-mod-reportes-bg: #ECEDF5;

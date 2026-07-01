@@ -689,7 +689,7 @@ export function CobroPanel() {
     ? "#F5A623"
     : confirmSheet?.accion === "enviar"
     ? "#4A90D9"
-    : "#4CAF50";
+    : "#45b356";
   const ConfirmIcon = confirmSheet?.accion === "guardar"
     ? Save
     : confirmSheet?.accion === "enviar"
@@ -702,11 +702,11 @@ export function CobroPanel() {
     : "SE IMPRIMIÓ EL DOCUMENTO";
 
   return (
-    <SheetWork accent="#45b356">
+    <SheetWork accent="#128C7E">
 
       {/* SheetHeader */}
       {cobroView === "main" && confirmSheet === null && (
-        <SheetHeader icon={Receipt} label="COBRO" accent="#45b356" />
+        <SheetHeader icon={Receipt} label="COBRO" accent="#128C7E" />
       )}
 
       {/* BODY */}
@@ -1112,7 +1112,7 @@ export function CobroPanel() {
               title="Tecla [Enter]"
               onClick={handleImprimir}
               disabled={!canConfirm}
-              className="flex w-[50%] items-center justify-center gap-2 rounded-2xl bg-[#4CAF50] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(76,175,80,0.30)] transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
+              className="flex w-[50%] items-center justify-center gap-2 rounded-2xl bg-[#45b356] py-3.5 text-[13px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(76,175,80,0.30)] transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >
               <Printer size={15} strokeWidth={2} />
               Imprimir

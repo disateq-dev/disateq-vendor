@@ -135,7 +135,7 @@ function ControlChip({
       onClick={onClick}
       className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
         active
-          ? "bg-[#2154d8] text-white"
+          ? "bg-[#5C5FA8] text-white"
           : "border border-[#e0e8f2] bg-white text-[#374151] hover:bg-[#f0f4ff]"
       }`}
     >
@@ -297,19 +297,19 @@ export function ReportesWorkspace() {
   }
 
   return (
-    <section className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#2154d8]/20 bg-[#FDFCF9]">
-      <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#2154d8]/15 bg-[#f0f4ff] px-4">
-        <BarChart2 size={13} strokeWidth={2} className="shrink-0 text-[#2154d8]" />
+    <section className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#5C5FA8]/20 bg-[#FDFCF9]">
+      <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#5C5FA8]/15 bg-[#f0f4ff] px-4">
+        <BarChart2 size={13} strokeWidth={2} className="shrink-0 text-[#5C5FA8]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">REPORTES</span>
       </header>
 
       <div className="flex flex-wrap items-center gap-3 border-b border-[#e8edf5] bg-white px-4 py-2.5">
         <div className="flex items-center gap-2 shrink-0">
           {generando
-            ? <RefreshCw size={12} strokeWidth={2} className="animate-spin text-[#2154d8]" />
-            : <span className="h-1.5 w-1.5 rounded-full bg-[#2154d8]" />
+            ? <RefreshCw size={12} strokeWidth={2} className="animate-spin text-[#5C5FA8]" />
+            : <span className="h-1.5 w-1.5 rounded-full bg-[#5C5FA8]" />
           }
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#2154d8]">{tipoActivo}</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C5FA8]">{tipoActivo}</span>
         </div>
         <div className="h-4 w-px bg-[#e0e8f2]" />
         <div className="flex flex-wrap items-center gap-1.5">
@@ -346,7 +346,7 @@ export function ReportesWorkspace() {
               onClick={generarActual}
               disabled={!rangoDesde || !rangoHasta}
               className={`rounded-xl px-3 py-1.5 text-[11px] font-bold text-white ${
-                rangoDesde && rangoHasta ? "bg-[#2154d8]" : "cursor-not-allowed bg-[#9db4f3]"
+                rangoDesde && rangoHasta ? "bg-[#5C5FA8]" : "cursor-not-allowed bg-[#9db4f3]"
               }`}
             >
               GENERAR
@@ -362,7 +362,7 @@ export function ReportesWorkspace() {
             disabled={!reporte}
             className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold ${
               reporte
-                ? "border border-[#d7e3ff] bg-[#f0f4ff] text-[#2154d8] hover:bg-[#e7efff]"
+                ? "border border-[#d7e3ff] bg-[#f0f4ff] text-[#5C5FA8] hover:bg-[#e7efff]"
                 : "cursor-not-allowed border border-[#e5e7eb] bg-[#f8fafc] text-[#9ca3af]"
             }`}
           >
@@ -374,7 +374,7 @@ export function ReportesWorkspace() {
             disabled={!reporte}
             className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold ${
               reporte
-                ? "border border-[#d7e3ff] bg-[#f0f4ff] text-[#2154d8] hover:bg-[#e7efff]"
+                ? "border border-[#d7e3ff] bg-[#f0f4ff] text-[#5C5FA8] hover:bg-[#e7efff]"
                 : "cursor-not-allowed border border-[#e5e7eb] bg-[#f8fafc] text-[#9ca3af]"
             }`}
           >
@@ -386,7 +386,7 @@ export function ReportesWorkspace() {
             disabled={!reporte}
             className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold ${
               reporte
-                ? "border border-[#d7e3ff] bg-[#f0f4ff] text-[#2154d8] hover:bg-[#e7efff]"
+                ? "border border-[#d7e3ff] bg-[#f0f4ff] text-[#5C5FA8] hover:bg-[#e7efff]"
                 : "cursor-not-allowed border border-[#e5e7eb] bg-[#f8fafc] text-[#9ca3af]"
             }`}
           >
@@ -399,7 +399,7 @@ export function ReportesWorkspace() {
       <div className="border-b border-[#e8edf5] bg-[#f8fafc] px-4 py-2">
         {tipoActivo === "VENTAS" && (
           <div className="grid grid-cols-5 gap-2">
-            <StatCard label="Total Vendido" value={fmtMonto(reporteVentas?.totalVendido)} accent="text-[#2154d8]" />
+            <StatCard label="Total Vendido" value={fmtMonto(reporteVentas?.totalVendido)} accent="text-[#5C5FA8]" />
             <StatCard label="Transacciones" value={fmtNum(reporteVentas?.totalTransacciones ?? 0)} />
             <StatCard
               label="Ticket Promedio"
@@ -416,7 +416,7 @@ export function ReportesWorkspace() {
 
         {tipoActivo === "COMPROBANTES" && (
           <div className="grid grid-cols-5 gap-2">
-            <StatCard label="Total Emitido" value={fmtMonto(reporteComprobantes?.totalEmitido)} accent="text-[#2154d8]" />
+            <StatCard label="Total Emitido" value={fmtMonto(reporteComprobantes?.totalEmitido)} accent="text-[#5C5FA8]" />
             <StatCard
               label="Boletas"
               value={fmtNum((reporteComprobantes?.conteoPorTipo ?? []).find(item => item?.tipo === "BOLETA")?.cantidad ?? 0)}
@@ -451,7 +451,7 @@ export function ReportesWorkspace() {
               accent="text-red-600"
             />
             <StatCard label="Compras Período" value={fmtNum(reporteAbastecimiento?.comprasDelPeriodo ?? 0)} />
-            <StatCard label="Gasto Total" value={fmtMonto(reporteAbastecimiento?.gastoTotal)} accent="text-[#2154d8]" />
+            <StatCard label="Gasto Total" value={fmtMonto(reporteAbastecimiento?.gastoTotal)} accent="text-[#5C5FA8]" />
           </div>
         )}
 
@@ -469,7 +469,7 @@ export function ReportesWorkspace() {
             <StatCard
               label="Diferencia Total"
               value={fmtMonto((reporteTurnos?.turnos ?? []).reduce((acc, turno) => acc + (turno?.diferencia ?? 0), 0))}
-              accent="text-[#2154d8]"
+              accent="text-[#5C5FA8]"
             />
           </div>
         )}
@@ -486,7 +486,7 @@ export function ReportesWorkspace() {
 
           {generando && (
             <div className="flex h-full items-center justify-center">
-              <RefreshCw size={24} className="animate-spin text-[#2154d8]" />
+              <RefreshCw size={24} className="animate-spin text-[#5C5FA8]" />
             </div>
           )}
 
@@ -550,7 +550,7 @@ export function ReportesWorkspace() {
                       <div key={hora} className="flex flex-col items-center gap-1">
                         <div
                           title={`${hora}:00 · ${fmtMonto(totalVendido)}`}
-                          className="w-full rounded-sm bg-[#2154d8]/70 transition hover:bg-[#2154d8]"
+                          className="w-full rounded-sm bg-[#5C5FA8]/70 transition hover:bg-[#5C5FA8]"
                           style={{ height: `${height}px`, minHeight: "2px" }}
                         />
                         <span className="text-[9px] text-[#94a3b8]">

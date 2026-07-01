@@ -167,7 +167,7 @@ export function PresentacionSheet({
             type="button"
             onClick={confirmarActiva}
             disabled={!puedeAgregar}
-            className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+            className="rounded-xl bg-[#45b356] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
           >
             AGREGAR →
           </button>

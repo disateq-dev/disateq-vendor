@@ -482,20 +482,20 @@ export function SalesWorkspace() {
 
   return (
     <>
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#45b356]/40 bg-[#FDFCF9]">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#128C7E]/40 bg-[#FDFCF9]">
 
       {/* SEARCH CONTROL — primera línea del body, sin SheetTopbar */}
       <div className="shrink-0 px-3 pt-3 pb-0">
         <div
           className={`flex items-center gap-2.5 rounded-[14px] border bg-white px-3.5 h-[44px] outline-none transition ${
             isFocused
-              ? "border-[#45b356]/70 ring-2 ring-[#45b356]/10"
+              ? "border-[#128C7E]/70 ring-2 ring-[#128C7E]/10"
               : cashSession.isOpen
-                ? "border-[#45b356]/40"
+                ? "border-[#128C7E]/40"
                 : "border-[#e4e9f0]"
           }`}
         >
-          <Search size={15} strokeWidth={2} className="shrink-0 text-[#45b356]" />
+          <Search size={15} strokeWidth={2} className="shrink-0 text-[#128C7E]" />
 
           <input
             ref={inputRef}
@@ -535,7 +535,7 @@ export function SalesWorkspace() {
             tabIndex={-1}
             title="Escanear código de barras (F3)"
             onClick={() => inputRef.current?.focus()}
-            className="flex shrink-0 items-center justify-center rounded-lg p-1 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#45b356]"
+            className="flex shrink-0 items-center justify-center rounded-lg p-1 text-[#c0cad4] transition hover:bg-[#f4f7fb] hover:text-[#128C7E]"
           >
             <ScanLine size={15} strokeWidth={2} />
           </button>
@@ -551,7 +551,7 @@ export function SalesWorkspace() {
               onClick={() => setVisualCategory(cat.id)}
               className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
                 visualCategory === cat.id
-                  ? "bg-[#45b356]/15 border border-[#45b356]/35 text-[#1e5c2a]"
+                  ? "bg-[#128C7E]/15 border border-[#128C7E]/35 text-[#0f5c50]"
                   : "border border-[#e4e7ec] text-[#475467] hover:border-[#d0d5dd] hover:text-[#111827]"
               }`}
             >

@@ -237,7 +237,7 @@ function FormularioBoleta({
   const textoAccion = buscando ? 'Consultando…' : tipoActivo === 'DNI' && buscoLocal ? 'RENIEC' : 'BUSCAR'
   const claseAccion = tipoActivo === 'DNI' && buscoLocal
     ? 'bg-[#2154d8] text-white hover:bg-[#1a42b0]'
-    : 'bg-[#4CAF50] text-white hover:bg-[#3d9e41]'
+    : 'bg-[#45b356] text-white hover:bg-[#3d9e41]'
 
   function limpiarResultado(): void {
     setFuente('MANUAL')
@@ -586,7 +586,7 @@ function FormularioBoleta({
           <button type="button" onClick={fuente === 'RENIEC' ? buscarOnlineDNI : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
             {fuente === 'RENIEC' ? 'ACTUALIZAR' : 'EDITAR'}
           </button>
-          <button ref={botonPrincipalRef} type="button" onClick={confirmarBoleta} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+          <button ref={botonPrincipalRef} type="button" onClick={confirmarBoleta} disabled={!puedeConfirmar} className="rounded-xl bg-[#45b356] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
             {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
           </button>
         </footer>
@@ -782,7 +782,7 @@ function FormularioDNI({
   const textoBotonIngreso = buscando ? 'Consultando…' : buscoLocal ? 'RENIEC' : 'BUSCAR'
   const claseBotonIngreso = buscoLocal
     ? 'bg-[#2154d8] text-white hover:bg-[#1a42b0]'
-    : 'bg-[#4CAF50] text-white hover:bg-[#3d9e41]'
+    : 'bg-[#45b356] text-white hover:bg-[#3d9e41]'
   const botonIngreso = (className = ''): ReactElement => (
     <button
       type="button"
@@ -936,7 +936,7 @@ function FormularioDNI({
             <button type="button" onClick={fuente === 'RENIEC' ? buscarOnline : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               {fuente === 'RENIEC' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
-            <button ref={botonPrincipalRef} type="button" onClick={confirmar} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+            <button ref={botonPrincipalRef} type="button" onClick={confirmar} disabled={!puedeConfirmar} className="rounded-xl bg-[#45b356] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
               {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
@@ -1120,7 +1120,7 @@ function FormularioRUC({
   const textoBotonIngreso = buscando ? 'Consultando…' : buscoLocal ? 'SUNAT' : 'BUSCAR'
   const claseBotonIngreso = buscoLocal
     ? 'bg-[#2154d8] text-white hover:bg-[#1a42b0]'
-    : 'bg-[#4CAF50] text-white hover:bg-[#3d9e41]'
+    : 'bg-[#45b356] text-white hover:bg-[#3d9e41]'
   const botonIngreso = (className = ''): ReactElement => (
     <button
       type="button"
@@ -1277,7 +1277,7 @@ function FormularioRUC({
             <button type="button" onClick={fuente === 'SUNAT' ? () => { void actualizarSunat() } : () => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
               {fuente === 'SUNAT' ? 'ACTUALIZAR' : editando ? 'LIMPIAR' : 'EDITAR'}
             </button>
-            <button ref={botonPrincipalRef} type="button" onClick={confirmarRUC} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+            <button ref={botonPrincipalRef} type="button" onClick={confirmarRUC} disabled={!puedeConfirmar} className="rounded-xl bg-[#45b356] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
               {fuente === 'LOCAL' && !editando ? 'USAR DATOS →' : 'REGISTRAR Y USAR →'}
             </button>
           </footer>
@@ -1407,7 +1407,7 @@ function FormularioLibre({
         <button type="button" onClick={() => setEditando(e => !e)} className="rounded-xl border border-[#e4e9f0] py-3 text-[11px] font-bold uppercase tracking-wide text-[#374151] transition hover:bg-[#f8fafd] active:scale-[0.97]">
           {editando ? 'LIMPIAR' : 'EDITAR'}
         </button>
-        <button type="button" onClick={confirmarLibre} disabled={!puedeConfirmar} className="rounded-xl bg-[#4CAF50] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
+        <button type="button" onClick={confirmarLibre} disabled={!puedeConfirmar} className="rounded-xl bg-[#45b356] py-3 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3d9e41] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35">
           REGISTRAR Y USAR →
         </button>
       </footer>
