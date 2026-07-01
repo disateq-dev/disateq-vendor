@@ -2,7 +2,7 @@
 
 ## Estado del documento
 
-Documento autoridad. Creado 21-jun-2026. Última actualización 24-jun-2026.
+Documento autoridad. Creado 21-jun-2026. Última actualización 01-jul-2026.
 
 Reemplaza tres documentos que describían una jerarquía conceptual nunca
 implementada: `03-arquitectura/arquitectura.md`,
@@ -91,7 +91,8 @@ teñido al 40% de opacidad del `accent`.
 **`SheetHeader`** — `{ icon: LucideIcon, label: string, accent: string, right?: ReactNode }`
 Barra de 42px de alto. Fondo = `tint(accent)` (mezcla del accent hacia
 blanco — fórmula calibrada por reconstrucción inversa contra el valor
-original `#45b356`→`#F2F7F3`; no validada visualmente para otros accents
+original `#45b356`→`#F2F7F3`; actualizada 01-jul-2026 contra el nuevo accent
+de VENTAS `#128C7E`→`#E2F3F0`; no validada visualmente para otros accents
 distintos de VENTAS). Borde inferior = `accent` al 20% de opacidad. Ícono +
 label en mayúsculas, semibold.
 
@@ -107,9 +108,9 @@ Borde superior + padding. Sin lógica propia.
 verificado en código:
 
 ```tsx
-<SheetWork accent="#45b356">
+<SheetWork accent="#128C7E">
   {vistaActiva === "main" && estadoConfirmacion === null && (
-    <SheetHeader icon={Receipt} label="COBRO" accent="#45b356" />
+    <SheetHeader icon={Receipt} label="COBRO" accent="#128C7E" />
   )}
   {/* contenido condicional por vista: confirmación / main / cliente */}
   <SheetBody className="...">...</SheetBody>
@@ -127,8 +128,7 @@ mismo `SheetWork` — no hay API de SheetWork para esto.
 
 ## Color por módulo
 
-**VENTAS / COBRO: `#45b356` (verde), vía SheetWork.** Verificado en
-`CobroPanel.tsx` (prop `accent`, dos usos).
+**VENTAS / COBRO: `#128C7E` (verde azulado), vía SheetWork.** Refinado el 01-jul-2026 (reemplaza el `#45b356` original, que colisionaba semánticamente con el verde de acción "nuevo/confirmar" usado en todo el sistema — ver DOCTRINA GLOBAL IRREVOCABLE de semántica de botones más abajo). Verificado en `CobroPanel.tsx` (prop `accent`, dos usos).
 
 **Hallazgo de auditoría (21-jun-2026): el marco "un accent por módulo" no
 aplica a los módulos que no usan SheetWork.** Verificado leyendo
@@ -358,25 +358,43 @@ contextos operacionales con etiqueta visible. En contextos sin etiqueta
 
 ## Mapa de color canónico por módulo
 
-Fuente de verdad para accent colors. Verificado contra código real
-(23-jun-2026). Cualquier divergencia entre este mapa y el código
-implica que el código está desactualizado — corregir el código.
+Fuente de verdad para accent colors. **Resincronizado 01-jul-2026** (versión
+anterior verificada 23-jun-2026, quedó desactualizada tras un repaletado
+posterior que nunca se reflejó de vuelta en este documento — ver nota de
+auditoría abajo). Cualquier divergencia entre este mapa y el código implica
+que uno de los dos está desactualizado; no asumir automáticamente que el
+documento manda ni que el código manda — verificar cuál es la decisión
+vigente antes de "corregir" nada.
 
 | Módulo | Accent | Nota |
 |---|---|---|
-| TURNO / CAJA | `#2A7CA8` | Azul petróleo |
-| VENTAS | `#45b356` | Verde |
-| ABASTECIMIENTO | `#0284C7` | Azul sky-600 — canónico desde 22-jun-2026 |
-| COMPROBANTES | `#C05050` | Terracota |
-| AJUSTES / CONFIG | `#697387` | Gris azulado |
-| CLIENTES | `#1e7e4f` | Verde oscuro |
-| REPORTES | `#2154d8` | Azul índigo |
+| TURNO / CAJA | `#C59B6D` | Tostado/camel — refinado 01-jul-2026 (reemplaza `#B85C10`/`#2A7CA8`, ambos vistos en distintos archivos antes de la unificación) |
+| VENTAS | `#128C7E` | Verde azulado — refinado 01-jul-2026 (reemplaza `#45b356`, que colisionaba con el verde de acción) |
+| ABASTECIMIENTO | `#3B6B34` | Verde oliva — unificado 01-jul-2026 (reemplaza `#0284C7` y `#639922`, dos identidades divergentes encontradas en `abastecimiento/farmacia/`) |
+| COMPROBANTES | `#7B4F6E` | Ciruela — sin auditar en la sesión del 01-jul-2026, valor tomado de la paleta congelada en `index.css` |
+| AJUSTES / CONFIG | `#4A5265` | Slate oscuro — unificado 01-jul-2026 (reemplaza `#697387` y `#2A7CA8`, vistos en distintos archivos antes de la unificación) |
+| CLIENTES | `#1E7E4F` | Verde oscuro — confirmado 01-jul-2026 como vigente (coincide con el valor de este mapa desde 23-jun-2026; la paleta congelada de `index.css` tenía `#2E7D7A` sin aplicar nunca al código, corregida para converger aquí) |
+| REPORTES | `#5C5FA8` | Azul violeta — refinado 01-jul-2026 (reemplaza `#2154d8`, que colisionaba con el azul de "autorización supervisora" usado en TURNO/CAJA) |
 
-**Nota ABASTECIMIENTO:** el color `#3D8A8A` (teal) que aparece en
-`OperationalBar.tsx` es un residuo del diseño anterior — no es el color
-canónico. Debe corregirse a `#0284C7` en todos los mapas del componente
-(`MOD_ON`, `PILL_ON`, `NAV_FOCUS`, `PILL_OFF`). Corrección pendiente
-en prompt a Codex (23-jun-2026).
+**Nota de auditoría (01-jul-2026):** al retomar la migración de tokens de
+diseño, se descubrió que este mapa (verificado 23-jun-2026) ya no coincidía
+con `index.css`/paleta congelada para ningún módulo tocado en la sesión.
+Fernando confirmó la causa raíz: hubo un repaletado legítimo después del
+24-jun-2026 que nunca se sincronizó de vuelta a este documento. Resultado
+práctico: TURNO, CONFIG y ABASTECIMIENTO tenían código divergente en varios
+archivos (mezcla de valores viejos y nuevos, sin patrón único) que se
+unificó hacia la paleta congelada; VENTAS, CLIENTES y REPORTES estaban
+enteramente en los valores viejos de este mapa (nunca migrados). De los
+tres, VENTAS y REPORTES se resolvieron con un color nuevo (no se adoptó ni
+el valor viejo de código ni el de la paleta congelada, por colisión
+semántica con otros usos del mismo hex en el sistema); CLIENTES se resolvió
+manteniendo su valor real de código y corrigiendo la paleta congelada para
+que coincida.
+
+**Nota ABASTECIMIENTO (histórica, resuelta 01-jul-2026):** la nota anterior
+sobre `#3D8A8A` como residuo en `OperationalBar.tsx` ya no aplica — el
+archivo fue auditado completo el 01-jul-2026 y no contiene ese valor; los
+mapas `MODULE_ACCENT`/`MODULE_BG` del componente coinciden con esta tabla.
 
 ---
 
