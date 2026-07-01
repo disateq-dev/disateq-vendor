@@ -182,7 +182,7 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
 
         <span className={`text-[9.5px] font-bold uppercase tracking-wide ${
           estado === "en_uso"    ? "text-[#2154d8]/70"  :
-          estado === "disponible" ? (isContg ? "text-amber-600" : "text-[#7D3C0E]") :
+          estado === "disponible" ? (isContg ? "text-amber-600" : "text-[#EAD4B9]") :
           estado === "cerrada"   ? "text-[#c0cad4]"     :
           "text-[#d1d9e1]"
         }`}>{typeLabel}</span>
@@ -868,9 +868,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             onPostponed={handleCorrectionPostponed}
           />
         ) : isOpen ? editingApertura ? (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#FEF9E7] border-[#CA6F1E]/15">
-              <Pencil size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#FFF5E6] border-[#C59B6D]/15">
+              <Pencil size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 CORREGIR FONDO DE CAMBIO
               </span>
@@ -905,11 +905,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             </div>
           </div>
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#FEF9E7] border-[#CA6F1E]/15">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#FFF5E6] border-[#C59B6D]/15">
               {closingStage > 0
-                ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
-                : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+                ? <LogOut size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
+                : <Clock  size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               }
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 {closingStage > 0 ? "CIERRE DE TURNO" : "RESUMEN DEL TURNO"}
@@ -920,7 +920,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-3 px-4 pt-3 pb-3">
             {closingStage > 0 && (
-              <div className="flex flex-col gap-1 rounded-[20px] border border-[#CA6F1E]/20 bg-white px-4 py-3.5">
+              <div className="flex flex-col gap-1 rounded-[20px] border border-[#C59B6D]/20 bg-white px-4 py-3.5">
                 <p className="px-0.5 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa6b8]">
                   PROGRESO
                 </p>
@@ -1050,16 +1050,16 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         ) : (
           /* Pre-open: operator + apertura card */
           <div className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border bg-[#FDFCF9] ${
-            openingMode === "exceptional" ? "border-amber-300/60" : "border-[#CA6F1E]/50"
+            openingMode === "exceptional" ? "border-amber-300/60" : "border-[#C59B6D]/50"
           }`}>
             <div className={`shrink-0 flex h-[42px] items-center gap-2 px-4 border-b ${
               openingMode === "exceptional"
                 ? "bg-amber-50 border-amber-200/60"
-                : "bg-[#FEF9E7] border-[#CA6F1E]/15"
+                : "bg-[#FFF5E6] border-[#C59B6D]/15"
             }`}>
               {openingMode === "exceptional"
                 ? <AlertTriangle size={13} strokeWidth={2} className="shrink-0 text-amber-500" />
-                : <LogIn         size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+                : <LogIn         size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               }
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 {openingMode === "exceptional" ? "APERTURA ESPECIAL" : "APERTURA DE TURNO"}
@@ -1199,9 +1199,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         <>
 
           {/* CENTER: CAJAS DISPONIBLES — ancho fijo */}
-          <div className="flex flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
-              <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+          <div className="flex flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FFF5E6] border-b border-[#C59B6D]/15">
+              <Monitor size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAJAS DISPONIBLES</span>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3">
@@ -1245,11 +1245,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             const resolveArqueo = (e: (typeof blockEntries)[number]) =>
               e.arqueo ?? (lastArqueo && lastArqueo.cashBoxCode === e.boxCode && e.closedAt ? lastArqueo : null);
             return (
-              <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/30 bg-[#FDFCF9]">
+              <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/30 bg-[#FDFCF9]">
 
                 {/* Header */}
-                <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
-                  <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+                <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FFF5E6] border-b border-[#C59B6D]/15">
+                  <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
                   <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">APERTURAS Y CIERRES ANTERIORES</span>
                 </div>
 
@@ -1283,7 +1283,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                           key={e.id}
                           className="grid grid-cols-[52px_1fr_110px_72px_82px_32px] items-center gap-x-3 px-4 py-2.5 hover:bg-[#f8fafc] transition-colors"
                         >
-                          <span className="text-[11px] font-bold tabular-nums text-[#7D3C0E]">C{e.boxCode}</span>
+                          <span className="text-[11px] font-bold tabular-nums text-[#EAD4B9]">C{e.boxCode}</span>
                           <span className="truncate text-[10.5px] font-semibold text-[#374151]">{e.boxLabel}</span>
                           <span className="text-[10.5px] tabular-nums text-[#6b7280]">
                             {fmtDay(e.openedAt)} {fmtTime(e.openedAt)}
@@ -1358,9 +1358,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         <>
 
           {/* ── SHEET 2: ARQUEO FONDO DE CAMBIO (30%) ── */}
-          <div className="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
-              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+          <div className="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FFF5E6] border-b border-[#C59B6D]/15">
+              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 ARQUEO FONDO DE CAMBIO
               </span>
@@ -1617,9 +1617,9 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
           </div>
 
           {/* ── SHEET 3: ARQUEO CAJA · CIERRE DE TURNO (40%) ── */}
-          <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
-              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+          <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FFF5E6] border-b border-[#C59B6D]/15">
+              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">
                 ARQUEO CAJA · CIERRE DE TURNO
               </span>
@@ -2052,11 +2052,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         <>
 
           {/* ─── MOVEMENTS PANEL ─── */}
-          <div className="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-[3] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
 
             {/* SheetHeader */}
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
-              <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FFF5E6] border-b border-[#C59B6D]/15">
+              <Wallet size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">MOVIMIENTOS</span>
             </div>
 
@@ -2595,10 +2595,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
           </div>
 
           {/* ─── SUCESOS DEL TURNO ─── */}
-          <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#CA6F1E]/50 bg-[#FDFCF9]">
+          <div className="flex min-h-0 flex-[4] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C59B6D]/50 bg-[#FDFCF9]">
 
-            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FEF9E7] border-b border-[#CA6F1E]/15">
-              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#7D3C0E]" />
+            <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FFF5E6] border-b border-[#C59B6D]/15">
+              <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#EAD4B9]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SUCESOS DEL TURNO</span>
               {currentSessionEvents.length > 0 && (
                 <span className="ml-auto text-[10px] font-semibold text-[#9ca3af] tabular-nums">{currentSessionEvents.length}</span>
