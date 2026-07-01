@@ -107,13 +107,13 @@ function PanelActivos({ selectedId, onSelect }: {
   const enTurnoCount    = activos.filter(o => getState(o) === "EN_TURNO").length;
 
   return (
-    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
+    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
-        <Activity size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F2F7FA] px-4">
+        <Activity size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">OPERADORES ACTIVOS</span>
-        <span className="rounded-md bg-[#2A7CA8]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#1a5f7a]">{activos.length}</span>
+        <span className="rounded-md bg-[#4A5265]/20 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4A5265]">{activos.length}</span>
         <div className="ml-auto flex items-center gap-2">
           {enTurnoCount > 0 && (
             <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600">
@@ -142,7 +142,7 @@ function PanelActivos({ selectedId, onSelect }: {
 
               const stateCfg = state ? {
                 EN_TURNO:   { dot: "bg-emerald-500", text: "text-emerald-600", label: "EN TURNO",   rowBg: "bg-emerald-50/30" },
-                DISPONIBLE: { dot: "bg-[#2A7CA8]",   text: "text-[#1a5f7a]",   label: "DISPONIBLE", rowBg: ""                 },
+                DISPONIBLE: { dot: "bg-[#4A5265]",   text: "text-[#4A5265]",   label: "DISPONIBLE", rowBg: ""                 },
                 SIN_BLOQUE: { dot: "bg-[#c0cad4]",   text: "text-[#b0bac8]",   label: "SIN BLOQUE", rowBg: "bg-[#fafbfc]"     },
               }[state] : null;
 
@@ -150,7 +150,7 @@ function PanelActivos({ selectedId, onSelect }: {
                 <div key={op.id} onClick={() => onSelect(op.id)}
                   className={`flex cursor-pointer items-center gap-2.5 border-l-2 px-3.5 py-2.5 transition ${
                     isSel
-                      ? "border-[#2A7CA8] bg-[#EBF4FA]"
+                      ? "border-[#4A5265] bg-[#EBF4FA]"
                       : `border-transparent hover:bg-[#F2F7FA] ${stateCfg?.rowBg ?? ""}`
                   }`}>
 
@@ -165,7 +165,7 @@ function PanelActivos({ selectedId, onSelect }: {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${
-                        isSuspended ? "bg-amber-100 text-amber-700" : isSel ? "bg-[#2A7CA8] text-white" : "bg-[#EBF4FA] text-[#1a5f7a]"
+                        isSuspended ? "bg-amber-100 text-amber-700" : isSel ? "bg-[#4A5265] text-white" : "bg-[#EBF4FA] text-[#4A5265]"
                       }`}>
                         {op.alias}
                       </span>
@@ -189,7 +189,7 @@ function PanelActivos({ selectedId, onSelect }: {
                   {op.pin === "" && op.estado === "ACTIVO" && (
                     <span className="shrink-0 rounded bg-red-50 px-1 py-0.5 text-[8px] font-bold text-red-400">PIN</span>
                   )}
-                  <ChevronRight size={10} className={isSel ? "text-[#2A7CA8]" : "text-[#e4e9f0]"} />
+                  <ChevronRight size={10} className={isSel ? "text-[#4A5265]" : "text-[#e4e9f0]"} />
                 </div>
               );
             })}
@@ -359,16 +359,16 @@ function PanelGestion({ selectedId, onSelect }: {
   const showConfirmBaja    = panel === "confirm-baja";
 
   return (
-    <div className="flex w-[480px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
+    <div className="flex w-[480px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
-        <Users size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F2F7FA] px-4">
+        <Users size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">DATOS DEL OPERADOR</span>
       </div>
 
       {/* ActionBar */}
-      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#2A7CA8]/10 px-4 py-2">
+      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#4A5265]/10 px-4 py-2">
         <button onClick={handleNew}
           className="flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
           <Plus size={10} strokeWidth={2.5} />NUEVO
@@ -423,7 +423,7 @@ function PanelGestion({ selectedId, onSelect }: {
           <div className="flex flex-col gap-2.5">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="rounded bg-[#e4e9f0] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#6b7280]">{selected.codigoOperador}</span>
-              <span className="rounded bg-[#2A7CA8] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.alias}</span>
+              <span className="rounded bg-[#4A5265] px-1.5 py-0.5 text-[10px] font-bold text-white">{selected.alias}</span>
               <span className="text-[12px] font-semibold text-[#2F3E46]">{selected.nombres} {selected.apellidos}</span>
               {selected.estado === "SUSPENDIDO" && (
                 <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">SUSP.</span>
@@ -457,7 +457,7 @@ function PanelGestion({ selectedId, onSelect }: {
               <div className="flex flex-1 flex-col gap-0.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-2.5 py-1.5">
                 <span className="text-[8px] font-bold uppercase tracking-widest text-[#b0bac8]">ROL</span>
                 <p className="text-[11px] font-semibold text-[#374151]">
-                  <span className="mr-1 rounded bg-[#EBF4FA] px-1 py-0.5 text-[9px] font-bold text-[#1a5f7a]">{selected.codigoRol}</span>
+                  <span className="mr-1 rounded bg-[#EBF4FA] px-1 py-0.5 text-[9px] font-bold text-[#4A5265]">{selected.codigoRol}</span>
                   {roles.find(r => r.codigo === selected.codigoRol)?.nombre ?? selected.codigoRol}
                 </p>
               </div>
@@ -466,7 +466,7 @@ function PanelGestion({ selectedId, onSelect }: {
                 {selected.baseBloque !== null ? (
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] font-semibold text-[#374151]">
-                      <span className="mr-1 font-bold text-[#2A7CA8]">{selected.baseBloque}</span>
+                      <span className="mr-1 font-bold text-[#4A5265]">{selected.baseBloque}</span>
                       –{selected.baseBloque + 4}
                     </p>
                     {!hasActiveTurno && (
@@ -694,11 +694,11 @@ function PanelHistorico() {
   const bajas       = operators.filter(o => o.estado === "INACTIVO");
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#2A7CA8]/40 bg-[#FDFCF9]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
 
       {/* SheetHeader — línea única fija */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#2A7CA8]/15 bg-[#F2F7FA] px-4">
-        <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#1a5f7a]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F2F7FA] px-4">
+        <ClipboardList size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">HISTORIAL</span>
         <div className="ml-auto flex items-center gap-2">
           {suspendidos.length > 0 && (
@@ -742,7 +742,7 @@ function PanelHistorico() {
                       <p className="truncate text-[9px] text-[#9ca3af]">{op.motivoEstado}</p>
                     )}
                     <button onClick={() => setOperatorStatus(op.id, "ACTIVO")}
-                      className="mt-0.5 flex items-center justify-center gap-1 rounded-lg border border-[#2A7CA8]/30 bg-[#f0fdf4] py-1 text-[9px] font-bold uppercase text-[#1a5f7a] transition hover:bg-[#EBF4FA]">
+                      className="mt-0.5 flex items-center justify-center gap-1 rounded-lg border border-[#4A5265]/30 bg-[#f0fdf4] py-1 text-[9px] font-bold uppercase text-[#4A5265] transition hover:bg-[#EBF4FA]">
                       <CircleCheck size={9} strokeWidth={2} />Reactivar
                     </button>
                   </div>

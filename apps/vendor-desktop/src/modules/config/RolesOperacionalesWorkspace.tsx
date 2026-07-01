@@ -15,7 +15,7 @@ const CAPABILITIES: { id: string; label: string; level: ObservabilityLevel }[] =
 ];
 
 const LEVEL_CFG: Record<ObservabilityLevel, { bg: string; text: string }> = {
-  personal:       { bg: "bg-[#697387]/10", text: "text-[#697387]"   },
+  personal:       { bg: "bg-[#4A5265]/10", text: "text-[#4A5265]"   },
   contextual:     { bg: "bg-[#2A7CA8]/10", text: "text-[#2A7CA8]"   },
   supervisión:    { bg: "bg-amber-100",    text: "text-amber-700"    },
   regularización: { bg: "bg-red-50",       text: "text-red-600"      },
@@ -32,12 +32,12 @@ function PanelRoles({ selectedId, onSelect }: {
   const inactivos = roles.filter(r => !r.activo).length;
 
   return (
-    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#697387]/40 bg-[#FDFCF9]">
+    <div className="flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
 
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
-        <Users size={13} strokeWidth={2} className="shrink-0 text-[#697387]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F3F4F6] px-4">
+        <Users size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ROLES</span>
-        <span className="rounded-md bg-[#697387]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#697387]">{roles.length}</span>
+        <span className="rounded-md bg-[#4A5265]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4A5265]">{roles.length}</span>
         <div className="ml-auto flex items-center gap-1.5">
           {inactivos > 0 && <span className="text-[9px] font-semibold text-amber-500">{inactivos} inact.</span>}
           {activos > 0   && <span className="text-[9px] font-semibold text-[#9ca3af]">{activos} activos</span>}
@@ -57,10 +57,10 @@ function PanelRoles({ selectedId, onSelect }: {
               return (
                 <div key={role.id} onClick={() => onSelect(role.id)}
                   className={`flex cursor-pointer items-center gap-2.5 border-l-2 px-3.5 py-2.5 transition ${
-                    isSel ? "border-[#697387] bg-[#F3F4F6]" : "border-transparent hover:bg-[#F7F8FA]"
+                    isSel ? "border-[#4A5265] bg-[#F3F4F6]" : "border-transparent hover:bg-[#F7F8FA]"
                   }`}>
                   <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${
-                    isSel ? "bg-[#697387] text-white" : "bg-[#F3F4F6] text-[#697387]"
+                    isSel ? "bg-[#4A5265] text-white" : "bg-[#F3F4F6] text-[#4A5265]"
                   }`}>{role.codigo}</span>
                   <div className="min-w-0 flex-1">
                     <p className={`truncate text-[12px] font-semibold ${
@@ -72,7 +72,7 @@ function PanelRoles({ selectedId, onSelect }: {
                     {!role.activo && (
                       <span className="rounded bg-amber-50 px-1 py-0.5 text-[8px] font-bold uppercase text-amber-600">INACT.</span>
                     )}
-                    <ChevronRight size={10} className={isSel ? "text-[#697387]" : "text-[#e4e9f0]"} />
+                    <ChevronRight size={10} className={isSel ? "text-[#4A5265]" : "text-[#e4e9f0]"} />
                   </div>
                 </div>
               );
@@ -142,21 +142,21 @@ function PanelDetalle({ selectedId, onSelect }: {
   const showForm = panel === "new" || panel === "edit";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/40 bg-[#FDFCF9]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
 
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
-        <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#697387]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F3F4F6] px-4">
+        <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ROL OPERACIONAL</span>
         {selected && (
           <>
-            <span className="text-[#697387]/30 mx-0.5">·</span>
-            <span className="rounded bg-[#697387] px-1.5 py-0.5 text-[9px] font-bold text-white">{selected.codigo}</span>
+            <span className="text-[#4A5265]/30 mx-0.5">·</span>
+            <span className="rounded bg-[#4A5265] px-1.5 py-0.5 text-[9px] font-bold text-white">{selected.codigo}</span>
           </>
         )}
       </div>
 
       {/* ActionBar */}
-      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#697387]/10 px-4 py-2">
+      <div className="shrink-0 flex items-center gap-1.5 border-b border-[#4A5265]/10 px-4 py-2">
         <button onClick={handleNew}
           className="flex items-center gap-1 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
           <Plus size={10} strokeWidth={2.5} />NUEVO
@@ -194,7 +194,7 @@ function PanelDetalle({ selectedId, onSelect }: {
 
             {/* identificación */}
             <div className="flex items-center gap-2.5">
-              <span className="rounded-md bg-[#697387] px-2 py-0.5 text-[11px] font-bold tracking-wider text-white">{selected.codigo}</span>
+              <span className="rounded-md bg-[#4A5265] px-2 py-0.5 text-[11px] font-bold tracking-wider text-white">{selected.codigo}</span>
               <span className="text-[13px] font-semibold text-[#2F3E46]">{selected.nombre}</span>
               {!selected.activo && (
                 <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600">INACTIVO</span>
@@ -226,12 +226,12 @@ function PanelDetalle({ selectedId, onSelect }: {
                     onClick={() => toggleCapability(cap.id)}
                     className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition active:scale-[0.99] ${
                       isOn
-                        ? "border-[#697387]/20 bg-[#697387]/5"
-                        : "border-[#E9E4DC] bg-white hover:border-[#697387]/20 hover:bg-[#697387]/3"
+                        ? "border-[#4A5265]/20 bg-[#4A5265]/5"
+                        : "border-[#E9E4DC] bg-white hover:border-[#4A5265]/20 hover:bg-[#4A5265]/3"
                     }`}
                   >
                     <div className={`shrink-0 flex h-4.5 w-8 items-center rounded-full transition-colors ${
-                      isOn ? "bg-[#697387]" : "bg-[#e4e9f0]"
+                      isOn ? "bg-[#4A5265]" : "bg-[#e4e9f0]"
                     }`}>
                       <div className={`h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${
                         isOn ? "translate-x-[17px]" : "translate-x-[2px]"
@@ -254,7 +254,7 @@ function PanelDetalle({ selectedId, onSelect }: {
                 <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">Operadores con este rol</p>
                 <div className="flex flex-wrap gap-1">
                   {operatorsWithRole.map(op => (
-                    <span key={op.id} className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[9px] font-bold text-[#697387]">
+                    <span key={op.id} className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[9px] font-bold text-[#4A5265]">
                       {op.codigo} {op.nombreCompleto}
                     </span>
                   ))}
@@ -279,7 +279,7 @@ function PanelDetalle({ selectedId, onSelect }: {
                 <input autoFocus={panel === "new"} type="text" value={editCode} maxLength={5} placeholder="VEN"
                   onChange={e => { setEditCode(e.target.value.toUpperCase().slice(0, 5)); setCodeError(null); }}
                   onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") setPanel("view"); }}
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-bold uppercase text-[#2F3E46] outline-none focus:border-[#697387] focus:ring-1 focus:ring-[#697387]/10 placeholder:text-[#d1d9e1]"
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-bold uppercase text-[#2F3E46] outline-none focus:border-[#4A5265] focus:ring-1 focus:ring-[#4A5265]/10 placeholder:text-[#d1d9e1]"
                 />
               </div>
               <div className="flex flex-1 flex-col gap-0.5">
@@ -287,7 +287,7 @@ function PanelDetalle({ selectedId, onSelect }: {
                 <input autoFocus={panel === "edit"} type="text" value={editName} placeholder="Cajero"
                   onChange={e => setEditName(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") setPanel("view"); }}
-                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#2F3E46] outline-none focus:border-[#697387] focus:ring-1 focus:ring-[#697387]/10 placeholder:text-[#d1d9e1]"
+                  className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-[#2F3E46] outline-none focus:border-[#4A5265] focus:ring-1 focus:ring-[#4A5265]/10 placeholder:text-[#d1d9e1]"
                 />
               </div>
             </div>
@@ -296,7 +296,7 @@ function PanelDetalle({ selectedId, onSelect }: {
               <input type="text" value={editDesc} placeholder="Contexto operacional del rol..."
                 onChange={e => setEditDesc(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && canSave) handleSave(); if (e.key === "Escape") setPanel("view"); }}
-                className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#374151] outline-none focus:border-[#697387] focus:ring-1 focus:ring-[#697387]/10 placeholder:text-[#d1d9e1]"
+                className="rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#374151] outline-none focus:border-[#4A5265] focus:ring-1 focus:ring-[#4A5265]/10 placeholder:text-[#d1d9e1]"
               />
             </div>
             <p className="text-[9.5px] text-[#b0bac8]">
