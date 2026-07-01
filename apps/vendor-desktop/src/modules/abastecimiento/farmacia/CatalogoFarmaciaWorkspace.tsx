@@ -44,10 +44,10 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
 
   return (
     <section className="flex min-h-0 flex-1 gap-2">
-      <div className="flex flex-[40] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#0284C7]/50 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E0F2FE]/60 border-[#0284C7]/15">
+      <div className="flex flex-[40] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#3B6B34]/50 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E8F0E6]/60 border-[#3B6B34]/15">
           <div className="flex items-center gap-2">
-            <Pill size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
+            <Pill size={13} strokeWidth={2} className="shrink-0 text-[#3B6B34]" />
             <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
               BÚSQUEDA CATÁLOGO
             </span>
@@ -57,7 +57,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               <button
                 type="button"
                 onClick={catalogo.onLimpiarError}
-                className="flex min-w-0 items-center gap-2 rounded-full bg-[#E0F2FE] px-3 py-1 text-[11px] font-bold text-[#0284C7]"
+                className="flex min-w-0 items-center gap-2 rounded-full bg-[#E8F0E6] px-3 py-1 text-[11px] font-bold text-[#3B6B34]"
               >
                 <span className="truncate">{catalogo.error}</span>
                 <X className="h-3.5 w-3.5 shrink-0" />
@@ -106,12 +106,12 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
         </div>
       </div>
 
-      <div className="flex flex-[60] min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#0284C7]/30 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E0F2FE]/60 border-[#0284C7]/15">
+      <div className="flex flex-[60] min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#3B6B34]/30 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E8F0E6]/60 border-[#3B6B34]/15">
           {catalogo.creandoAbierto ? (
-            <X size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
+            <X size={13} strokeWidth={2} className="shrink-0 text-[#3B6B34]" />
           ) : (
-            <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#0284C7]" />
+            <BookOpen size={13} strokeWidth={2} className="shrink-0 text-[#3B6B34]" />
           )}
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
             {catalogo.creandoAbierto ? 'NUEVO PRODUCTO' : modoDetalle === 'corrigiendo' ? 'CORREGIR DATOS BÁSICOS PRODUCTO' : modoDetalle === 'desactivando' ? 'DESACTIVAR PRODUCTO CATÁLOGO' : catalogo.vistaActiva === 'detalle' ? 'FICHA PRODUCTO' : catalogo.vistaActiva === 'presentaciones' ? 'PRESENTACIONES PRODUCTO' : catalogo.vistaActiva === 'precios' ? 'PRECIOS PRODUCTO' : 'FICHA PRODUCTO'}
@@ -172,7 +172,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
 
           {!catalogo.creandoAbierto && catalogo.productoSeleccionado === null && catalogo.productoPreview === null && !catalogo.sinResultados && (
             <div className="flex flex-col items-center justify-center pb-14 pt-[106px]">
-              <BookOpen size={32} className="text-[#0284C7]/30" />
+              <BookOpen size={32} className="text-[#3B6B34]/30" />
               <p className="mt-3 text-center text-[12px] text-slate-400">
                 Selecciona un producto en los resultados de la búsqueda para ver su ficha
               </p>

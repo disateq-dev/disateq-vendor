@@ -107,13 +107,13 @@ export function SelectorPrincipiosActivos({
         <>
           <div className="flex flex-wrap gap-2 mb-2">
             {principiosSeleccionados.map((principio) => (
-              <span key={principio.id} className="inline-flex items-center gap-1.5 rounded-full bg-[#E0F2FE] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
+              <span key={principio.id} className="inline-flex items-center gap-1.5 rounded-full bg-[#E8F0E6] px-2.5 py-1 text-[11px] font-bold text-[#3B6B34]">
                 {principio.nombreDci}
                 <button
                   type="button"
                   onClick={() => onEliminar(principio.id)}
                   disabled={disabled}
-                  className="text-[#0284C7] hover:text-red-500 disabled:opacity-50"
+                  className="text-[#3B6B34] hover:text-red-500 disabled:opacity-50"
                 >
                   x
                 </button>
@@ -134,7 +134,7 @@ export function SelectorPrincipiosActivos({
         onChange={(event) => onCambioQuery(event.target.value)}
         placeholder="Buscar principio activo..."
         disabled={disabled || cargandoInicial}
-        className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+        className="h-[34px] w-full rounded-lg border border-[#E8F0E6] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#3B6B34] bg-white disabled:opacity-50 disabled:cursor-not-allowed"
       />
 
       {!disabled && (
@@ -147,7 +147,7 @@ export function SelectorPrincipiosActivos({
               })
             )
           }}
-          className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-[#0284C7]/60 hover:text-[#0284C7] transition-colors"
+          className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-[#3B6B34]/60 hover:text-[#3B6B34] transition-colors"
         >
           <span>¿No encuentras el IFA?</span>
           <span className="underline underline-offset-2">Ir al catálogo de principios activos →</span>
@@ -155,7 +155,7 @@ export function SelectorPrincipiosActivos({
       )}
 
       {mostrandoDropdown && resultados.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-[#E0F2FE] bg-white shadow-lg max-h-48 overflow-auto">
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-[#E8F0E6] bg-white shadow-lg max-h-48 overflow-auto">
           {resultados.map((principio) => {
             const seleccionado = principiosSeleccionados.some((item) => item.id === principio.id)
             return (
@@ -164,7 +164,7 @@ export function SelectorPrincipiosActivos({
                 type="button"
                 onClick={() => onSeleccionar(principio)}
                 disabled={seleccionado}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] font-semibold text-slate-700 hover:bg-[#E0F2FE] ${seleccionado ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] font-semibold text-slate-700 hover:bg-[#E8F0E6] ${seleccionado ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 <span>{principio.nombreDci}</span>
                 {principio.esEsencialMinsa && (
