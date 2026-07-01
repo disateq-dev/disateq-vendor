@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ VENDOR™
 **Última actualización:** 01 Jul 2026
-**Commit activo:** `4a07bfa`
+**Commit activo:** `bbb3d19`
 
 ---
 
@@ -13,7 +13,7 @@
 - `ConfigWorkspace.tsx` usaba acento hardcodeado `#697387`, divergente del token congelado `--dv-mod-config` (`#4A5265`) — **RESUELTO esta sesión**, ver punto "Auditoría final TURNO/CAJA" abajo
 - `#dc2626`/`#b91c1c` (rojo destructivo) usado consistentemente en `CashWorkspace.tsx`, `SupervisionCajaWorkspace.tsx`, `OperadoresWorkspace.tsx`, `CajasWorkspace.tsx`, mientras `--dv-color-danger` (`#8B3A2A`) define un tono distinto — **no es una divergencia local de TURNO/CAJA**, es probable que `#dc2626` sea el rojo destructivo real de todo el sistema y `--dv-color-danger` sea el token desactualizado. Decisión de sistema completo, no de bloque — evaluar en el pase de limpieza global (punto 7) revisando VENTAS/ABASTECIMIENTO/etc. antes de tocar cualquier archivo.
 - `CatalogoFarmaciaWorkspace.tsx`, `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx` usaban acento hardcodeado `#0284C7` — **RESUELTO esta sesión**, ver sección "Migración ABASTECIMIENTO/farmacia" abajo
-- Case `"compras"` huérfano en `App.tsx` (~L118) — **mecanismo confirmado esta sesión**: `abastecimientoSubModule === "compras"` nunca puede ser verdadero porque `"compras"` NO existe en el tipo `AbastecimientoSubModule` (`"productos" | "ifa" | "proveedores" | "laboratorios" | "ingresos" | "inventarios" | "traslados"`). El `case` y el import de `PurchasesWorkspace` en `App.tsx` son código muerto real, no sospecha. Corroborado por `docs/INDICE.md`: `architecture/purchases/*` está marcado 🔜 "en pausa explícita, desconectada de implementación real". **Pendiente decisión de Fernando:** eliminar ahora o dejar para el pase de limpieza global.
+- Case `"compras"` huérfano en `App.tsx` (~L118) — **RESUELTO esta sesión**, commit `bbb3d19`. Mecanismo confirmado: `abastecimientoSubModule === "compras"` nunca podía ser verdadero porque `"compras"` no existía en el tipo `AbastecimientoSubModule`. Eliminados el `case` y el import de `PurchasesWorkspace`. Decisión de Fernando: la funcionalidad de compras ahora vive en INGRESOS (`IngresosMercaderiaWorkspace`).
 - `OperationalBar.tsx` mantiene `MODULE_ACCENT` y `MODULE_BG` como objetos JS hardcodeados con los 7 colores de módulo, **sin consumir los tokens `--dv-mod-*` de `index.css`** — dos fuentes de verdad independientes que pueden desincronizarse (ya ocurrió con el refinamiento de paleta TURNO esta sesión). Pendiente refactor: que este archivo lea `var(--dv-mod-*)` en lugar de duplicar los hex. Afecta los 7 módulos, no solo TURNO.
 
 ---
@@ -118,7 +118,8 @@ Retomar migración de tokens `--dv-*` a workspaces restantes. Orden acordado: **
 11. Laboratorios master table (decisión pendiente: tabla maestra vs texto libre)
 12. `BoxSlotType → TipoCaja` naming migration
 13. `Operador.codigo` cleanup
-14. Orphaned `"compras"` case en `App.tsx`
+
+**Items completados esta sesión, fuera de la lista original:** eliminación del case `"compras"` huérfano en `App.tsx` (commit `bbb3d19`) — ver DEUDA TÉCNICA arriba.
 
 ---
 
