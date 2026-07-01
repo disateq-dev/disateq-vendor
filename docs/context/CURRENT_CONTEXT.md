@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ VENDOR™
 **Última actualización:** 01 Jul 2026
-**Commit activo:** `0a3e729`
+**Commit activo:** `3aeac3b`
 
 ---
 
