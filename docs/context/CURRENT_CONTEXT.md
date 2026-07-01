@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ VENDOR™
-**Última actualización:** 30 Jun 2026
-**Commit activo:** `79143f6`
+**Última actualización:** 01 Jul 2026
+**Commit activo:** `efb28ac`
 
 ---
 
@@ -11,7 +11,7 @@
 - `OperationalBar.tsx` L515: label inaccessible módulo conserva `#121416` (tiene opacity:0.3, impacto visual mínimo)
 - `OperationalBar.tsx` renderOpcion: opciones secundarias inactivas conservan `color: "#201E1E"` — pendiente pase de limpieza global
 - `ComboboxFiltrado.tsx`: ícono `Check` conserva `text-[#45b356]` hardcodeado — **corrección:** mapea a `--dv-color-new` (no a `--dv-color-confirm` como se había anotado antes), pendiente aplicar
-- `ConfigWorkspace.tsx` y `RolesOperacionalesWorkspace.tsx` usan acento hardcodeado `#697387`, divergente del token congelado `--dv-mod-config` (`#4A5265`) — mismo patrón de divergencia que ABASTECIMIENTO, pendiente alinear
+- `ConfigWorkspace.tsx` usa acento hardcodeado `#697387`, divergente del token congelado `--dv-mod-config` (`#4A5265`) — mismo patrón de divergencia que ABASTECIMIENTO, pendiente alinear (`RolesOperacionalesWorkspace.tsx` ya fue migrado esta sesión, ver abajo)
 - `CatalogoFarmaciaWorkspace.tsx` (y probablemente `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx`) usan acento hardcodeado `#0284C7` (azul), divergente del token congelado `--dv-mod-abastecimiento` (`#3B6B34`) — pendiente alinear, decisión ya tomada: la paleta congelada manda
 - `OperationalBar.tsx` mantiene `MODULE_ACCENT` y `MODULE_BG` como objetos JS hardcodeados con los 7 colores de módulo, **sin consumir los tokens `--dv-mod-*` de `index.css`** — dos fuentes de verdad independientes que pueden desincronizarse (ya ocurrió con el refinamiento de paleta TURNO esta sesión). Pendiente refactor: que este archivo lea `var(--dv-mod-*)` en lugar de duplicar los hex. Afecta los 7 módulos, no solo TURNO.
 
@@ -79,13 +79,13 @@ Integrado en: `DetalleProducto.tsx` (condición de venta, refrigerar, vencimient
 
 Retomar migración de tokens `--dv-*` a workspaces restantes. Orden acordado: **TURNO/CAJA primero**, ya en curso:
 
-1. **Inmediato:** aplicar `--dv-mod-config` a `RolesOperacionalesWorkspace.tsx`, `OperadoresWorkspace.tsx`, `CajasWorkspace.tsx` (alinear `#697387` → `#4A5265`) — alcance acordado: solo acento + botones de acción, neutros quedan para el pase de limpieza global
+1. ~~Aplicar `--dv-mod-config` a `RolesOperacionalesWorkspace.tsx`, `OperadoresWorkspace.tsx`, `CajasWorkspace.tsx`~~ — **COMPLETADO esta sesión**, commit `d96e54f`. Hallazgo relevante: el supuesto inicial (los tres usaban `#697387`) era incorrecto — solo `RolesOperacionalesWorkspace.tsx` usaba `#697387`; `OperadoresWorkspace.tsx` y `CajasWorkspace.tsx` usaban en realidad `#2A7CA8` (accent) y `#1a5f7a` (variante de texto), ambos unificados a `--dv-mod-config` (`#4A5265`) sin crear una segunda variante de texto. No se tocaron `#2154d8` (superficie de "autorización supervisora", estado operacional distinto de identidad de módulo), `#dc2626` (acciones destructivas, diverge de `--dv-color-danger` existente — frente separado, no resuelto), ni `#005BE3` (botón EDITAR, decisión `--dv-color-edit` sigue pendiente, ver punto 2).
 2. Decidir `--dv-color-edit` (botón EDITAR, `#005BE3`) — pendiente, no resuelto
-3. `CashWorkspace.tsx` (149 KB) — requiere dividir en sub-pases por su tamaño
+3. ~~`CashWorkspace.tsx` (149 KB)~~ — **COMPLETADO esta sesión**, commit `efb28ac`. Hallazgo relevante: esta es la pantalla principal de TURNO (apertura/cierre/movimientos/sucesos — lo que el operador ve el 90% del tiempo) y tenía una **tercera identidad hardcodeada** propia (`#CA6F1E`/`#FEF9E7`/`#7D3C0E`, 40 ocurrencias), distinta tanto del token viejo de `index.css` como del refinado esta sesión. Migrada a `#C59B6D`/`#FFF5E6`/`#EAD4B9`. Se catalogaron los 73 hex distintos del archivo antes de tocar nada; el resto (autorización `#2154d8`/`#1a44be`, verde nuevo/confirmar, rojo destructivo, colores de `pasosCaja`, neutros) quedó intacto — verificado por catálogo completo antes/después, no solo por conteo puntual.
 4. `SupervisionCajaWorkspace.tsx`, `AutorizacionEjecucionCard.tsx` — confirmar identidad (probable TURNO) y migrar
 5. Migrar ABASTECIMIENTO: `CatalogoFarmaciaWorkspace.tsx`, `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx` — de `#0284C7` a `#3B6B34` (paleta congelada manda, decisión ya tomada)
 6. VENTAS: `SalesWorkspace.tsx`, `PreVentaWorkspace.tsx`, `ClientesWorkspace.tsx`, `ReportesWorkspace.tsx`
-7. Pase de limpieza global de remanentes — los items de deuda técnica de color registrados arriba + `renderOpcion` en OperationalBar
+7. Pase de limpieza global de remanentes — los items de deuda técnica de color registrados arriba + `renderOpcion` en OperationalBar + `ConfigWorkspace.tsx` (`#697387` pendiente) + `#dc2626` vs `--dv-color-danger` en `OperadoresWorkspace.tsx`/`CajasWorkspace.tsx`
 8. Evaluaciones visuales en app real (NuevoProductoStepper, flujos CORREGIR/DESACTIVAR)
 9. Prueba end-to-end IngresosMercaderiaWorkspace
 10. Brecha 8: registro de sustancias controladas/psicotrópicos (identificada, no implementada)
