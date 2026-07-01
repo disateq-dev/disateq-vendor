@@ -97,14 +97,14 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   }
 
   const SUB_ICONS: Record<ConfigSubView, React.ReactNode> = {
-    negocio:     <Store       size={13} strokeWidth={2} className="text-[#697387]" />,
-    operacion:   <ShieldCheck size={13} strokeWidth={2} className="text-[#697387]" />,
-    roles:       <Users       size={13} strokeWidth={2} className="text-[#697387]" />,
-    operadores:  <UserCog     size={13} strokeWidth={2} className="text-[#697387]" />,
-    cajas:       <LayoutGrid  size={13} strokeWidth={2} className="text-[#697387]" />,
-    capacidades: <Sliders     size={13} strokeWidth={2} className="text-[#697387]" />,
-    experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#697387]" />,
-    rubro:       <Layers      size={13} strokeWidth={2} className="text-[#697387]" />,
+    negocio:     <Store       size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    operacion:   <ShieldCheck size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    roles:       <Users       size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    operadores:  <UserCog     size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    cajas:       <LayoutGrid  size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    capacidades: <Sliders     size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    rubro:       <Layers      size={13} strokeWidth={2} className="text-[#4A5265]" />,
   };
   const SUB_LABELS: Record<ConfigSubView, string> = {
     negocio:     "Negocio",
@@ -123,15 +123,15 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   if (configSubView === "capacidades") return <CapacidadesWorkspace />;
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/50 bg-[#FDFCF9]">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/50 bg-[#FDFCF9]">
 
       {/* ── SheetHeader ── */}
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
-        <Settings2 size={13} strokeWidth={2} className="text-[#697387]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F3F4F6] px-4">
+        <Settings2 size={13} strokeWidth={2} className="text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">AJUSTES</span>
-        <span className="text-[#697387]/30 mx-0.5">·</span>
+        <span className="text-[#4A5265]/30 mx-0.5">·</span>
         {SUB_ICONS[configSubView]}
-        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#697387] leading-none">
+        <span className="text-[13px] font-semibold uppercase tracking-tight text-[#4A5265] leading-none">
           {SUB_LABELS[configSubView]}
         </span>
       </div>
@@ -152,7 +152,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
                 maxLength={60}
                 autoFocus
-                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#4A5265]/40 focus:outline-none focus:ring-1 focus:ring-[#4A5265]/20"
                 placeholder="Nombre comercial"
               />
               <input
@@ -161,7 +161,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 onChange={e => setRazonSocial(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
                 maxLength={80}
-                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#4A5265]/40 focus:outline-none focus:ring-1 focus:ring-[#4A5265]/20"
                 placeholder="Razón social"
               />
               <input
@@ -170,7 +170,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 onChange={e => setRuc(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
                 maxLength={11}
-                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#4A5265]/40 focus:outline-none focus:ring-1 focus:ring-[#4A5265]/20"
                 placeholder="RUC"
               />
               <input
@@ -179,7 +179,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 onChange={e => setAlias(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
                 maxLength={60}
-                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#4A5265]/40 focus:outline-none focus:ring-1 focus:ring-[#4A5265]/20"
                 placeholder="Local (alias del local)"
               />
               <input
@@ -188,7 +188,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 onChange={e => setDireccion(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
                 maxLength={100}
-                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#4A5265]/40 focus:outline-none focus:ring-1 focus:ring-[#4A5265]/20"
                 placeholder="Dirección"
               />
               <input
@@ -197,7 +197,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 onChange={e => setTelefono(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSaveNegocio()}
                 maxLength={30}
-                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#697387]/40 focus:outline-none focus:ring-1 focus:ring-[#697387]/20"
+                className="flex-1 rounded-xl border border-[#E9E4DC] bg-white px-3 py-2.5 text-[13px] text-[#374151] placeholder:text-[#c4cdd8] focus:border-[#4A5265]/40 focus:outline-none focus:ring-1 focus:ring-[#4A5265]/20"
                 placeholder="Teléfono"
               />
               <button
@@ -206,7 +206,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 className={`flex shrink-0 items-center gap-1.5 rounded-xl px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide transition ${
                   bizSaved
                     ? "bg-[#45b356]/15 text-[#45b356]"
-                    : "bg-[#697387]/10 text-[#697387] hover:bg-[#697387]/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                    : "bg-[#4A5265]/10 text-[#4A5265] hover:bg-[#4A5265]/20 disabled:opacity-40 disabled:cursor-not-allowed"
                 }`}
               >
                 {bizSaved ? <><Check size={12} strokeWidth={2.5} /> Aplicado</> : "Aplicar"}
@@ -264,7 +264,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                   className={`w-full rounded-xl border px-3 py-2.5 text-[18px] font-bold tracking-[0.4em] text-[#1a2d4e] outline-none placeholder:tracking-normal placeholder:font-normal placeholder:text-[13px] placeholder:text-[#d1d9e1] focus:ring-2 transition ${
                     adminPinError
                       ? "border-red-300 focus:border-red-400 focus:ring-red-200/30"
-                      : "border-[#E9E4DC] focus:border-[#697387]/50 focus:ring-[#697387]/15"
+                      : "border-[#E9E4DC] focus:border-[#4A5265]/50 focus:ring-[#4A5265]/15"
                   }`}
                 />
               </div>
@@ -284,7 +284,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                   className={`w-full rounded-xl border px-3 py-2.5 text-[18px] font-bold tracking-[0.4em] text-[#1a2d4e] outline-none placeholder:tracking-normal placeholder:font-normal placeholder:text-[13px] placeholder:text-[#d1d9e1] focus:ring-2 transition ${
                     adminPinError
                       ? "border-red-300 focus:border-red-400 focus:ring-red-200/30"
-                      : "border-[#E9E4DC] focus:border-[#697387]/50 focus:ring-[#697387]/15"
+                      : "border-[#E9E4DC] focus:border-[#4A5265]/50 focus:ring-[#4A5265]/15"
                   }`}
                 />
               </div>
@@ -300,8 +300,8 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                   adminSaved
                     ? "bg-emerald-500/15 text-emerald-600"
                     : adminPinNuevo.length === 6 && adminPinConfirm.length === 6
-                      ? "bg-[#697387]/10 text-[#697387] hover:bg-[#697387]/20"
-                      : "bg-[#697387]/5 text-[#697387]/30 cursor-not-allowed"
+                      ? "bg-[#4A5265]/10 text-[#4A5265] hover:bg-[#4A5265]/20"
+                      : "bg-[#4A5265]/5 text-[#4A5265]/30 cursor-not-allowed"
                 }`}
               >
                 {adminSaved
@@ -337,8 +337,8 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                     }}
                     className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
                       isActive
-                        ? "border-[#697387]/30 bg-[#697387]/8 shadow-[0_2px_6px_rgba(105,115,135,0.10)]"
-                        : "border-[#E9E4DC] bg-white hover:border-[#697387]/30 hover:bg-[#697387]/5"
+                        ? "border-[#4A5265]/30 bg-[#4A5265]/8 shadow-[0_2px_6px_rgba(105,115,135,0.10)]"
+                        : "border-[#E9E4DC] bg-white hover:border-[#4A5265]/30 hover:bg-[#4A5265]/5"
                     }`}
                   >
                     <span className="mt-0.5 shrink-0 text-[20px] leading-none">{RUBRO_ICONS[r]}</span>
@@ -351,7 +351,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                         default: {cfg.defaultVisualMode} · {cfg.defaultPrintFlow.replace("comprobante-", "c+")}
                       </p>
                     </div>
-                    {isActive && <div className="ml-auto shrink-0 mt-1 h-2 w-2 rounded-full bg-[#697387]" />}
+                    {isActive && <div className="ml-auto shrink-0 mt-1 h-2 w-2 rounded-full bg-[#4A5265]" />}
                   </button>
                 );
               })}
@@ -376,11 +376,11 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                       onClick={() => setVisualMode(m.id)}
                       className={`flex items-center gap-3 rounded-2xl border px-4 py-2.5 text-left transition active:scale-[0.98] ${
                         isActive
-                          ? "border-[#697387]/30 bg-[#697387]/8"
-                          : "border-[#E9E4DC] bg-white hover:border-[#697387]/30 hover:bg-[#697387]/5"
+                          ? "border-[#4A5265]/30 bg-[#4A5265]/8"
+                          : "border-[#E9E4DC] bg-white hover:border-[#4A5265]/30 hover:bg-[#4A5265]/5"
                       }`}
                     >
-                      <div className={`h-2 w-2 shrink-0 rounded-full ${isActive ? "bg-[#697387]" : "bg-[#e4e9f0]"}`} />
+                      <div className={`h-2 w-2 shrink-0 rounded-full ${isActive ? "bg-[#4A5265]" : "bg-[#e4e9f0]"}`} />
                       <div className="flex-1 min-w-0">
                         <span className={`text-[12px] font-semibold ${isActive ? "text-[#3d4554]" : "text-[#374151]"}`}>
                           {m.label}
@@ -413,11 +413,11 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                         !f.ready
                           ? "border-[#f1f4f7] bg-[#f8fafc] cursor-not-allowed opacity-50"
                           : isActive
-                            ? "border-[#697387]/30 bg-[#697387]/8 active:scale-[0.98]"
-                            : "border-[#E9E4DC] bg-white hover:border-[#697387]/30 hover:bg-[#697387]/5 active:scale-[0.98]"
+                            ? "border-[#4A5265]/30 bg-[#4A5265]/8 active:scale-[0.98]"
+                            : "border-[#E9E4DC] bg-white hover:border-[#4A5265]/30 hover:bg-[#4A5265]/5 active:scale-[0.98]"
                       }`}
                     >
-                      <div className={`h-2 w-2 shrink-0 rounded-full ${isActive && f.ready ? "bg-[#697387]" : "bg-[#e4e9f0]"}`} />
+                      <div className={`h-2 w-2 shrink-0 rounded-full ${isActive && f.ready ? "bg-[#4A5265]" : "bg-[#e4e9f0]"}`} />
                       <div className="flex-1 min-w-0">
                         <span className={`text-[12px] font-semibold ${isActive && f.ready ? "text-[#3d4554]" : "text-[#374151]"}`}>
                           {f.label}
