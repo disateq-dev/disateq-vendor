@@ -1,8 +1,8 @@
 @import "tailwindcss";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/inter-tight";
 
 @theme {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 body {
@@ -26,6 +26,7 @@ button, a, [role="button"], select, label {
   --dv-text-muted: #9E9890;
   --dv-color-confirm: #3B6B34;
   --dv-color-confirm-text: #FFFFFF;
+  --dv-color-new: #45b356;
   --dv-color-danger: #8B3A2A;
   --dv-color-danger-bg: #F5E8E3;
   --dv-color-danger-border: #C9A090;
