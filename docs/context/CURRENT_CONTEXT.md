@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ VENDOR™
 **Última actualización:** 01 Jul 2026
-**Commit activo:** `bbb3d19`
+**Commit activo:** `a8ee032` (pendiente commit de `ARQUITECTURA_UX.md` y corrección `--dv-mod-clientes`/`#4CAF50` en `CobroPanel.tsx`, confirmar hash con Fernando)
 
 ---
 
@@ -32,10 +32,10 @@ Definido en `apps/vendor-desktop/src/index.css`. **44 tokens** en cuatro grupos:
 
 **Paleta de identidad confirmada:**
 - TURNO: `#C59B6D` · bg `#FFF5E6` · border `#EAD4B9` (**refinada esta sesión**, reemplaza `#B85C10` / `#FDF0E6` / `#E8B98A`)
-- VENTAS: `#2B5EA7` · bg `#E8EFF9`
+- VENTAS: `#128C7E` · bg `#E2F3F0` · border `#9BCFC7` (**refinada esta sesión**, reemplaza `#2B5EA7`/`#45b356` — ver sección "Migración VENTAS" abajo)
 - ABASTECIMIENTO: `#3B6B34` · bg `#E8F0E6`
-- CLIENTES: `#2E7D7A` · bg `#E3F2F1`
-- REPORTES: `#5C5FA8` · bg `#ECEDF5`
+- CLIENTES: `#1E7E4F` · bg `#F0FAF4` (**corregida esta sesión**, la paleta congelada tenía `#2E7D7A` sin aplicar nunca al código real)
+- REPORTES: `#5C5FA8` · bg `#ECEDF5` (**refinada esta sesión**, reemplaza `#2154d8` — colisionaba con el azul de "autorización supervisora" de TURNO/CAJA)
 - COMPROBANTES: `#7B4F6E` · bg `#F0EAF0`
 - CONFIG: `#4A5265` · bg `#EAECF0`
 
@@ -89,6 +89,17 @@ Ningún archivo repitió el error de contraste texto/borde de TURNO (accent usad
 
 Verificados como correctamente ruteados en `App.tsx`: los 5 workspaces de farmacia y sus 11 componentes — ninguno huérfano.
 
+### Migración VENTAS — completada esta sesión
+Auditados 9 archivos (`SalesWorkspace.tsx`, `PreVentaGrid.tsx`, `PreVentaWorkspace.tsx`, `ClientesWorkspace.tsx`, `ReportesWorkspace.tsx`, `ClienteBuscador.tsx`, `PresentacionSheet.tsx`, `CobroPanel.tsx`, `ConfirmacionRecetaPanel.tsx`/`ConfirmacionVencimientoPanel.tsx`). Hallazgo mayor de la sesión: **`docs/ARQUITECTURA_UX.md` (documento de autoridad, verificado 23-jun-2026) estaba desactualizado** — su "Mapa de color canónico por módulo" no coincidía con la paleta congelada de `index.css` para NINGúN módulo tocado hoy. Fernando confirmó la causa: hubo un repaletado legítimo después del 24-jun-2026 nunca sincronizado de vuelta al documento. **`ARQUITECTURA_UX.md` corregido y resincronizado esta sesión** (commit pendiente de Fernando).
+
+- **VENTAS (`SalesWorkspace.tsx`, `PreVentaGrid.tsx`, `CobroPanel.tsx` vía `SheetWork`)** usaba `#45b356` como identidad de módulo — el mismo verde que `--dv-color-new` (acción "nuevo/confirmar" en TODO el sistema). Colisión semántica real: un borde verde en VENTAS no le decía nada distinto al operador de un botón "nuevo". Fernando decidió diseñar un color nuevo en vez de adoptar la paleta congelada vieja (`#2B5EA7`, nunca aplicada) o el valor de código (`#45b356`, semiánticamente roto): `#128C7E` (verde azulado, evocador de comercio/transacción, visualmente distinto de ABASTECIMIENTO oliva y CLIENTES teal-oscuro). Se separó cuidadosamente identidad de módulo (bordes de contenedor, header, buscador, píldoras de categoría, `SheetWork accent`) de las ocurrencias legítimas de `#45b356` como acción/estado (chip "Disponible", flash "producto agregado", botón COBRAR, método de pago seleccionado) — estas últimas se dejaron intactas.
+- **CLIENTES (`ClientesWorkspace.tsx`)** usaba `#1e7e4f`, que coincidía con `ARQUITECTURA_UX.md` pero no con la paleta congelada (`#2E7D7A`). Sin colisión semántica con ningún otro uso del hex en el sistema — se mantuvo el valor real de código y se corrigió la paleta congelada para converger (`#1E7E4F`/`#F0FAF4`).
+- **REPORTES (`ReportesWorkspace.tsx`)** usaba `#2154d8`, que también coincidía con `ARQUITECTURA_UX.md` pero colisionaba con el azul de "autorización supervisora" usado extensamente en TURNO/CAJA (`SupervisionCajaWorkspace.tsx`, `AutorizacionEjecucionCard.tsx`, badges "AUTORIZACIÓN"). Se migró al valor ya reservado en la paleta congelada, nunca aplicado: `#5C5FA8`.
+- **Hallazgo adicional en componentes de comprobante (`ClienteBuscador.tsx`, `PresentacionSheet.tsx`, `CobroPanel.tsx`):** botones de confirmación usaban `#4CAF50` (verde Material Design), un tercer tono distinto tanto de la identidad de VENTAS como de `--dv-color-new`. Unificado a `#45b356` en los tres archivos (10 ocurrencias totales).
+- **Error propio corregido durante el pase:** el primer prompt de tokens omitió actualizar `--dv-mod-clientes`/`MODULE_ACCENT.clientes`/`MODULE_BG.clientes` pese a estar solicitado — detectado por auditoría filesystem (el reporte de Codex también lo omitió sin mencionarlo), corregido en un segundo prompt.
+
+Sin colisiones nuevas de contraste texto/borde (mismo aprendizaje de TURNO) — en los tres módulos el accent se usa directamente como color de texto/ícono, todos con suficiente contraste.
+
 ### Auditoría final TURNO/CAJA — bloque cerrado esta sesión
 A pedido explícito de Fernando ("no debe quedar ninguna deuda o inconsistencia en este módulo o bloque"), se hizo una segunda pasada de auditoría sobre los 8 archivos tocados hoy más el shell de CONFIG, y se resolvieron dos hallazgos adicionales:
 
@@ -110,8 +121,8 @@ Retomar migración de tokens `--dv-*` a workspaces restantes. Orden acordado: **
 3. ~~`CashWorkspace.tsx` (149 KB)~~ — **COMPLETADO esta sesión**, commit `efb28ac`. Hallazgo relevante: esta es la pantalla principal de TURNO (apertura/cierre/movimientos/sucesos — lo que el operador ve el 90% del tiempo) y tenía una **tercera identidad hardcodeada** propia (`#CA6F1E`/`#FEF9E7`/`#7D3C0E`, 40 ocurrencias), distinta tanto del token viejo de `index.css` como del refinado esta sesión. Migrada a `#C59B6D`/`#FFF5E6`/`#EAD4B9`. Se catalogaron los 73 hex distintos del archivo antes de tocar nada; el resto (autorización `#2154d8`/`#1a44be`, verde nuevo/confirmar, rojo destructivo, colores de `pasosCaja`, neutros) quedó intacto — verificado por catálogo completo antes/después, no solo por conteo puntual.
 4. ~~`SupervisionCajaWorkspace.tsx`, `AutorizacionEjecucionCard.tsx`~~ — **COMPLETADO esta sesión**, commit `0a3e729`. `SupervisionCajaWorkspace.tsx` confirmado TURNO, mismo trío viejo que `CashWorkspace.tsx` (`#CA6F1E`/`#FEF9E7`/`#7D3C0E`) migrado a la paleta refinada. `AutorizacionEjecucionCard.tsx` confirmado TURNO también — pero su contenedor exterior usaba `#2A7CA8`/`#F2F7FA` (remanente de estilo copiado de Cajas/Operadores), migrado a `#C59B6D`/`#FFF5E6`; su contenido interno (`#2154d8`, superficie "autorización") quedó intacto por ser un concepto distinto a identidad de módulo. **Hallazgo importante de este pase:** el mapeo original `#7D3C0E → #EAD4B9` (definido para TURNO en el punto 3) era incorrecto — `#7D3C0E` cumplía rol de texto/ícono legible, no de borde; usar el border-tone ahí producía bajo contraste. Corregido en el mismo commit (`#EAD4B9` → `#C59B6D` en ambos archivos, incluyendo `CashWorkspace.tsx` que ya estaba commiteado con el error). Ver regla nueva en "Sistema de tokens" arriba.
 5. ~~Migrar ABASTECIMIENTO: `CatalogoFarmaciaWorkspace.tsx`, `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx`~~ — **COMPLETADO esta sesión**, commit `4a07bfa`. Alcance real fue 15 archivos (no 3) — ver sección "Migración ABASTECIMIENTO/farmacia" arriba para el detalle de los tres grupos de color encontrados y `DetalleProducto.tsx` como estándar de oro ya tokenizado.
-6. VENTAS: `SalesWorkspace.tsx`, `PreVentaWorkspace.tsx`, `ClientesWorkspace.tsx`, `ReportesWorkspace.tsx`
-7. Pase de limpieza global de remanentes — los items de deuda técnica de color registrados arriba + `renderOpcion` en OperationalBar + `ConfigWorkspace.tsx` (`#697387` pendiente) + `#dc2626` vs `--dv-color-danger` en `OperadoresWorkspace.tsx`/`CajasWorkspace.tsx`
+6. ~~VENTAS: `SalesWorkspace.tsx`, `PreVentaWorkspace.tsx`, `ClientesWorkspace.tsx`, `ReportesWorkspace.tsx`~~ — **COMPLETADO esta sesión**, commit `a8ee032` (+ corrección de `--dv-mod-clientes` y `#4CAF50` en `CobroPanel.tsx`, commit posterior). Alcance real fue 9 archivos, no 4. Ver sección "Migración VENTAS" arriba — incluye el hallazgo mayor de `ARQUITECTURA_UX.md` desactualizado (ya corregido) y el nuevo color de identidad VENTAS `#128C7E`.
+7. Pase de limpieza global de remanentes — los items de deuda técnica de color registrados arriba + `renderOpcion` en OperationalBar + `#dc2626` vs `--dv-color-danger` en `OperadoresWorkspace.tsx`/`CajasWorkspace.tsx` + verificar si `--dv-mod-*-border` no usados se repiten en VENTAS/CLIENTES/REPORTES/COMPROBANTES (patrón ya encontrado en TURNO)
 8. Evaluaciones visuales en app real (NuevoProductoStepper, flujos CORREGIR/DESACTIVAR)
 9. Prueba end-to-end IngresosMercaderiaWorkspace
 10. Brecha 8: registro de sustancias controladas/psicotrópicos (identificada, no implementada)
