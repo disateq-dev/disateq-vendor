@@ -88,7 +88,7 @@ export function ComboboxFiltrado({
           onClick={abrir}
           onChange={onFiltroChange}
           onKeyDown={onKeyDown}
-          className="h-[38px] w-full rounded-xl border border-[#E0F2FE] bg-white px-3 pr-9 text-[13px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#0284C7] focus:ring-2 focus:ring-[#E0F2FE] disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-[38px] w-full rounded-xl border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-3 pr-9 text-[13px] font-semibold text-[var(--dv-input-text)] outline-none transition placeholder:text-[var(--dv-input-placeholder)] focus:border-[var(--dv-input-border-focus)] focus:ring-2 focus:ring-[var(--dv-input-ring-focus)] disabled:cursor-not-allowed disabled:opacity-50"
         />
         {!abierto && opcionSeleccionada !== undefined ? (
           <Check
@@ -100,13 +100,13 @@ export function ComboboxFiltrado({
           <ChevronDown
             size={16}
             strokeWidth={2}
-            className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-transform ${abierto ? 'rotate-180' : ''}`}
+            className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--dv-text-muted)] transition-transform ${abierto ? 'rotate-180' : ''}`}
           />
         )}
       </div>
 
       {abierto && !disabled && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#E0F2FE] bg-white shadow-md">
+        <div className="absolute left-0 top-full z-50 mt-1 w-full overflow-hidden rounded-xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] shadow-md">
           <div className="max-h-[220px] overflow-y-auto">
             {opcionesFiltradas.length > 0 ? (
               opcionesFiltradas.map((opcion: OpcionComboboxFiltrado) => (
@@ -114,13 +114,13 @@ export function ComboboxFiltrado({
                   key={opcion.valor}
                   type="button"
                   onClick={() => onSeleccionar(opcion.valor)}
-                  className="block w-full px-3 py-2 text-left text-[13px] font-semibold text-slate-700 hover:bg-[#E0F2FE]"
+                  className="block w-full px-3 py-2 text-left text-[13px] font-semibold text-[var(--dv-text-primary)] hover:bg-[var(--dv-surface-field)]"
                 >
                   {opcion.etiqueta}
                 </button>
               ))
             ) : (
-              <div className="px-3 py-2 text-[12px] font-semibold text-slate-400">Sin resultados</div>
+              <div className="px-3 py-2 text-[12px] font-semibold text-[var(--dv-text-muted)]">Sin resultados</div>
             )}
           </div>
         </div>

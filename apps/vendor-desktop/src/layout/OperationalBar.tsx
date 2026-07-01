@@ -24,23 +24,23 @@ const MODULE_SHORTCUTS: Partial<Record<string, ActiveModule>> = {
 
 // ── Colores canónicos por módulo ──────────────────────────────
 const MODULE_ACCENT: Record<ActiveModule, string> = {
-  cash:           "#CA6F1E",
-  sales:          "#45b356",
-  abastecimiento: "#0284C7",
-  clientes:       "#1e7e4f",
-  reportes:       "#2154d8",
-  comprobantes:   "#C05050",
-  config:         "#697387",
+  cash:           "#B85C10",
+  sales:          "#2B5EA7",
+  abastecimiento: "#3B6B34",
+  clientes:       "#2E7D7A",
+  reportes:       "#5C5FA8",
+  comprobantes:   "#7B4F6E",
+  config:         "#4A5265",
 };
 
 const MODULE_BG: Record<ActiveModule, string> = {
-  cash:           "#FEF9E7",
-  sales:          "rgba(69,179,86,0.07)",
-  abastecimiento: "rgba(2,132,199,0.08)",
-  clientes:       "rgba(30,126,79,0.07)",
-  reportes:       "rgba(33,84,216,0.07)",
-  comprobantes:   "rgba(192,80,80,0.07)",
-  config:         "rgba(105,115,135,0.07)",
+  cash:           "#FDF0E6",
+  sales:          "#E8EFF9",
+  abastecimiento: "#E8F0E6",
+  clientes:       "#E3F2F1",
+  reportes:       "#ECEDF5",
+  comprobantes:   "#F0EAF0",
+  config:         "#EAECF0",
 };
 
 // ── Labels de módulos ─────────────────────────────────────────
@@ -405,7 +405,7 @@ export function ContextBar({
           style={{ borderBottom: `3px solid ${accent}` }}
         >
           {(() => { const Icon = MODULE_ICON[expandido]; return <span style={{ color: accent }}><Icon size={20} /></span>; })()}
-          <span style={{ color: "#201E1E" }}>{MODULE_LABEL[expandido]}</span>
+          <span style={{ color: "#2C2A26" }}>{MODULE_LABEL[expandido]}</span>
         </button>
 
         <div className="h-5 w-px shrink-0 bg-[#d1d5db]/60" />
@@ -465,7 +465,7 @@ export function ContextBar({
   // ── Vista global — todos los módulos ─────────────────────
   return (
     <section
-      className="flex h-[52px] shrink-0 items-center px-3 gap-1 bg-[#F2F3F5]"
+      className="flex h-[52px] shrink-0 items-center px-3 gap-1 bg-[var(--dv-surface-base)]"
       onMouseLeave={() => { setHoverModulo(null); onHover(null); }}
     >
       {MODULES_ORDER.map((modulo, idx) => {
@@ -512,8 +512,8 @@ export function ContextBar({
                       : { opacity: 0.7, borderColor: "transparent", cursor: "pointer" }
               }
             >
-              <span style={{ color: acceso ? accent : "#121416" }}><Icon size={20} /></span>
-              <span style={{ color: acceso ? "#201E1E" : "#121416" }}>{MODULE_LABEL[modulo]}</span>
+              <span style={{ color: acceso ? accent : "#2C2A26" }}><Icon size={20} /></span>
+              <span style={{ color: acceso ? "#2C2A26" : "#121416" }}>{MODULE_LABEL[modulo]}</span>
             </button>
             {esUltimoAntesSep && <Separador />}
           </div>

@@ -44,6 +44,15 @@ button, a, [role="button"], select, label {
   --dv-mod-config: #4A5265;
   --dv-mod-config-bg: #EAECF0;
   --dv-mod-config-border: #A8AEBF;
+  --dv-mod-clientes: #2E7D7A;
+  --dv-mod-clientes-bg: #E3F2F1;
+  --dv-mod-clientes-border: #8BBFBC;
+  --dv-mod-reportes: #5C5FA8;
+  --dv-mod-reportes-bg: #ECEDF5;
+  --dv-mod-reportes-border: #A8AAD0;
+  --dv-mod-comprobantes: #7B4F6E;
+  --dv-mod-comprobantes-bg: #F0EAF0;
+  --dv-mod-comprobantes-border: #C0A0C0;
   --dv-input-bg: #FFFFFF;
   --dv-input-border: #C8C4BB;
   --dv-input-border-focus: #3B6B34;

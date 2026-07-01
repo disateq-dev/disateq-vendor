@@ -20,6 +20,7 @@ import {
   asignarPrincipiosAProducto,
 } from '../../../../domains/farmacia/farmacia.service'
 import { usePOS } from '../../../../context/POSContext'
+import { ComboboxFiltrado } from '../../../../components/ComboboxFiltrado'
 import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
 import type { VistaCatalogo } from '../hooks/useCatalogoFarmacia'
 import { SelectorPrincipiosActivos } from './SelectorPrincipiosActivos'
@@ -81,9 +82,9 @@ function formatearFecha(iso: string): string {
 
 function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
   return (
-    <div className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-      <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{label}</div>
-      <div className="mt-1 min-h-5 text-[11px] font-semibold text-slate-800">{valor ?? '-'}</div>
+    <div className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] px-3 py-2">
+      <div className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">{label}</div>
+      <div className="mt-1 min-h-5 text-[11px] font-semibold text-[var(--dv-text-primary)]">{valor ?? '-'}</div>
     </div>
   )
 }
@@ -93,24 +94,24 @@ function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabric
     <>
       <div className="flex items-start gap-3 mb-4 px-1">
         <div>
-          <h2 className="text-[16px] font-bold text-slate-900">{nombreProducto}</h2>
-          <p className="text-[12px] font-semibold text-slate-500">{nombreFabricante}</p>
+          <h2 className="text-[16px] font-bold text-[var(--dv-text-primary)]">{nombreProducto}</h2>
+          <p className="text-[12px] font-semibold text-[var(--dv-text-secondary)]">{nombreFabricante}</p>
         </div>
       </div>
       <div className="space-y-4">
         {presentaciones.map((presentacion) => (
-          <article key={presentacion.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
+          <article key={presentacion.id} className="rounded-2xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-[14px] font-bold text-slate-900">{presentacion.descripcion}</h3>
-                <p className="mt-1 text-[12px] font-semibold text-slate-500">
+                <h3 className="text-[14px] font-bold text-[var(--dv-text-primary)]">{presentacion.descripcion}</h3>
+                <p className="mt-1 text-[12px] font-semibold text-[var(--dv-text-secondary)]">
                   Fracción DIGEMID: {presentacion.fraccionDIGEMID} {presentacion.unidadConteo}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => window.alert('Nueva forma de venta pendiente')}
-                className="rounded-full border border-[#E0F2FE] px-3 py-1.5 text-[11px] font-bold text-[#0284C7]"
+                className="rounded-full border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-mod-abastecimiento)]"
               >
                 Agregar forma de venta
               </button>
@@ -119,14 +120,14 @@ function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabric
               {nodos
                 .filter((nodo) => nodo.presentacionId === presentacion.id)
                 .map((nodo) => (
-                  <div key={nodo.id} className={`rounded-xl bg-[#E0F2FE] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
+                  <div key={nodo.id} className={`rounded-xl bg-[var(--dv-mod-abastecimiento-bg)] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[12px] font-bold text-slate-800">{nodo.nombreFormaVenta}</span>
-                      <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase text-[#0284C7]">
+                      <span className="text-[12px] font-bold text-[var(--dv-text-primary)]">{nodo.nombreFormaVenta}</span>
+                      <span className="rounded-full bg-[var(--dv-surface-panel)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--dv-mod-abastecimiento)]">
                         {nodo.tipoFormaVenta}
                       </span>
                     </div>
-                    <p className="mt-1 text-[11px] font-semibold text-slate-500">Unidades base: {nodo.unidadesBase}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-[var(--dv-text-secondary)]">Unidades base: {nodo.unidadesBase}</p>
                   </div>
                 ))}
             </div>
@@ -292,23 +293,23 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
   }, [formularioEdicion, valoresPorNodo])
 
   if (cargando) {
-    return <div className="text-[13px] font-semibold text-[#0284C7]">Cargando precios...</div>
+    return <div className="text-[13px] font-semibold text-[var(--dv-mod-abastecimiento)]">Cargando precios...</div>
   }
 
   if (error) {
-    return <div className="text-[13px] text-red-500">{error}</div>
+    return <div className="text-[13px] text-[var(--dv-color-danger)]">{error}</div>
   }
 
   if (nodosVendibles.length === 0) {
-    return <div className="text-[13px] text-slate-400">Sin formas de venta configuradas</div>
+    return <div className="text-[13px] text-[var(--dv-text-muted)]">Sin formas de venta configuradas</div>
   }
 
   return (
     <>
       <div className="flex items-start gap-3 mb-4 px-1">
         <div>
-          <h2 className="text-[16px] font-bold text-slate-900">{nombreProducto}</h2>
-          <p className="text-[12px] font-semibold text-slate-500">{nombreFabricante}</p>
+          <h2 className="text-[16px] font-bold text-[var(--dv-text-primary)]">{nombreProducto}</h2>
+          <p className="text-[12px] font-semibold text-[var(--dv-text-secondary)]">{nombreFabricante}</p>
         </div>
       </div>
       <div className="space-y-4">
@@ -318,9 +319,9 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
           const valorEnEdicion = valoresNodo.find((valor) => valor.id === formularioEdicion?.id)
 
           return (
-            <article key={nodo.id} className="rounded-2xl border border-[#E0F2FE] bg-white p-4">
+            <article key={nodo.id} className="rounded-2xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] p-4">
             <header className="flex justify-between items-center mb-3">
-              <h3 className="text-[14px] font-bold text-slate-900">{nodo.nombreFormaVenta}</h3>
+              <h3 className="text-[14px] font-bold text-[var(--dv-text-primary)]">{nodo.nombreFormaVenta}</h3>
               {tiposNodoDisponibles.length > 0 &&
                 formularioNuevo?.nodoId !== nodo.id &&
                 formularioEdicion?.nodoId !== nodo.id && (
@@ -328,7 +329,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     type="button"
                     onClick={() => onAbrirFormularioNuevo(nodo.id)}
                     disabled={guardando}
-                    className="rounded-full border border-[#0284C7] px-3 py-1 text-[11px] font-bold text-[#0284C7]"
+                    className="rounded-full border border-[var(--dv-mod-abastecimiento)] px-3 py-1 text-[11px] font-bold text-[var(--dv-mod-abastecimiento)]"
                   >
                     + Precio
                   </button>
@@ -336,23 +337,23 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
             </header>
 
             {valoresNodo.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-2 py-2 border-b border-[#E0F2FE] last:border-0">
+              <div key={v.id} className="flex items-center justify-between gap-2 py-2 border-b border-[var(--dv-border)] last:border-0">
                 <div>
-                  <div className="text-[12px] font-bold text-slate-700">{ETIQUETA_TIPO[v.tipo]}</div>
+                  <div className="text-[12px] font-bold text-[var(--dv-text-primary)]">{ETIQUETA_TIPO[v.tipo]}</div>
                   {v.tipo === 'VENTA_MAYOREO' && v.condicionCantidadMinima !== undefined && (
-                    <div className="text-[11px] text-slate-400">Mín. {v.condicionCantidadMinima} unidades</div>
+                    <div className="text-[11px] text-[var(--dv-text-muted)]">Mín. {v.condicionCantidadMinima} unidades</div>
                   )}
                   {v.tipo === 'VENTA_FRECUENTE' && (
-                    <div className="text-[11px] text-slate-400">Requiere cliente frecuente</div>
+                    <div className="text-[11px] text-[var(--dv-text-muted)]">Requiere cliente frecuente</div>
                   )}
                   {v.tipo === 'VENTA_PROMOCION' && v.vigenciaHasta && (
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-[var(--dv-text-muted)]">
                       {v.vigenciaDesde} - {v.vigenciaHasta}
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-bold text-[#0284C7]">S/ {v.valor.toFixed(2)}</span>
+                  <span className="text-[13px] font-bold text-[var(--dv-mod-abastecimiento)]">S/ {v.valor.toFixed(2)}</span>
                   {v.estado === 'INACTIVO' && (
                     <span className="text-[9px] bg-red-100 text-red-500 rounded px-1">INACTIVO</span>
                   )}
@@ -360,7 +361,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     type="button"
                     onClick={() => onAbrirFormularioEdicion(v)}
                     disabled={guardando || formularioNuevo?.nodoId === nodo.id || formularioEdicion?.nodoId === nodo.id}
-                    className="text-[11px] font-semibold text-slate-400 underline"
+                    className="text-[11px] font-semibold text-[var(--dv-text-muted)] underline"
                   >
                     Editar
                   </button>
@@ -369,11 +370,11 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
             ))}
 
             {formularioNuevo?.nodoId === nodo.id && (
-              <div className="mt-3 p-3 rounded-xl border border-[#0284C7]/30 bg-[#E0F2FE]/40 space-y-2">
+              <div className="mt-3 p-3 rounded-xl border border-[var(--dv-mod-abastecimiento-border)] bg-[var(--dv-mod-abastecimiento-bg)] space-y-2">
                 <select
                   value={formularioNuevo.tipo}
                   onChange={(event) => setFormularioNuevo({ ...formularioNuevo, tipo: event.target.value as TipoValorOperacional })}
-                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                  className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                 >
                   {tiposNodoDisponibles.map((tipo) => (
                     <option key={tipo} value={tipo}>{ETIQUETA_TIPO[tipo]}</option>
@@ -384,7 +385,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                   placeholder="Precio S/"
                   value={formularioNuevo.valor}
                   onChange={(event) => setFormularioNuevo({ ...formularioNuevo, valor: event.target.value })}
-                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                  className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                 />
                 {formularioNuevo.tipo === 'VENTA_MAYOREO' && (
                   <input
@@ -392,7 +393,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     placeholder="Cantidad mínima"
                     value={formularioNuevo.condicionMinima}
                     onChange={(event) => setFormularioNuevo({ ...formularioNuevo, condicionMinima: event.target.value })}
-                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                    className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                   />
                 )}
                 {formularioNuevo.tipo === 'VENTA_PROMOCION' && (
@@ -401,7 +402,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     placeholder="Vigente hasta"
                     value={formularioNuevo.vigenciaHasta}
                     onChange={(event) => setFormularioNuevo({ ...formularioNuevo, vigenciaHasta: event.target.value })}
-                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                    className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                   />
                 )}
                 <div className="flex gap-2">
@@ -409,14 +410,14 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     type="button"
                     onClick={() => void onGuardarNuevo()}
                     disabled={guardando}
-                    className="rounded-lg bg-[#0284C7] px-3 py-1.5 text-[12px] font-bold text-white"
+                    className="rounded-lg bg-[var(--dv-mod-abastecimiento)] px-3 py-1.5 text-[12px] font-bold text-white"
                   >
                     Guardar
                   </button>
                   <button
                     type="button"
                     onClick={onCancelar}
-                    className="rounded-lg border border-[#E0F2FE] px-3 py-1.5 text-[12px] font-bold text-slate-500"
+                    className="rounded-lg border border-[var(--dv-border)] px-3 py-1.5 text-[12px] font-bold text-[var(--dv-text-secondary)]"
                   >
                     Cancelar
                   </button>
@@ -425,12 +426,12 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
             )}
 
             {formularioEdicion?.nodoId === nodo.id && (
-              <div className="mt-3 p-3 rounded-xl border border-[#0284C7]/30 bg-[#E0F2FE]/40 space-y-2">
+              <div className="mt-3 p-3 rounded-xl border border-[var(--dv-mod-abastecimiento-border)] bg-[var(--dv-mod-abastecimiento-bg)] space-y-2">
                 <input
                   type="number"
                   value={formularioEdicion.valor}
                   onChange={(event) => setFormularioEdicion({ ...formularioEdicion, valor: event.target.value })}
-                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                  className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                 />
                 {valorEnEdicion?.tipo === 'VENTA_MAYOREO' && (
                   <input
@@ -438,7 +439,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     placeholder="Cantidad mínima"
                     value={formularioEdicion.condicionMinima}
                     onChange={(event) => setFormularioEdicion({ ...formularioEdicion, condicionMinima: event.target.value })}
-                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                    className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                   />
                 )}
                 {valorEnEdicion?.tipo === 'VENTA_PROMOCION' && (
@@ -446,13 +447,13 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     type="date"
                     value={formularioEdicion.vigenciaHasta}
                     onChange={(event) => setFormularioEdicion({ ...formularioEdicion, vigenciaHasta: event.target.value })}
-                    className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                    className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                   />
                 )}
                 <select
                   value={formularioEdicion.estado}
                   onChange={(event) => setFormularioEdicion({ ...formularioEdicion, estado: event.target.value as EstadoValorOperacional })}
-                  className="w-full rounded-lg border border-[#E0F2FE] px-2 py-1.5 text-[12px] font-semibold text-slate-700 outline-none focus:border-[#0284C7]"
+                  className="w-full rounded-lg border border-[var(--dv-input-border)] px-2 py-1.5 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
                 >
                   <option value="ACTIVO">Activa</option>
                   <option value="INACTIVO">Inactiva</option>
@@ -462,14 +463,14 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     type="button"
                     onClick={() => void onGuardarEdicion()}
                     disabled={guardando}
-                    className="rounded-lg bg-[#0284C7] px-3 py-1.5 text-[12px] font-bold text-white"
+                    className="rounded-lg bg-[var(--dv-mod-abastecimiento)] px-3 py-1.5 text-[12px] font-bold text-white"
                   >
                     Guardar
                   </button>
                   <button
                     type="button"
                     onClick={onCancelar}
-                    className="rounded-lg border border-[#E0F2FE] px-3 py-1.5 text-[12px] font-bold text-slate-500"
+                    className="rounded-lg border border-[var(--dv-border)] px-3 py-1.5 text-[12px] font-bold text-[var(--dv-text-secondary)]"
                   >
                     Cancelar
                   </button>
@@ -684,21 +685,21 @@ export function DetalleProducto({
     <section className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-col gap-4 px-5 py-4 overflow-auto flex-1">
         {errorAccion !== null && (
-          <div className="flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-[var(--dv-color-danger-border)] bg-[var(--dv-color-danger-bg)] px-3 py-2 text-[12px] text-[var(--dv-color-danger)]">
             <span>{errorAccion}</span>
             <button type="button" onClick={() => setErrorAccion(null)}>X</button>
           </div>
         )}
 
         {modo === 'desactivando' && (
-          <div className="flex flex-col gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-4">
+          <div className="flex flex-col gap-3 rounded-xl border border-[var(--dv-color-danger-border)] bg-[var(--dv-color-danger-bg)] px-4 py-4">
             <div className="flex items-start justify-between gap-4 mb-2">
               <div>
-                <h2 className="text-[15px] font-bold text-slate-900">
+                <h2 className="text-[15px] font-bold text-[var(--dv-text-primary)]">
                   {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')}
                 </h2>
-                <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[12px] font-semibold text-[var(--dv-text-secondary)]">{producto.nombreFabricante}</p>
+                <p className="text-[10px] text-[var(--dv-text-muted)]">
                   Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
                 </p>
               </div>
@@ -710,7 +711,7 @@ export function DetalleProducto({
                 )}
               </div>
             </div>
-            <p className="text-[13px] font-semibold text-slate-700">
+            <p className="text-[13px] font-semibold text-[var(--dv-text-primary)]">
               Vas a dar de baja «{producto.nombreComercial}». El producto quedará INACTIVO y no aparecerá en
               búsquedas ni ventas. El historial se conserva.
             </p>
@@ -719,18 +720,18 @@ export function DetalleProducto({
 
         {(modo === 'lectura' || modo === 'corrigiendo') && productoPreview === null && (
           <>
-            {cargando && <p className="text-[13px] font-semibold text-[#0284C7]">Cargando...</p>}
+            {cargando && <p className="text-[13px] font-semibold text-[var(--dv-mod-abastecimiento)]">Cargando...</p>}
             {!cargando && vistaActiva === 'detalle' && (
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div>
-                    <h2 className="text-[16px] font-bold text-slate-900">
+                    <h2 className="text-[16px] font-bold text-[var(--dv-text-primary)]">
                       {[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica]
                         .filter(Boolean)
                         .join(' · ')}
                     </h2>
-                    <p className="text-[12px] font-semibold text-slate-500">{producto.nombreFabricante}</p>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[12px] font-semibold text-[var(--dv-text-secondary)]">{producto.nombreFabricante}</p>
+                    <p className="text-[10px] text-[var(--dv-text-muted)]">
                       Creado {formatearFecha(producto.creadoEn)} · Modificado {formatearFecha(producto.modificadoEn)}
                     </p>
                     {producto.estado === 'INACTIVO' && (
@@ -740,7 +741,7 @@ export function DetalleProducto({
                     )}
                   </div>
                   {modo === 'lectura' ? (
-                    <div className="flex flex-col items-end gap-1 overflow-visible"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[#45b356] bg-[#F2F7F3] px-4 py-2 text-[12px] font-bold text-[#45b356] flex items-center gap-3' : 'group relative rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-red-400 bg-red-50 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3' : 'group relative rounded-xl border border-red-200 px-4 py-2 text-[12px] font-bold text-red-500 flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-slate-400">Solo un administrador puede reactivar este producto</p>))}</div><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[#0284C7] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button></div>
+                    <div className="flex flex-col items-end gap-1 overflow-visible"><div className="flex gap-2">{producto.estado === 'ACTIVO' && (<button type="button" onClick={onIniciarCorreccion} disabled={guardandoCambios || verificandoHistorial} className={indiceAccion === 0 ? 'group relative rounded-xl border border-[var(--dv-color-confirm)] bg-[var(--dv-mod-abastecimiento-bg)] px-4 py-2 text-[12px] font-bold text-[var(--dv-color-confirm)] flex items-center gap-3' : 'group relative rounded-xl border border-[var(--dv-mod-abastecimiento-border)] px-4 py-2 text-[12px] font-bold text-[var(--dv-color-confirm)] hover:bg-[var(--dv-mod-abastecimiento-bg)] flex items-center gap-3'}><span>CORREGIR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd></button>)}{producto.estado === 'ACTIVO' && (<button type="button" onClick={() => setModo('desactivando')} disabled={guardandoCambios} className={indiceAccion === 1 ? 'group relative rounded-xl border border-[var(--dv-color-danger)] bg-[var(--dv-color-danger-bg)] px-4 py-2 text-[12px] font-bold text-[var(--dv-color-danger)] flex items-center gap-3' : 'group relative rounded-xl border border-[var(--dv-color-danger-border)] px-4 py-2 text-[12px] font-bold text-[var(--dv-color-danger)] flex items-center gap-3'}><span>DESACTIVAR</span><kbd className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd></button>)}{producto.estado === 'INACTIVO' && (esAdmin ? (<button type="button" onClick={() => void onReactivar()} disabled={guardandoCambios} className="w-fit rounded-xl bg-[var(--dv-color-confirm)] px-4 py-2 text-[12px] font-bold text-white hover:bg-[var(--dv-color-confirm)] disabled:opacity-50">REACTIVAR</button>) : (<p className="text-[11px] text-[var(--dv-text-muted)]">Solo un administrador puede reactivar este producto</p>))}</div><button type="button" onClick={onNavegaAIngresos} className="group relative self-end text-[11px] font-bold text-[var(--dv-mod-abastecimiento)] underline">Ir a INGRESOS para registrar un nuevo lote →<kbd className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Insert</kbd></button></div>
                   ) : (
                     <div className="flex flex-col items-end gap-1">
                       {producto.estado === 'ACTIVO' ? (
@@ -755,23 +756,25 @@ export function DetalleProducto({
                   )}
                 </div>
                 <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">
                     PARA LA VENTA
                   </h3>
                   <div className="grid grid-cols-4 gap-3">
                     {modo === 'corrigiendo' && formularioCorreccion !== null && !tieneHistorial ? (
-                      <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{LABEL_CAMPO['condicionVenta'].catalogo}</span>
-                        <select
+                      <div className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">{LABEL_CAMPO['condicionVenta'].catalogo}</span>
+                        <ComboboxFiltrado
+                          opciones={[
+                            { valor: 'SIN_RECETA', etiqueta: 'Sin receta' },
+                            { valor: 'CON_RECETA', etiqueta: 'Con receta' },
+                            { valor: 'CONTROLADO', etiqueta: 'Controlado' },
+                          ]}
                           value={formularioOperacional?.condicionVenta ?? producto.condicionVenta}
-                          onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, condicionVenta: e.target.value } : prev)}
-                          className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                        >
-                          <option value="SIN_RECETA">Sin receta</option>
-                          <option value="CON_RECETA">Con receta</option>
-                          <option value="CONTROLADO">Controlado</option>
-                        </select>
-                      </label>
+                          onChange={(v) => setFormularioOperacional(prev => prev ? { ...prev, condicionVenta: v } : prev)}
+                          disabled={guardandoCambios}
+                          className="mt-1"
+                        />
+                      </div>
                     ) : (
                       <CampoLectura
                         label={LABEL_CAMPO['condicionVenta'].catalogo}
@@ -779,17 +782,19 @@ export function DetalleProducto({
                       />
                     )}
                     {modo === 'corrigiendo' && formularioCorreccion !== null && !tieneHistorial ? (
-                      <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Refrigerar</span>
-                        <select
+                      <div className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Refrigerar</span>
+                        <ComboboxFiltrado
+                          opciones={[
+                            { valor: '0', etiqueta: 'No requiere' },
+                            { valor: '1', etiqueta: 'Sí · requiere frío' },
+                          ]}
                           value={formularioOperacional?.requiereCadenaFrio ? '1' : '0'}
-                          onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereCadenaFrio: e.target.value === '1' } : prev)}
-                          className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                        >
-                          <option value="0">No requiere</option>
-                          <option value="1">Si · requiere frio</option>
-                        </select>
-                      </label>
+                          onChange={(v) => setFormularioOperacional(prev => prev ? { ...prev, requiereCadenaFrio: v === '1' } : prev)}
+                          disabled={guardandoCambios}
+                          className="mt-1"
+                        />
+                      </div>
                     ) : (
                       <CampoLectura
                         label="Refrigerar"
@@ -797,17 +802,19 @@ export function DetalleProducto({
                       />
                     )}
                     {modo === 'corrigiendo' && formularioCorreccion !== null && !tieneHistorial ? (
-                      <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Con vencimiento</span>
-                        <select
+                      <div className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Con vencimiento</span>
+                        <ComboboxFiltrado
+                          opciones={[
+                            { valor: '0', etiqueta: 'Sin trazabilidad' },
+                            { valor: '1', etiqueta: 'Sí · requiere lote' },
+                          ]}
                           value={formularioOperacional?.requiereLote ? '1' : '0'}
-                          onChange={(e) => setFormularioOperacional(prev => prev ? { ...prev, requiereLote: e.target.value === '1' } : prev)}
-                          className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                        >
-                          <option value="0">Sin trazabilidad</option>
-                          <option value="1">Si · requiere lote</option>
-                        </select>
-                      </label>
+                          onChange={(v) => setFormularioOperacional(prev => prev ? { ...prev, requiereLote: v === '1' } : prev)}
+                          disabled={guardandoCambios}
+                          className="mt-1"
+                        />
+                      </div>
                     ) : (
                       <CampoLectura
                         label="Con vencimiento"
@@ -819,19 +826,19 @@ export function DetalleProducto({
                 </div>
 
                 <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">
                     IDENTIDAD DEL PRODUCTO
                   </h3>
                   <div className="grid grid-cols-4 gap-3">
                     {modo === 'corrigiendo' && formularioCorreccion !== null ? (
                       <>
                         <CampoLectura label="CODIGO INTERNO" valor={producto.codigoInterno} />
-                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">NOMBRE COMERCIAL</span>
+                        <label className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">NOMBRE COMERCIAL</span>
                           <input
                             value={formularioCorreccion.nombreComercial}
                             onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreComercial: e.target.value } : prev)}
-                            className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                            className="mt-1 h-[28px] w-full rounded-lg border border-[var(--dv-input-border)] px-2 text-[11px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] bg-[var(--dv-input-bg)]"
                           />
                         </label>
                         <CampoLectura
@@ -860,60 +867,62 @@ export function DetalleProducto({
                 </div>
 
                 <div>
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">
                     REGISTRO Y PROCEDENCIA
                   </h3>
                   <div className="grid grid-cols-4 gap-3">
                     {modo === 'corrigiendo' && formularioCorreccion !== null ? (
                       <>
-                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{LABEL_CAMPO['nombreFabricante'].catalogo}</span>
+                        <label className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">{LABEL_CAMPO['nombreFabricante'].catalogo}</span>
                           <input
                             value={formularioCorreccion.nombreFabricante}
                             onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, nombreFabricante: e.target.value } : prev)}
-                            className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                            className="mt-1 h-[28px] w-full rounded-lg border border-[var(--dv-input-border)] px-2 text-[11px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] bg-[var(--dv-input-bg)]"
                           />
                         </label>
-                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Registro sanitario</span>
+                        <label className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Registro sanitario</span>
                           {esAdmin ? (
                             <input
                               value={formularioCorreccion.registroSanitario ?? ''}
                               onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, registroSanitario: e.target.value } : prev)}
-                              className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                              className="mt-1 h-[28px] w-full rounded-lg border border-[var(--dv-input-border)] px-2 text-[11px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] bg-[var(--dv-input-bg)]"
                             />
                           ) : (
-                            <input readOnly value={formularioCorreccion.registroSanitario ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-2 text-[11px] font-semibold text-slate-400" />
+                            <input readOnly value={formularioCorreccion.registroSanitario ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-surface-field)] px-2 text-[11px] font-semibold text-[var(--dv-text-muted)]" />
                           )}
                         </label>
-                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Estado del registro</span>
+                        <label className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Estado del registro</span>
                           {esAdmin ? (
-                            <select
+                            <ComboboxFiltrado
+                              opciones={[
+                                { valor: 'VIGENTE', etiqueta: 'Vigente' },
+                                { valor: 'SUSPENDIDO', etiqueta: 'Suspendido' },
+                                { valor: 'CANCELADO', etiqueta: 'Cancelado' },
+                                { valor: 'VENCIDO', etiqueta: 'Vencido' },
+                              ]}
                               value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
-                              onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: e.target.value as EstadoRegistroSanitario } : prev)}
-                              className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
-                            >
-                              <option value="VIGENTE">Vigente</option>
-                              <option value="SUSPENDIDO">Suspendido</option>
-                              <option value="CANCELADO">Cancelado</option>
-                              <option value="VENCIDO">Vencido</option>
-                            </select>
+                              onChange={(v) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: v as EstadoRegistroSanitario } : prev)}
+                              disabled={guardandoCambios}
+                              className="mt-1"
+                            />
                           ) : (
-                            <input readOnly value={formularioCorreccion.estadoRegistroSanitario ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-2 text-[11px] font-semibold text-slate-400" />
+                            <input readOnly value={formularioCorreccion.estadoRegistroSanitario ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-surface-field)] px-2 text-[11px] font-semibold text-[var(--dv-text-muted)]" />
                           )}
                         </label>
-                        <label className="rounded-xl border border-[#E0F2FE] bg-white px-3 py-2">
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Codigo DIGEMID</span>
+                        <label className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-input-bg)] px-3 py-2">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Codigo DIGEMID</span>
                           {esAdmin ? (
                             <input
                               value={formularioCorreccion.codigoDIGEMID ?? ''}
                               onChange={(e) => setFormularioCorreccion(prev => prev ? { ...prev, codigoDIGEMID: e.target.value } : prev)}
                               maxLength={20}
-                              className="mt-1 h-[28px] w-full rounded-lg border border-[#E0F2FE] px-2 text-[11px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                              className="mt-1 h-[28px] w-full rounded-lg border border-[var(--dv-input-border)] px-2 text-[11px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] bg-[var(--dv-input-bg)]"
                             />
                           ) : (
-                            <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[#E0F2FE] bg-[#fffef7] px-2 text-[11px] font-semibold text-slate-400" />
+                            <input readOnly value={formularioCorreccion.codigoDIGEMID ?? ''} className="mt-1 h-[28px] w-full cursor-not-allowed rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-surface-field)] px-2 text-[11px] font-semibold text-[var(--dv-text-muted)]" />
                           )}
                         </label>
                       </>
@@ -947,7 +956,7 @@ export function DetalleProducto({
                       <CampoLectura label={LABEL_CAMPO['ifa'].catalogo} valor={producto.ifa} />
                     ) : (
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">IFA / PRINCIPIO ACTIVO</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">IFA / PRINCIPIO ACTIVO</span>
                         <SelectorPrincipiosActivos
                           productoGenericoId={producto.productoGenericoId}
                           tieneHistorial={tieneHistorial}
@@ -960,13 +969,13 @@ export function DetalleProducto({
                     )}
                     {formularioOperacional !== null && (formularioOperacional.condicionVenta !== producto.condicionVenta || formularioOperacional.requiereLote !== producto.requiereLote || formularioOperacional.requiereCadenaFrio !== producto.requiereCadenaFrio) && (
                       <label>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">MOTIVO DE CORRECCION</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">MOTIVO DE CORRECCION</span>
                         <input
                           type="text"
                           value={motivoOperacional}
                           onChange={(e) => setMotivoOperacional(e.target.value)}
                           placeholder="Describe el motivo de esta correccion"
-                          className="h-[34px] w-full rounded-lg border border-[#E0F2FE] px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#0284C7] bg-white"
+                          className="h-[34px] w-full rounded-lg border border-[var(--dv-input-border)] px-3 text-[13px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] bg-[var(--dv-input-bg)]"
                         />
                       </label>
                     )}
@@ -978,25 +987,25 @@ export function DetalleProducto({
 
                 {modo === 'lectura' && (
                   <div>
-                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">
                       PRESENTACIONES COMERCIALES
                     </h3>
                     {presentaciones.length > 0 ? (
                       <div className="space-y-2">
                         {presentaciones.map((presentacion) => (
-                          <div key={presentacion.id} className="rounded-xl border border-[#E0F2FE] bg-white px-4 py-3">
-                            <div className="text-[13px] font-bold text-slate-800">{presentacion.descripcion}</div>
+                          <div key={presentacion.id} className="rounded-xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] px-4 py-3">
+                            <div className="text-[13px] font-bold text-[var(--dv-text-primary)]">{presentacion.descripcion}</div>
                             {presentacion.codigoBarras && (
-                              <div className="text-[11px] text-slate-500">Cód. barras {presentacion.codigoBarras}</div>
+                              <div className="text-[11px] text-[var(--dv-text-secondary)]">Cód. barras {presentacion.codigoBarras}</div>
                             )}
-                            <div className="text-[11px] text-slate-500">
+                            <div className="text-[11px] text-[var(--dv-text-secondary)]">
                               Stock mínimo {presentacion.stockMinimo} {presentacion.unidadConteo}
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[13px] text-slate-400">Sin presentaciones registradas</p>
+                      <p className="text-[13px] text-[var(--dv-text-muted)]">Sin presentaciones registradas</p>
                     )}
                   </div>
                 )}
@@ -1009,12 +1018,12 @@ export function DetalleProducto({
       </div>
       {modo === 'corrigiendo' && (
         <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
-          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura'); setFormularioCorreccion(null); setFormularioOperacional(null); setMotivoOperacional('') }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura'); setFormularioCorreccion(null); setFormularioOperacional(null); setMotivoOperacional('') }} className="group relative rounded-xl border border-[var(--dv-color-exit-border)] px-4 py-2 text-[12px] font-bold text-[var(--dv-color-exit)] hover:bg-[var(--dv-color-exit-bg)]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
           <button
             type="button"
             onClick={() => void onGuardarCorreccion()}
             disabled={guardandoCambios}
-            className="group relative rounded-xl bg-[#45b356] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50"
+            className="group relative rounded-xl bg-[var(--dv-color-confirm)] px-4 py-2 text-[12px] font-bold text-white hover:bg-[var(--dv-color-confirm)] disabled:opacity-50"
           >
             GUARDAR CORRECCION<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Enter</kbd>
           </button>
@@ -1022,12 +1031,12 @@ export function DetalleProducto({
       )}
       {modo === 'desactivando' && (
         <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
-          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura') }} className="group relative rounded-xl border border-[#f97316]/40 px-4 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+          <button type="button" onClick={() => { onIrADetalle(); setModo('lectura') }} className="group relative rounded-xl border border-[var(--dv-color-exit-border)] px-4 py-2 text-[12px] font-bold text-[var(--dv-color-exit)] hover:bg-[var(--dv-color-exit-bg)]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
           <button
             type="button"
             onClick={() => void onConfirmarDesactivar()}
             disabled={guardandoCambios}
-            className="group relative rounded-xl bg-red-500 px-4 py-2 text-[12px] font-bold text-white hover:bg-red-600 disabled:opacity-50"
+            className="group relative rounded-xl bg-[var(--dv-color-danger)] px-4 py-2 text-[12px] font-bold text-white hover:bg-[var(--dv-color-danger)] disabled:opacity-50"
           >
             CONFIRMAR BAJA<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd>
           </button>
@@ -1035,9 +1044,9 @@ export function DetalleProducto({
       )}
       {vistaActiva === 'detalle' && modo === 'lectura' && (
         <div className="shrink-0 flex justify-end gap-2 px-5 pb-4">
-          <button type="button" onClick={onIrAPresentaciones} className="group relative px-5 rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRESENTACIONES<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd></button>
-          <button type="button" onClick={onIrAPrecios} className="group relative px-5 rounded-xl border border-[#0284C7]/40 px-3 py-2 text-[12px] font-bold text-[#0284C7] hover:bg-[#E0F2FE] flex items-center justify-center">PRECIOS<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd></button>
-          <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[#f97316]/40 px-3 py-2 text-[12px] font-bold text-[#f97316] hover:bg-[#fff7ed] flex items-center justify-center">LIMPIAR<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
+          <button type="button" onClick={onIrAPresentaciones} className="group relative px-5 rounded-xl border border-[var(--dv-mod-abastecimiento-border)] px-3 py-2 text-[12px] font-bold text-[var(--dv-mod-abastecimiento)] hover:bg-[var(--dv-mod-abastecimiento-bg)] flex items-center justify-center">PRESENTACIONES<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+E</kbd></button>
+          <button type="button" onClick={onIrAPrecios} className="group relative px-5 rounded-xl border border-[var(--dv-mod-abastecimiento-border)] px-3 py-2 text-[12px] font-bold text-[var(--dv-mod-abastecimiento)] hover:bg-[var(--dv-mod-abastecimiento-bg)] flex items-center justify-center">PRECIOS<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Alt+R</kbd></button>
+          <button type="button" onClick={onLimpiar} className="group relative rounded-xl border border-[var(--dv-color-exit-border)] px-3 py-2 text-[12px] font-bold text-[var(--dv-color-exit)] hover:bg-[var(--dv-color-exit-bg)] flex items-center justify-center">LIMPIAR<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
         </div>
       )}
     </section>
