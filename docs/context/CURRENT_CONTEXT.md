@@ -1,19 +1,19 @@
 # CURRENT_CONTEXT — DISATEQ VENDOR™
 **Última actualización:** 01 Jul 2026
-**Commit activo:** `3aeac3b`
+**Commit activo:** `4a07bfa`
 
 ---
 
 ## DEUDA TÉCNICA REGISTRADA
 
-- Case `"compras"` huérfano en `App.tsx` (~L118) — deuda menor, limpiar en próximo refactor de App
 - `Ctrl+Espacio` inicia `navIdx` en 0 en lugar de en el módulo activo — comportamiento aceptado por Fernando
 - `OperationalBar.tsx` L515: label inaccessible módulo conserva `#121416` (tiene opacity:0.3, impacto visual mínimo)
 - `OperationalBar.tsx` renderOpcion: opciones secundarias inactivas conservan `color: "#201E1E"` — pendiente pase de limpieza global
 - `ComboboxFiltrado.tsx`: ícono `Check` conserva `text-[#45b356]` hardcodeado — **corrección:** mapea a `--dv-color-new` (no a `--dv-color-confirm` como se había anotado antes), pendiente aplicar
 - `ConfigWorkspace.tsx` usaba acento hardcodeado `#697387`, divergente del token congelado `--dv-mod-config` (`#4A5265`) — **RESUELTO esta sesión**, ver punto "Auditoría final TURNO/CAJA" abajo
 - `#dc2626`/`#b91c1c` (rojo destructivo) usado consistentemente en `CashWorkspace.tsx`, `SupervisionCajaWorkspace.tsx`, `OperadoresWorkspace.tsx`, `CajasWorkspace.tsx`, mientras `--dv-color-danger` (`#8B3A2A`) define un tono distinto — **no es una divergencia local de TURNO/CAJA**, es probable que `#dc2626` sea el rojo destructivo real de todo el sistema y `--dv-color-danger` sea el token desactualizado. Decisión de sistema completo, no de bloque — evaluar en el pase de limpieza global (punto 7) revisando VENTAS/ABASTECIMIENTO/etc. antes de tocar cualquier archivo.
-- `CatalogoFarmaciaWorkspace.tsx` (y probablemente `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx`) usan acento hardcodeado `#0284C7` (azul), divergente del token congelado `--dv-mod-abastecimiento` (`#3B6B34`) — pendiente alinear, decisión ya tomada: la paleta congelada manda
+- `CatalogoFarmaciaWorkspace.tsx`, `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx` usaban acento hardcodeado `#0284C7` — **RESUELTO esta sesión**, ver sección "Migración ABASTECIMIENTO/farmacia" abajo
+- Case `"compras"` huérfano en `App.tsx` (~L118) — **mecanismo confirmado esta sesión**: `abastecimientoSubModule === "compras"` nunca puede ser verdadero porque `"compras"` NO existe en el tipo `AbastecimientoSubModule` (`"productos" | "ifa" | "proveedores" | "laboratorios" | "ingresos" | "inventarios" | "traslados"`). El `case` y el import de `PurchasesWorkspace` en `App.tsx` son código muerto real, no sospecha. Corroborado por `docs/INDICE.md`: `architecture/purchases/*` está marcado 🔜 "en pausa explícita, desconectada de implementación real". **Pendiente decisión de Fernando:** eliminar ahora o dejar para el pase de limpieza global.
 - `OperationalBar.tsx` mantiene `MODULE_ACCENT` y `MODULE_BG` como objetos JS hardcodeados con los 7 colores de módulo, **sin consumir los tokens `--dv-mod-*` de `index.css`** — dos fuentes de verdad independientes que pueden desincronizarse (ya ocurrió con el refinamiento de paleta TURNO esta sesión). Pendiente refactor: que este archivo lea `var(--dv-mod-*)` en lugar de duplicar los hex. Afecta los 7 módulos, no solo TURNO.
 
 ---
@@ -76,6 +76,19 @@ Componente en `apps/vendor-desktop/src/components/ComboboxFiltrado.tsx`.
 Reemplaza todos los `<select>` nativos con más de 5 opciones o que requieran búsqueda.
 Integrado en: `DetalleProducto.tsx` (condición de venta, refrigerar, vencimiento, estado del registro sanitario).
 
+### Doctrina multi-rubro (encontrada esta sesión en `docs/00-governance/GLOSARIO.md` §2-3)
+Confirmada por Fernando el 21-jun-2026, redescubierta hoy al preguntar si existía mecanismo de separación por rubro: `farmacia/` es un dominio específico de rubro, **no** el nombre genérico de abastecimiento. ABASTECIMIENTO es la categoría/módulo contenedor multi-rubro (núcleo estándar compartido — navegación, identidad de color `--dv-mod-abastecimiento`). `farmacia/` es hoy su único inquilino. Futuros rubros (ferretería, óptica, restaurante) irán como `abastecimiento/<rubro>/` hermano (UI) y `domains/<rubro>/` hermano (lógica de dominio) — **nunca dentro de `farmacia/`**. El color no se subdivide por rubro: todos los inquilinos de ABASTECIMIENTO comparten el mismo `--dv-mod-abastecimiento`. Esto validó la migración de color de esta sesión — no hay identidad de color propia de farmacia que preservar.
+
+### Migración ABASTECIMIENTO/farmacia — completada esta sesión
+Auditados los 16 archivos del módulo (5 workspaces + 11 componentes compartidos en `abastecimiento/farmacia/`), no solo los 3 que registraba la deuda técnica. Encontrados **tres tratamientos de color distintos**:
+- **Grupo 1 (`#0284C7`/`#E0F2FE`, 11 archivos)** — coincidía con la deuda técnica registrada. Migrado a `#3B6B34`/`#E8F0E6`.
+- **Grupo 2 (`#639922`/`#EAF3DE`, 4 archivos: `BuscadorProductoIngreso.tsx`, `DetalleProveedor.tsx`, `LineaIngresoCard.tsx`, `SelectorProveedorIngreso.tsx`)** — una **tercera identidad no registrada por nadie**, otro verde distinto al congelado. Migrado también a `#3B6B34`/`#E8F0E6`.
+- **Grupo 3 (`DetalleProducto.tsx`, 1 archivo) — ya correcto, cero cambios.** Es la FICHA PRODUCTO, la pantalla más usada del módulo, y **ya consume el sistema de tokens correctamente** (`var(--dv-mod-abastecimiento)`, `-bg`, `-border`, `--dv-color-confirm`, `--dv-color-danger`, `--dv-color-exit`) — es el estándar de oro que el resto del proyecto debería seguir.
+
+Ningún archivo repitió el error de contraste texto/borde de TURNO (accent usado directamente como color de texto en todos los casos, sin variante oscura separada).
+
+Verificados como correctamente ruteados en `App.tsx`: los 5 workspaces de farmacia y sus 11 componentes — ninguno huérfano.
+
 ### Auditoría final TURNO/CAJA — bloque cerrado esta sesión
 A pedido explícito de Fernando ("no debe quedar ninguna deuda o inconsistencia en este módulo o bloque"), se hizo una segunda pasada de auditoría sobre los 8 archivos tocados hoy más el shell de CONFIG, y se resolvieron dos hallazgos adicionales:
 
@@ -96,7 +109,7 @@ Retomar migración de tokens `--dv-*` a workspaces restantes. Orden acordado: **
 2. Decidir `--dv-color-edit` (botón EDITAR, `#005BE3`) — pendiente, no resuelto
 3. ~~`CashWorkspace.tsx` (149 KB)~~ — **COMPLETADO esta sesión**, commit `efb28ac`. Hallazgo relevante: esta es la pantalla principal de TURNO (apertura/cierre/movimientos/sucesos — lo que el operador ve el 90% del tiempo) y tenía una **tercera identidad hardcodeada** propia (`#CA6F1E`/`#FEF9E7`/`#7D3C0E`, 40 ocurrencias), distinta tanto del token viejo de `index.css` como del refinado esta sesión. Migrada a `#C59B6D`/`#FFF5E6`/`#EAD4B9`. Se catalogaron los 73 hex distintos del archivo antes de tocar nada; el resto (autorización `#2154d8`/`#1a44be`, verde nuevo/confirmar, rojo destructivo, colores de `pasosCaja`, neutros) quedó intacto — verificado por catálogo completo antes/después, no solo por conteo puntual.
 4. ~~`SupervisionCajaWorkspace.tsx`, `AutorizacionEjecucionCard.tsx`~~ — **COMPLETADO esta sesión**, commit `0a3e729`. `SupervisionCajaWorkspace.tsx` confirmado TURNO, mismo trío viejo que `CashWorkspace.tsx` (`#CA6F1E`/`#FEF9E7`/`#7D3C0E`) migrado a la paleta refinada. `AutorizacionEjecucionCard.tsx` confirmado TURNO también — pero su contenedor exterior usaba `#2A7CA8`/`#F2F7FA` (remanente de estilo copiado de Cajas/Operadores), migrado a `#C59B6D`/`#FFF5E6`; su contenido interno (`#2154d8`, superficie "autorización") quedó intacto por ser un concepto distinto a identidad de módulo. **Hallazgo importante de este pase:** el mapeo original `#7D3C0E → #EAD4B9` (definido para TURNO en el punto 3) era incorrecto — `#7D3C0E` cumplía rol de texto/ícono legible, no de borde; usar el border-tone ahí producía bajo contraste. Corregido en el mismo commit (`#EAD4B9` → `#C59B6D` en ambos archivos, incluyendo `CashWorkspace.tsx` que ya estaba commiteado con el error). Ver regla nueva en "Sistema de tokens" arriba.
-5. Migrar ABASTECIMIENTO: `CatalogoFarmaciaWorkspace.tsx`, `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx` — de `#0284C7` a `#3B6B34` (paleta congelada manda, decisión ya tomada)
+5. ~~Migrar ABASTECIMIENTO: `CatalogoFarmaciaWorkspace.tsx`, `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx`~~ — **COMPLETADO esta sesión**, commit `4a07bfa`. Alcance real fue 15 archivos (no 3) — ver sección "Migración ABASTECIMIENTO/farmacia" arriba para el detalle de los tres grupos de color encontrados y `DetalleProducto.tsx` como estándar de oro ya tokenizado.
 6. VENTAS: `SalesWorkspace.tsx`, `PreVentaWorkspace.tsx`, `ClientesWorkspace.tsx`, `ReportesWorkspace.tsx`
 7. Pase de limpieza global de remanentes — los items de deuda técnica de color registrados arriba + `renderOpcion` en OperationalBar + `ConfigWorkspace.tsx` (`#697387` pendiente) + `#dc2626` vs `--dv-color-danger` en `OperadoresWorkspace.tsx`/`CajasWorkspace.tsx`
 8. Evaluaciones visuales en app real (NuevoProductoStepper, flujos CORREGIR/DESACTIVAR)

@@ -10,7 +10,6 @@ import { ComprobantesWorkspace } from "./modules/comprobantes/ComprobantesWorksp
 import { ClientesWorkspace } from "./modules/sales/ClientesWorkspace";
 import { ReportesWorkspace } from "./modules/sales/ReportesWorkspace";
 import { InventoryWorkspace } from "./modules/inventory/InventoryWorkspace";
-import { PurchasesWorkspace } from "./modules/purchases/PurchasesWorkspace";
 import { CatalogoFarmaciaWorkspace } from './modules/abastecimiento/farmacia/CatalogoFarmaciaWorkspace'
 import { ProveedoresWorkspace } from './modules/abastecimiento/farmacia/ProveedoresWorkspace'
 import { IngresosMercaderiaWorkspace } from './modules/abastecimiento/farmacia/IngresosMercaderiaWorkspace'
@@ -107,7 +106,6 @@ function AppRoot() {
       {activeModule === "abastecimiento" && abastecimientoSubModule === "ingresos"     && <IngresosMercaderiaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && rubro === 'farmacia' && <InventarioFarmaciaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "inventarios"  && rubro !== 'farmacia' && <InventoryWorkspace />}
-      {activeModule === "abastecimiento" && abastecimientoSubModule === "compras"      && <PurchasesWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "traslados"    && (
         <div className="flex flex-1 items-center justify-center">
           <span className="text-[12px] font-semibold uppercase tracking-wider text-[#9ca3af]">Próximamente</span>
