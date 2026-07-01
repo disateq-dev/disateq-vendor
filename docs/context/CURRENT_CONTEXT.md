@@ -13,6 +13,7 @@
 - `ComboboxFiltrado.tsx`: ícono `Check` conserva `text-[#45b356]` hardcodeado — **corrección:** mapea a `--dv-color-new` (no a `--dv-color-confirm` como se había anotado antes), pendiente aplicar
 - `ConfigWorkspace.tsx` y `RolesOperacionalesWorkspace.tsx` usan acento hardcodeado `#697387`, divergente del token congelado `--dv-mod-config` (`#4A5265`) — mismo patrón de divergencia que ABASTECIMIENTO, pendiente alinear
 - `CatalogoFarmaciaWorkspace.tsx` (y probablemente `IngresosMercaderiaWorkspace.tsx`, `ProveedoresWorkspace.tsx`) usan acento hardcodeado `#0284C7` (azul), divergente del token congelado `--dv-mod-abastecimiento` (`#3B6B34`) — pendiente alinear, decisión ya tomada: la paleta congelada manda
+- `OperationalBar.tsx` mantiene `MODULE_ACCENT` y `MODULE_BG` como objetos JS hardcodeados con los 7 colores de módulo, **sin consumir los tokens `--dv-mod-*` de `index.css`** — dos fuentes de verdad independientes que pueden desincronizarse (ya ocurrió con el refinamiento de paleta TURNO esta sesión). Pendiente refactor: que este archivo lea `var(--dv-mod-*)` en lugar de duplicar los hex. Afecta los 7 módulos, no solo TURNO.
 
 ---
 
@@ -29,13 +30,15 @@ Definido en `apps/vendor-desktop/src/index.css`. **44 tokens** en cuatro grupos:
 - Inputs: `--dv-input-bg/border/border-focus/ring-focus/text/placeholder`
 
 **Paleta de identidad confirmada:**
-- TURNO: `#B85C10` · bg `#FDF0E6`
+- TURNO: `#C59B6D` · bg `#FFF5E6` · border `#EAD4B9` (**refinada esta sesión**, reemplaza `#B85C10` / `#FDF0E6` / `#E8B98A`)
 - VENTAS: `#2B5EA7` · bg `#E8EFF9`
 - ABASTECIMIENTO: `#3B6B34` · bg `#E8F0E6`
 - CLIENTES: `#2E7D7A` · bg `#E3F2F1`
 - REPORTES: `#5C5FA8` · bg `#ECEDF5`
 - COMPROBANTES: `#7B4F6E` · bg `#F0EAF0`
 - CONFIG: `#4A5265` · bg `#EAECF0`
+
+**Nota sobre `--dv-color-exit`:** coincidía históricamente en hex con el TURNO viejo (`#B85C10`/`#FDF0E6`/`#E8B98A`) por casualidad de definición, no por relación semántica. Al refinar TURNO esta sesión, `--dv-color-exit*` se dejó intacto — son tokens distintos (acción de salida reversible vs. identidad de módulo) y no deben compartir valor.
 
 **Regla de uso:** color de módulo solo en barra de acento del header, ícono activo en OperationalBar y botón primario del módulo. Nunca en bordes de inputs ni fondos de superficie.
 

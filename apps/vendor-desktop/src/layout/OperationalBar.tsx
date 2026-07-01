@@ -24,7 +24,7 @@ const MODULE_SHORTCUTS: Partial<Record<string, ActiveModule>> = {
 
 // ── Colores canónicos por módulo ──────────────────────────────
 const MODULE_ACCENT: Record<ActiveModule, string> = {
-  cash:           "#B85C10",
+  cash:           "#C59B6D",
   sales:          "#2B5EA7",
   abastecimiento: "#3B6B34",
   clientes:       "#2E7D7A",
@@ -34,7 +34,7 @@ const MODULE_ACCENT: Record<ActiveModule, string> = {
 };
 
 const MODULE_BG: Record<ActiveModule, string> = {
-  cash:           "#FDF0E6",
+  cash:           "#FFF5E6",
   sales:          "#E8EFF9",
   abastecimiento: "#E8F0E6",
   clientes:       "#E3F2F1",
