@@ -54,7 +54,7 @@ export const CAPABILITIES: CapabilityDef[] = [
 ];
 
 const LEVEL_CFG: Record<ObservabilityLevel, { label: string; bg: string; text: string; dot: string }> = {
-  personal:       { label: "personal",       bg: "bg-[#697387]/10", text: "text-[#697387]", dot: "bg-[#697387]"  },
+  personal:       { label: "personal",       bg: "bg-[#4A5265]/10", text: "text-[#4A5265]", dot: "bg-[#4A5265]"  },
   contextual:     { label: "contextual",     bg: "bg-[#2A7CA8]/10", text: "text-[#2A7CA8]", dot: "bg-[#2A7CA8]"  },
   supervisión:    { label: "supervisión",    bg: "bg-amber-100",    text: "text-amber-700",  dot: "bg-amber-500"  },
   regularización: { label: "regularización", bg: "bg-red-50",       text: "text-red-600",    dot: "bg-red-400"    },
@@ -70,12 +70,12 @@ function PanelOperadores({ selectedId, onSelect }: {
   const visibles = operators.filter(o => o.estado !== "INACTIVO");
 
   return (
-    <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#697387]/40 bg-[#FDFCF9]">
+    <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
 
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
-        <Users size={13} strokeWidth={2} className="shrink-0 text-[#697387]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F3F4F6] px-4">
+        <Users size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">OPERADORES</span>
-        <span className="rounded-md bg-[#697387]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#697387]">{visibles.length}</span>
+        <span className="rounded-md bg-[#4A5265]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4A5265]">{visibles.length}</span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -96,12 +96,12 @@ function PanelOperadores({ selectedId, onSelect }: {
               return (
                 <div key={op.id} onClick={() => onSelect(op.id)}
                   className={`flex cursor-pointer items-center gap-2.5 border-l-2 px-3.5 py-2.5 transition ${
-                    isSel ? "border-[#697387] bg-[#F3F4F6]" : "border-transparent hover:bg-[#F7F8FA]"
+                    isSel ? "border-[#4A5265] bg-[#F3F4F6]" : "border-transparent hover:bg-[#F7F8FA]"
                   }`}>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${
-                        isSel ? "bg-[#697387] text-white" : "bg-[#F3F4F6] text-[#697387]"
+                        isSel ? "bg-[#4A5265] text-white" : "bg-[#F3F4F6] text-[#4A5265]"
                       }`}>{op.codigo}</span>
                       <span className={`truncate text-[12px] font-semibold ${
                         isSel ? "text-[#121416]" : op.estado === "SUSPENDIDO" ? "text-[#9ca3af]" : "text-[#2F3E46]"
@@ -115,7 +115,7 @@ function PanelOperadores({ selectedId, onSelect }: {
                       {totalEffective > 0 && (
                         <>
                           <span className="text-[#d1d9e1]">·</span>
-                          <span className="text-[9px] font-semibold text-[#697387]">{totalEffective} cap.</span>
+                          <span className="text-[9px] font-semibold text-[#4A5265]">{totalEffective} cap.</span>
                           {indivCaps.length > 0 && (
                             <span className="text-[9px] text-emerald-500">+{indivCaps.length} extra</span>
                           )}
@@ -123,7 +123,7 @@ function PanelOperadores({ selectedId, onSelect }: {
                       )}
                     </div>
                   </div>
-                  <ChevronRight size={10} className={isSel ? "text-[#697387]" : "text-[#e4e9f0]"} />
+                  <ChevronRight size={10} className={isSel ? "text-[#4A5265]" : "text-[#e4e9f0]"} />
                 </div>
               );
             })}
@@ -141,9 +141,9 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
 
   if (!operator) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/40 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
-          <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#697387]" />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F3F4F6] px-4">
+          <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAPACIDADES</span>
         </div>
         <div className="flex flex-col items-center justify-center gap-2 py-16">
@@ -166,16 +166,16 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#697387]/40 bg-[#FDFCF9]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
 
-      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#697387]/15 bg-[#F3F4F6] px-4">
-        <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#697387]" />
+      <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F3F4F6] px-4">
+        <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAPACIDADES</span>
-        <span className="text-[#697387]/30 mx-0.5">·</span>
-        <span className="rounded bg-[#697387] px-1.5 py-0.5 text-[9px] font-bold text-white">{operator.codigo}</span>
-        <span className="text-[12px] font-semibold text-[#697387]">{operator.nombreCompleto}</span>
+        <span className="text-[#4A5265]/30 mx-0.5">·</span>
+        <span className="rounded bg-[#4A5265] px-1.5 py-0.5 text-[9px] font-bold text-white">{operator.codigo}</span>
+        <span className="text-[12px] font-semibold text-[#4A5265]">{operator.nombreCompleto}</span>
         {totalEffective > 0 && (
-          <span className="ml-auto rounded-md bg-[#697387]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#697387]">
+          <span className="ml-auto rounded-md bg-[#4A5265]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4A5265]">
             {totalEffective} efectiva{totalEffective > 1 ? "s" : ""}
           </span>
         )}
@@ -190,7 +190,7 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
             <p className="text-[11.5px] font-semibold text-[#374151]">{role?.nombre ?? operator.codigoRol}</p>
           </div>
           {roleCaps.size > 0 && (
-            <span className="shrink-0 text-[9px] font-semibold text-[#697387]">{roleCaps.size} del rol</span>
+            <span className="shrink-0 text-[9px] font-semibold text-[#4A5265]">{roleCaps.size} del rol</span>
           )}
         </div>
 
@@ -206,15 +206,15 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
               onClick={() => { if (!fromRole) toggleIndividual(cap.id); }}
               className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition ${
                 fromRole
-                  ? "border-[#697387]/15 bg-[#697387]/4 cursor-default"
+                  ? "border-[#4A5265]/15 bg-[#4A5265]/4 cursor-default"
                   : isIndiv
                     ? "border-emerald-200/70 bg-emerald-50/40 cursor-pointer active:scale-[0.99] hover:border-emerald-200"
-                    : "border-[#E9E4DC] bg-white cursor-pointer hover:border-[#697387]/20 hover:bg-[#697387]/3 active:scale-[0.99]"
+                    : "border-[#E9E4DC] bg-white cursor-pointer hover:border-[#4A5265]/20 hover:bg-[#4A5265]/3 active:scale-[0.99]"
               }`}
             >
               {/* toggle visual */}
               <div className={`shrink-0 flex h-5 w-9 items-center rounded-full transition-colors ${
-                isOn ? (fromRole ? "bg-[#697387]" : "bg-emerald-500") : "bg-[#e4e9f0]"
+                isOn ? (fromRole ? "bg-[#4A5265]" : "bg-emerald-500") : "bg-[#e4e9f0]"
               }`}>
                 <div className={`h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
                   isOn ? "translate-x-[18px]" : "translate-x-[3px]"
@@ -232,7 +232,7 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
               <div className="shrink-0 flex items-center gap-1.5">
                 {/* origen */}
                 {fromRole && (
-                  <span className="rounded-full bg-[#697387]/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-[#697387]">
+                  <span className="rounded-full bg-[#4A5265]/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-[#4A5265]">
                     del rol
                   </span>
                 )}
@@ -255,7 +255,7 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
           <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#9ca3af] mb-1.5">Origen de capacidades</p>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <div className="h-1.5 w-4 rounded-full bg-[#697387]" />
+              <div className="h-1.5 w-4 rounded-full bg-[#4A5265]" />
               <span className="text-[9px] text-[#6b7280]">
                 <span className="font-bold">Del rol</span> — otorgada por el rol asignado · no modificable aquí
               </span>
