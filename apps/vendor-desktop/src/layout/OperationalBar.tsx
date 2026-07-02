@@ -26,7 +26,7 @@ const MODULE_SHORTCUTS: Partial<Record<string, ActiveModule>> = {
 const MODULE_ACCENT: Record<ActiveModule, string> = {
   cash:           "#C59B6D",
   sales:          "#128C7E",
-  abastecimiento: "#3B6B34",
+  abastecimiento: "#1E88C7",
   clientes:       "#1E7E4F",
   reportes:       "#5C5FA8",
   comprobantes:   "#7B4F6E",
@@ -36,7 +36,7 @@ const MODULE_ACCENT: Record<ActiveModule, string> = {
 const MODULE_BG: Record<ActiveModule, string> = {
   cash:           "#FFF5E6",
   sales:          "#E2F3F0",
-  abastecimiento: "#E8F0E6",
+  abastecimiento: "#E3F1FA",
   clientes:       "#F0FAF4",
   reportes:       "#ECEDF5",
   comprobantes:   "#F0EAF0",

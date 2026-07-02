@@ -33,13 +33,13 @@ export function InventoryWorkspace() {
     <div className="flex min-h-0 flex-1 gap-3">
 
       {/* ── Left SheetWork — lista de productos ───────────────────── */}
-      <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#3B6B34]/30 bg-white">
+      <div className="flex w-[280px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#1E88C7]/30 bg-white">
 
-        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#3B6B34]/15 bg-[#E8F0E6] px-4">
-          <Archive size={13} strokeWidth={2} className="text-[#3B6B34]" />
+        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#1E88C7]/15 bg-[#E3F1FA] px-4">
+          <Archive size={13} strokeWidth={2} className="text-[#1E88C7]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">PRODUCTOS</span>
           {items.length > 0 && (
-            <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold tabular-nums bg-[#3B6B34]/10 text-[#3B6B34]">
+            <span className="ml-1 rounded px-1.5 py-0.5 text-[9px] font-bold tabular-nums bg-[#1E88C7]/10 text-[#1E88C7]">
               {items.length}
             </span>
           )}
@@ -74,8 +74,8 @@ export function InventoryWorkspace() {
                   onClick={() => setSelectedItemId(isSelected ? null : item.itemId)}
                   className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition ${
                     isSelected
-                      ? "bg-[#3B6B34]/10 ring-inset ring-1 ring-[#3B6B34]/25"
-                      : "hover:bg-[#3B6B34]/5"
+                      ? "bg-[#1E88C7]/10 ring-inset ring-1 ring-[#1E88C7]/25"
+                      : "hover:bg-[#1E88C7]/5"
                   }`}
                 >
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColor}`} />
@@ -93,36 +93,36 @@ export function InventoryWorkspace() {
         </div>
 
         {import.meta.env.DEV && (
-          <div className="shrink-0 border-t border-[#3B6B34]/10 px-3 py-1.5">
+          <div className="shrink-0 border-t border-[#1E88C7]/10 px-3 py-1.5">
             <span className="font-mono text-[9px] text-[#b0bac8]">{runtimeId.slice(0, 8)}…</span>
           </div>
         )}
       </div>
 
       {/* ── Right SheetWork — contenido tabulado ──────────────────── */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#3B6B34]/30 bg-white">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#1E88C7]/30 bg-white">
 
-        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#3B6B34]/15 bg-[#E8F0E6] px-4">
-          <Archive size={13} strokeWidth={2} className="text-[#3B6B34]" />
+        <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#1E88C7]/15 bg-[#E3F1FA] px-4">
+          <Archive size={13} strokeWidth={2} className="text-[#1E88C7]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">INVENTARIO</span>
           {selectedItem && (
             <>
-              <span className="text-[#3B6B34]/40 mx-0.5">·</span>
-              <span className="truncate max-w-[200px] text-[12px] text-[#3B6B34]/70">{selectedItem.nombre}</span>
+              <span className="text-[#1E88C7]/40 mx-0.5">·</span>
+              <span className="truncate max-w-[200px] text-[12px] text-[#1E88C7]/70">{selectedItem.nombre}</span>
             </>
           )}
         </div>
 
         {/* SheetNav */}
-        <div className="shrink-0 flex h-[34px] items-center gap-0.5 border-b border-[#3B6B34]/10 bg-[#E8F0E6]/50 px-3">
+        <div className="shrink-0 flex h-[34px] items-center gap-0.5 border-b border-[#1E88C7]/10 bg-[#E3F1FA]/50 px-3">
           {visibleTabs.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
               className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
                 activeTab === key
-                  ? "bg-[#3B6B34] text-white shadow-sm"
-                  : "text-[#276565]/70 hover:bg-[#3B6B34]/10 hover:text-[#1a4545]"
+                  ? "bg-[#1E88C7] text-white shadow-sm"
+                  : "text-[#6b7280]/70 hover:bg-[#1E88C7]/10 hover:text-[#1E88C7]"
               }`}
             >
               {label}
@@ -189,7 +189,7 @@ function ViewDisponibilidad({
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-        <Archive size={28} strokeWidth={1.2} className="text-[#3B6B34]/30" />
+        <Archive size={28} strokeWidth={1.2} className="text-[#1E88C7]/30" />
         <p className="text-[12px] font-semibold text-[#9ca3af]">Sin productos registrados</p>
         <p className="text-[11px] text-[#b0bac8]">Registra el primer producto en PRODUCTOS.</p>
       </div>
@@ -302,9 +302,9 @@ function DisponibilidadCard({
             value={cantidad}
             onChange={e => setCantidad(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") confirmar(); if (e.key === "Escape") cancelar(); }}
-            className="w-16 rounded border border-[#e4eaea] px-2 py-0.5 text-[12px] tabular-nums text-center focus:outline-none focus:border-[#3B6B34]/50"
+            className="w-16 rounded border border-[#e4eaea] px-2 py-0.5 text-[12px] tabular-nums text-center focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
-          <button onClick={confirmar} className="rounded px-2 py-0.5 text-[11px] font-bold bg-[#3B6B34] text-white hover:bg-[#2d6b6b] transition active:scale-95">OK</button>
+          <button onClick={confirmar} className="rounded px-2 py-0.5 text-[11px] font-bold bg-[#45b356] text-white hover:bg-[#3a9e4a] transition active:scale-95">OK</button>
           <button onClick={cancelar} className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition">✕</button>
         </div>
       ) : (
@@ -393,7 +393,7 @@ function ViewMovimientos({
   return (
     <div className="flex flex-col gap-3">
 
-      <div className="rounded-2xl border border-[#3B6B34]/20 bg-[#E8F0E6] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#1E88C7]/20 bg-[#E3F1FA] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Registrar entrada o salida</Label>
           <Helper text="Usa esto para registrar mercadería que llegó o salió manualmente. El historial queda guardado." />
@@ -402,7 +402,7 @@ function ViewMovimientos({
           <select
             value={itemId}
             onChange={e => setItemId(e.target.value)}
-            className="flex-1 min-w-[140px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="flex-1 min-w-[140px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           >
             {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => <option key={i.itemId} value={i.itemId}>{i.nombre}</option>)}
@@ -410,7 +410,7 @@ function ViewMovimientos({
           <select
             value={tipo}
             onChange={e => setTipo(e.target.value as TipoMovimiento)}
-            className="rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           >
             <option value="entrada">+ Llegó producto</option>
             <option value="salida">− Salió producto</option>
@@ -421,18 +421,18 @@ function ViewMovimientos({
             value={cantidad}
             onChange={e => setCantidad(e.target.value)}
             placeholder="cantidad"
-            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3B6B34]/50"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
             placeholder="motivo (opcional)"
-            className="flex-1 min-w-[100px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="flex-1 min-w-[100px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <button
             onClick={handleRegistrar}
             disabled={items.length === 0}
-            className="rounded-lg bg-[#3B6B34] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2d6b6b] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg bg-[#45b356] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3a9e4a] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Guardar
           </button>
@@ -448,7 +448,7 @@ function ViewMovimientos({
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
               placeholder="buscar producto…"
-              className="flex-1 min-w-[120px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+              className="flex-1 min-w-[120px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
             />
             {(["todos", "entrada", "salida", "ajuste"] as const).map(t => (
               <button
@@ -460,7 +460,7 @@ function ViewMovimientos({
                     : t === "entrada" ? "bg-[#45b356] text-white"
                     : t === "salida"  ? "bg-red-500 text-white"
                     : "bg-[#005BE3] text-white"
-                    : "border border-[#e4eaea] text-[#6b7280] hover:border-[#3B6B34]/40"
+                    : "border border-[#e4eaea] text-[#6b7280] hover:border-[#1E88C7]/40"
                 }`}
               >
                 {t === "todos" ? "TODOS" : t === "entrada" ? "+" : t === "salida" ? "−" : "±"}
@@ -475,7 +475,7 @@ function ViewMovimientos({
                 className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
                   copiado
                     ? "bg-[#45b356] text-white"
-                    : "border border-[#e4eaea] text-[#6b7280] hover:border-[#3B6B34]/40 hover:text-[#3B6B34]"
+                    : "border border-[#e4eaea] text-[#6b7280] hover:border-[#1E88C7]/40 hover:text-[#1E88C7]"
                 }`}
               >
                 {copiado ? "¡Copiado!" : "CSV"}
@@ -547,7 +547,7 @@ function ViewItems({
   return (
     <div className="flex flex-col gap-3">
 
-      <div className="rounded-2xl border border-[#3B6B34]/20 bg-[#E8F0E6] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#1E88C7]/20 bg-[#E3F1FA] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Agregar producto</Label>
           <Helper text="Registra los productos que manejas en tu negocio. Después podrás registrar entradas y salidas." />
@@ -558,13 +558,13 @@ function ViewItems({
             onChange={e => setNombre(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") handleRegistrar(); }}
             placeholder="nombre del producto"
-            className="flex-1 min-w-[160px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="flex-1 min-w-[160px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <input
             value={unidadBase}
             onChange={e => setUnidadBase(e.target.value)}
             placeholder="kg, botella…"
-            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <input
             type="number"
@@ -572,11 +572,11 @@ function ViewItems({
             onChange={e => setUmbral(e.target.value)}
             placeholder="alerta desde"
             title="¿Desde cuántas unidades mostrar alerta de stock bajo?"
-            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3B6B34]/50"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <button
             onClick={handleRegistrar}
-            className="rounded-lg bg-[#3B6B34] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2d6b6b] active:scale-95"
+            className="rounded-lg bg-[#45b356] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3a9e4a] active:scale-95"
           >
             Agregar
           </button>
@@ -594,7 +594,7 @@ function ViewItems({
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
               placeholder="buscar producto…"
-              className="flex-1 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+              className="flex-1 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
             />
             {busqueda && (
               <button onClick={() => setBusqueda("")} className="text-[11px] text-[#b0bac8] hover:text-[#6b7280] transition">✕</button>
@@ -671,12 +671,12 @@ function ItemRow({ item, umbralMinimo }: {
               if (e.key === "Enter") handleSave();
               if (e.key === "Escape") { setVal(String(umbralMinimo > 0 ? umbralMinimo : "")); setEditing(false); }
             }}
-            className="w-14 rounded border border-[#3B6B34]/40 px-1.5 py-0.5 text-[11px] tabular-nums text-center focus:outline-none"
+            className="w-14 rounded border-[var(--dv-input-border-focus)] px-1.5 py-0.5 text-[11px] tabular-nums text-center focus:outline-none"
           />
         ) : (
           <button
             onClick={() => { setVal(String(umbralMinimo > 0 ? umbralMinimo : "")); setEditing(true); }}
-            className="min-w-[28px] rounded border border-[#e4eaea] px-2 py-0.5 text-[11px] tabular-nums text-[#6b7280] hover:border-[#3B6B34]/40 transition"
+            className="min-w-[28px] rounded border border-[#e4eaea] px-2 py-0.5 text-[11px] tabular-nums text-[#6b7280] hover:border-[#1E88C7]/40 transition"
           >
             {umbralMinimo > 0 ? umbralMinimo : "—"}
           </button>
@@ -720,7 +720,7 @@ function ViewReservas({
   return (
     <div className="flex flex-col gap-3">
 
-      <div className="rounded-2xl border border-[#3B6B34]/20 bg-[#E8F0E6] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#1E88C7]/20 bg-[#E3F1FA] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Separar producto</Label>
           <Helper text="Separa unidades para un cliente o pedido. No descuenta el stock todavía — solo las marca como reservadas." />
@@ -729,7 +729,7 @@ function ViewReservas({
           <select
             value={itemId}
             onChange={e => setItemId(e.target.value)}
-            className="flex-1 min-w-[140px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="flex-1 min-w-[140px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           >
             {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => {
@@ -742,18 +742,18 @@ function ViewReservas({
             value={cantidad}
             onChange={e => setCantidad(e.target.value)}
             placeholder="cantidad"
-            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3B6B34]/50"
+            className="w-24 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
             placeholder="para quién o qué (opcional)"
-            className="flex-1 min-w-[100px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="flex-1 min-w-[100px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <button
             onClick={handleReservar}
             disabled={items.length === 0}
-            className="rounded-lg bg-[#3B6B34] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2d6b6b] active:scale-95 disabled:opacity-40"
+            className="rounded-lg bg-[#45b356] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#3a9e4a] active:scale-95 disabled:opacity-40"
           >
             Separar
           </button>
@@ -858,7 +858,7 @@ function ViewReconciliacion({
   return (
     <div className="flex flex-col gap-3">
 
-      <div className="rounded-2xl border border-[#3B6B34]/20 bg-[#E8F0E6] px-4 py-3 flex flex-col gap-2">
+      <div className="rounded-2xl border border-[#1E88C7]/20 bg-[#E3F1FA] px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           <Label>Corregir diferencia de stock</Label>
           <Helper text="Cuenta los productos físicamente y compara con lo que dice el sistema. Si hay diferencia, se corrige automáticamente." />
@@ -867,7 +867,7 @@ function ViewReconciliacion({
           <select
             value={itemId}
             onChange={e => { setItemId(e.target.value); setResultado(null); }}
-            className="flex-1 min-w-[160px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="flex-1 min-w-[160px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           >
             {items.length === 0 && <option value="">— sin productos —</option>}
             {items.map(i => {
@@ -881,13 +881,13 @@ function ViewReconciliacion({
             onChange={e => { setConteo(e.target.value); setResultado(null); }}
             placeholder="¿cuántos tienes?"
             min="0"
-            className="w-32 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[#3B6B34]/50"
+            className="w-32 rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] tabular-nums focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <input
             value={causa}
             onChange={e => setCausa(e.target.value)}
             placeholder="motivo del ajuste"
-            className="flex-1 min-w-[120px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#3B6B34]/50"
+            className="flex-1 min-w-[120px] rounded-lg border border-[#e4eaea] bg-white px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--dv-input-border-focus)]"
           />
           <button
             onClick={handleReconciliar}
@@ -1109,11 +1109,11 @@ function ViewReset() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-2xl border border-dashed border-[#3B6B34]/40 bg-[#E8F0E6] px-4 py-4 flex flex-col gap-3">
-        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#3B6B34]">DEV · Datos de muestra</p>
+      <div className="rounded-2xl border border-dashed border-[#1E88C7]/40 bg-[#E3F1FA] px-4 py-4 flex flex-col gap-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#1E88C7]">DEV · Datos de muestra</p>
         <button
           onClick={cargarMuestra}
-          className="self-start rounded-xl border border-[#3B6B34]/40 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[#3B6B34] hover:bg-[#3B6B34]/8 transition active:scale-95"
+          className="self-start rounded-xl border border-[#1E88C7]/40 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[#1E88C7] hover:bg-[#1E88C7]/8 transition active:scale-95"
         >
           CARGAR MUESTRA — 35 productos
         </button>

@@ -34,9 +34,9 @@ export function SelectorProveedorIngreso({
       <button
         type="button"
         onClick={() => onTerminoChange('')}
-        className="flex w-full items-center gap-3 rounded-2xl border border-[#E8F0E6] bg-white p-4 text-left"
+        className="flex w-full items-center gap-3 rounded-2xl border border-[#E3F1FA] bg-white p-4 text-left"
       >
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0E6] text-[#3B6B34]">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E3F1FA] text-[#1E88C7]">
           <Store className="h-5 w-5" />
         </span>
         <span>
@@ -48,7 +48,7 @@ export function SelectorProveedorIngreso({
   }
 
   return (
-    <div className="relative rounded-2xl border border-[#E8F0E6] bg-white p-4">
+    <div className="relative rounded-2xl border border-[#E3F1FA] bg-white p-4">
       <label className="block">
         <span className="text-[11px] font-bold uppercase text-slate-500">Proveedor</span>
         <input
@@ -56,31 +56,31 @@ export function SelectorProveedorIngreso({
           value={termino}
           onChange={(event: ChangeEvent<HTMLInputElement>) => onTerminoChange(event.target.value)}
           placeholder="Buscar proveedor..."
-          className="mt-2 h-11 w-full rounded-xl border border-[#E8F0E6] px-3 text-[13px] font-semibold outline-none focus:border-[#3B6B34]"
+          className="mt-2 h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3 text-[13px] font-semibold outline-none focus:border-[var(--dv-input-border-focus)]"
         />
       </label>
-      {buscando && <p className="mt-2 text-[12px] font-bold text-[#3B6B34]">Buscando...</p>}
+      {buscando && <p className="mt-2 text-[12px] font-bold text-[#1E88C7]">Buscando...</p>}
       {termino.trim().length >= 2 && !buscando && resultados.length === 0 && (
-        <div className="mt-3 rounded-xl border border-[#E8F0E6] p-3">
+        <div className="mt-3 rounded-xl border border-[#E3F1FA] p-3">
           <p className="text-[12px] font-bold text-slate-700">No encontrado</p>
           <div className="mt-2 flex gap-2">
-            <button type="button" onClick={onIrSunat} className="rounded-xl bg-[#3B6B34] px-3 py-2 text-[12px] font-bold text-white">
+            <button type="button" onClick={onIrSunat} className="rounded-xl border border-[#45b356]/40 px-3 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">
               Consultar SUNAT por RUC
             </button>
-            <button type="button" onClick={onIrManual} className="rounded-xl border border-[#E8F0E6] px-3 py-2 text-[12px] font-bold text-[#3B6B34]">
+            <button type="button" onClick={onIrManual} className="rounded-xl border border-[#45b356]/40 px-3 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3]">
               Registrar manualmente
             </button>
           </div>
         </div>
       )}
       {termino.trim().length >= 2 && resultados.length > 0 && (
-        <div className="absolute left-4 right-4 top-[92px] z-20 overflow-hidden rounded-xl border border-[#E8F0E6] bg-white shadow-lg">
+        <div className="absolute left-4 right-4 top-[92px] z-20 overflow-hidden rounded-xl border border-[#E3F1FA] bg-white shadow-lg">
           {resultados.map((proveedor) => (
             <button
               key={proveedor.id}
               type="button"
               onClick={() => onSeleccionar(proveedor)}
-              className="block w-full border-b border-[#E8F0E6] px-4 py-3 text-left hover:bg-[#E8F0E6]"
+              className="block w-full border-b border-[#E3F1FA] px-4 py-3 text-left hover:bg-[#E3F1FA]"
             >
               <span className="block text-[13px] font-bold text-slate-800">{proveedor.razonSocial}</span>
               <span className="block text-[11px] font-semibold text-slate-500">{proveedor.ruc ?? 'Sin RUC'}</span>

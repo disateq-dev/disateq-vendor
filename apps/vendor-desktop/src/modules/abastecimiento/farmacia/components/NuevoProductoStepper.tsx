@@ -174,12 +174,12 @@ function StepperHeader({ paso, totalPasos }: StepperHeaderProps): ReactElement {
         <div key={numero} className="flex items-center gap-2">
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold ${
-              numero <= paso ? 'bg-[#3B6B34] text-white' : 'bg-slate-100 text-slate-400'
+              numero <= paso ? 'bg-[#1E88C7] text-white' : 'bg-slate-100 text-slate-400'
             }`}
           >
             {numero < paso ? <Check className="h-4 w-4" /> : numero}
           </span>
-          {numero < totalPasos && <span className={`h-1 flex-1 rounded-full ${numero < paso ? 'bg-[#3B6B34]' : 'bg-slate-100'}`} />}
+          {numero < totalPasos && <span className={`h-1 flex-1 rounded-full ${numero < paso ? 'bg-[#1E88C7]' : 'bg-slate-100'}`} />}
         </div>
       ))}
     </div>
@@ -191,27 +191,27 @@ function PasoMedicamentoVenta({ generico, comercial, setGenerico, setComercial }
     <div className="grid gap-4 md:grid-cols-2">
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">¿Necesita receta?</span>
-        <select className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={comercial.condicionVenta} onChange={(e) => setComercial({ ...comercial, condicionVenta: e.target.value as CondicionVenta })}>
+        <select className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={comercial.condicionVenta} onChange={(e) => setComercial({ ...comercial, condicionVenta: e.target.value as CondicionVenta })}>
           {CONDICIONES_VENTA.map((condicion) => <option key={condicion} value={condicion}>{etiqueta(condicion, LABEL_CONDICION_VENTA)}</option>)}
         </select>
       </label>
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Principio activo</span>
-        <input className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={generico.ifa} onChange={(e) => setGenerico({ ...generico, ifa: e.target.value })} />
+        <input className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={generico.ifa} onChange={(e) => setGenerico({ ...generico, ifa: e.target.value })} />
       </label>
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Dosis</span>
-        <input className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={generico.concentracion} onChange={(e) => setGenerico({ ...generico, concentracion: e.target.value })} />
+        <input className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={generico.concentracion} onChange={(e) => setGenerico({ ...generico, concentracion: e.target.value })} />
       </label>
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Presentación</span>
-        <select className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={generico.formaFarmaceutica} onChange={(e) => setGenerico({ ...generico, formaFarmaceutica: e.target.value as FormaFarmaceutica })}>
+        <select className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={generico.formaFarmaceutica} onChange={(e) => setGenerico({ ...generico, formaFarmaceutica: e.target.value as FormaFarmaceutica })}>
           {FORMAS_FARMACEUTICAS.map((forma) => <option key={forma} value={forma}>{etiqueta(forma, LABEL_FORMA_FARMACEUTICA)}</option>)}
         </select>
       </label>
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Categoría</span>
-        <select className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={generico.categoriaFarmacia} onChange={(e) => setGenerico({ ...generico, categoriaFarmacia: e.target.value as CategoriaFarmacia })}>
+        <select className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={generico.categoriaFarmacia} onChange={(e) => setGenerico({ ...generico, categoriaFarmacia: e.target.value as CategoriaFarmacia })}>
           {CATEGORIAS_FARMACIA.map((categoria) => <option key={categoria} value={categoria}>{etiqueta(categoria, LABEL_CATEGORIA_FARMACIA)}</option>)}
         </select>
       </label>
@@ -227,7 +227,7 @@ function PasoMedicamentoVenta({ generico, comercial, setGenerico, setComercial }
 function PasoComercial({ comercial, similares, buscandoSimilares, setComercial }: PasoComercialProps): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Nombre comercial" value={comercial.nombreComercial} onChange={(e) => setComercial({ ...comercial, nombreComercial: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre comercial" value={comercial.nombreComercial} onChange={(e) => setComercial({ ...comercial, nombreComercial: e.target.value })} />
       {similares.length > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex flex-col gap-2">
           <p className="text-[11px] font-bold text-amber-700">
@@ -250,9 +250,9 @@ function PasoComercial({ comercial, similares, buscandoSimilares, setComercial }
       ) : buscandoSimilares ? (
         <p className="text-[11px] text-slate-400">Buscando similares...</p>
       ) : null}
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Fabricante" value={comercial.nombreFabricante} onChange={(e) => setComercial({ ...comercial, nombreFabricante: e.target.value })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Titular (opcional)" value={comercial.nombreTitular ?? ''} onChange={(e) => setComercial({ ...comercial, nombreTitular: e.target.value || undefined })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="País de origen (opcional)" value={comercial.paisOrigen ?? ''} onChange={(e) => setComercial({ ...comercial, paisOrigen: e.target.value || undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Fabricante" value={comercial.nombreFabricante} onChange={(e) => setComercial({ ...comercial, nombreFabricante: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Titular (opcional)" value={comercial.nombreTitular ?? ''} onChange={(e) => setComercial({ ...comercial, nombreTitular: e.target.value || undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="País de origen (opcional)" value={comercial.paisOrigen ?? ''} onChange={(e) => setComercial({ ...comercial, paisOrigen: e.target.value || undefined })} />
     </div>
   )
 }
@@ -260,17 +260,17 @@ function PasoComercial({ comercial, similares, buscandoSimilares, setComercial }
 function PasoRegulatorio({ comercial, estadoRegistroSanitario, setComercial, setEstadoRegistroSanitario }: PasoRegulatorioProps): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Número de registro sanitario (opcional)" value={comercial.registroSanitario ?? ''} onChange={(e) => setComercial({ ...comercial, registroSanitario: e.target.value || undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Número de registro sanitario (opcional)" value={comercial.registroSanitario ?? ''} onChange={(e) => setComercial({ ...comercial, registroSanitario: e.target.value || undefined })} />
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Estado del registro</span>
-        <select className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={estadoRegistroSanitario} onChange={(e) => setEstadoRegistroSanitario(e.target.value as 'VIGENTE' | 'SUSPENDIDO' | 'CANCELADO' | 'VENCIDO')}>
+        <select className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={estadoRegistroSanitario} onChange={(e) => setEstadoRegistroSanitario(e.target.value as 'VIGENTE' | 'SUSPENDIDO' | 'CANCELADO' | 'VENCIDO')}>
           <option value="VIGENTE">Vigente</option>
           <option value="SUSPENDIDO">Suspendido</option>
           <option value="CANCELADO">Cancelado</option>
           <option value="VENCIDO">Vencido</option>
         </select>
       </label>
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Código DIGEMID (opcional)" value={comercial.codigoDIGEMID ?? ''} onChange={(e) => setComercial({ ...comercial, codigoDIGEMID: e.target.value || undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Código DIGEMID (opcional)" value={comercial.codigoDIGEMID ?? ''} onChange={(e) => setComercial({ ...comercial, codigoDIGEMID: e.target.value || undefined })} />
     </div>
   )
 }
@@ -278,11 +278,11 @@ function PasoRegulatorio({ comercial, estadoRegistroSanitario, setComercial, set
 function PasoPresentacion({ presentacion, setPresentacion }: PasoPresentacionProps): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Descripción" value={presentacion.descripcion} onChange={(e) => setPresentacion({ ...presentacion, descripcion: e.target.value })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Unidad de conteo" value={presentacion.unidadConteo} onChange={(e) => setPresentacion({ ...presentacion, unidadConteo: e.target.value })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" type="number" min="1" placeholder="Factor de conversión" value={presentacion.fraccionDIGEMID} onChange={(e) => setPresentacion({ ...presentacion, fraccionDIGEMID: Number(e.target.value) })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Código de barras" value={presentacion.codigoBarras ?? ''} onChange={(e) => setPresentacion({ ...presentacion, codigoBarras: e.target.value || undefined })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" type="number" min="0" placeholder="Costo de compra" value={presentacion.costoCompra ?? ''} onChange={(e) => setPresentacion({ ...presentacion, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción" value={presentacion.descripcion} onChange={(e) => setPresentacion({ ...presentacion, descripcion: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Unidad de conteo" value={presentacion.unidadConteo} onChange={(e) => setPresentacion({ ...presentacion, unidadConteo: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" placeholder="Factor de conversión" value={presentacion.fraccionDIGEMID} onChange={(e) => setPresentacion({ ...presentacion, fraccionDIGEMID: Number(e.target.value) })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Código de barras" value={presentacion.codigoBarras ?? ''} onChange={(e) => setPresentacion({ ...presentacion, codigoBarras: e.target.value || undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Costo de compra" value={presentacion.costoCompra ?? ''} onChange={(e) => setPresentacion({ ...presentacion, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
     </div>
   )
 }
@@ -294,23 +294,23 @@ function PasoFormasVenta({ presentacion, nodosExtra, setNodosExtra }: PasoFormas
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-[#E8F0E6] bg-[#E8F0E6] p-4">
+      <div className="rounded-2xl border border-[#E3F1FA] bg-[#E3F1FA] p-4">
         <div className="text-[12px] font-bold text-slate-800">{presentacion.descripcion || 'Presentación original'}</div>
-        <div className="mt-1 text-[11px] font-semibold text-[#3B6B34]">Nodo raíz · vendible · comprable</div>
+        <div className="mt-1 text-[11px] font-semibold text-[#1E88C7]">Nodo raíz · vendible · comprable</div>
       </div>
       {nodosExtra.map((nodo) => (
-        <div key={nodo.idTemporal} className="grid gap-3 rounded-2xl border border-[#E8F0E6] bg-white p-4 md:grid-cols-[1fr_160px_140px_40px]">
-          <input className="h-10 rounded-xl border border-[#E8F0E6] px-3" placeholder="Nombre forma venta" value={nodo.nombreFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, nombreFormaVenta: e.target.value } : item))} />
-          <select className="h-10 rounded-xl border border-[#E8F0E6] px-3" value={nodo.tipoFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, tipoFormaVenta: e.target.value as Exclude<TipoFormaVenta, 'PRESENTACION_ORIGINAL'> } : item))}>
+        <div key={nodo.idTemporal} className="grid gap-3 rounded-2xl border border-[#E3F1FA] bg-white p-4 md:grid-cols-[1fr_160px_140px_40px]">
+          <input className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre forma venta" value={nodo.nombreFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, nombreFormaVenta: e.target.value } : item))} />
+          <select className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" value={nodo.tipoFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, tipoFormaVenta: e.target.value as Exclude<TipoFormaVenta, 'PRESENTACION_ORIGINAL'> } : item))}>
             {TIPOS_NODO_EXTRA.map((tipo) => <option key={tipo} value={tipo}>{tipo.replaceAll('_', ' ')}</option>)}
           </select>
-          <input className="h-10 rounded-xl border border-[#E8F0E6] px-3" type="number" min="1" value={nodo.unidadesEnNodoPadre} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, unidadesEnNodoPadre: Number(e.target.value) } : item))} />
-          <button type="button" onClick={() => setNodosExtra(nodosExtra.filter((item) => item.idTemporal !== nodo.idTemporal))} className="flex h-10 items-center justify-center rounded-xl text-[#3B6B34]">
+          <input className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" value={nodo.unidadesEnNodoPadre} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, unidadesEnNodoPadre: Number(e.target.value) } : item))} />
+          <button type="button" onClick={() => setNodosExtra(nodosExtra.filter((item) => item.idTemporal !== nodo.idTemporal))} className="flex h-10 items-center justify-center rounded-xl text-[#1E88C7]">
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
       ))}
-      <button type="button" onClick={agregarNodo} className="flex items-center gap-2 rounded-xl bg-[#E8F0E6] px-4 py-2 text-[12px] font-bold text-[#3B6B34]">
+      <button type="button" onClick={agregarNodo} className="flex items-center gap-2 rounded-xl bg-[#E3F1FA] px-4 py-2 text-[12px] font-bold text-[#1E88C7]">
         <Plus className="h-4 w-4" /> Agregar forma de venta
       </button>
     </div>
@@ -320,15 +320,15 @@ function PasoFormasVenta({ presentacion, nodosExtra, setNodosExtra }: PasoFormas
 function PasoProductoGeneralUno({ formulario, setFormulario }: { formulario: ProductoGeneralForm; setFormulario: (formulario: ProductoGeneralForm) => void }): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Nombre" value={formulario.nombre} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre" value={formulario.nombre} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} />
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Categoría</span>
-        <select className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={formulario.categoriaGeneral} onChange={(e) => setFormulario({ ...formulario, categoriaGeneral: e.target.value as CategoriaGeneral })}>
+        <select className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={formulario.categoriaGeneral} onChange={(e) => setFormulario({ ...formulario, categoriaGeneral: e.target.value as CategoriaGeneral })}>
           {CATEGORIAS_GENERALES.map((categoria) => <option key={categoria} value={categoria}>{etiqueta(categoria, LABEL_CATEGORIA_GENERAL)}</option>)}
         </select>
       </label>
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Unidad de venta" value={formulario.unidadVenta} onChange={(e) => setFormulario({ ...formulario, unidadVenta: e.target.value })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Código de barras (opcional)" value={formulario.codigoBarras ?? ''} onChange={(e) => setFormulario({ ...formulario, codigoBarras: e.target.value || undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Unidad de venta" value={formulario.unidadVenta} onChange={(e) => setFormulario({ ...formulario, unidadVenta: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Código de barras (opcional)" value={formulario.codigoBarras ?? ''} onChange={(e) => setFormulario({ ...formulario, codigoBarras: e.target.value || undefined })} />
     </div>
   )
 }
@@ -336,8 +336,8 @@ function PasoProductoGeneralUno({ formulario, setFormulario }: { formulario: Pro
 function PasoProductoGeneralDos({ formulario, setFormulario }: { formulario: ProductoGeneralForm; setFormulario: (formulario: ProductoGeneralForm) => void }): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Descripción de presentación" value={formulario.descripcionPresentacion} onChange={(e) => setFormulario({ ...formulario, descripcionPresentacion: e.target.value })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" type="number" min="0" placeholder="Costo de compra (opcional)" value={formulario.costoCompra ?? ''} onChange={(e) => setFormulario({ ...formulario, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción de presentación" value={formulario.descripcionPresentacion} onChange={(e) => setFormulario({ ...formulario, descripcionPresentacion: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Costo de compra (opcional)" value={formulario.costoCompra ?? ''} onChange={(e) => setFormulario({ ...formulario, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
     </div>
   )
 }
@@ -345,15 +345,15 @@ function PasoProductoGeneralDos({ formulario, setFormulario }: { formulario: Pro
 function PasoServicio({ formulario, setFormulario }: { formulario: ServicioForm; setFormulario: (formulario: ServicioForm) => void }): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Nombre del servicio" value={formulario.nombre} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre del servicio" value={formulario.nombre} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} />
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Tipo de servicio</span>
-        <select className="h-11 w-full rounded-xl border border-[#E8F0E6] px-3" value={formulario.tipoServicio} onChange={(e) => setFormulario({ ...formulario, tipoServicio: e.target.value as TipoServicioFarmacia })}>
+        <select className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={formulario.tipoServicio} onChange={(e) => setFormulario({ ...formulario, tipoServicio: e.target.value as TipoServicioFarmacia })}>
           {TIPOS_SERVICIO.map((tipo) => <option key={tipo} value={tipo}>{etiqueta(tipo, LABEL_TIPO_SERVICIO)}</option>)}
         </select>
       </label>
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Descripción (opcional)" value={formulario.descripcion ?? ''} onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value || undefined })} />
-      <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" type="number" min="0" placeholder="Duración estimada en minutos (opcional)" value={formulario.duracionMinutos ?? ''} onChange={(e) => setFormulario({ ...formulario, duracionMinutos: e.target.value ? Number(e.target.value) : undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción (opcional)" value={formulario.descripcion ?? ''} onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value || undefined })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Duración estimada en minutos (opcional)" value={formulario.duracionMinutos ?? ''} onChange={(e) => setFormulario({ ...formulario, duracionMinutos: e.target.value ? Number(e.target.value) : undefined })} />
     </div>
   )
 }
@@ -569,20 +569,20 @@ export function NuevoProductoStepper({
       <section className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-6 py-5">
         <h3 className="text-[14px] font-bold text-slate-700">¿Qué vas a registrar?</h3>
         <div className="space-y-3">
-          <button type="button" onClick={() => setTipoRecurso('MEDICAMENTO')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E8F0E6] px-6 py-5 text-left">
+          <button type="button" onClick={() => setTipoRecurso('MEDICAMENTO')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
             <span className="text-2xl" aria-hidden="true">💊</span>
             <span><span className="block text-[14px] font-bold text-slate-700">Medicamento</span><span className="mt-1 block text-[12px] text-slate-500">Fármacos con principio activo, concentración, registro sanitario y lote.</span></span>
           </button>
-          <button type="button" onClick={() => setTipoRecurso('PRODUCTO_GENERAL')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E8F0E6] px-6 py-5 text-left">
+          <button type="button" onClick={() => setTipoRecurso('PRODUCTO_GENERAL')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
             <span className="text-2xl" aria-hidden="true">📦</span>
             <span><span className="block text-[14px] font-bold text-slate-700">Producto general</span><span className="mt-1 block text-[12px] text-slate-500">Pañales, jabones, suplementos, dispositivos y otros productos sin modelo farmacéutico.</span></span>
           </button>
-          <button type="button" onClick={() => setTipoRecurso('SERVICIO')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E8F0E6] px-6 py-5 text-left">
+          <button type="button" onClick={() => setTipoRecurso('SERVICIO')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
             <span className="text-2xl" aria-hidden="true">✚</span>
             <span><span className="block text-[14px] font-bold text-slate-700">Servicio</span><span className="mt-1 block text-[12px] text-slate-500">Aplicación de inyectables, nebulizaciones, controles y otros servicios.</span></span>
           </button>
         </div>
-        <button type="button" onClick={cancelar} className="w-fit text-[12px] font-bold text-[#3B6B34]">
+        <button type="button" onClick={cancelar} className="w-fit text-[12px] font-bold text-[#1E88C7]">
           Cancelar y volver
         </button>
       </section>
@@ -591,10 +591,10 @@ export function NuevoProductoStepper({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-6 py-5">
-      <button type="button" onClick={cancelar} className="w-fit text-[12px] font-bold text-[#3B6B34]">
+      <button type="button" onClick={cancelar} className="w-fit text-[12px] font-bold text-[#1E88C7]">
         Cancelar y volver
       </button>
-      <div className="rounded-2xl border border-[#E8F0E6] bg-white p-5">
+      <div className="rounded-2xl border border-[#E3F1FA] bg-white p-5">
         <StepperHeader paso={paso} totalPasos={totalPasos} />
         <div className="mt-6">
           {tipoRecurso === 'MEDICAMENTO' && paso === 1 && <PasoMedicamentoVenta generico={generico} comercial={comercial} setGenerico={setGenerico} setComercial={setComercial} />}
@@ -610,24 +610,24 @@ export function NuevoProductoStepper({
           {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 2 && <PasoProductoGeneralDos formulario={productoGeneral} setFormulario={setProductoGeneral} />}
           {tipoRecurso === 'SERVICIO' && paso === 1 && <PasoServicio formulario={servicio} setFormulario={setServicio} />}
         </div>
-        {(errorLocal || error) && <div className="mt-5 rounded-xl bg-[#E8F0E6] px-4 py-3 text-[12px] font-bold text-[#3B6B34]">{errorLocal ?? error}</div>}
+        {(errorLocal || error) && <div className="mt-5 rounded-xl bg-[#E3F1FA] px-4 py-3 text-[12px] font-bold text-[#1E88C7]">{errorLocal ?? error}</div>}
         <footer className="mt-6 flex justify-between gap-3">
           <div className="flex items-center gap-3">
             {paso === 1 && (
-              <button type="button" onClick={() => setTipoRecurso(null)} className="text-[12px] font-bold text-[#3B6B34]">
+              <button type="button" onClick={() => setTipoRecurso(null)} className="text-[12px] font-bold text-[#1E88C7]">
                 ← Cambiar tipo
               </button>
             )}
-            <button type="button" onClick={onPasoAnterior} disabled={paso === 1} className="rounded-xl border border-[#E8F0E6] px-4 py-2 text-[12px] font-bold text-slate-600 disabled:opacity-40">
+            <button type="button" onClick={onPasoAnterior} disabled={paso === 1} className="rounded-xl border border-[#E3F1FA] px-4 py-2 text-[12px] font-bold text-slate-600 disabled:opacity-40">
               Anterior
             </button>
           </div>
           {paso < totalPasos ? (
-            <button type="button" onClick={avanzar} className="rounded-xl bg-[#3B6B34] px-5 py-2 text-[12px] font-bold text-white">
+            <button type="button" onClick={avanzar} className="rounded-xl bg-[#45b356] px-5 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a]">
               Siguiente
             </button>
           ) : (
-            <button type="button" onClick={guardar} disabled={cargando} className="rounded-xl bg-[#3B6B34] px-5 py-2 text-[12px] font-bold text-white disabled:opacity-50">
+            <button type="button" onClick={guardar} disabled={cargando} className="rounded-xl bg-[#45b356] px-5 py-2 text-[12px] font-bold text-white hover:bg-[#3a9e4a] disabled:opacity-50">
               Guardar
             </button>
           )}

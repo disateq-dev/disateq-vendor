@@ -23,9 +23,9 @@ function esRucValido(ruc: string): boolean {
 }
 
 function claseRuc(ruc: string): string {
-  if (esRucValido(ruc)) return 'border-[#3B6B34]'
+  if (esRucValido(ruc)) return 'border-[var(--dv-color-confirm)]'
   if (ruc.length === 11) return 'border-red-500'
-  return 'border-[#E8F0E6]'
+  return 'border-[var(--dv-input-border)]'
 }
 
 export function ConsultaSunatProveedor({
@@ -52,10 +52,10 @@ export function ConsultaSunatProveedor({
 
   return (
     <section className="flex flex-1 flex-col gap-5 overflow-auto px-6 py-5">
-      <button type="button" onClick={onVolver} className="w-fit text-[12px] font-bold text-[#3B6B34]">
+      <button type="button" onClick={onVolver} className="w-fit text-[12px] font-bold text-[#1E88C7]">
         ← Volver
       </button>
-      <div className="rounded-2xl border border-[#E8F0E6] bg-white p-5">
+      <div className="rounded-2xl border border-[#E3F1FA] bg-white p-5">
         <label className="block">
           <span className="text-[11px] font-bold uppercase text-slate-500">RUC</span>
           <div className="mt-2 flex gap-3">
@@ -79,20 +79,20 @@ export function ConsultaSunatProveedor({
       </div>
 
       {datosRuc && (
-        <div className="rounded-2xl border border-[#E8F0E6] bg-white p-5">
+        <div className="rounded-2xl border border-[#E3F1FA] bg-white p-5">
           <h2 className="text-[18px] font-bold text-slate-900">{datosRuc.razonSocial}</h2>
           <p className="mt-2 text-[13px] font-semibold text-slate-500">{datosRuc.direccion || 'Sin dirección'}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {[datosRuc.estado, datosRuc.condicion].filter(Boolean).map((valor) => (
-              <span key={valor} className="rounded-full bg-[#E8F0E6] px-3 py-1 text-[10px] font-bold uppercase text-[#3B6B34]">
+              <span key={valor} className="rounded-full bg-[#E3F1FA] px-3 py-1 text-[10px] font-bold uppercase text-[#1E88C7]">
                 {valor}
               </span>
             ))}
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Contacto" value={nombreContacto} onChange={(event: ChangeEvent<HTMLInputElement>) => setNombreContacto(event.target.value)} />
-            <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Teléfono" value={telefono} onChange={(event: ChangeEvent<HTMLInputElement>) => setTelefono(event.target.value)} />
-            <input className="h-11 rounded-xl border border-[#E8F0E6] px-3" placeholder="Condiciones de pago" value={condicionesPago} onChange={(event: ChangeEvent<HTMLInputElement>) => setCondicionesPago(event.target.value)} />
+            <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Contacto" value={nombreContacto} onChange={(event: ChangeEvent<HTMLInputElement>) => setNombreContacto(event.target.value)} />
+            <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Teléfono" value={telefono} onChange={(event: ChangeEvent<HTMLInputElement>) => setTelefono(event.target.value)} />
+            <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Condiciones de pago" value={condicionesPago} onChange={(event: ChangeEvent<HTMLInputElement>) => setCondicionesPago(event.target.value)} />
           </div>
           <button
             type="button"

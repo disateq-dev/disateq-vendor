@@ -59,14 +59,14 @@ export function BuscadorProducto({
   return (
     <section className="flex min-h-0 flex-1 flex-col px-3 py-3">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#3B6B34]" />
+        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#1E88C7]" />
         <input
           ref={inputRef}
           value={termino}
           onChange={(e) => onTerminoChange(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="Buscar producto..."
-          className="h-[38px] w-full rounded-xl border border-[#E8F0E6] bg-white pl-9 pr-8 text-[13px] font-semibold text-slate-800 outline-none transition focus:border-[#3B6B34] focus:ring-2 focus:ring-[#E8F0E6] placeholder:text-[#b8c4cf]"
+          className="h-[38px] w-full rounded-xl border border-[var(--dv-input-border)] bg-white pl-9 pr-8 text-[13px] font-semibold text-slate-800 outline-none transition focus:border-[var(--dv-input-border-focus)] focus:ring-2 focus:ring-[var(--dv-input-ring-focus)] placeholder:text-[#b8c4cf]"
         />
         {termino.length > 0 && (
           <button
@@ -84,7 +84,7 @@ export function BuscadorProducto({
 
       {termino.trim().length === 0 && (
         <div className="flex flex-col items-center justify-center py-14">
-          <Search size={28} className="text-[#3B6B34]/30" />
+          <Search size={28} className="text-[#1E88C7]/30" />
           <p className="mt-3 text-center text-[12px] text-slate-400">
             Código, nombre, principio activo, laboratorio o fabricante, código de barras
           </p>
@@ -95,7 +95,7 @@ export function BuscadorProducto({
       )}
 
       {cargando && termino.trim().length >= 2 && (
-        <p className="mt-3 text-[11px] font-semibold text-[#3B6B34]">Buscando...</p>
+        <p className="mt-3 text-[11px] font-semibold text-[#1E88C7]">Buscando...</p>
       )}
 
       {!cargando && termino.trim().length >= 2 && resultados.length > 0 && (
@@ -103,7 +103,7 @@ export function BuscadorProducto({
           <p className="mt-2 mb-1 text-[11px] text-slate-400">
             ↑ ↓ para navegar · Enter para ver detalle
           </p>
-          <div className="mt-2 overflow-hidden rounded-xl border border-[#E8F0E6] bg-white">
+          <div className="mt-2 overflow-hidden rounded-xl border border-[#E3F1FA] bg-white">
             {resultados.map((producto, idx) => {
               const estaSeleccionado = idx === indiceSeleccionado
               const codigoReferencia = producto.codigoDIGEMID ?? `${producto.id.slice(0, 8)}...`
@@ -119,7 +119,7 @@ export function BuscadorProducto({
                   type="button"
                   ref={estaSeleccionado ? (el => el?.scrollIntoView({ block: 'nearest' })) : null}
                   onClick={() => { onPreview(null); onSeleccionar(producto); inputRef.current?.focus() }}
-                  className={`block w-full border-b border-[#E8F0E6] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E8F0E6]' : 'hover:bg-[#E8F0E6]'} ${productoConfirmado && idx !== indiceSeleccionado ? 'opacity-40' : ''}`}
+                  className={`block w-full border-b border-[#E3F1FA] px-3 py-2 text-left transition ${estaSeleccionado ? 'bg-[#E3F1FA]' : 'hover:bg-[#E3F1FA]'} ${productoConfirmado && idx !== indiceSeleccionado ? 'opacity-40' : ''}`}
                 >
                   <div className="text-[12px] font-semibold text-slate-800">{textoPrincipal(producto)}</div>
                   <div className="mt-0.5 text-[10px] text-slate-500">

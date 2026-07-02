@@ -37,7 +37,7 @@ function ItemLista({ principio, seleccionado, onSeleccionar }: ItemListaProps): 
     <button
       type="button"
       onClick={() => onSeleccionar(principio)}
-      className={`block w-full border-b border-[#E8F0E6] px-3 py-2 text-left transition last:border-0 ${seleccionado ? 'bg-[#E8F0E6]' : 'hover:bg-[#E8F0E6]'}`}
+      className={`block w-full border-b border-[#E3F1FA] px-3 py-2 text-left transition last:border-0 ${seleccionado ? 'bg-[#E3F1FA]' : 'hover:bg-[#E3F1FA]'}`}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-[12px] font-bold text-slate-800 truncate">{principio.nombreDci}</span>
@@ -46,7 +46,7 @@ function ItemLista({ principio, seleccionado, onSeleccionar }: ItemListaProps): 
       <div className="mt-0.5 flex items-center gap-2">
         <span className="text-[10px] text-slate-400 truncate">{principio.grupoTerapeutico}</span>
         {principio.esCombinacion && (
-          <span className="shrink-0 rounded-full bg-[#E8F0E6] px-1.5 py-0.5 text-[9px] font-bold text-[#3B6B34]">COMBINACIÓN</span>
+          <span className="shrink-0 rounded-full bg-[#E3F1FA] px-1.5 py-0.5 text-[9px] font-bold text-[#1E88C7]">COMBINACIÓN</span>
         )}
         {principio.esPsicotropico && (
           <span className="shrink-0 rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-bold text-red-500">CONTROLADO</span>
@@ -67,13 +67,13 @@ function PanelResumen({ principio, onEditar, onVolver, cargando }: PanelResumenP
   return (
     <section className="flex min-h-0 flex-1 flex-col">
       <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
-        {cargando && <p className="text-[12px] font-semibold text-[#3B6B34]">Cargando...</p>}
+        {cargando && <p className="text-[12px] font-semibold text-[#1E88C7]">Cargando...</p>}
         {!cargando && (
           <>
             <div className="flex flex-wrap gap-2">
               <BadgeCondicion condicion={principio.condicionVentaIfa} />
               {principio.esCombinacion && (
-                <span className="rounded-full bg-[#E8F0E6] px-2 py-0.5 text-[10px] font-bold text-[#3B6B34]">COMBINACIÓN DE IFAs</span>
+                <span className="rounded-full bg-[#E3F1FA] px-2 py-0.5 text-[10px] font-bold text-[#1E88C7]">COMBINACIÓN DE IFAs</span>
               )}
               {principio.esEsencialMinsa && (
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">ESENCIAL MINSA</span>
@@ -88,7 +88,7 @@ function PanelResumen({ principio, onEditar, onVolver, cargando }: PanelResumenP
               <p className="mt-0.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wide">{principio.grupoTerapeutico}</p>
             </div>
 
-            <div className="rounded-xl border border-[#E8F0E6] bg-white px-4 py-3">
+            <div className="rounded-xl border border-[#E3F1FA] bg-white px-4 py-3">
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">DESCRIPCIÓN DE USO</div>
               <p className="text-[12px] text-slate-700 leading-relaxed">{principio.descripcionUso || '-'}</p>
             </div>
@@ -100,7 +100,7 @@ function PanelResumen({ principio, onEditar, onVolver, cargando }: PanelResumenP
                 </h3>
                 <div className="space-y-1">
                   {principio.productosVinculados.map((producto) => (
-                    <div key={producto.id} className="flex items-center justify-between rounded-xl border border-[#E8F0E6] bg-white px-3 py-2">
+                    <div key={producto.id} className="flex items-center justify-between rounded-xl border border-[#E3F1FA] bg-white px-3 py-2">
                       <span className="text-[12px] font-semibold text-slate-800">{producto.nombreComercial}</span>
                       {producto.codigoInterno && (
                         <span className="text-[10px] font-mono text-slate-400">{producto.codigoInterno}</span>
@@ -203,7 +203,7 @@ function FormularioPrincipio({ valorInicial, cargando, error, operadorId, onGuar
             value={nombreDci}
             onChange={(e) => setNombreDci(e.target.value)}
             placeholder="Ej: Paracetamol"
-            className="mt-1 h-[36px] w-full rounded-xl border border-[#E8F0E6] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#3B6B34] focus:ring-2 focus:ring-[#E8F0E6]"
+            className="mt-1 h-[36px] w-full rounded-xl border border-[#E3F1FA] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#1E88C7] focus:ring-2 focus:ring-[#E3F1FA]"
           />
         </label>
 
@@ -213,7 +213,7 @@ function FormularioPrincipio({ valorInicial, cargando, error, operadorId, onGuar
             value={grupoTerapeutico}
             onChange={(e) => setGrupoTerapeutico(e.target.value)}
             placeholder="Ej: Analgésico / Antipirético"
-            className="mt-1 h-[36px] w-full rounded-xl border border-[#E8F0E6] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#3B6B34] focus:ring-2 focus:ring-[#E8F0E6]"
+            className="mt-1 h-[36px] w-full rounded-xl border border-[#E3F1FA] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#1E88C7] focus:ring-2 focus:ring-[#E3F1FA]"
           />
         </label>
 
@@ -222,7 +222,7 @@ function FormularioPrincipio({ valorInicial, cargando, error, operadorId, onGuar
           <select
             value={condicionVenta}
             onChange={(e) => setCondicionVenta(e.target.value as CondicionVentaIfa)}
-            className="mt-1 h-[36px] w-full rounded-xl border border-[#E8F0E6] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#3B6B34]"
+            className="mt-1 h-[36px] w-full rounded-xl border border-[#E3F1FA] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#1E88C7]"
           >
             <option value="OTC">Venta libre (OTC)</option>
             <option value="OTC_RM">Libre / Con receta (OTC+RM)</option>
@@ -238,18 +238,18 @@ function FormularioPrincipio({ valorInicial, cargando, error, operadorId, onGuar
             onChange={(e) => setDescripcionUso(e.target.value)}
             rows={3}
             placeholder="Descripción en lenguaje operacional para el personal..."
-            className="mt-1 w-full rounded-xl border border-[#E8F0E6] bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-[#3B6B34] focus:ring-2 focus:ring-[#E8F0E6] resize-none"
+            className="mt-1 w-full rounded-xl border border-[#E3F1FA] bg-white px-3 py-2 text-[12px] text-slate-800 outline-none focus:border-[#1E88C7] focus:ring-2 focus:ring-[#E3F1FA] resize-none"
           />
         </label>
 
-        <div className="flex flex-col gap-2 rounded-xl border border-[#E8F0E6] bg-white px-4 py-3">
+        <div className="flex flex-col gap-2 rounded-xl border border-[#E3F1FA] bg-white px-4 py-3">
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">FLAGS REGULATORIOS</span>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={esCombinacion}
               onChange={(e) => setEsCombinacion(e.target.checked)}
-              className="h-4 w-4 rounded border-[#E8F0E6] text-[#3B6B34]"
+              className="h-4 w-4 rounded border-[#E3F1FA] text-[#1E88C7]"
             />
             <span className="text-[12px] font-semibold text-slate-700">Es combinación de IFAs</span>
           </label>
@@ -258,7 +258,7 @@ function FormularioPrincipio({ valorInicial, cargando, error, operadorId, onGuar
               type="checkbox"
               checked={esEsencialMinsa}
               onChange={(e) => setEsEsencialMinsa(e.target.checked)}
-              className="h-4 w-4 rounded border-[#E8F0E6] text-[#3B6B34]"
+              className="h-4 w-4 rounded border-[#E3F1FA] text-[#1E88C7]"
             />
             <span className="text-[12px] font-semibold text-slate-700">Esencial MINSA (Ley 32033)</span>
           </label>
@@ -267,7 +267,7 @@ function FormularioPrincipio({ valorInicial, cargando, error, operadorId, onGuar
               type="checkbox"
               checked={esPsicotropico}
               onChange={(e) => setEsPsicotropico(e.target.checked)}
-              className="h-4 w-4 rounded border-[#E8F0E6] text-[#3B6B34]"
+              className="h-4 w-4 rounded border-[#E3F1FA] text-[#1E88C7]"
             />
             <span className="text-[12px] font-semibold text-slate-700">Medicamento controlado (psicotrópico / estupefaciente)</span>
           </label>
@@ -280,7 +280,7 @@ function FormularioPrincipio({ valorInicial, cargando, error, operadorId, onGuar
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               placeholder="Describe el motivo del cambio..."
-              className="mt-1 h-[36px] w-full rounded-xl border border-[#E8F0E6] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#3B6B34] focus:ring-2 focus:ring-[#E8F0E6]"
+              className="mt-1 h-[36px] w-full rounded-xl border border-[#E3F1FA] bg-white px-3 text-[13px] font-semibold text-slate-800 outline-none focus:border-[#1E88C7] focus:ring-2 focus:ring-[#E3F1FA]"
             />
           </label>
         )}
@@ -321,10 +321,10 @@ export function PrincipiosActivosWorkspace(): ReactElement {
   return (
     <section className="flex min-h-0 flex-1 gap-2">
       {/* Panel izquierdo — buscador */}
-      <div className="flex flex-[40] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#3B6B34]/50 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E8F0E6]/60 border-[#3B6B34]/15">
+      <div className="flex flex-[40] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#1E88C7]/50 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E3F1FA]/60 border-[#1E88C7]/15">
           <div className="flex items-center gap-2">
-            <FlaskConical size={13} strokeWidth={2} className="shrink-0 text-[#3B6B34]" />
+            <FlaskConical size={13} strokeWidth={2} className="shrink-0 text-[#1E88C7]" />
             <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
               PRINCIPIOS ACTIVOS
             </span>
@@ -333,7 +333,7 @@ export function PrincipiosActivosWorkspace(): ReactElement {
             <button
               type="button"
               onClick={estado.onLimpiarError}
-              className="flex min-w-0 items-center gap-2 rounded-full bg-[#E8F0E6] px-3 py-1 text-[11px] font-bold text-[#3B6B34]"
+              className="flex min-w-0 items-center gap-2 rounded-full bg-[#E3F1FA] px-3 py-1 text-[11px] font-bold text-[#1E88C7]"
             >
               <span className="truncate">{estado.error}</span>
               <X className="h-3.5 w-3.5 shrink-0" />
@@ -344,12 +344,12 @@ export function PrincipiosActivosWorkspace(): ReactElement {
         <div className="flex flex-col flex-1 overflow-hidden">
           <div className="px-3 pt-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#3B6B34]" />
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#1E88C7]" />
               <input
                 value={estado.termino}
                 onChange={(e) => estado.onTerminoChange(e.target.value)}
                 placeholder="Nombre DCI o grupo terapéutico..."
-                className="h-[38px] w-full rounded-xl border border-[#E8F0E6] bg-white pl-9 pr-8 text-[13px] font-semibold text-slate-800 outline-none transition focus:border-[#3B6B34] focus:ring-2 focus:ring-[#E8F0E6] placeholder:text-[#b8c4cf]"
+                className="h-[38px] w-full rounded-xl border border-[#E3F1FA] bg-white pl-9 pr-8 text-[13px] font-semibold text-slate-800 outline-none transition focus:border-[#1E88C7] focus:ring-2 focus:ring-[#E3F1FA] placeholder:text-[#b8c4cf]"
               />
               {estado.termino.length > 0 && (
                 <button
@@ -362,19 +362,19 @@ export function PrincipiosActivosWorkspace(): ReactElement {
               )}
             </div>
             {estado.cargando && (
-              <p className="mt-2 text-[11px] font-semibold text-[#3B6B34]">Buscando...</p>
+              <p className="mt-2 text-[11px] font-semibold text-[#1E88C7]">Buscando...</p>
             )}
           </div>
 
           <div className="flex-1 overflow-auto mt-2">
             {!estado.cargando && estado.resultados.length === 0 && (
               <div className="flex flex-col items-center justify-center py-10">
-                <FlaskConical size={24} className="text-[#3B6B34]/30" />
+                <FlaskConical size={24} className="text-[#1E88C7]/30" />
                 <p className="mt-2 text-center text-[11px] text-slate-400">Sin resultados</p>
               </div>
             )}
             {estado.resultados.length > 0 && (
-              <div className="overflow-hidden rounded-xl border border-[#E8F0E6] bg-white mx-3">
+              <div className="overflow-hidden rounded-xl border border-[#E3F1FA] bg-white mx-3">
                 {estado.resultados.map((principio) => (
                   <ItemLista
                     key={principio.id}
@@ -408,9 +408,9 @@ export function PrincipiosActivosWorkspace(): ReactElement {
       </div>
 
       {/* Panel derecho — sheetworks */}
-      <div className="flex flex-[60] min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#3B6B34]/30 bg-[#FDFCF9]">
-        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E8F0E6]/60 border-[#3B6B34]/15">
-          <FlaskConical size={13} strokeWidth={2} className="shrink-0 text-[#3B6B34]" />
+      <div className="flex flex-[60] min-h-0 flex-col overflow-hidden rounded-[28px] border border-[#1E88C7]/30 bg-[#FDFCF9]">
+        <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 border-b bg-[#E3F1FA]/60 border-[#1E88C7]/15">
+          <FlaskConical size={13} strokeWidth={2} className="shrink-0 text-[#1E88C7]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
             {topbarLabel()}
           </span>
@@ -453,7 +453,7 @@ export function PrincipiosActivosWorkspace(): ReactElement {
           {/* Estado vacío */}
           {estado.modo === 'busqueda' && (
             <div className="flex flex-col items-center justify-center pb-14 pt-[106px]">
-              <FlaskConical size={32} className="text-[#3B6B34]/30" />
+              <FlaskConical size={32} className="text-[#1E88C7]/30" />
               <p className="mt-3 text-center text-[12px] text-slate-400">
                 Selecciona un principio activo para ver su detalle
               </p>

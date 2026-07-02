@@ -21,16 +21,16 @@ export function DetalleProveedor({
 
   return (
     <section className="flex flex-1 flex-col gap-5 overflow-auto px-6 py-5">
-      <button type="button" onClick={onVolver} className="w-fit text-[12px] font-bold text-[#3B6B34]">
+      <button type="button" onClick={onVolver} className="w-fit text-[12px] font-bold text-[#1E88C7]">
         ← Volver
       </button>
-      <header className="rounded-2xl border border-[#E8F0E6] bg-white p-5">
+      <header className="rounded-2xl border border-[#E3F1FA] bg-white p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-[20px] font-bold text-slate-900">{proveedor.razonSocial}</h2>
             <p className="mt-1 text-[13px] font-semibold text-slate-500">{proveedor.ruc ?? 'Sin RUC'}</p>
           </div>
-          <span className="rounded-full bg-[#E8F0E6] px-3 py-1 text-[10px] font-bold uppercase text-[#3B6B34]">
+          <span className="rounded-full bg-[#E3F1FA] px-3 py-1 text-[10px] font-bold uppercase text-[#1E88C7]">
             {proveedor.estado}
           </span>
         </div>

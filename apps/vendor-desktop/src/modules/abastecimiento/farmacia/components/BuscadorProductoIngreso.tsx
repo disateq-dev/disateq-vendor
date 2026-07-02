@@ -37,16 +37,16 @@ export function BuscadorProductoIngreso({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 px-6 py-20">
-      <div className="w-full max-w-2xl rounded-2xl border border-[#E8F0E6] bg-white p-5 shadow-xl">
+      <div className="w-full max-w-2xl rounded-2xl border border-[#E3F1FA] bg-white p-5 shadow-xl">
         <div className="flex items-center gap-3">
           <input
             ref={inputRef}
             value={termino}
             onChange={(event: ChangeEvent<HTMLInputElement>) => onTerminoChange(event.target.value)}
             placeholder="Buscar producto o presentación..."
-            className="h-12 flex-1 rounded-xl border border-[#E8F0E6] px-3 text-[14px] font-semibold outline-none focus:border-[#3B6B34]"
+            className="h-12 flex-1 rounded-xl border border-[var(--dv-input-border)] px-3 text-[14px] font-semibold outline-none focus:border-[var(--dv-input-border-focus)]"
           />
-          <button type="button" onClick={onCerrar} className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E8F0E6] text-[#3B6B34]">
+          <button type="button" onClick={onCerrar} className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E3F1FA] text-[#1E88C7]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -56,7 +56,7 @@ export function BuscadorProductoIngreso({
               key={resultado.presentacionId}
               type="button"
               onClick={() => onSeleccionar(resultado)}
-              className="block w-full border-b border-[#E8F0E6] px-3 py-3 text-left hover:bg-[#E8F0E6]"
+              className="block w-full border-b border-[#E3F1FA] px-3 py-3 text-left hover:bg-[#E3F1FA]"
             >
               <div className="flex items-center justify-between gap-3">
                 <span>
@@ -66,7 +66,7 @@ export function BuscadorProductoIngreso({
                   </span>
                 </span>
                 {resultado.requiereLote && (
-                  <span className="rounded-full bg-[#E8F0E6] px-2.5 py-1 text-[10px] font-bold uppercase text-[#3B6B34]">
+                  <span className="rounded-full bg-[#E3F1FA] px-2.5 py-1 text-[10px] font-bold uppercase text-[#1E88C7]">
                     Lote
                   </span>
                 )}
@@ -79,7 +79,7 @@ export function BuscadorProductoIngreso({
               <button
                 type="button"
                 onClick={onCrearNuevo}
-                className="mt-3 rounded-xl bg-[#3B6B34] px-4 py-2 text-[12px] font-bold text-white"
+                className="mt-3 rounded-xl border border-[#45b356]/40 px-4 py-2 text-[12px] font-bold text-[#45b356] hover:bg-[#F2F7F3]"
               >
                 Este producto no existe — regístralo ahora
               </button>

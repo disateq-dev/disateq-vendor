@@ -13,10 +13,10 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
   const lineasConLote = ingresos.lineas.filter((linea) => linea.requiereLote).length
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#3B6B34]/50 bg-[#FDFCF9]">
-      <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E8F0E6]/60 border-[#3B6B34]/15">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#1E88C7]/50 bg-[#FDFCF9]">
+      <div className="shrink-0 flex h-[42px] items-center justify-between gap-2 px-4 border-b bg-[#E3F1FA]/60 border-[#1E88C7]/15">
         <div className="flex items-center gap-2">
-          <Truck size={13} strokeWidth={2} className="shrink-0 text-[#3B6B34]" />
+          <Truck size={13} strokeWidth={2} className="shrink-0 text-[#1E88C7]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">
             {ingresos.creandoProductoAbierto && 'REGISTRANDO PRODUCTO'}
             {!ingresos.creandoProductoAbierto && ingresos.creandoProveedorAbierto && 'REGISTRANDO PROVEEDOR'}
@@ -27,7 +27,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
           <button
             type="button"
             onClick={ingresos.onLimpiarError}
-            className="flex min-w-0 items-center gap-2 rounded-full bg-[#E8F0E6] px-3 py-1 text-[11px] font-bold text-[#3B6B34]"
+            className="flex min-w-0 items-center gap-2 rounded-full bg-[#E3F1FA] px-3 py-1 text-[11px] font-bold text-[#1E88C7]"
           >
             <span className="truncate">{ingresos.error}</span>
             <X className="h-3.5 w-3.5 shrink-0" />
@@ -113,7 +113,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
       )}
 
       {!ingresos.creandoProductoAbierto && !ingresos.creandoProveedorAbierto && (
-        <footer className="shrink-0 flex items-center justify-between border-t border-[#E8F0E6] bg-white px-6 py-4">
+        <footer className="shrink-0 flex items-center justify-between border-t border-[#E3F1FA] bg-white px-6 py-4">
           <span className="text-[12px] font-bold text-slate-600">
             {ingresos.lineas.length} líneas · {lineasConLote} con lote
           </span>
