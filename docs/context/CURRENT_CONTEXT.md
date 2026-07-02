@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ VENDOR™
 **Última actualización:** 02 Jul 2026
-**Commit activo:** pendiente — sesión completa (recolor ABASTECIMIENTO + doctrina de botones/inputs), verificada limpia (`npx tsc --noEmit` sin errores en todos los pasos). Fernando debe actualizar este hash tras `git commit`.
+**Commit activo:** `cde45b6` — "docs(context): cerrar sesion ABASTECIMIENTO recolor + doctrina" (precedido por `d7e09ab` — "refactor(design-tokens): recolor ABASTECIMIENTO verde->azul + doctrina de botones/inputs", 18 archivos). Verificado limpio: `npx tsc --noEmit` sin errores en todos los pasos.
 
 ---
 
