@@ -428,7 +428,7 @@ export function ReportesWorkspace() {
             <StatCard
               label="Anulaciones"
               value={fmtNum(reporteComprobantes?.anulaciones ?? 0)}
-              accent={(reporteComprobantes?.anulaciones ?? 0) > 0 ? "text-red-600" : undefined}
+              accent={(reporteComprobantes?.anulaciones ?? 0) > 0 ? "text-[#DC2626]" : undefined}
             />
             <StatCard
               label="Pendientes SUNAT"
@@ -448,7 +448,7 @@ export function ReportesWorkspace() {
             <StatCard
               label="Agotados"
               value={fmtNum((reporteAbastecimiento?.productosEnAlerta ?? []).filter(item => (item?.disponible ?? 0) === 0).length)}
-              accent="text-red-600"
+              accent="text-[#DC2626]"
             />
             <StatCard label="Compras Período" value={fmtNum(reporteAbastecimiento?.comprasDelPeriodo ?? 0)} />
             <StatCard label="Gasto Total" value={fmtMonto(reporteAbastecimiento?.gastoTotal)} accent="text-[#5C5FA8]" />
@@ -625,7 +625,7 @@ export function ReportesWorkspace() {
                         <td className="py-2">
                           <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
                             (item?.disponible ?? 0) === 0
-                              ? "bg-red-50 text-red-600"
+                              ? "bg-[#FEF2F2] text-[#DC2626]"
                               : "bg-amber-50 text-amber-700"
                           }`}>
                             {(item?.disponible ?? 0) === 0 ? "ROJO" : "AMBER"}
@@ -687,7 +687,7 @@ export function ReportesWorkspace() {
                         ? "text-slate-500"
                         : (turno?.diferencia ?? 0) >= 0
                         ? "text-emerald-700"
-                        : "text-red-600"
+                        : "text-[#DC2626]"
                     }`}>
                       Diferencia: {turno?.diferencia === null ? "S/ 0.00" : fmtMonto(turno?.diferencia ?? 0)}
                     </p>

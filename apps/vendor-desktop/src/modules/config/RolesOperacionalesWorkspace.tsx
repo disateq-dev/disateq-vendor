@@ -271,7 +271,7 @@ function PanelDetalle({ selectedId, onSelect }: {
               {panel === "new" ? "NUEVO ROL OPERACIONAL" : "EDITAR ROL"}
             </span>
             {codeError && (
-              <p className="rounded-xl bg-red-50 px-3 py-2 text-[10px] font-semibold text-red-600">{codeError}</p>
+              <p className="rounded-xl bg-[#FEF2F2] px-3 py-2 text-[10px] font-semibold text-[#DC2626]">{codeError}</p>
             )}
             <div className="flex gap-2">
               <div className="flex w-20 flex-col gap-0.5">

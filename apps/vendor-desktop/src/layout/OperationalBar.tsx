@@ -453,7 +453,7 @@ export function ContextBar({
           style={
             tieneFoco || (!barraActiva && estaActiva)
               ? { backgroundColor: accent, color: "white" }
-              : { color: "#201E1E", opacity: 0.8 }
+              : { color: "var(--dv-text-primary)", opacity: 0.8 }
           }
         >
           {opcion.label}
@@ -513,7 +513,7 @@ export function ContextBar({
               }
             >
               <span style={{ color: acceso ? accent : "#2C2A26" }}><Icon size={20} /></span>
-              <span style={{ color: acceso ? "#2C2A26" : "#121416" }}>{MODULE_LABEL[modulo]}</span>
+              <span style={{ color: acceso ? "#2C2A26" : "var(--dv-text-primary)" }}>{MODULE_LABEL[modulo]}</span>
             </button>
             {esUltimoAntesSep && <Separador />}
           </div>

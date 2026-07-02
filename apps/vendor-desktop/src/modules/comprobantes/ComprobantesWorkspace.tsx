@@ -37,7 +37,7 @@ const METHOD_COLORS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   EMITIDO: "bg-emerald-50 text-emerald-700",
-  ANULADO: "bg-red-50 text-red-600",
+  ANULADO: "bg-[#FEF2F2] text-[#DC2626]",
   REFERENCIADO: "bg-amber-50 text-amber-700",
 };
 
@@ -97,12 +97,12 @@ function StatsBar({ docs }: { docs: Comprobante[] }) {
 
   return (
     <div className="shrink-0 px-3 pb-2">
-      <div className="grid grid-cols-5 gap-2 rounded-2xl bg-[#FBF4F4] p-2">
+      <div className="grid grid-cols-5 gap-2 rounded-2xl bg-[#F0EAF0] p-2">
         <StatCard label="Total vendido" value={formatMoney(stats.total)} accent="text-[#111827]" />
         <StatCard label="EFE" value={formatMoney(stats.efe)} accent="text-emerald-700" />
         <StatCard label="YAP" value={formatMoney(stats.yap)} accent="text-violet-700" />
         <StatCard label="TAR" value={formatMoney(stats.tar)} accent="text-blue-700" />
-        <StatCard label="Anulados" value={String(stats.anulados)} accent="text-red-600" />
+        <StatCard label="Anulados" value={String(stats.anulados)} accent="text-[#DC2626]" />
       </div>
     </div>
   );
@@ -248,9 +248,9 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
       </div>
 
       {selected.estado === "ANULADO" && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-red-600">Anulado</p>
-          <p className="mt-1 text-[11px] text-red-600">{selected.motivoAnulacion || "Sin motivo registrado"}</p>
+        <div className="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#DC2626]">Anulado</p>
+          <p className="mt-1 text-[11px] text-[#DC2626]">{selected.motivoAnulacion || "Sin motivo registrado"}</p>
         </div>
       )}
 
@@ -278,7 +278,7 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
           <button
             disabled={!puedeAnular}
             onClick={() => setAccion("anular")}
-            className={`flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600 transition ${
+            className={`flex items-center justify-center gap-2 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-bold text-[#DC2626] transition ${
               !puedeAnular ? "cursor-not-allowed opacity-40" : "hover:bg-red-100"
             }`}
             title={!puedeAnular ? "Sin capacidad para anular comprobantes" : undefined}
@@ -290,10 +290,10 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
       )}
 
       {isEmitido && accion === "anular" && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-red-200 bg-red-50/70 px-3 py-3">
+        <div className="flex flex-col gap-2 rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/70 px-3 py-3">
           <div className="flex items-center gap-1.5">
             <AlertTriangle size={12} className="shrink-0 text-red-500" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600">Confirmar anulacion</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#DC2626]">Confirmar anulacion</span>
           </div>
           <input
             ref={motivoRef}
@@ -301,7 +301,7 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
             value={motivo}
             onChange={e => setMotivo(e.target.value)}
             placeholder="Motivo requerido..."
-            className="w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#c0cad4] focus:border-red-400"
+            className="w-full rounded-xl border border-[#FECACA] bg-white px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#c0cad4] focus:border-red-400"
           />
           <div className="flex gap-2">
             <button
@@ -317,7 +317,7 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
               onClick={() => onVoid(motivo.trim())}
               disabled={!motivo.trim()}
               className={`flex-1 rounded-xl py-2 text-[11px] font-bold text-white transition ${
-                motivo.trim() ? "bg-red-600 hover:bg-red-700" : "cursor-not-allowed bg-red-300"
+                motivo.trim() ? "bg-[#DC2626] hover:bg-[#B91C1C]" : "cursor-not-allowed bg-red-300"
               }`}
             >
               Anular
@@ -516,9 +516,9 @@ export function ComprobantesWorkspace() {
   return (
     <section className="flex h-full w-full gap-3">
       <PinAutorizacionModal />
-      <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#C05050]/50 bg-[#FDFCF9]">
-        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#C05050]/15 bg-[#FBF4F4] px-4">
-          <ReceiptText size={13} strokeWidth={2} className="shrink-0 text-[#C05050]" />
+      <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-[#7B4F6E]/50 bg-[#FDFCF9]">
+        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#7B4F6E]/15 bg-[#F0EAF0] px-4">
+          <ReceiptText size={13} strokeWidth={2} className="shrink-0 text-[#7B4F6E]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">COMPROBANTES</span>
         </header>
 
@@ -527,7 +527,7 @@ export function ComprobantesWorkspace() {
             <button
               onClick={() => setVista("sesion")}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
-                vista === "sesion" ? "bg-[#C05050] text-white" : "text-[#6b7280] hover:text-[#374151]"
+                vista === "sesion" ? "bg-[#7B4F6E] text-white" : "text-[#6b7280] hover:text-[#374151]"
               }`}
             >
               <ReceiptText size={11} strokeWidth={2} />
@@ -536,7 +536,7 @@ export function ComprobantesWorkspace() {
             <button
               onClick={() => setVista("historial")}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
-                vista === "historial" ? "bg-[#C05050] text-white" : "text-[#6b7280] hover:text-[#374151]"
+                vista === "historial" ? "bg-[#7B4F6E] text-white" : "text-[#6b7280] hover:text-[#374151]"
               }`}
             >
               <FileText size={11} strokeWidth={2} />
@@ -662,9 +662,9 @@ export function ComprobantesWorkspace() {
         </div>
       </div>
 
-      <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#C05050]/50 bg-[#FDFCF9]">
-        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#C05050]/15 bg-[#FBF4F4] px-4">
-          <FileText size={13} strokeWidth={2} className="shrink-0 text-[#C05050]" />
+      <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#7B4F6E]/50 bg-[#FDFCF9]">
+        <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#7B4F6E]/15 bg-[#F0EAF0] px-4">
+          <FileText size={13} strokeWidth={2} className="shrink-0 text-[#7B4F6E]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">DETALLE</span>
         </header>
 

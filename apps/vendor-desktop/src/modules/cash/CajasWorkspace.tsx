@@ -196,7 +196,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlock
             <span className="rounded bg-[#EBF4FA] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4A5265]">{activeCount}</span>
           )}
           {inactiveCount > 0 && (
-            <span className="rounded bg-red-50 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#dc2626]/70">{inactiveCount}</span>
+            <span className="rounded bg-[#FEF2F2] px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#dc2626]/70">{inactiveCount}</span>
           )}
         </div>
       </div>
@@ -497,7 +497,7 @@ function PanelGestionCajas({
                 DISPONIBLE: "bg-[#EBF4FA] text-[#4A5265]",
                 ASIGNADO:   "bg-[#dbeafe] text-[#2154d8]",
                 EN_USO:     "bg-emerald-100 text-emerald-700",
-                INACTIVO:   "bg-red-50 text-[#dc2626]",
+                INACTIVO:   "bg-[#FEF2F2] text-[#dc2626]",
               };
               return (
                 <div className="flex items-center gap-2.5 flex-wrap">
