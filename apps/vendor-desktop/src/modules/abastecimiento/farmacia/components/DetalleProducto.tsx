@@ -11,6 +11,7 @@ import type { CrearValorOperacionalInput, EstadoValorOperacional, ModificarValor
 import {
   crearValorOperacional,
   desactivarProductoComercial,
+  eliminarProductoComercialFisico,
   modificarProductoComercial,
   corregirDatosOperacionales,
   modificarValorOperacional,
@@ -19,6 +20,7 @@ import {
   verificarHistorialProducto,
   asignarPrincipiosAProducto,
 } from '../../../../domains/farmacia/farmacia.service'
+import { retirarHovsDeProducto } from '../../../../domains/farmacia/hov-projector.service'
 import { usePOS } from '../../../../context/POSContext'
 import { ComboboxFiltrado } from '../../../../components/ComboboxFiltrado'
 import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
@@ -667,6 +669,21 @@ export function DetalleProducto({
     }
   }
 
+  const onConfirmarEliminarFisico = async (): Promise<void> => {
+    setGuardandoCambios(true)
+    setErrorAccion(null)
+    try {
+      retirarHovsDeProducto(producto.id)
+      await eliminarProductoComercialFisico(producto.id)
+      setModo('lectura')
+      onLimpiar()
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : String(e))
+    } finally {
+      setGuardandoCambios(false)
+    }
+  }
+
   const onReactivar = async (): Promise<void> => {
     setGuardandoCambios(true)
     setErrorAccion(null)
@@ -711,10 +728,17 @@ export function DetalleProducto({
                 )}
               </div>
             </div>
-            <p className="text-[13px] font-semibold text-[var(--dv-text-primary)]">
-              Vas a dar de baja «{producto.nombreComercial}». El producto quedará INACTIVO y no aparecerá en
-              búsquedas ni ventas. El historial se conserva.
-            </p>
+            {tieneHistorial ? (
+              <p className="text-[13px] font-semibold text-[var(--dv-text-primary)]">
+                Vas a dar de baja «{producto.nombreComercial}». El producto quedará INACTIVO y no aparecerá en
+                búsquedas ni ventas. El historial se conserva.
+              </p>
+            ) : (
+              <p className="text-[13px] font-semibold text-[var(--dv-text-primary)]">
+                Vas a eliminar definitivamente «{producto.nombreComercial}». No tiene movimientos ni lotes
+                registrados — se borra por completo y no se puede deshacer.
+              </p>
+            )}
           </div>
         )}
 
@@ -1034,11 +1058,11 @@ export function DetalleProducto({
           <button type="button" onClick={() => { onIrADetalle(); setModo('lectura') }} className="group relative rounded-xl border border-[var(--dv-color-exit-border)] px-4 py-2 text-[12px] font-bold text-[var(--dv-color-exit)] hover:bg-[var(--dv-color-exit-bg)]">VOLVER<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Esc</kbd></button>
           <button
             type="button"
-            onClick={() => void onConfirmarDesactivar()}
+            onClick={() => void (tieneHistorial ? onConfirmarDesactivar() : onConfirmarEliminarFisico())}
             disabled={guardandoCambios}
             className="group relative rounded-xl bg-[var(--dv-color-danger)] px-4 py-2 text-[12px] font-bold text-white hover:bg-[var(--dv-color-danger)] disabled:opacity-50"
           >
-            CONFIRMAR BAJA<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd>
+            {tieneHistorial ? 'CONFIRMAR BAJA' : 'ELIMINAR DEFINITIVAMENTE'}<kbd className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border border-[#fef08a] bg-[#fefce8] px-2 py-1 text-[11px] font-bold leading-none text-[#713f12] opacity-0 transition-opacity duration-150 group-hover:opacity-100 z-10">Ctrl+Supr</kbd>
           </button>
         </div>
       )}

@@ -377,14 +377,144 @@ pub async fn verificar_historial_producto(
     }
 
     let placeholders = vec!["?"; presentacion_ids.len()].join(", ");
-    let sql = format!("SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})", placeholders);
-    let mut query = sqlx::query_scalar::<_, i64>(&sql);
-    for presentacion_id in presentacion_ids {
-        query = query.bind(presentacion_id);
-    }
-    let count = query.fetch_one(pool).await.map_err(|e| e.to_string())?;
 
-    Ok(count > 0)
+    let sql_movimiento = format!("SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})", placeholders);
+    let mut query_movimiento = sqlx::query_scalar::<_, i64>(&sql_movimiento);
+    for presentacion_id in &presentacion_ids {
+        query_movimiento = query_movimiento.bind(presentacion_id);
+    }
+    let count_movimiento = query_movimiento.fetch_one(pool).await.map_err(|e| e.to_string())?;
+
+    if count_movimiento > 0 {
+        return Ok(true);
+    }
+
+    let sql_lote = format!("SELECT COUNT(*) FROM lote WHERE presentacion_id IN ({})", placeholders);
+    let mut query_lote = sqlx::query_scalar::<_, i64>(&sql_lote);
+    for presentacion_id in &presentacion_ids {
+        query_lote = query_lote.bind(presentacion_id);
+    }
+    let count_lote = query_lote.fetch_one(pool).await.map_err(|e| e.to_string())?;
+
+    Ok(count_lote > 0)
+}
+
+#[tauri::command]
+pub async fn eliminar_producto_comercial_fisico(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    let presentacion_ids = sqlx::query_scalar::<_, String>(
+        "SELECT id FROM presentacion_comercial WHERE producto_comercial_id = ?",
+    )
+    .bind(&id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if !presentacion_ids.is_empty() {
+        let placeholders = vec!["?"; presentacion_ids.len()].join(", ");
+
+        let sql_movimiento = format!("SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})", placeholders);
+        let mut query_movimiento = sqlx::query_scalar::<_, i64>(&sql_movimiento);
+        for presentacion_id in &presentacion_ids {
+            query_movimiento = query_movimiento.bind(presentacion_id);
+        }
+        let count_movimiento = query_movimiento.fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+
+        if count_movimiento > 0 {
+            return Err(String::from("TIENE_HISTORIAL"));
+        }
+
+        let sql_lote = format!("SELECT COUNT(*) FROM lote WHERE presentacion_id IN ({})", placeholders);
+        let mut query_lote = sqlx::query_scalar::<_, i64>(&sql_lote);
+        for presentacion_id in &presentacion_ids {
+            query_lote = query_lote.bind(presentacion_id);
+        }
+        let count_lote = query_lote.fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+
+        if count_lote > 0 {
+            return Err(String::from("TIENE_HISTORIAL"));
+        }
+    }
+
+    let producto_generico_id = sqlx::query_scalar::<_, String>(
+        "SELECT producto_generico_id FROM producto_comercial WHERE id = ?",
+    )
+    .bind(&id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if !presentacion_ids.is_empty() {
+        let placeholders = vec!["?"; presentacion_ids.len()].join(", ");
+        let sql_nodo_ids = format!("SELECT id FROM nodo_fraccionamiento WHERE presentacion_id IN ({})", placeholders);
+        let mut query_nodo_ids = sqlx::query_scalar::<_, String>(&sql_nodo_ids);
+        for presentacion_id in &presentacion_ids {
+            query_nodo_ids = query_nodo_ids.bind(presentacion_id);
+        }
+        let nodo_ids = query_nodo_ids.fetch_all(&mut *tx).await.map_err(|e| e.to_string())?;
+
+        if !nodo_ids.is_empty() {
+            let placeholders_nodo = vec!["?"; nodo_ids.len()].join(", ");
+            let sql_borrar_valores = format!("DELETE FROM valor_operacional WHERE nodo_id IN ({})", placeholders_nodo);
+            let mut query_borrar_valores = sqlx::query(&sql_borrar_valores);
+            for nodo_id in &nodo_ids {
+                query_borrar_valores = query_borrar_valores.bind(nodo_id);
+            }
+            query_borrar_valores.execute(&mut *tx).await.map_err(|e| e.to_string())?;
+        }
+
+        let sql_borrar_nodos = format!("DELETE FROM nodo_fraccionamiento WHERE presentacion_id IN ({})", placeholders);
+        let mut query_borrar_nodos = sqlx::query(&sql_borrar_nodos);
+        for presentacion_id in &presentacion_ids {
+            query_borrar_nodos = query_borrar_nodos.bind(presentacion_id);
+        }
+        query_borrar_nodos.execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("DELETE FROM presentacion_comercial WHERE producto_comercial_id = ?")
+        .bind(&id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("DELETE FROM producto_comercial WHERE id = ?")
+        .bind(&id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let otros_comerciales = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM producto_comercial WHERE producto_generico_id = ?",
+    )
+    .bind(&producto_generico_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if otros_comerciales == 0 {
+        sqlx::query("DELETE FROM producto_principio_activo WHERE producto_generico_id = ?")
+            .bind(&producto_generico_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("DELETE FROM producto_generico WHERE id = ?")
+            .bind(&producto_generico_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 #[tauri::command]
