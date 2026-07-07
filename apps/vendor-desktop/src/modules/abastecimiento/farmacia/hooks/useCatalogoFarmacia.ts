@@ -6,6 +6,7 @@ import {
   obtenerPresentaciones,
   obtenerProductosComerciales,
 } from '../../../../domains/farmacia/farmacia.service'
+import { proyectarAHov } from '../../../../domains/farmacia/hov-projector.service'
 import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
 import type {
   CrearNodoInput,
@@ -15,6 +16,7 @@ import type {
   NodoFraccionamiento,
   PresentacionComercial,
   ProductoComercial,
+  TipoRecursoOperacional,
 } from '../../../../domains/farmacia/types'
 
 export type PanelIzquierdoCatalogo = 'busqueda' | 'detalle'
@@ -54,6 +56,7 @@ interface UseCatalogoFarmaciaResult {
   onPasoSiguiente(): void
   onPasoAnterior(): void
   onGuardarProducto(
+    tipoRecurso: TipoRecursoOperacional,
     generico: CrearProductoGenericoInput,
     comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
     presentacion: CrearPresentacionInput,
@@ -217,6 +220,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
 
   const onGuardarProducto = useCallback(
     async (
+      tipoRecurso: TipoRecursoOperacional,
       generico: CrearProductoGenericoInput,
       comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
       presentacion: CrearPresentacionInput,
@@ -240,6 +244,50 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
             crearNodo({ ...nodo, presentacionId, nodoPadreId: nodo.nodoPadreId ?? nodoRaizId }),
           ),
         )
+        try {
+          const nodosCreados = await obtenerNodosFraccionamiento(presentacionId)
+          const productoComercialAssembled: ProductoComercial = {
+            id: productoComercialId,
+            productoGenericoId: '',
+            nombreComercial: comercial.nombreComercial,
+            nombreFabricante: comercial.nombreFabricante,
+            nombreTitular: comercial.nombreTitular,
+            paisOrigen: comercial.paisOrigen ?? '',
+            registroSanitario: comercial.registroSanitario,
+            estadoRegistroSanitario: 'VIGENTE',
+            codigoDIGEMID: comercial.codigoDIGEMID,
+            condicionVenta: comercial.condicionVenta,
+            requiereLote: comercial.requiereLote,
+            requiereCadenaFrio: comercial.requiereCadenaFrio,
+            estado: 'ACTIVO',
+            creadoEn: new Date().toISOString(),
+            modificadoEn: new Date().toISOString(),
+            ifa: generico.ifa,
+            concentracion: generico.concentracion,
+            formaFarmaceutica: generico.formaFarmaceutica,
+            categoriaFarmacia: generico.categoriaFarmacia,
+          }
+          const presentacionAssembled: PresentacionComercial = {
+            id: presentacionId,
+            productoComercialId,
+            descripcion: presentacion.descripcion,
+            fraccionDIGEMID: presentacion.fraccionDIGEMID,
+            unidadConteo: presentacion.unidadConteo,
+            factorConversionBase: presentacion.factorConversionBase,
+            codigoBarras: presentacion.codigoBarras,
+            proveedorHabitualId: presentacion.proveedorHabitualId,
+            costoCompra: presentacion.costoCompra,
+            stockMinimo: 0,
+            creadoEn: new Date().toISOString(),
+          }
+          nodosCreados
+            .filter((nodo) => nodo.esVendible)
+            .forEach((nodo) => {
+              proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso)
+            })
+        } catch (errorProyeccion) {
+          console.error('No se pudo proyectar el producto a la capa de venta (HOV):', errorProyeccion)
+        }
         setCreandoAbierto(false)
         setPasoNuevo(1)
       } catch (error) {

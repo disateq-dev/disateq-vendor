@@ -10,6 +10,7 @@ export interface HOV {
   productoId?: string
   servicioId?: string
   productoGeneralId?: string
+  nodoFraccionamientoId?: string
   unidadDespacho: string
   factorConversion: number
   costoBase: number
@@ -27,6 +28,7 @@ export interface CrearHOVInput {
   productoId?: string
   servicioId?: string
   productoGeneralId?: string
+  nodoFraccionamientoId?: string
   tipoRecurso?: TipoRecursoOperacional
   unidadDespacho: string
   factorConversion: number

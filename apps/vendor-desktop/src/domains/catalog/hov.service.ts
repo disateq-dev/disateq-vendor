@@ -37,6 +37,9 @@ export function crearHOV(input: CrearHOVInput): HOV {
     estado: 'ACTIVA',
     contextoOperacionalId: input.contextoOperacionalId,
     category: input.category,
+    tipoRecurso: input.tipoRecurso ?? 'MEDICAMENTO',
+    codigoBarras: input.codigoBarras,
+    nodoFraccionamientoId: input.nodoFraccionamientoId,
     creadoEn: now,
     modificadoEn: now,
   }
@@ -102,6 +105,25 @@ export function actualizarCostoBase(hovId: string, nuevoCosto: number): HOV {
     costoBase: nuevoCosto,
     costoBaseActualizadoEn: now,
     modificadoEn: now,
+  }
+
+  return hovStore.guardarHOV(updated)
+}
+
+export function reactivarHOV(id: string): HOV {
+  const hov = hovStore.getHOVById(id)
+  if (!hov) {
+    throw new Error('HOV no encontrada')
+  }
+
+  if (hov.estado !== 'RETIRADA') {
+    throw new Error('Solo se puede reactivar una HOV retirada')
+  }
+
+  const updated: HOV = {
+    ...hov,
+    estado: 'ACTIVA',
+    modificadoEn: new Date().toISOString(),
   }
 
   return hovStore.guardarHOV(updated)

@@ -33,6 +33,7 @@ interface NuevoProductoStepperProps {
   onPasoAnterior: () => void
   onCancelar: () => void
   onGuardar: (
+    tipoRecurso: TipoRecursoOperacional,
     generico: CrearProductoGenericoInput,
     comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
     presentacion: CrearPresentacionInput,
@@ -491,11 +492,12 @@ export function NuevoProductoStepper({
       esVendible: true,
       esComprable: false,
     }))
-    await onGuardar(generico, comercial, presentacionInput, nodosInput)
+    await onGuardar('MEDICAMENTO', generico, comercial, presentacionInput, nodosInput)
   }
 
   const guardarProductoGeneral = async (): Promise<void> => {
     await onGuardar(
+      'PRODUCTO_GENERAL',
       {
         ifa: productoGeneral.nombre,
         concentracion: '-',
@@ -525,6 +527,7 @@ export function NuevoProductoStepper({
 
   const guardarServicio = async (): Promise<void> => {
     await onGuardar(
+      'SERVICIO',
       {
         ifa: servicio.nombre,
         concentracion: '-',
