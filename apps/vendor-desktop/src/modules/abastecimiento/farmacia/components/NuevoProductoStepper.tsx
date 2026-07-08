@@ -1,6 +1,13 @@
 import { Check, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState, type ReactElement } from 'react'
 import {
+  buscarEnCatalogoMaestro,
+  obtenerDetalleCatalogoMaestro,
+  type DetalleCatalogoMaestro,
+  type SugerenciaCatalogoMaestro,
+} from '../../../../domains/farmacia/catalogo-maestro.service'
+import { mapearFormaFarmaceutica } from '../../../../domains/farmacia/mapeo-forma-digemid.utils'
+import {
   LABEL_CATEGORIA_FARMACIA,
   LABEL_CATEGORIA_GENERAL,
   LABEL_CONDICION_VENTA,
@@ -52,7 +59,12 @@ interface PasoComercialProps {
   comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>
   similares: ProductoComercial[]
   buscandoSimilares: boolean
+  sugerenciasDigemid: SugerenciaCatalogoMaestro[]
+  buscandoDigemid: boolean
+  sugerenciaDigemidElegida: DetalleCatalogoMaestro | null
   setComercial: (comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>) => void
+  onElegirSugerenciaDigemid: (codProd: number) => void
+  onQuitarSugerenciaDigemid: () => void
 }
 
 interface PasoRegulatorioProps {
@@ -225,10 +237,57 @@ function PasoMedicamentoVenta({ generico, comercial, setGenerico, setComercial }
   )
 }
 
-function PasoComercial({ comercial, similares, buscandoSimilares, setComercial }: PasoComercialProps): ReactElement {
+function PasoComercial({
+  comercial,
+  similares,
+  buscandoSimilares,
+  sugerenciasDigemid,
+  buscandoDigemid,
+  sugerenciaDigemidElegida,
+  setComercial,
+  onElegirSugerenciaDigemid,
+  onQuitarSugerenciaDigemid,
+}: PasoComercialProps): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre comercial" value={comercial.nombreComercial} onChange={(e) => setComercial({ ...comercial, nombreComercial: e.target.value })} />
+      <div className="space-y-2 md:col-span-2">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <input className="h-11 flex-1 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre comercial" value={comercial.nombreComercial} onChange={(e) => setComercial({ ...comercial, nombreComercial: e.target.value })} />
+          {sugerenciaDigemidElegida !== null ? (
+            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+              <span className="font-bold text-[#1E88C7]">
+                ✓ Prellenado desde DIGEMID
+                {sugerenciaDigemidElegida.situacion !== null ? ` · Situación DIGEMID: ${sugerenciaDigemidElegida.situacion}` : ''}
+              </span>
+              <button type="button" onClick={onQuitarSugerenciaDigemid} className="font-bold text-[#1E88C7]">
+                Quitar sugerencia
+              </button>
+            </div>
+          ) : null}
+        </div>
+        {sugerenciasDigemid.length > 0 && sugerenciaDigemidElegida === null ? (
+          <div className="rounded-xl border border-[#E3F1FA] bg-white px-4 py-3">
+            <p className="text-[11px] font-bold text-[#1E88C7]">Coincidencias en catálogo DIGEMID</p>
+            <div className="mt-2 grid gap-2">
+              {sugerenciasDigemid.map((sugerencia) => (
+                <button
+                  key={sugerencia.codProd}
+                  type="button"
+                  onClick={() => onElegirSugerenciaDigemid(sugerencia.codProd)}
+                  className="rounded-lg border border-[#E3F1FA] bg-white px-3 py-2 text-left"
+                >
+                  <div className="text-[12px] font-bold text-slate-800">{sugerencia.nombre ?? 'Sin nombre comercial'}</div>
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    {[sugerencia.laboratorio, sugerencia.forma, sugerencia.presentacion].filter(Boolean).join(' · ') || 'Sin datos complementarios'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : buscandoDigemid && sugerenciaDigemidElegida === null ? (
+          <p className="text-[11px] text-slate-400">Buscando en catálogo DIGEMID...</p>
+        ) : null}
+      </div>
       {similares.length > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex flex-col gap-2">
           <p className="text-[11px] font-bold text-amber-700">
@@ -372,6 +431,9 @@ export function NuevoProductoStepper({
   const [tipoRecurso, setTipoRecurso] = useState<TipoRecursoOperacional | null>(null)
   const [similares, setSimilares] = useState<ProductoComercial[]>([])
   const [buscandoSimilares, setBuscandoSimilares] = useState<boolean>(false)
+  const [sugerenciasDigemid, setSugerenciasDigemid] = useState<SugerenciaCatalogoMaestro[]>([])
+  const [buscandoDigemid, setBuscandoDigemid] = useState<boolean>(false)
+  const [sugerenciaDigemidElegida, setSugerenciaDigemidElegida] = useState<DetalleCatalogoMaestro | null>(null)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const [generico, setGenerico] = useState<CrearProductoGenericoInput>({
     ifa: '',
@@ -426,6 +488,29 @@ export function NuevoProductoStepper({
   }, [comercial.nombreComercial, tipoRecurso])
 
   useEffect(() => {
+    const termino = comercial.nombreComercial.trim()
+    if (tipoRecurso !== 'MEDICAMENTO' || termino.length < 3 || sugerenciaDigemidElegida !== null) {
+      setSugerenciasDigemid([])
+      setBuscandoDigemid(false)
+      return
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setBuscandoDigemid(true)
+      try {
+        const resultados = await buscarEnCatalogoMaestro(termino)
+        setSugerenciasDigemid(resultados)
+      } catch {
+        setSugerenciasDigemid([])
+      } finally {
+        setBuscandoDigemid(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }, [comercial.nombreComercial, tipoRecurso, sugerenciaDigemidElegida])
+
+  useEffect(() => {
     if (tipoRecurso === 'MEDICAMENTO' && paso === 4 && presentacion.descripcion.trim() === '') {
       setPresentacion({
         ...presentacion,
@@ -443,7 +528,64 @@ export function NuevoProductoStepper({
 
   const cancelar = (): void => {
     setSimilares([])
+    setSugerenciasDigemid([])
+    setSugerenciaDigemidElegida(null)
     onCancelar()
+  }
+
+  const elegirSugerenciaDigemid = async (codProd: number): Promise<void> => {
+    try {
+      const detalle = await obtenerDetalleCatalogoMaestro(codProd)
+      if (detalle === null) return
+
+      setComercial((actual) => ({
+        ...actual,
+        nombreFabricante: detalle.laboratorio ?? actual.nombreFabricante,
+        nombreTitular: detalle.titular ?? actual.nombreTitular,
+        registroSanitario: detalle.numRegsan ?? actual.registroSanitario,
+        codigoDIGEMID: String(detalle.codProd),
+      }))
+      setGenerico((actual) => {
+        const principiosActivos = detalle.principiosActivos
+        const formaFarmaceutica = mapearFormaFarmaceutica(detalle.forma)
+
+        if (principiosActivos.length === 1) {
+          const principioActivo = principiosActivos[0]
+          return {
+            ...actual,
+            ifa: principioActivo.nombreDci,
+            concentracion: principioActivo.concentracion ?? detalle.concentracionRaw ?? actual.concentracion,
+            formaFarmaceutica,
+          }
+        }
+
+        if (principiosActivos.length > 1) {
+          const concentraciones = principiosActivos
+            .map((principioActivo) => principioActivo.concentracion?.trim() ?? '')
+            .filter((concentracion) => concentracion !== '')
+
+          return {
+            ...actual,
+            ifa: principiosActivos.map((principioActivo) => principioActivo.nombreDci).join(' + '),
+            concentracion: detalle.concentracionRaw ?? concentraciones.join(' / '),
+            formaFarmaceutica,
+          }
+        }
+
+        return {
+          ...actual,
+          formaFarmaceutica,
+        }
+      })
+      setSugerenciaDigemidElegida(detalle)
+      setSugerenciasDigemid([])
+    } catch {
+      setSugerenciasDigemid([])
+    }
+  }
+
+  const quitarSugerenciaDigemid = (): void => {
+    setSugerenciaDigemidElegida(null)
   }
 
   const validarPaso = (): boolean => {
@@ -600,7 +742,19 @@ export function NuevoProductoStepper({
       <div className="rounded-2xl border border-[#E3F1FA] bg-white p-5">
         <StepperHeader paso={paso} totalPasos={totalPasos} />
         <div className="mt-6">
-          {tipoRecurso === 'MEDICAMENTO' && paso === 1 && <PasoComercial comercial={comercial} similares={similares} buscandoSimilares={buscandoSimilares} setComercial={setComercial} />}
+          {tipoRecurso === 'MEDICAMENTO' && paso === 1 && (
+            <PasoComercial
+              comercial={comercial}
+              similares={similares}
+              buscandoSimilares={buscandoSimilares}
+              sugerenciasDigemid={sugerenciasDigemid}
+              buscandoDigemid={buscandoDigemid}
+              sugerenciaDigemidElegida={sugerenciaDigemidElegida}
+              setComercial={setComercial}
+              onElegirSugerenciaDigemid={elegirSugerenciaDigemid}
+              onQuitarSugerenciaDigemid={quitarSugerenciaDigemid}
+            />
+          )}
           {tipoRecurso === 'MEDICAMENTO' && paso === 2 && <PasoMedicamentoVenta generico={generico} comercial={comercial} setGenerico={setGenerico} setComercial={setComercial} />}
           {tipoRecurso === 'MEDICAMENTO' && paso === 3 && <PasoRegulatorio comercial={comercial} estadoRegistroSanitario={estadoRegistroSanitario} setComercial={setComercial} setEstadoRegistroSanitario={setEstadoRegistroSanitario} />}
           {tipoRecurso === 'MEDICAMENTO' && paso === 4 && (
