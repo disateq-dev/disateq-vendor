@@ -374,14 +374,14 @@ export function NuevoProductoStepper({
   const [buscandoSimilares, setBuscandoSimilares] = useState<boolean>(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const [generico, setGenerico] = useState<CrearProductoGenericoInput>({
-    ifa: terminoBusqueda,
+    ifa: '',
     concentracion: '',
     formaFarmaceutica: 'TABLETA',
     categoriaFarmacia: 'OTRO',
     permiteFraccion: true,
   })
   const [comercial, setComercial] = useState<Omit<CrearProductoComercialInput, 'productoGenericoId'>>({
-    nombreComercial: '',
+    nombreComercial: terminoBusqueda,
     nombreFabricante: '',
     paisOrigen: 'PE',
     condicionVenta: 'SIN_RECETA',
@@ -448,8 +448,8 @@ export function NuevoProductoStepper({
 
   const validarPaso = (): boolean => {
     if (tipoRecurso === 'MEDICAMENTO') {
-      if (paso === 1) return Boolean(generico.ifa.trim() && generico.concentracion.trim())
-      if (paso === 2) return Boolean(comercial.nombreComercial.trim() && comercial.nombreFabricante.trim())
+      if (paso === 1) return Boolean(comercial.nombreComercial.trim() && comercial.nombreFabricante.trim())
+      if (paso === 2) return Boolean(generico.ifa.trim() && generico.concentracion.trim())
       if (paso === 3) return true
       if (paso === 4) {
         return Boolean(
@@ -600,8 +600,8 @@ export function NuevoProductoStepper({
       <div className="rounded-2xl border border-[#E3F1FA] bg-white p-5">
         <StepperHeader paso={paso} totalPasos={totalPasos} />
         <div className="mt-6">
-          {tipoRecurso === 'MEDICAMENTO' && paso === 1 && <PasoMedicamentoVenta generico={generico} comercial={comercial} setGenerico={setGenerico} setComercial={setComercial} />}
-          {tipoRecurso === 'MEDICAMENTO' && paso === 2 && <PasoComercial comercial={comercial} similares={similares} buscandoSimilares={buscandoSimilares} setComercial={setComercial} />}
+          {tipoRecurso === 'MEDICAMENTO' && paso === 1 && <PasoComercial comercial={comercial} similares={similares} buscandoSimilares={buscandoSimilares} setComercial={setComercial} />}
+          {tipoRecurso === 'MEDICAMENTO' && paso === 2 && <PasoMedicamentoVenta generico={generico} comercial={comercial} setGenerico={setGenerico} setComercial={setComercial} />}
           {tipoRecurso === 'MEDICAMENTO' && paso === 3 && <PasoRegulatorio comercial={comercial} estadoRegistroSanitario={estadoRegistroSanitario} setComercial={setComercial} setEstadoRegistroSanitario={setEstadoRegistroSanitario} />}
           {tipoRecurso === 'MEDICAMENTO' && paso === 4 && (
             <div className="space-y-5">
