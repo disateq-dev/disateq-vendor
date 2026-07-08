@@ -100,7 +100,8 @@ pub fn run() {
               Box::pin(async move {
                 if let Some(ruta) = ruta_catalogo_maestro {
                   if let Some(ruta_str) = ruta.to_str() {
-                    let uri = format!("file:{}?mode=ro", ruta_str.replace('\\', "/"));
+                    let ruta_normalizada = ruta_str.strip_prefix(r"\\?\").unwrap_or(ruta_str);
+                    let uri = format!("file:{}?mode=ro", ruta_normalizada.replace('\\', "/"));
                     let _ = sqlx::query("ATTACH DATABASE ? AS catalogo_maestro")
                       .bind(uri)
                       .execute(&mut *conn)
