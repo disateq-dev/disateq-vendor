@@ -20,7 +20,7 @@ import {
   verificarHistorialProducto,
   asignarPrincipiosAProducto,
 } from '../../../../domains/farmacia/farmacia.service'
-import { retirarHovsDeProducto } from '../../../../domains/farmacia/hov-projector.service'
+import { retirarHovsDeProducto, reactivarHovsDeProducto } from '../../../../domains/farmacia/hov-projector.service'
 import { usePOS } from '../../../../context/POSContext'
 import { ComboboxFiltrado } from '../../../../components/ComboboxFiltrado'
 import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
@@ -658,6 +658,7 @@ export function DetalleProducto({
     setGuardandoCambios(true)
     setErrorAccion(null)
     try {
+      retirarHovsDeProducto(producto.id)
       await desactivarProductoComercial(producto.id)
       const productoActualizado: ProductoComercial = { ...producto, estado: 'INACTIVO' }
       onActualizarProductoSeleccionado(productoActualizado)
@@ -688,6 +689,7 @@ export function DetalleProducto({
     setGuardandoCambios(true)
     setErrorAccion(null)
     try {
+      reactivarHovsDeProducto(producto.id)
       await reactivarProductoComercial(producto.id)
       const productoActualizado: ProductoComercial = { ...producto, estado: 'ACTIVO' }
       onActualizarProductoSeleccionado(productoActualizado)

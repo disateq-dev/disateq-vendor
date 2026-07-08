@@ -60,6 +60,11 @@ export function retirarHovsDeProducto(productoComercialId: string): void {
   hovs.forEach(h => retirarHOV(h.id, 'Producto comercial dado de baja'))
 }
 
+export function reactivarHovsDeProducto(productoComercialId: string): void {
+  const hovs = hovStore.getAllHOVs().filter(h => h.productoId === productoComercialId && h.estado === 'RETIRADA')
+  hovs.forEach(h => reactivarHOV(h.id))
+}
+
 /**
  * Sincroniza el valor de venta de una HOV con el valor operacional vigente
  * de Farmacia. Suspende el valor NORMAL anterior antes de crear el nuevo —
