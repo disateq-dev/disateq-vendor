@@ -1,3 +1,4 @@
+pub mod catalogo_maestro;
 pub mod db_commands;
 pub mod productos;
 pub mod presentaciones;
