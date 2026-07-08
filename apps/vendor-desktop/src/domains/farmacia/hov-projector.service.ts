@@ -16,6 +16,7 @@ export function proyectarAHov(
   valorVenta: number | null,
   contextoOperacionalId: string,
   tipoRecurso: TipoRecursoOperacional,
+  ubicacionFisica?: string,
 ): void {
   if (!nodo.esVendible) return
 
@@ -33,6 +34,7 @@ export function proyectarAHov(
       codigoBarras: presentacion.codigoBarras,
       category: productoComercial.categoriaFarmacia,
       contextoOperacionalId,
+      ubicacionFisica,
     })
   } else if (hov.estado === 'RETIRADA') {
     hov = reactivarHOV(hov.id)

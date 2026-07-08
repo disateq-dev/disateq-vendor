@@ -19,6 +19,7 @@ export interface HOV {
   codigoBarras?: string
   contextoOperacionalId: string
   category?: string
+  ubicacionFisica?: string
   creadoEn: string
   modificadoEn: string
 }
@@ -35,6 +36,7 @@ export interface CrearHOVInput {
   costoBase: number
   contextoOperacionalId: string
   category?: string
+  ubicacionFisica?: string
   codigoBarras?: string
 }
 

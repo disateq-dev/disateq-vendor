@@ -61,6 +61,7 @@ interface UseCatalogoFarmaciaResult {
     comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
+    ubicacionFisica?: string,
   ): Promise<void>
   onLimpiarError(): void
 }
@@ -225,6 +226,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
       comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
       presentacion: CrearPresentacionInput,
       nodosExtra: CrearNodoInput[],
+      ubicacionFisica?: string,
     ): Promise<void> => {
       setBuscando(true)
       setErrorLocal(null)
@@ -283,7 +285,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
           nodosCreados
             .filter((nodo) => nodo.esVendible)
             .forEach((nodo) => {
-              proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso)
+              proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso, ubicacionFisica)
             })
         } catch (errorProyeccion) {
           console.error('No se pudo proyectar el producto a la capa de venta (HOV):', errorProyeccion)

@@ -9,6 +9,12 @@ import type {
 } from '../../../../domains/farmacia/types'
 import type { CrearValorOperacionalInput, EstadoValorOperacional, ModificarValorOperacionalInput, TipoValorOperacional, ValorOperacionalFarmacia } from '../../../../domains/farmacia/types'
 import {
+  modificarUbicacionFisica,
+  obtenerHOVsDeNodos,
+  obtenerUbicacionesFisicasSugeridas,
+} from '../../../../domains/catalog/hov.service'
+import type { HOV } from '../../../../domains/catalog/hov.types'
+import {
   crearValorOperacional,
   desactivarProductoComercial,
   eliminarProductoComercialFisico,
@@ -92,6 +98,31 @@ function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
 }
 
 function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabricante }: PresentacionesTabProps): ReactElement {
+  const [hovs, setHovs] = useState<HOV[]>([])
+  const [formularioUbicacion, setFormularioUbicacion] = useState<{ hovId: string; valor: string } | null>(null)
+  const [guardandoUbicacion, setGuardandoUbicacion] = useState<boolean>(false)
+
+  useEffect(() => {
+    setHovs(obtenerHOVsDeNodos(nodos.filter((nodo) => nodo.esVendible).map((nodo) => nodo.id)))
+  }, [nodos])
+
+  const onGuardarUbicacion = (): void => {
+    if (formularioUbicacion === null) return
+
+    setGuardandoUbicacion(true)
+    try {
+      modificarUbicacionFisica(formularioUbicacion.hovId, formularioUbicacion.valor.trim() || undefined)
+      setHovs(obtenerHOVsDeNodos(nodos.filter((nodo) => nodo.esVendible).map((nodo) => nodo.id)))
+      setFormularioUbicacion(null)
+    } catch (errorUbicacion) {
+      console.error('No se pudo modificar la ubicación física de venta:', errorUbicacion)
+    } finally {
+      setGuardandoUbicacion(false)
+    }
+  }
+
+  const sugerenciasUbicacion = obtenerUbicacionesFisicasSugeridas()
+
   return (
     <>
       <div className="flex items-start gap-3 mb-4 px-1">
@@ -100,6 +131,9 @@ function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabric
           <p className="text-[12px] font-semibold text-[var(--dv-text-secondary)]">{nombreFabricante}</p>
         </div>
       </div>
+      <datalist id="sugerencias-ubicacion-fisica-detalle">
+        {sugerenciasUbicacion.map((ubicacion) => <option key={ubicacion} value={ubicacion} />)}
+      </datalist>
       <div className="space-y-4">
         {presentaciones.map((presentacion) => (
           <article key={presentacion.id} className="rounded-2xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] p-4">
@@ -121,17 +155,67 @@ function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabric
             <div className="mt-4 space-y-2">
               {nodos
                 .filter((nodo) => nodo.presentacionId === presentacion.id)
-                .map((nodo) => (
-                  <div key={nodo.id} className={`rounded-xl bg-[var(--dv-mod-abastecimiento-bg)] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[12px] font-bold text-[var(--dv-text-primary)]">{nodo.nombreFormaVenta}</span>
-                      <span className="rounded-full bg-[var(--dv-surface-panel)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--dv-mod-abastecimiento)]">
-                        {nodo.tipoFormaVenta}
-                      </span>
+                .map((nodo) => {
+                  const hov = hovs.find((item) => item.nodoFraccionamientoId === nodo.id)
+                  const editandoUbicacion = formularioUbicacion !== null && hov !== undefined && formularioUbicacion.hovId === hov.id
+
+                  return (
+                    <div key={nodo.id} className={`rounded-xl bg-[var(--dv-mod-abastecimiento-bg)] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-bold text-[var(--dv-text-primary)]">{nodo.nombreFormaVenta}</span>
+                        <span className="rounded-full bg-[var(--dv-surface-panel)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--dv-mod-abastecimiento)]">
+                          {nodo.tipoFormaVenta}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] font-semibold text-[var(--dv-text-secondary)]">Unidades base: {nodo.unidadesBase}</p>
+                      {nodo.esVendible && (
+                        <div className="mt-2">
+                          {editandoUbicacion && formularioUbicacion !== null ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <input
+                                type="text"
+                                list="sugerencias-ubicacion-fisica-detalle"
+                                value={formularioUbicacion.valor}
+                                onChange={(event) => setFormularioUbicacion({ ...formularioUbicacion, valor: event.target.value })}
+                                className="h-8 min-w-[220px] flex-1 rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                              />
+                              <button
+                                type="button"
+                                onClick={onGuardarUbicacion}
+                                disabled={guardandoUbicacion}
+                                className="rounded-lg bg-[var(--dv-color-confirm)] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
+                              >
+                                Guardar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormularioUbicacion(null)}
+                                className="rounded-lg border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-text-secondary)]"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-[11px] font-semibold text-[var(--dv-text-secondary)]">
+                                Ubicación: <span className="text-[var(--dv-text-muted)]">{hov?.ubicacionFisica ?? 'Sin asignar'}</span>
+                              </p>
+                              {hov !== undefined && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFormularioUbicacion({ hovId: hov.id, valor: hov.ubicacionFisica ?? '' })}
+                                  className="text-[11px] font-semibold text-[var(--dv-text-muted)] underline"
+                                >
+                                  Editar
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <p className="mt-1 text-[11px] font-semibold text-[var(--dv-text-secondary)]">Unidades base: {nodo.unidadesBase}</p>
-                  </div>
-                ))}
+                  )
+                })}
             </div>
           </article>
         ))}

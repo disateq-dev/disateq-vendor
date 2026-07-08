@@ -1,5 +1,6 @@
 import { Check, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState, type ReactElement } from 'react'
+import { obtenerUbicacionesFisicasSugeridas } from '../../../../domains/catalog/hov.service'
 import {
   buscarEnCatalogoMaestro,
   obtenerDetalleCatalogoMaestro,
@@ -45,6 +46,7 @@ interface NuevoProductoStepperProps {
     comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
+    ubicacionFisica?: string,
   ) => Promise<void>
 }
 
@@ -97,6 +99,9 @@ interface NodoExtraForm {
 interface PasoFormasVentaProps {
   presentacion: PresentacionForm
   nodosExtra: NodoExtraForm[]
+  ubicacionFisica: string
+  setUbicacionFisica: (valor: string) => void
+  sugerenciasUbicacion: string[]
   setNodosExtra: (nodos: NodoExtraForm[]) => void
 }
 
@@ -347,7 +352,14 @@ function PasoPresentacion({ presentacion, setPresentacion }: PasoPresentacionPro
   )
 }
 
-function PasoFormasVenta({ presentacion, nodosExtra, setNodosExtra }: PasoFormasVentaProps): ReactElement {
+function PasoFormasVenta({
+  presentacion,
+  nodosExtra,
+  ubicacionFisica,
+  setUbicacionFisica,
+  sugerenciasUbicacion,
+  setNodosExtra,
+}: PasoFormasVentaProps): ReactElement {
   const agregarNodo = (): void => {
     setNodosExtra([...nodosExtra, { idTemporal: crypto.randomUUID(), nombreFormaVenta: '', tipoFormaVenta: 'FRACCION', unidadesEnNodoPadre: 1 }])
   }
@@ -358,6 +370,19 @@ function PasoFormasVenta({ presentacion, nodosExtra, setNodosExtra }: PasoFormas
         <div className="text-[12px] font-bold text-slate-800">{presentacion.descripcion || 'Presentación original'}</div>
         <div className="mt-1 text-[11px] font-semibold text-[#1E88C7]">Nodo raíz · vendible · comprable</div>
       </div>
+      <label className="space-y-1">
+        <span className="text-[11px] font-bold uppercase text-slate-500">Ubicación (opcional)</span>
+        <input
+          className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3"
+          list="sugerencias-ubicacion-fisica-stepper"
+          placeholder="Ej. Anaquel 3, Vitrina refrigerada..."
+          value={ubicacionFisica}
+          onChange={(e) => setUbicacionFisica(e.target.value)}
+        />
+        <datalist id="sugerencias-ubicacion-fisica-stepper">
+          {sugerenciasUbicacion.map((ubicacion) => <option key={ubicacion} value={ubicacion} />)}
+        </datalist>
+      </label>
       {nodosExtra.map((nodo) => (
         <div key={nodo.idTemporal} className="grid gap-3 rounded-2xl border border-[#E3F1FA] bg-white p-4 md:grid-cols-[1fr_160px_140px_40px]">
           <input className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre forma venta" value={nodo.nombreFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, nombreFormaVenta: e.target.value } : item))} />
@@ -457,6 +482,7 @@ export function NuevoProductoStepper({
     unidadConteo: '',
   })
   const [nodosExtra, setNodosExtra] = useState<NodoExtraForm[]>([])
+  const [ubicacionFisica, setUbicacionFisica] = useState<string>('')
   const [productoGeneral, setProductoGeneral] = useState<ProductoGeneralForm>({
     nombre: terminoBusqueda,
     categoriaGeneral: 'OTRO',
@@ -634,7 +660,7 @@ export function NuevoProductoStepper({
       esVendible: true,
       esComprable: false,
     }))
-    await onGuardar('MEDICAMENTO', generico, comercial, presentacionInput, nodosInput)
+    await onGuardar('MEDICAMENTO', generico, comercial, presentacionInput, nodosInput, ubicacionFisica.trim() || undefined)
   }
 
   const guardarProductoGeneral = async (): Promise<void> => {
@@ -734,6 +760,8 @@ export function NuevoProductoStepper({
     )
   }
 
+  const sugerenciasUbicacion = obtenerUbicacionesFisicasSugeridas()
+
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-6 py-5">
       <button type="button" onClick={cancelar} className="w-fit text-[12px] font-bold text-[#1E88C7]">
@@ -760,7 +788,14 @@ export function NuevoProductoStepper({
           {tipoRecurso === 'MEDICAMENTO' && paso === 4 && (
             <div className="space-y-5">
               <PasoPresentacion presentacion={presentacion} setPresentacion={setPresentacion} />
-              <PasoFormasVenta presentacion={presentacion} nodosExtra={nodosExtra} setNodosExtra={setNodosExtra} />
+              <PasoFormasVenta
+                presentacion={presentacion}
+                nodosExtra={nodosExtra}
+                ubicacionFisica={ubicacionFisica}
+                setUbicacionFisica={setUbicacionFisica}
+                sugerenciasUbicacion={sugerenciasUbicacion}
+                setNodosExtra={setNodosExtra}
+              />
             </div>
           )}
           {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 1 && <PasoProductoGeneralUno formulario={productoGeneral} setFormulario={setProductoGeneral} />}

@@ -37,6 +37,7 @@ export function crearHOV(input: CrearHOVInput): HOV {
     estado: 'ACTIVA',
     contextoOperacionalId: input.contextoOperacionalId,
     category: input.category,
+    ubicacionFisica: input.ubicacionFisica,
     tipoRecurso: input.tipoRecurso ?? 'MEDICAMENTO',
     codigoBarras: input.codigoBarras,
     nodoFraccionamientoId: input.nodoFraccionamientoId,
@@ -87,6 +88,45 @@ export function retirarHOV(id: string, motivo: string): HOV {
   }
 
   return hovStore.guardarHOV(updated)
+}
+
+export function modificarUbicacionFisica(id: string, ubicacionFisica: string | undefined): HOV {
+  const hov = hovStore.getHOVById(id)
+  if (!hov) {
+    throw new Error('HOV no encontrada')
+  }
+
+  const updated: HOV = {
+    ...hov,
+    ubicacionFisica,
+    modificadoEn: new Date().toISOString(),
+  }
+
+  return hovStore.guardarHOV(updated)
+}
+
+export function obtenerUbicacionesFisicasSugeridas(): string[] {
+  const conteoUbicaciones = new Map<string, number>()
+
+  hovStore.getAllHOVs().forEach((hov) => {
+    const ubicacion = hov.ubicacionFisica?.trim()
+    if (!ubicacion) return
+
+    conteoUbicaciones.set(ubicacion, (conteoUbicaciones.get(ubicacion) ?? 0) + 1)
+  })
+
+  return Array.from(conteoUbicaciones.entries())
+    .sort(([ubicacionA, cantidadA], [ubicacionB, cantidadB]) => {
+      if (cantidadA !== cantidadB) return cantidadB - cantidadA
+      return ubicacionA.localeCompare(ubicacionB)
+    })
+    .map(([ubicacion]) => ubicacion)
+}
+
+export function obtenerHOVsDeNodos(nodoFraccionamientoIds: string[]): HOV[] {
+  return hovStore
+    .getAllHOVs()
+    .filter((hov) => hov.nodoFraccionamientoId !== undefined && nodoFraccionamientoIds.includes(hov.nodoFraccionamientoId))
 }
 
 export function actualizarCostoBase(hovId: string, nuevoCosto: number): HOV {
