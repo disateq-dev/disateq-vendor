@@ -18,6 +18,8 @@ import type {
   DatosRuc,
   EstadoRegistroSanitario,
   Lote,
+  ModificarNodoInput,
+  ModificarPresentacionInput,
   NodoFraccionamiento,
   PresentacionComercial,
   PrincipioActivo,
@@ -412,6 +414,41 @@ export async function obtenerNodosFraccionamiento(presentacionId: string): Promi
     presentacionId,
   })
   return respuesta.map((item) => traducirNodoFraccionamiento(item))
+}
+
+export async function verificarHistorialPresentacion(presentacionId: string): Promise<boolean> {
+  return invoke<boolean>('verificar_historial_presentacion', { presentacionId })
+}
+
+export async function verificarHistorialNodo(nodoId: string): Promise<boolean> {
+  return invoke<boolean>('verificar_historial_nodo', { nodoId })
+}
+
+export async function modificarPresentacion(input: ModificarPresentacionInput): Promise<void> {
+  await invoke('modificar_presentacion', {
+    id: input.id,
+    descripcion: input.descripcion,
+    codigoBarras: input.codigoBarras ?? null,
+    costoCompra: input.costoCompra ?? null,
+    fraccionDigemid: input.fraccionDIGEMID ?? null,
+    unidadConteo: input.unidadConteo ?? null,
+    factorConversionBase: input.factorConversionBase ?? null,
+    motivo: input.motivo ?? null,
+    operadorId: input.operadorId ?? null,
+  })
+}
+
+export async function modificarNodo(input: ModificarNodoInput): Promise<void> {
+  await invoke('modificar_nodo', {
+    id: input.id,
+    nombreFormaVenta: input.nombreFormaVenta,
+    descripcionPromo: input.descripcionPromo ?? null,
+    esVendible: input.esVendible,
+    tipoFormaVenta: input.tipoFormaVenta ?? null,
+    unidadesBase: input.unidadesBase ?? null,
+    motivo: input.motivo ?? null,
+    operadorId: input.operadorId ?? null,
+  })
 }
 
 export async function crearProveedor(input: CrearProveedorInput): Promise<string> {

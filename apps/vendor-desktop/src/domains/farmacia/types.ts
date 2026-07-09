@@ -63,7 +63,7 @@ export type CategoriaFarmacia =
 
 export type CondicionVenta = 'SIN_RECETA' | 'CON_RECETA' | 'CONTROLADO'
 
-export type TipoFormaVenta = 'PRESENTACION_ORIGINAL' | 'FRACCION' | 'PACK' | 'PROMOCION'
+export type TipoFormaVenta = 'PRESENTACION_ORIGINAL' | 'FRACCION' | 'PACK' | 'PROMOCION' | 'INTERMEDIA'
 
 export type TipoServicioFarmacia =
   | 'INYECTABLE'
@@ -293,6 +293,18 @@ export interface CrearPresentacionInput {
   costoCompra?: number
 }
 
+export interface ModificarPresentacionInput {
+  id: string
+  descripcion: string
+  codigoBarras?: string
+  costoCompra?: number
+  fraccionDIGEMID?: number
+  unidadConteo?: string
+  factorConversionBase?: number
+  motivo?: string
+  operadorId?: string
+}
+
 export interface CrearNodoInput {
   presentacionId: string
   nodoPadreId?: string
@@ -303,6 +315,17 @@ export interface CrearNodoInput {
   esVendible: boolean
   esComprable: boolean
   descripcionPromo?: string
+}
+
+export interface ModificarNodoInput {
+  id: string
+  nombreFormaVenta: string
+  descripcionPromo?: string
+  esVendible: boolean
+  tipoFormaVenta?: TipoFormaVenta
+  unidadesBase?: number
+  motivo?: string
+  operadorId?: string
 }
 
 export interface RegistrarLoteInput {
