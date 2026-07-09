@@ -64,7 +64,7 @@ interface UseIngresosMercaderiaResult {
   onGuardarProductoYAgregarLinea(
     tipoRecurso: TipoRecursoOperacional,
     generico: CrearProductoGenericoInput,
-    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
+    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId' | 'tipoRecurso'>,
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
     ubicacionFisica?: string,
@@ -315,14 +315,14 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
   const onGuardarProductoYAgregarLinea = useCallback(async (
     tipoRecurso: TipoRecursoOperacional,
     generico: CrearProductoGenericoInput,
-    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
+    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId' | 'tipoRecurso'>,
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
     ubicacionFisica?: string,
   ): Promise<void> => {
     setCargando(true)
     try {
-      const productoComercialId = await crearProductoCompleto(generico, comercial)
+      const productoComercialId = await crearProductoCompleto(generico, comercial, tipoRecurso)
       const presentacionId = await crearPresentacion({ ...presentacion, productoComercialId })
       const nodoRaizId = await crearNodo({
         presentacionId,
@@ -332,11 +332,17 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
         esVendible: true,
         esComprable: true,
       })
-      await Promise.all(nodosExtra.map((nodo) => crearNodo({
-        ...nodo,
-        presentacionId,
-        nodoPadreId: nodo.nodoPadreId ?? nodoRaizId,
-      })))
+      const nodosCreadosPorLocalId = new Map<string, string>()
+      for (const [indice, nodo] of nodosExtra.entries()) {
+        let nodoPadreId = nodo.nodoPadreId ?? nodoRaizId
+        if (nodo.nodoPadreLocalId !== undefined) {
+          const nodoPadreRealId = nodosCreadosPorLocalId.get(nodo.nodoPadreLocalId)
+          if (nodoPadreRealId === undefined) throw new Error('Nodo padre local no resuelto')
+          nodoPadreId = nodoPadreRealId
+        }
+        const nodoId = await crearNodo({ ...nodo, presentacionId, nodoPadreId })
+        nodosCreadosPorLocalId.set(nodo.idTemporal ?? String(indice), nodoId)
+      }
       try {
         const nodosCreados = await obtenerNodosFraccionamiento(presentacionId)
         const productoComercialAssembled: ProductoComercial = {
@@ -350,6 +356,7 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
           estadoRegistroSanitario: 'VIGENTE',
           codigoDIGEMID: comercial.codigoDIGEMID,
           condicionVenta: comercial.condicionVenta,
+          tipoRecurso,
           requiereLote: comercial.requiereLote,
           requiereCadenaFrio: comercial.requiereCadenaFrio,
           estado: 'ACTIVO',

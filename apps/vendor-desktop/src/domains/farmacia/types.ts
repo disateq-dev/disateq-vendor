@@ -101,6 +101,7 @@ export interface ProductoComercial {
   codigoDIGEMID?: string
   codigoInterno?: string
   condicionVenta: CondicionVenta
+  tipoRecurso: TipoRecursoOperacional
   requiereLote: boolean
   requiereCadenaFrio: boolean
   estado: string
@@ -257,6 +258,7 @@ export interface CrearProductoComercialInput {
   registroSanitario?: string
   codigoDIGEMID?: string
   condicionVenta: CondicionVenta
+  tipoRecurso: TipoRecursoOperacional
   requiereLote: boolean
   requiereCadenaFrio: boolean
 }
@@ -308,6 +310,8 @@ export interface ModificarPresentacionInput {
 export interface CrearNodoInput {
   presentacionId: string
   nodoPadreId?: string
+  nodoPadreLocalId?: string
+  idTemporal?: string
   nombreFormaVenta: string
   tipoFormaVenta: TipoFormaVenta
   unidadesEnNodoPadre?: number

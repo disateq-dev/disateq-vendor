@@ -879,7 +879,7 @@ export function DetalleProducto({
                             { valor: 'CON_RECETA', etiqueta: 'Con receta' },
                             { valor: 'CONTROLADO', etiqueta: 'Controlado' },
                           ]}
-                          value={formularioOperacional?.condicionVenta ?? producto.condicionVenta}
+                          valor={formularioOperacional?.condicionVenta ?? producto.condicionVenta}
                           onChange={(v) => setFormularioOperacional(prev => prev ? { ...prev, condicionVenta: v } : prev)}
                           disabled={guardandoCambios}
                           className="mt-1"
@@ -899,7 +899,7 @@ export function DetalleProducto({
                             { valor: '0', etiqueta: 'No requiere' },
                             { valor: '1', etiqueta: 'Sí · requiere frío' },
                           ]}
-                          value={formularioOperacional?.requiereCadenaFrio ? '1' : '0'}
+                          valor={formularioOperacional?.requiereCadenaFrio ? '1' : '0'}
                           onChange={(v) => setFormularioOperacional(prev => prev ? { ...prev, requiereCadenaFrio: v === '1' } : prev)}
                           disabled={guardandoCambios}
                           className="mt-1"
@@ -919,7 +919,7 @@ export function DetalleProducto({
                             { valor: '0', etiqueta: 'Sin trazabilidad' },
                             { valor: '1', etiqueta: 'Sí · requiere lote' },
                           ]}
-                          value={formularioOperacional?.requiereLote ? '1' : '0'}
+                          valor={formularioOperacional?.requiereLote ? '1' : '0'}
                           onChange={(v) => setFormularioOperacional(prev => prev ? { ...prev, requiereLote: v === '1' } : prev)}
                           disabled={guardandoCambios}
                           className="mt-1"
@@ -1013,7 +1013,7 @@ export function DetalleProducto({
                                 { valor: 'CANCELADO', etiqueta: 'Cancelado' },
                                 { valor: 'VENCIDO', etiqueta: 'Vencido' },
                               ]}
-                              value={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
+                              valor={formularioCorreccion.estadoRegistroSanitario ?? 'VIGENTE'}
                               onChange={(v) => setFormularioCorreccion(prev => prev ? { ...prev, estadoRegistroSanitario: v as EstadoRegistroSanitario } : prev)}
                               disabled={guardandoCambios}
                               className="mt-1"

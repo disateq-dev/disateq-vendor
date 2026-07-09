@@ -94,6 +94,7 @@ interface NodoExtraForm {
   nombreFormaVenta: string
   tipoFormaVenta: Exclude<TipoFormaVenta, 'PRESENTACION_ORIGINAL'>
   unidadesEnNodoPadre: number
+  nodoPadreLocalId: string | null
 }
 
 interface PasoFormasVentaProps {
@@ -177,7 +178,7 @@ const CATEGORIAS_FARMACIA: CategoriaFarmacia[] = [
 ]
 
 const CONDICIONES_VENTA: CondicionVenta[] = ['SIN_RECETA', 'CON_RECETA', 'CONTROLADO']
-const TIPOS_NODO_EXTRA: Exclude<TipoFormaVenta, 'PRESENTACION_ORIGINAL'>[] = ['FRACCION', 'PACK', 'PROMOCION']
+const TIPOS_NODO_EXTRA: Exclude<TipoFormaVenta, 'PRESENTACION_ORIGINAL'>[] = ['FRACCION', 'PACK', 'PROMOCION', 'INTERMEDIA']
 const CATEGORIAS_GENERALES: CategoriaGeneral[] = ['CUIDADO_PERSONAL', 'BEBE', 'DISPOSITIVO_MEDICO', 'SUPLEMENTO', 'HIGIENE', 'OTRO']
 const TIPOS_SERVICIO: TipoServicioFarmacia[] = ['INYECTABLE', 'NEBULIZACION', 'CONTROL_GLUCOSA', 'CONTROL_PRESION', 'TEST_EMBARAZO', 'CURACION', 'OTRO']
 
@@ -361,7 +362,7 @@ function PasoFormasVenta({
   setNodosExtra,
 }: PasoFormasVentaProps): ReactElement {
   const agregarNodo = (): void => {
-    setNodosExtra([...nodosExtra, { idTemporal: crypto.randomUUID(), nombreFormaVenta: '', tipoFormaVenta: 'FRACCION', unidadesEnNodoPadre: 1 }])
+    setNodosExtra([...nodosExtra, { idTemporal: crypto.randomUUID(), nombreFormaVenta: '', tipoFormaVenta: 'FRACCION', unidadesEnNodoPadre: 1, nodoPadreLocalId: null }])
   }
 
   return (
@@ -383,18 +384,33 @@ function PasoFormasVenta({
           {sugerenciasUbicacion.map((ubicacion) => <option key={ubicacion} value={ubicacion} />)}
         </datalist>
       </label>
-      {nodosExtra.map((nodo) => (
-        <div key={nodo.idTemporal} className="grid gap-3 rounded-2xl border border-[#E3F1FA] bg-white p-4 md:grid-cols-[1fr_160px_140px_40px]">
-          <input className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre forma venta" value={nodo.nombreFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, nombreFormaVenta: e.target.value } : item))} />
-          <select className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" value={nodo.tipoFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, tipoFormaVenta: e.target.value as Exclude<TipoFormaVenta, 'PRESENTACION_ORIGINAL'> } : item))}>
-            {TIPOS_NODO_EXTRA.map((tipo) => <option key={tipo} value={tipo}>{tipo.replaceAll('_', ' ')}</option>)}
-          </select>
-          <input className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" value={nodo.unidadesEnNodoPadre} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, unidadesEnNodoPadre: Number(e.target.value) } : item))} />
-          <button type="button" onClick={() => setNodosExtra(nodosExtra.filter((item) => item.idTemporal !== nodo.idTemporal))} className="flex h-10 items-center justify-center rounded-xl text-[#1E88C7]">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+      {nodosExtra.map((nodo, indice) => {
+        const nodosPadreDisponibles = nodosExtra.slice(0, indice)
+
+        return (
+          <div key={nodo.idTemporal} className="grid gap-3 rounded-2xl border border-[#E3F1FA] bg-white p-4 md:grid-cols-[1fr_160px_140px_190px_40px]">
+            <input className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre forma venta" value={nodo.nombreFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, nombreFormaVenta: e.target.value } : item))} />
+            <select className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" value={nodo.tipoFormaVenta} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, tipoFormaVenta: e.target.value as Exclude<TipoFormaVenta, 'PRESENTACION_ORIGINAL'> } : item))}>
+              {TIPOS_NODO_EXTRA.map((tipo) => <option key={tipo} value={tipo}>{tipo.replaceAll('_', ' ')}</option>)}
+            </select>
+            <input className="h-10 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" value={nodo.unidadesEnNodoPadre} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, unidadesEnNodoPadre: Number(e.target.value) } : item))} />
+            <label className="space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500">Depende de</span>
+              <select className="h-10 w-full rounded-xl border border-[var(--dv-input-border)] px-3" value={nodo.nodoPadreLocalId ?? ''} onChange={(e) => setNodosExtra(nodosExtra.map((item) => item.idTemporal === nodo.idTemporal ? { ...item, nodoPadreLocalId: e.target.value || null } : item))}>
+                <option value="">Presentación original (raíz)</option>
+                {nodosPadreDisponibles.map((nodoPadre) => (
+                  <option key={nodoPadre.idTemporal} value={nodoPadre.idTemporal}>
+                    {nodoPadre.nombreFormaVenta.trim() || 'Forma de venta previa'}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" onClick={() => setNodosExtra(nodosExtra.filter((item) => item.idTemporal !== nodo.idTemporal))} className="flex h-10 items-center justify-center rounded-xl text-[#1E88C7]">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        )
+      })}
       <button type="button" onClick={agregarNodo} className="flex items-center gap-2 rounded-xl bg-[#E3F1FA] px-4 py-2 text-[12px] font-bold text-[#1E88C7]">
         <Plus className="h-4 w-4" /> Agregar forma de venta
       </button>
@@ -472,6 +488,7 @@ export function NuevoProductoStepper({
     nombreFabricante: '',
     paisOrigen: 'PE',
     condicionVenta: 'SIN_RECETA',
+    tipoRecurso: 'MEDICAMENTO',
     requiereLote: false,
     requiereCadenaFrio: false,
   })
@@ -653,6 +670,8 @@ export function NuevoProductoStepper({
     }
     const nodosInput: CrearNodoInput[] = nodosExtra.map((nodo) => ({
       presentacionId: '',
+      idTemporal: nodo.idTemporal,
+      nodoPadreLocalId: nodo.nodoPadreLocalId ?? undefined,
       nombreFormaVenta: nodo.nombreFormaVenta,
       tipoFormaVenta: nodo.tipoFormaVenta,
       unidadesEnNodoPadre: nodo.unidadesEnNodoPadre,
@@ -677,6 +696,7 @@ export function NuevoProductoStepper({
         nombreComercial: productoGeneral.nombre,
         nombreFabricante: '-',
         condicionVenta: 'SIN_RECETA',
+        tipoRecurso: 'PRODUCTO_GENERAL',
         requiereLote: false,
         requiereCadenaFrio: false,
       },
@@ -707,6 +727,7 @@ export function NuevoProductoStepper({
         nombreComercial: servicio.nombre,
         nombreFabricante: '-',
         condicionVenta: 'SIN_RECETA',
+        tipoRecurso: 'SERVICIO',
         requiereLote: false,
         requiereCadenaFrio: false,
       },
