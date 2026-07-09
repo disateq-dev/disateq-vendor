@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buscarPresentacionesParaIngreso, buscarProveedores, consultarRuc, crearNodo, crearPresentacion, crearProveedor, registrarIngreso } from '../../../../domains/farmacia/farmacia.service'
+import { buscarPresentacionesParaIngreso, buscarProveedores, consultarRuc, crearNodo, crearPresentacion, crearProveedor, obtenerNodosFraccionamiento, registrarIngreso } from '../../../../domains/farmacia/farmacia.service'
+import { proyectarAHov } from '../../../../domains/farmacia/hov-projector.service'
 import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
 import type {
   CrearNodoInput,
@@ -9,9 +10,13 @@ import type {
   CrearProductoGenericoInput,
   DatosRuc,
   LineaIngreso,
+  NodoFraccionamiento,
+  PresentacionComercial,
+  ProductoComercial,
   Proveedor,
   RegistrarIngresoInput,
   ResultadoBusquedaPresentacion,
+  TipoRecursoOperacional,
 } from '../../../../domains/farmacia/types'
 import { usePOS } from '../../../../context/POSContext'
 
@@ -57,10 +62,12 @@ interface UseIngresosMercaderiaResult {
   onPasoSiguienteProducto(): void
   onPasoAnteriorProducto(): void
   onGuardarProductoYAgregarLinea(
+    tipoRecurso: TipoRecursoOperacional,
     generico: CrearProductoGenericoInput,
     comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
+    ubicacionFisica?: string,
   ): Promise<void>
   onEliminarLinea(id: string): void
   onActualizarLinea(id: string, cambios: Partial<LineaIngresoDraft>): void
@@ -306,10 +313,12 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
   }, [])
 
   const onGuardarProductoYAgregarLinea = useCallback(async (
+    tipoRecurso: TipoRecursoOperacional,
     generico: CrearProductoGenericoInput,
     comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
+    ubicacionFisica?: string,
   ): Promise<void> => {
     setCargando(true)
     try {
@@ -328,6 +337,50 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
         presentacionId,
         nodoPadreId: nodo.nodoPadreId ?? nodoRaizId,
       })))
+      try {
+        const nodosCreados = await obtenerNodosFraccionamiento(presentacionId)
+        const productoComercialAssembled: ProductoComercial = {
+          id: productoComercialId,
+          productoGenericoId: '',
+          nombreComercial: comercial.nombreComercial,
+          nombreFabricante: comercial.nombreFabricante,
+          nombreTitular: comercial.nombreTitular,
+          paisOrigen: comercial.paisOrigen ?? '',
+          registroSanitario: comercial.registroSanitario,
+          estadoRegistroSanitario: 'VIGENTE',
+          codigoDIGEMID: comercial.codigoDIGEMID,
+          condicionVenta: comercial.condicionVenta,
+          requiereLote: comercial.requiereLote,
+          requiereCadenaFrio: comercial.requiereCadenaFrio,
+          estado: 'ACTIVO',
+          creadoEn: new Date().toISOString(),
+          modificadoEn: new Date().toISOString(),
+          ifa: generico.ifa,
+          concentracion: generico.concentracion,
+          formaFarmaceutica: generico.formaFarmaceutica,
+          categoriaFarmacia: generico.categoriaFarmacia,
+        }
+        const presentacionAssembled: PresentacionComercial = {
+          id: presentacionId,
+          productoComercialId,
+          descripcion: presentacion.descripcion,
+          fraccionDIGEMID: presentacion.fraccionDIGEMID,
+          unidadConteo: presentacion.unidadConteo,
+          factorConversionBase: presentacion.factorConversionBase,
+          codigoBarras: presentacion.codigoBarras,
+          proveedorHabitualId: presentacion.proveedorHabitualId,
+          costoCompra: presentacion.costoCompra,
+          stockMinimo: 0,
+          creadoEn: new Date().toISOString(),
+        }
+        nodosCreados
+          .filter((nodo: NodoFraccionamiento) => nodo.esVendible)
+          .forEach((nodo: NodoFraccionamiento) => {
+            proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso, ubicacionFisica)
+          })
+      } catch (errorProyeccion) {
+        console.error('No se pudo proyectar el producto a la capa de venta (HOV):', errorProyeccion)
+      }
       onAgregarLinea({
         presentacionId,
         productoComercialId,
