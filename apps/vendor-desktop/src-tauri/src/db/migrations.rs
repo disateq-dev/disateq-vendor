@@ -30,6 +30,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v8_principios_activos(db).await?;
     migrar_v9_campos_regulatorios_ifa(db).await?;
     migrar_v10_campos_catalogo_ifa(db).await?;
+    migrar_v11_tipo_recurso_producto_comercial(db).await?;
 
     Ok(())
 }
@@ -731,6 +732,55 @@ async fn migrar_v10_campos_catalogo_ifa(db: &sqlx::SqlitePool) -> Result<(), Str
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (10)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v11_tipo_recurso_producto_comercial(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_producto_comercial = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'producto_comercial'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_producto_comercial == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if version >= 11 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+    let existe_tipo_recurso = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('producto_comercial') WHERE name = 'tipo_recurso'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_tipo_recurso == 0 {
+        sqlx::query("ALTER TABLE producto_comercial ADD COLUMN tipo_recurso TEXT NOT NULL DEFAULT 'MEDICAMENTO'")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (11)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

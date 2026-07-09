@@ -7,6 +7,7 @@ import type {
   Proveedor,
   ResumenInventarioFarmacia,
   ServicioFarmacia,
+  TipoRecursoOperacional,
 } from './types'
 import {
   crearProductoComercial,
@@ -33,7 +34,8 @@ interface FarmaciaState {
   cargarPrincipiosActivos(): Promise<void>
   crearProductoCompleto(
     generico: CrearProductoGenericoInput,
-    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
+    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId' | 'tipoRecurso'>,
+    tipoRecurso: TipoRecursoOperacional,
   ): Promise<string>
   limpiarError(): void
 }
@@ -104,7 +106,8 @@ export const useFarmaciaStore = create<FarmaciaState>()((set) => ({
 
   async crearProductoCompleto(
     generico: CrearProductoGenericoInput,
-    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId'>,
+    comercial: Omit<CrearProductoComercialInput, 'productoGenericoId' | 'tipoRecurso'>,
+    tipoRecurso: TipoRecursoOperacional,
   ): Promise<string> {
     set({ cargando: true, error: null })
     try {
@@ -112,6 +115,7 @@ export const useFarmaciaStore = create<FarmaciaState>()((set) => ({
       const productoComercialId = await crearProductoComercial({
         ...comercial,
         productoGenericoId,
+        tipoRecurso,
       })
       set({ cargando: false })
       return productoComercialId

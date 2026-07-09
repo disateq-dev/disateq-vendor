@@ -114,6 +114,7 @@ pub async fn crear_producto_comercial(
     codigo_digemid: Option<String>,
     codigo_interno: Option<String>,
     condicion_venta: String,
+    tipo_recurso: String,
     requiere_lote: bool,
     requiere_cadena_frio: bool,
 ) -> Result<String, String> {
@@ -124,7 +125,7 @@ pub async fn crear_producto_comercial(
     let creado_en = obtener_timestamp(pool).await?;
 
     sqlx::query(
-        "INSERT INTO producto_comercial (id, producto_generico_id, nombre_comercial, nombre_fabricante, nombre_titular, pais_origen, registro_sanitario, estado_registro_sanitario, codigo_digemid, codigo_interno, condicion_venta, requiere_lote, requiere_cadena_frio, estado, creado_en, modificado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO producto_comercial (id, producto_generico_id, nombre_comercial, nombre_fabricante, nombre_titular, pais_origen, registro_sanitario, estado_registro_sanitario, codigo_digemid, codigo_interno, condicion_venta, tipo_recurso, requiere_lote, requiere_cadena_frio, estado, creado_en, modificado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(producto_generico_id)
@@ -137,6 +138,7 @@ pub async fn crear_producto_comercial(
     .bind(codigo_digemid)
     .bind(codigo_interno)
     .bind(condicion_venta)
+    .bind(tipo_recurso)
     .bind(bool_a_i64(requiere_lote))
     .bind(bool_a_i64(requiere_cadena_frio))
     .bind("ACTIVO")
@@ -197,6 +199,7 @@ pub async fn obtener_productos_comerciales(
                 "codigo_digemid": row.try_get::<Option<String>, _>("codigo_digemid").unwrap_or(None),
                 "codigo_interno": row.try_get::<Option<String>, _>("codigo_interno").unwrap_or(None),
                 "condicion_venta": row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?,
+                "tipo_recurso": row.try_get::<String, _>("tipo_recurso").map_err(|e| e.to_string())?,
                 "requiere_lote": requiere_lote,
                 "requiere_cadena_frio": requiere_cadena_frio,
                 "estado": row.try_get::<String, _>("estado").map_err(|e| e.to_string())?,

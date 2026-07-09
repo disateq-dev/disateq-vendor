@@ -79,6 +79,7 @@ interface ProductoComercialRespuesta {
   codigo_digemid?: string
   codigo_interno?: string
   condicion_venta: string
+  tipo_recurso: string
   requiere_lote: boolean
   requiere_cadena_frio: boolean
   estado: string
@@ -217,6 +218,7 @@ function traducirProductoComercial(r: ProductoComercialRespuesta): ProductoComer
     codigoDIGEMID: r.codigo_digemid,
     codigoInterno: r.codigo_interno,
     condicionVenta: r.condicion_venta as ProductoComercial['condicionVenta'],
+    tipoRecurso: r.tipo_recurso as ProductoComercial['tipoRecurso'],
     requiereLote: r.requiere_lote,
     requiereCadenaFrio: r.requiere_cadena_frio,
     estado: r.estado,
@@ -359,6 +361,7 @@ export async function crearProductoComercial(input: CrearProductoComercialInput)
     registroSanitario: input.registroSanitario ?? null,
     codigoDigemid: input.codigoDIGEMID ?? null,
     condicionVenta: input.condicionVenta,
+    tipoRecurso: input.tipoRecurso,
     requiereLote: input.requiereLote,
     requiereCadenaFrio: input.requiereCadenaFrio,
   })
