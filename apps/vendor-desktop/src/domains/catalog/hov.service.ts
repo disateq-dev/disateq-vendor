@@ -20,7 +20,9 @@ export function crearHOV(input: CrearHOVInput): HOV {
     throw new Error('El costo base debe ser mayor a cero')
   }
 
-  if (hovStore.existeHOVActiva(input.productoId, input.unidadDespacho)) {
+  const recursoId = input.productoId ?? input.servicioId ?? input.productoGeneralId
+
+  if (hovStore.existeHOVActiva(recursoId, input.unidadDespacho)) {
     throw new Error('Ya existe una HOV activa para este producto y unidad de despacho')
   }
 

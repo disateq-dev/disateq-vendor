@@ -23,6 +23,8 @@ export function migrarCategoryHOVs(): void {
     if (hovsSinCategory.length === 0) return
 
     for (const hov of hovsSinCategory) {
+      if (hov.productoId === undefined) continue
+
       const category = catalogMap.get(hov.productoId)
       if (category) {
         hovStore.guardarHOV({ ...hov, category })
