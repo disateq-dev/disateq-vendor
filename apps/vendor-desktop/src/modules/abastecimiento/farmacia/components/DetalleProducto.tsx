@@ -3,6 +3,8 @@ import type {
   EstadoRegistroSanitario,
   ModificarProductoComercialInput,
   CorregirDatosOperacionalesInput,
+  ModificarPresentacionInput,
+  ModificarNodoInput,
   NodoFraccionamiento,
   PresentacionComercial,
   ProductoComercial,
@@ -21,12 +23,16 @@ import {
   modificarProductoComercial,
   corregirDatosOperacionales,
   modificarValorOperacional,
+  modificarPresentacion,
+  modificarNodo,
   obtenerValoresNodo,
   reactivarProductoComercial,
+  verificarHistorialPresentacion,
+  verificarHistorialNodo,
   verificarHistorialProducto,
   asignarPrincipiosAProducto,
 } from '../../../../domains/farmacia/farmacia.service'
-import { retirarHovsDeProducto, reactivarHovsDeProducto } from '../../../../domains/farmacia/hov-projector.service'
+import { proyectarAHov, retirarHovDeNodo, retirarHovsDeProducto, reactivarHovsDeProducto } from '../../../../domains/farmacia/hov-projector.service'
 import { usePOS } from '../../../../context/POSContext'
 import { ComboboxFiltrado } from '../../../../components/ComboboxFiltrado'
 import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
@@ -57,10 +63,28 @@ interface CampoLecturaProps {
 }
 
 interface PresentacionesTabProps {
+  producto: ProductoComercial
   presentaciones: PresentacionComercial[]
   nodos: NodoFraccionamiento[]
   nombreProducto: string
   nombreFabricante: string
+}
+
+interface FormularioPresentacion {
+  descripcion: string
+  codigoBarras: string
+  costoCompra: string
+  fraccionDIGEMID: string
+  unidadConteo: string
+  factorConversionBase: string
+}
+
+interface FormularioNodo {
+  nombreFormaVenta: string
+  descripcionPromo: string
+  esVendible: boolean
+  tipoFormaVenta: NodoFraccionamiento['tipoFormaVenta']
+  unidadesBase: string
 }
 
 interface PreciosTabProps {
@@ -97,14 +121,215 @@ function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
   )
 }
 
-function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabricante }: PresentacionesTabProps): ReactElement {
+function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, nombreFabricante }: PresentacionesTabProps): ReactElement {
+  const { activeOperator } = usePOS()
+  const tiposFormaVentaEditables: NodoFraccionamiento['tipoFormaVenta'][] = ['FRACCION', 'PACK', 'PROMOCION', 'INTERMEDIA']
   const [hovs, setHovs] = useState<HOV[]>([])
+  const [presentacionesLocales, setPresentacionesLocales] = useState<PresentacionComercial[]>(presentaciones)
+  const [nodosLocales, setNodosLocales] = useState<NodoFraccionamiento[]>(nodos)
   const [formularioUbicacion, setFormularioUbicacion] = useState<{ hovId: string; valor: string } | null>(null)
   const [guardandoUbicacion, setGuardandoUbicacion] = useState<boolean>(false)
+  const [presentacionEnEdicionId, setPresentacionEnEdicionId] = useState<string | null>(null)
+  const [formularioPresentacion, setFormularioPresentacion] = useState<FormularioPresentacion | null>(null)
+  const [presentacionTieneHistorial, setPresentacionTieneHistorial] = useState<boolean | null>(null)
+  const [motivoPresentacion, setMotivoPresentacion] = useState<string>('')
+  const [guardandoPresentacion, setGuardandoPresentacion] = useState<boolean>(false)
+  const [errorPresentacion, setErrorPresentacion] = useState<string | null>(null)
+  const [nodoEnEdicionId, setNodoEnEdicionId] = useState<string | null>(null)
+  const [formularioNodo, setFormularioNodo] = useState<FormularioNodo | null>(null)
+  const [nodoTieneHistorial, setNodoTieneHistorial] = useState<boolean | null>(null)
+  const [motivoNodo, setMotivoNodo] = useState<string>('')
+  const [guardandoNodo, setGuardandoNodo] = useState<boolean>(false)
+  const [errorNodo, setErrorNodo] = useState<string | null>(null)
 
   useEffect(() => {
-    setHovs(obtenerHOVsDeNodos(nodos.filter((nodo) => nodo.esVendible).map((nodo) => nodo.id)))
+    setPresentacionesLocales(presentaciones)
+  }, [presentaciones])
+
+  useEffect(() => {
+    setNodosLocales(nodos)
   }, [nodos])
+
+  useEffect(() => {
+    setHovs(obtenerHOVsDeNodos(nodosLocales.filter((nodo) => nodo.esVendible).map((nodo) => nodo.id)))
+  }, [nodosLocales])
+
+  const mensajeErrorCorreccion = (error: unknown): string => {
+    const mensaje = error instanceof Error ? error.message : String(error)
+    if (mensaje.includes('CAMPO_BLOQUEADO_POR_HISTORIAL')) {
+      return 'Este campo no se puede modificar porque ya tiene movimientos registrados'
+    }
+    if (mensaje.includes('MOTIVO_REQUERIDO')) {
+      return 'Escribe un motivo antes de guardar'
+    }
+    return mensaje
+  }
+
+  const numeroOpcional = (valor: string): number | undefined => {
+    const limpio = valor.trim()
+    if (limpio === '') return undefined
+    const numero = Number(limpio)
+    return Number.isFinite(numero) ? numero : undefined
+  }
+
+  const refrescarHovs = (nodosActuales: NodoFraccionamiento[]): void => {
+    setHovs(obtenerHOVsDeNodos(nodosActuales.filter((nodo) => nodo.esVendible).map((nodo) => nodo.id)))
+  }
+
+  const onEditarPresentacion = async (presentacion: PresentacionComercial): Promise<void> => {
+    setPresentacionEnEdicionId(presentacion.id)
+    setFormularioPresentacion({
+      descripcion: presentacion.descripcion,
+      codigoBarras: presentacion.codigoBarras ?? '',
+      costoCompra: presentacion.costoCompra?.toString() ?? '',
+      fraccionDIGEMID: presentacion.fraccionDIGEMID.toString(),
+      unidadConteo: presentacion.unidadConteo,
+      factorConversionBase: presentacion.factorConversionBase.toString(),
+    })
+    setPresentacionTieneHistorial(null)
+    setMotivoPresentacion('')
+    setErrorPresentacion(null)
+    try {
+      const tieneHistorial = await verificarHistorialPresentacion(presentacion.id)
+      setPresentacionTieneHistorial(tieneHistorial)
+    } catch (errorHistorial) {
+      setErrorPresentacion(mensajeErrorCorreccion(errorHistorial))
+    }
+  }
+
+  const onCancelarPresentacion = (): void => {
+    setPresentacionEnEdicionId(null)
+    setFormularioPresentacion(null)
+    setPresentacionTieneHistorial(null)
+    setMotivoPresentacion('')
+    setErrorPresentacion(null)
+  }
+
+  const onGuardarPresentacion = async (presentacion: PresentacionComercial): Promise<void> => {
+    if (formularioPresentacion === null || presentacionTieneHistorial === null) return
+
+    const fraccionDIGEMID = numeroOpcional(formularioPresentacion.fraccionDIGEMID)
+    const factorConversionBase = numeroOpcional(formularioPresentacion.factorConversionBase)
+    const costoCompra = numeroOpcional(formularioPresentacion.costoCompra)
+    const input: ModificarPresentacionInput = {
+      id: presentacion.id,
+      descripcion: formularioPresentacion.descripcion,
+      codigoBarras: formularioPresentacion.codigoBarras.trim() || undefined,
+      costoCompra,
+      fraccionDIGEMID,
+      unidadConteo: formularioPresentacion.unidadConteo.trim() || undefined,
+      factorConversionBase,
+      motivo: presentacionTieneHistorial ? motivoPresentacion.trim() || undefined : undefined,
+      operadorId: activeOperator?.id,
+    }
+
+    setGuardandoPresentacion(true)
+    setErrorPresentacion(null)
+    try {
+      await modificarPresentacion(input)
+      const presentacionActualizada: PresentacionComercial = {
+        ...presentacion,
+        descripcion: input.descripcion,
+        codigoBarras: input.codigoBarras,
+        costoCompra: input.costoCompra,
+        fraccionDIGEMID: input.fraccionDIGEMID ?? presentacion.fraccionDIGEMID,
+        unidadConteo: input.unidadConteo ?? presentacion.unidadConteo,
+        factorConversionBase: input.factorConversionBase ?? presentacion.factorConversionBase,
+      }
+      setPresentacionesLocales((actuales) =>
+        actuales.map((item) => (item.id === presentacion.id ? presentacionActualizada : item)),
+      )
+      onCancelarPresentacion()
+    } catch (errorGuardar) {
+      setErrorPresentacion(mensajeErrorCorreccion(errorGuardar))
+    } finally {
+      setGuardandoPresentacion(false)
+    }
+  }
+
+  const onEditarNodo = async (nodo: NodoFraccionamiento): Promise<void> => {
+    setNodoEnEdicionId(nodo.id)
+    setFormularioNodo({
+      nombreFormaVenta: nodo.nombreFormaVenta,
+      descripcionPromo: nodo.descripcionPromo ?? '',
+      esVendible: nodo.esVendible,
+      tipoFormaVenta: nodo.tipoFormaVenta,
+      unidadesBase: nodo.unidadesBase.toString(),
+    })
+    setNodoTieneHistorial(null)
+    setMotivoNodo('')
+    setErrorNodo(null)
+    try {
+      const tieneHistorial = await verificarHistorialNodo(nodo.id)
+      setNodoTieneHistorial(tieneHistorial)
+    } catch (errorHistorial) {
+      setErrorNodo(mensajeErrorCorreccion(errorHistorial))
+    }
+  }
+
+  const onCancelarNodo = (): void => {
+    setNodoEnEdicionId(null)
+    setFormularioNodo(null)
+    setNodoTieneHistorial(null)
+    setMotivoNodo('')
+    setErrorNodo(null)
+  }
+
+  const onGuardarNodo = async (nodo: NodoFraccionamiento): Promise<void> => {
+    if (formularioNodo === null || nodoTieneHistorial === null) return
+
+    const nodoEsRaiz = nodo.tipoFormaVenta === 'PRESENTACION_ORIGINAL'
+    const unidadesBase = nodoEsRaiz ? undefined : numeroOpcional(formularioNodo.unidadesBase)
+    const input: ModificarNodoInput = {
+      id: nodo.id,
+      nombreFormaVenta: formularioNodo.nombreFormaVenta,
+      descripcionPromo: formularioNodo.tipoFormaVenta === 'PROMOCION' ? formularioNodo.descripcionPromo.trim() || undefined : undefined,
+      esVendible: formularioNodo.esVendible,
+      tipoFormaVenta: nodoEsRaiz ? undefined : formularioNodo.tipoFormaVenta,
+      unidadesBase,
+      motivo: nodoTieneHistorial ? motivoNodo.trim() || undefined : undefined,
+      operadorId: activeOperator?.id,
+    }
+
+    setGuardandoNodo(true)
+    setErrorNodo(null)
+    try {
+      await modificarNodo(input)
+      const nodoActualizado: NodoFraccionamiento = {
+        ...nodo,
+        nombreFormaVenta: input.nombreFormaVenta,
+        descripcionPromo: input.descripcionPromo,
+        esVendible: input.esVendible,
+        tipoFormaVenta: input.tipoFormaVenta ?? nodo.tipoFormaVenta,
+        unidadesBase: input.unidadesBase ?? nodo.unidadesBase,
+      }
+      if (!nodo.esVendible && nodoActualizado.esVendible) {
+        const presentacionEncontrada = presentacionesLocales.find((presentacion) => presentacion.id === nodo.presentacionId)
+        if (presentacionEncontrada !== undefined) {
+          try {
+            proyectarAHov(nodoActualizado, presentacionEncontrada, producto, null, 'default', producto.tipoRecurso, undefined)
+          } catch (errorHov) {
+            console.error('No se pudo proyectar la forma de venta a HOV:', errorHov)
+          }
+        }
+      }
+      if (nodo.esVendible && !nodoActualizado.esVendible) {
+        try {
+          retirarHovDeNodo(nodo.id)
+        } catch (errorHov) {
+          console.error('No se pudo retirar la HOV de la forma de venta:', errorHov)
+        }
+      }
+      const nodosActualizados = nodosLocales.map((item) => (item.id === nodo.id ? nodoActualizado : item))
+      setNodosLocales(nodosActualizados)
+      refrescarHovs(nodosActualizados)
+      onCancelarNodo()
+    } catch (errorGuardar) {
+      setErrorNodo(mensajeErrorCorreccion(errorGuardar))
+    } finally {
+      setGuardandoNodo(false)
+    }
+  }
 
   const onGuardarUbicacion = (): void => {
     if (formularioUbicacion === null) return
@@ -112,7 +337,7 @@ function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabric
     setGuardandoUbicacion(true)
     try {
       modificarUbicacionFisica(formularioUbicacion.hovId, formularioUbicacion.valor.trim() || undefined)
-      setHovs(obtenerHOVsDeNodos(nodos.filter((nodo) => nodo.esVendible).map((nodo) => nodo.id)))
+      refrescarHovs(nodosLocales)
       setFormularioUbicacion(null)
     } catch (errorUbicacion) {
       console.error('No se pudo modificar la ubicación física de venta:', errorUbicacion)
@@ -135,39 +360,269 @@ function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabric
         {sugerenciasUbicacion.map((ubicacion) => <option key={ubicacion} value={ubicacion} />)}
       </datalist>
       <div className="space-y-4">
-        {presentaciones.map((presentacion) => (
-          <article key={presentacion.id} className="rounded-2xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-[14px] font-bold text-[var(--dv-text-primary)]">{presentacion.descripcion}</h3>
-                <p className="mt-1 text-[12px] font-semibold text-[var(--dv-text-secondary)]">
-                  Fracción DIGEMID: {presentacion.fraccionDIGEMID} {presentacion.unidadConteo}
-                </p>
+        {presentacionesLocales.map((presentacion) => {
+          const editandoPresentacion = presentacionEnEdicionId === presentacion.id && formularioPresentacion !== null
+
+          return (
+            <article key={presentacion.id} className="rounded-2xl border border-[var(--dv-border)] bg-[var(--dv-surface-panel)] p-4">
+              <div className="flex items-start justify-between gap-4">
+                {editandoPresentacion && formularioPresentacion !== null ? (
+                  <div className="min-w-0 flex-1 rounded-xl border border-[var(--dv-mod-abastecimiento-border)] bg-[var(--dv-mod-abastecimiento-bg)] p-3">
+                    {errorPresentacion !== null && (
+                      <p className="mb-2 rounded-lg border border-[var(--dv-color-danger-border)] bg-[var(--dv-color-danger-bg)] px-3 py-2 text-[11px] font-semibold text-[var(--dv-color-danger)]">{errorPresentacion}</p>
+                    )}
+                    {presentacionTieneHistorial === null && (
+                      <p className="mb-2 text-[11px] font-semibold text-[var(--dv-text-muted)]">Verificando historial...</p>
+                    )}
+                    <div className="grid grid-cols-3 gap-2">
+                      <label>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Descripción</span>
+                        <input
+                          type="text"
+                          value={formularioPresentacion.descripcion}
+                          onChange={(event) => setFormularioPresentacion({ ...formularioPresentacion, descripcion: event.target.value })}
+                          className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                        />
+                      </label>
+                      <label>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Código de barras</span>
+                        <input
+                          type="text"
+                          value={formularioPresentacion.codigoBarras}
+                          onChange={(event) => setFormularioPresentacion({ ...formularioPresentacion, codigoBarras: event.target.value })}
+                          className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                        />
+                      </label>
+                      <label>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Costo compra</span>
+                        <input
+                          type="number"
+                          value={formularioPresentacion.costoCompra}
+                          onChange={(event) => setFormularioPresentacion({ ...formularioPresentacion, costoCompra: event.target.value })}
+                          className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                        />
+                      </label>
+                      <label>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Fracción DIGEMID</span>
+                        <input
+                          type="number"
+                          value={formularioPresentacion.fraccionDIGEMID}
+                          onChange={(event) => setFormularioPresentacion({ ...formularioPresentacion, fraccionDIGEMID: event.target.value })}
+                          disabled={presentacionTieneHistorial !== false}
+                          className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] disabled:cursor-not-allowed disabled:bg-[var(--dv-surface-field)] disabled:text-[var(--dv-text-muted)]"
+                        />
+                        {presentacionTieneHistorial === true && <span className="mt-1 block text-[10px] font-semibold text-amber-600">Bloqueado -- tiene movimientos registrados</span>}
+                      </label>
+                      <label>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Unidad conteo</span>
+                        <input
+                          type="text"
+                          value={formularioPresentacion.unidadConteo}
+                          onChange={(event) => setFormularioPresentacion({ ...formularioPresentacion, unidadConteo: event.target.value })}
+                          disabled={presentacionTieneHistorial !== false}
+                          className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] disabled:cursor-not-allowed disabled:bg-[var(--dv-surface-field)] disabled:text-[var(--dv-text-muted)]"
+                        />
+                        {presentacionTieneHistorial === true && <span className="mt-1 block text-[10px] font-semibold text-amber-600">Bloqueado -- tiene movimientos registrados</span>}
+                      </label>
+                      <label>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Factor conversión base</span>
+                        <input
+                          type="number"
+                          value={formularioPresentacion.factorConversionBase}
+                          onChange={(event) => setFormularioPresentacion({ ...formularioPresentacion, factorConversionBase: event.target.value })}
+                          disabled={presentacionTieneHistorial !== false}
+                          className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] disabled:cursor-not-allowed disabled:bg-[var(--dv-surface-field)] disabled:text-[var(--dv-text-muted)]"
+                        />
+                        {presentacionTieneHistorial === true && <span className="mt-1 block text-[10px] font-semibold text-amber-600">Bloqueado -- tiene movimientos registrados</span>}
+                      </label>
+                    </div>
+                    {presentacionTieneHistorial === true && (
+                      <label className="mt-2 block">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Motivo de corrección</span>
+                        <input
+                          type="text"
+                          value={motivoPresentacion}
+                          onChange={(event) => setMotivoPresentacion(event.target.value)}
+                          className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                        />
+                      </label>
+                    )}
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void onGuardarPresentacion(presentacion)}
+                        disabled={guardandoPresentacion || presentacionTieneHistorial === null}
+                        className="rounded-lg bg-[var(--dv-color-confirm)] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onCancelarPresentacion}
+                        className="rounded-lg border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-text-secondary)]"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-[14px] font-bold text-[var(--dv-text-primary)]">{presentacion.descripcion}</h3>
+                    <p className="mt-1 text-[12px] font-semibold text-[var(--dv-text-secondary)]">
+                      Fracción DIGEMID: {presentacion.fraccionDIGEMID} {presentacion.unidadConteo}
+                    </p>
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => window.alert('Nueva forma de venta pendiente')}
+                    className="rounded-full border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-mod-abastecimiento)]"
+                  >
+                    Agregar forma de venta
+                  </button>
+                  {!editandoPresentacion && (
+                    <button
+                      type="button"
+                      onClick={() => void onEditarPresentacion(presentacion)}
+                      disabled={guardandoPresentacion}
+                      className="rounded-full border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-text-secondary)]"
+                    >
+                      Editar presentación
+                    </button>
+                  )}
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => window.alert('Nueva forma de venta pendiente')}
-                className="rounded-full border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-mod-abastecimiento)]"
-              >
-                Agregar forma de venta
-              </button>
-            </div>
             <div className="mt-4 space-y-2">
-              {nodos
+              {nodosLocales
                 .filter((nodo) => nodo.presentacionId === presentacion.id)
                 .map((nodo) => {
                   const hov = hovs.find((item) => item.nodoFraccionamientoId === nodo.id)
                   const editandoUbicacion = formularioUbicacion !== null && hov !== undefined && formularioUbicacion.hovId === hov.id
+                  const editandoNodo = nodoEnEdicionId === nodo.id && formularioNodo !== null
+                  const nodoEsRaiz = nodo.tipoFormaVenta === 'PRESENTACION_ORIGINAL'
 
                   return (
                     <div key={nodo.id} className={`rounded-xl bg-[var(--dv-mod-abastecimiento-bg)] px-3 py-2 ${nodo.nodoPadreId ? 'ml-6' : ''}`}>
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-[12px] font-bold text-[var(--dv-text-primary)]">{nodo.nombreFormaVenta}</span>
-                        <span className="rounded-full bg-[var(--dv-surface-panel)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--dv-mod-abastecimiento)]">
-                          {nodo.tipoFormaVenta}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-[var(--dv-surface-panel)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--dv-mod-abastecimiento)]">
+                            {nodo.tipoFormaVenta}
+                          </span>
+                          {!editandoNodo && (
+                            <button
+                              type="button"
+                              onClick={() => void onEditarNodo(nodo)}
+                              disabled={guardandoNodo}
+                              className="text-[11px] font-semibold text-[var(--dv-text-muted)] underline"
+                            >
+                              Editar
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <p className="mt-1 text-[11px] font-semibold text-[var(--dv-text-secondary)]">Unidades base: {nodo.unidadesBase}</p>
+                      {editandoNodo && formularioNodo !== null && (
+                        <div className="mt-2 rounded-xl border border-[var(--dv-mod-abastecimiento-border)] bg-[var(--dv-surface-panel)] p-3">
+                          {errorNodo !== null && (
+                            <p className="mb-2 rounded-lg border border-[var(--dv-color-danger-border)] bg-[var(--dv-color-danger-bg)] px-3 py-2 text-[11px] font-semibold text-[var(--dv-color-danger)]">{errorNodo}</p>
+                          )}
+                          {nodoTieneHistorial === null && (
+                            <p className="mb-2 text-[11px] font-semibold text-[var(--dv-text-muted)]">Verificando historial...</p>
+                          )}
+                          <div className="grid grid-cols-3 gap-2">
+                            <label>
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Nombre forma venta</span>
+                              <input
+                                type="text"
+                                value={formularioNodo.nombreFormaVenta}
+                                onChange={(event) => setFormularioNodo({ ...formularioNodo, nombreFormaVenta: event.target.value })}
+                                className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                              />
+                            </label>
+                            <label className="flex items-center gap-2 pt-5">
+                              <input
+                                type="checkbox"
+                                checked={formularioNodo.esVendible}
+                                onChange={(event) => setFormularioNodo({ ...formularioNodo, esVendible: event.target.checked })}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-[11px] font-bold text-[var(--dv-text-primary)]">Vendible</span>
+                            </label>
+                            {!nodoEsRaiz && (
+                              <label>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Tipo forma venta</span>
+                                <select
+                                  value={formularioNodo.tipoFormaVenta}
+                                  onChange={(event) => setFormularioNodo({ ...formularioNodo, tipoFormaVenta: event.target.value as NodoFraccionamiento['tipoFormaVenta'] })}
+                                  disabled={nodoTieneHistorial !== false}
+                                  className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] disabled:cursor-not-allowed disabled:bg-[var(--dv-surface-field)] disabled:text-[var(--dv-text-muted)]"
+                                >
+                                  {tiposFormaVentaEditables.map((tipoFormaVenta) => (
+                                    <option key={tipoFormaVenta} value={tipoFormaVenta}>{tipoFormaVenta}</option>
+                                  ))}
+                                </select>
+                                {nodoTieneHistorial === true && <span className="mt-1 block text-[10px] font-semibold text-amber-600">Bloqueado -- tiene movimientos registrados</span>}
+                              </label>
+                            )}
+                            <label>
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Unidades base</span>
+                              <input
+                                type="number"
+                                value={formularioNodo.unidadesBase}
+                                onChange={(event) => setFormularioNodo({ ...formularioNodo, unidadesBase: event.target.value })}
+                                disabled={nodoEsRaiz || nodoTieneHistorial !== false}
+                                className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)] disabled:cursor-not-allowed disabled:bg-[var(--dv-surface-field)] disabled:text-[var(--dv-text-muted)]"
+                              />
+                              {nodoEsRaiz ? (
+                                <span className="mt-1 block text-[10px] font-semibold text-amber-600">Bloqueado -- presentación original</span>
+                              ) : (
+                                nodoTieneHistorial === true && <span className="mt-1 block text-[10px] font-semibold text-amber-600">Bloqueado -- tiene movimientos registrados</span>
+                              )}
+                            </label>
+                            {formularioNodo.tipoFormaVenta === 'PROMOCION' && (
+                              <label>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Descripción promo</span>
+                                <input
+                                  type="text"
+                                  value={formularioNodo.descripcionPromo}
+                                  onChange={(event) => setFormularioNodo({ ...formularioNodo, descripcionPromo: event.target.value })}
+                                  className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                                />
+                              </label>
+                            )}
+                          </div>
+                          {nodoTieneHistorial === true && (
+                            <label className="mt-2 block">
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Motivo de corrección</span>
+                              <input
+                                type="text"
+                                value={motivoNodo}
+                                onChange={(event) => setMotivoNodo(event.target.value)}
+                                className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                              />
+                            </label>
+                          )}
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void onGuardarNodo(nodo)}
+                              disabled={guardandoNodo || nodoTieneHistorial === null}
+                              className="rounded-lg bg-[var(--dv-color-confirm)] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
+                            >
+                              Guardar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={onCancelarNodo}
+                              className="rounded-lg border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-text-secondary)]"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {nodo.esVendible && (
                         <div className="mt-2">
                           {editandoUbicacion && formularioUbicacion !== null ? (
@@ -218,7 +673,8 @@ function PresentacionesTab({ presentaciones, nodos, nombreProducto, nombreFabric
                 })}
             </div>
           </article>
-        ))}
+          )
+        })}
       </div>
     </>
   )
@@ -1121,7 +1577,7 @@ export function DetalleProducto({
                 )}
               </div>
             )}
-            {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab presentaciones={presentaciones} nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
+            {!cargando && vistaActiva === 'presentaciones' && <PresentacionesTab producto={producto} presentaciones={presentaciones} nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
             {!cargando && vistaActiva === 'precios' && <PreciosTab nodos={nodos} nombreProducto={[producto.nombreComercial, producto.concentracion, producto.formaFarmaceutica].filter(Boolean).join(' · ')} nombreFabricante={producto.nombreFabricante} />}
           </>
         )}
