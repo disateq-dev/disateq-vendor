@@ -6,7 +6,6 @@ import type {
   ProductoComercial,
   Proveedor,
   ResumenInventarioFarmacia,
-  ServicioFarmacia,
   TipoRecursoOperacional,
 } from './types'
 import {
@@ -15,21 +14,18 @@ import {
   obtenerProductosComerciales,
   obtenerProveedores,
   obtenerInventarioFarmacia,
-  obtenerServiciosFarmacia,
   listarPrincipiosActivos,
 } from './farmacia.service'
 
 interface FarmaciaState {
   productosComerciales: ProductoComercial[]
   proveedores: Proveedor[]
-  servicios: ServicioFarmacia[]
   cargando: boolean
   error: string | null
   resumenInventario: ResumenInventarioFarmacia[]
   principiosActivos: PrincipioActivo[]
   cargarProductosComerciales(filtroNombre?: string, soloActivos?: boolean): Promise<void>
   cargarProveedores(soloActivos?: boolean): Promise<void>
-  cargarServicios(soloActivos?: boolean): Promise<void>
   cargarResumenInventario(): Promise<void>
   cargarPrincipiosActivos(): Promise<void>
   crearProductoCompleto(
@@ -48,7 +44,6 @@ function resolverMensajeError(error: unknown): string {
 export const useFarmaciaStore = create<FarmaciaState>()((set) => ({
   productosComerciales: [],
   proveedores: [],
-  servicios: [],
   resumenInventario: [],
   principiosActivos: [],
   cargando: false,
@@ -69,16 +64,6 @@ export const useFarmaciaStore = create<FarmaciaState>()((set) => ({
     try {
       const proveedores = await obtenerProveedores(soloActivos)
       set({ proveedores, cargando: false })
-    } catch (error) {
-      set({ error: resolverMensajeError(error), cargando: false })
-    }
-  },
-
-  async cargarServicios(soloActivos?: boolean): Promise<void> {
-    set({ cargando: true, error: null })
-    try {
-      const servicios = await obtenerServiciosFarmacia(soloActivos)
-      set({ servicios, cargando: false })
     } catch (error) {
       set({ error: resolverMensajeError(error), cargando: false })
     }

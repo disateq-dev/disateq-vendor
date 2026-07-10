@@ -31,6 +31,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v9_campos_regulatorios_ifa(db).await?;
     migrar_v10_campos_catalogo_ifa(db).await?;
     migrar_v11_tipo_recurso_producto_comercial(db).await?;
+    migrar_v12_servicio_catalogo(db).await?;
 
     Ok(())
 }
@@ -781,6 +782,159 @@ async fn migrar_v11_tipo_recurso_producto_comercial(db: &sqlx::SqlitePool) -> Re
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (11)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v12_servicio_catalogo(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='producto_comercial'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+    if existe == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+    if version >= 12 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS servicio_catalogo (
+          id TEXT PRIMARY KEY,
+          rubro TEXT NOT NULL DEFAULT 'FARMACIA',
+          tipo_servicio TEXT NOT NULL,
+          nombre TEXT NOT NULL,
+          descripcion TEXT,
+          duracion_minutos INTEGER,
+          estado TEXT NOT NULL DEFAULT 'ACTIVO',
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_serv_cat_rubro ON servicio_catalogo(rubro, estado)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let existe_sf = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='servicio_farmacia'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_sf > 0 {
+        sqlx::query(
+            "INSERT OR IGNORE INTO servicio_catalogo
+               (id, rubro, tipo_servicio, nombre, descripcion, duracion_minutos, estado, creado_en)
+             SELECT id, 'FARMACIA', tipo_servicio, nombre,
+                    descripcion, duracion_minutos, estado, creado_en
+             FROM servicio_farmacia",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS ejecucion_servicio_nueva (
+              id TEXT PRIMARY KEY,
+              servicio_id TEXT NOT NULL REFERENCES servicio_catalogo(id),
+              operador_id TEXT NOT NULL,
+              turno_id TEXT,
+              pedido_id TEXT,
+              timestamp_inicio TEXT NOT NULL,
+              timestamp_fin TEXT,
+              duracion_minutos INTEGER,
+              observacion TEXT,
+              creado_en TEXT NOT NULL
+            )",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "INSERT OR IGNORE INTO ejecucion_servicio_nueva
+               (id, servicio_id, operador_id, turno_id, pedido_id,
+                timestamp_inicio, timestamp_fin, duracion_minutos, observacion, creado_en)
+             SELECT id, servicio_id, operador_id, turno_id, pedido_id,
+                    timestamp_inicio, timestamp_fin, duracion_minutos, observacion, creado_en
+             FROM ejecucion_servicio",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query("DROP TABLE ejecucion_servicio")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        sqlx::query("ALTER TABLE ejecucion_servicio_nueva RENAME TO ejecucion_servicio")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        for idx in &[
+            "CREATE INDEX IF NOT EXISTS idx_ejec_servicio ON ejecucion_servicio(servicio_id)",
+            "CREATE INDEX IF NOT EXISTS idx_ejec_operador ON ejecucion_servicio(operador_id)",
+            "CREATE INDEX IF NOT EXISTS idx_ejec_turno ON ejecucion_servicio(turno_id)",
+            "CREATE INDEX IF NOT EXISTS idx_ejec_timestamp ON ejecucion_servicio(timestamp_inicio)",
+            "CREATE INDEX IF NOT EXISTS idx_ejec_horario ON ejecucion_servicio(servicio_id, timestamp_inicio)",
+        ] {
+            sqlx::query(idx)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+
+        sqlx::query("DROP TABLE servicio_farmacia")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let tiene_margen = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('config_establecimiento') WHERE name='margen_defecto'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if tiene_margen == 0 {
+        sqlx::query(
+            "ALTER TABLE config_establecimiento ADD COLUMN margen_defecto REAL NOT NULL DEFAULT 0.30",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (12)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

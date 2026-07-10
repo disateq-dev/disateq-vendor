@@ -2,6 +2,7 @@ import type { NodoFraccionamiento, PresentacionComercial, ProductoComercial, Tip
 import type { TipoValorOperacional as TipoValorOperacionalCatalogo } from '../catalog/valor-operacional.types'
 import { crearHOV, reactivarHOV, retirarHOV } from '../catalog/hov.service'
 import { crearValor, suspenderValor } from '../catalog/valor-operacional.service'
+import type { ServicioCatalogo } from '../catalog/servicio.types'
 import * as hovStore from '../catalog/hov.store'
 import * as valorStore from '../catalog/valor-operacional.store'
 
@@ -18,6 +19,7 @@ export function proyectarAHov(
   contextoOperacionalId: string,
   tipoRecurso: TipoRecursoOperacional,
   ubicacionFisica?: string,
+  precioVenta?: number,
 ): void {
   if (!nodo.esVendible) return
 
@@ -43,6 +45,10 @@ export function proyectarAHov(
 
   if (valorVenta !== null && valorVenta > 0) {
     sincronizarValorHov(nodo, valorVenta)
+  }
+
+  if (precioVenta !== undefined && precioVenta > 0) {
+    sincronizarValorHov(nodo, precioVenta)
   }
 }
 
@@ -129,6 +135,50 @@ export function sincronizarValorOperacionalFarmacia(
       vigencia: {
         desde: valorFarmacia.vigenciaDesde,
         hasta: valorFarmacia.vigenciaHasta ?? null,
+      },
+    })
+  }
+}
+
+export function proyectarServicioAHov(
+  servicio: ServicioCatalogo,
+  contextoOperacionalId: string,
+  precioVenta?: number,
+): void {
+  let hov = hovStore.getAllHOVs().find(h => h.servicioId === servicio.id) ?? null
+
+  if (!hov) {
+    hov = crearHOV({
+      nombre: servicio.nombre,
+      servicioId: servicio.id,
+      productoId: undefined,
+      nodoFraccionamientoId: undefined,
+      tipoRecurso: 'SERVICIO',
+      unidadDespacho: 'servicio',
+      factorConversion: 1,
+      costoBase: precioVenta ?? 0,
+      contextoOperacionalId,
+    })
+  } else if (hov.estado === 'RETIRADA') {
+    hov = reactivarHOV(hov.id)
+  }
+
+  if (precioVenta !== undefined && precioVenta > 0) {
+    const activos = valorStore.getValoresActivosPorHOV(hov.id).filter(v => v.tipo === 'NORMAL')
+    activos.forEach(v => suspenderValor(v.id))
+    crearValor({
+      hovId: hov.id,
+      tipo: 'NORMAL',
+      valor: precioVenta,
+      moneda: 'PEN',
+      condiciones: {
+        cantidadMinima: null,
+        contextoOperacionalId: null,
+        identidadOperacionalId: null,
+      },
+      vigencia: {
+        desde: new Date().toISOString(),
+        hasta: null,
       },
     })
   }

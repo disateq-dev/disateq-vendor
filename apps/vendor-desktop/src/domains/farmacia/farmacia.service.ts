@@ -14,7 +14,6 @@ import type {
   CrearProductoComercialInput,
   CrearProductoGenericoInput,
   CrearProveedorInput,
-  CrearServicioFarmaciaInput,
   DatosRuc,
   EstadoRegistroSanitario,
   Lote,
@@ -27,14 +26,12 @@ import type {
   ProductoComercial,
   ProductoGenerico,
   Proveedor,
-  RegistrarEjecucionServicioInput,
   RegistrarIngresoInput,
   RegistrarLoteInput,
   RegistrarMovimientoInput,
   ResultadoReporteDIGEMID,
   ResultadoBusquedaPresentacion,
   ResumenInventarioFarmacia,
-  ServicioFarmacia,
   ValorOperacionalFarmacia,
 } from './types'
 
@@ -137,16 +134,6 @@ interface LoteRespuesta {
   cantidad_disponible: number
   proveedor_id?: string
   precio_compra?: number
-  estado: string
-  creado_en: string
-}
-
-interface ServicioFarmaciaRespuesta {
-  id: string
-  nombre: string
-  tipo_servicio: string
-  descripcion?: string
-  duracion_minutos?: number
   estado: string
   creado_en: string
 }
@@ -285,18 +272,6 @@ function traducirLote(r: LoteRespuesta): Lote {
     proveedorId: r.proveedor_id,
     precioCompra: r.precio_compra,
     estado: r.estado as Lote['estado'],
-    creadoEn: r.creado_en,
-  }
-}
-
-function traducirServicioFarmacia(r: ServicioFarmaciaRespuesta): ServicioFarmacia {
-  return {
-    id: r.id,
-    nombre: r.nombre,
-    tipoServicio: r.tipo_servicio as ServicioFarmacia['tipoServicio'],
-    descripcion: r.descripcion,
-    duracionMinutos: r.duracion_minutos,
-    estado: r.estado,
     creadoEn: r.creado_en,
   }
 }
@@ -515,35 +490,6 @@ export async function registrarMovimiento(input: RegistrarMovimientoInput): Prom
   })
 }
 
-export async function crearServicioFarmacia(input: CrearServicioFarmaciaInput): Promise<string> {
-  return invoke<string>('crear_servicio_farmacia', {
-    nombre: input.nombre,
-    tipoServicio: input.tipoServicio,
-    descripcion: input.descripcion ?? null,
-    duracionMinutos: input.duracionMinutos ?? null,
-  })
-}
-
-export async function obtenerServiciosFarmacia(soloActivos?: boolean): Promise<ServicioFarmacia[]> {
-  const respuesta = await invoke<ServicioFarmaciaRespuesta[]>('obtener_servicios_farmacia', {
-    soloActivos: soloActivos ?? null,
-  })
-  return respuesta.map((item) => traducirServicioFarmacia(item))
-}
-
-export async function registrarEjecucionServicio(input: RegistrarEjecucionServicioInput): Promise<string> {
-  return invoke<string>('registrar_ejecucion_servicio', {
-    servicioId: input.servicioId,
-    operadorId: input.operadorId,
-    turnoId: input.turnoId ?? null,
-    pedidoId: input.pedidoId ?? null,
-    timestampInicio: input.timestampInicio,
-    timestampFin: input.timestampFin ?? null,
-    duracionMinutos: input.duracionMinutos ?? null,
-    observacion: input.observacion ?? null,
-  })
-}
-
 export async function generarReporteDIGEMID(codigoEstab: string): Promise<ResultadoReporteDIGEMID> {
   return invoke<ResultadoReporteDIGEMID>('generar_reporte_digemid', {
     codigoEstab,
@@ -625,10 +571,6 @@ export async function desactivarProductoComercial(id: string): Promise<void> {
 
 export async function eliminarProductoComercialFisico(id: string): Promise<void> {
   await invoke('eliminar_producto_comercial_fisico', { id })
-}
-
-export async function desactivarServicioFarmacia(id: string): Promise<void> {
-  await invoke('desactivar_servicio_farmacia', { id })
 }
 
 export async function obtenerValoresNodo(nodoId: string): Promise<ValorOperacionalFarmacia[]> {

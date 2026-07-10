@@ -65,15 +65,6 @@ export type CondicionVenta = 'SIN_RECETA' | 'CON_RECETA' | 'CONTROLADO'
 
 export type TipoFormaVenta = 'PRESENTACION_ORIGINAL' | 'FRACCION' | 'PACK' | 'PROMOCION' | 'INTERMEDIA'
 
-export type TipoServicioFarmacia =
-  | 'INYECTABLE'
-  | 'NEBULIZACION'
-  | 'CONTROL_GLUCOSA'
-  | 'CONTROL_PRESION'
-  | 'TEST_EMBARAZO'
-  | 'CURACION'
-  | 'OTRO'
-
 export type EstadoLote = 'VIGENTE' | 'POR_VENCER' | 'VENCIDO' | 'AGOTADO'
 
 export interface ProductoGenerico {
@@ -194,16 +185,6 @@ export interface Proveedor {
   nombreContacto?: string
   telefono?: string
   condicionesPago?: string
-  estado: string
-  creadoEn: string
-}
-
-export interface ServicioFarmacia {
-  id: string
-  nombre: string
-  tipoServicio: TipoServicioFarmacia
-  descripcion?: string
-  duracionMinutos?: number
   estado: string
   creadoEn: string
 }
@@ -360,24 +341,6 @@ export interface CrearProveedorInput {
   nombreContacto?: string
   telefono?: string
   condicionesPago?: string
-}
-
-export interface CrearServicioFarmaciaInput {
-  nombre: string
-  tipoServicio: TipoServicioFarmacia
-  descripcion?: string
-  duracionMinutos?: number
-}
-
-export interface RegistrarEjecucionServicioInput {
-  servicioId: string
-  operadorId: string
-  turnoId?: string
-  pedidoId?: string
-  timestampInicio: string
-  timestampFin?: string
-  duracionMinutos?: number
-  observacion?: string
 }
 
 export interface DatosRuc {

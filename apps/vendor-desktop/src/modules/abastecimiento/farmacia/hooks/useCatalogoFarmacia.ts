@@ -6,7 +6,8 @@ import {
   obtenerPresentaciones,
   obtenerProductosComerciales,
 } from '../../../../domains/farmacia/farmacia.service'
-import { proyectarAHov } from '../../../../domains/farmacia/hov-projector.service'
+import { crearServicioCatalogo } from '../../../../domains/catalog/servicio.service'
+import { proyectarAHov, proyectarServicioAHov } from '../../../../domains/farmacia/hov-projector.service'
 import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
 import type {
   CrearNodoInput,
@@ -18,6 +19,7 @@ import type {
   ProductoComercial,
   TipoRecursoOperacional,
 } from '../../../../domains/farmacia/types'
+import type { CrearServicioCatalogoInput, ServicioCatalogo } from '../../../../domains/catalog/servicio.types'
 
 export type PanelIzquierdoCatalogo = 'busqueda' | 'detalle'
 export type TabDetalleFarmacia = 'detalle' | 'presentaciones' | 'precios'
@@ -62,6 +64,11 @@ interface UseCatalogoFarmaciaResult {
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
     ubicacionFisica?: string,
+    precioVenta?: number,
+  ): Promise<void>
+  onGuardarServicio(
+    input: CrearServicioCatalogoInput,
+    precioVenta?: number,
   ): Promise<void>
   onLimpiarError(): void
 }
@@ -227,6 +234,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
       presentacion: CrearPresentacionInput,
       nodosExtra: CrearNodoInput[],
       ubicacionFisica?: string,
+      precioVenta?: number,
     ): Promise<void> => {
       setBuscando(true)
       setErrorLocal(null)
@@ -292,7 +300,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
           nodosCreados
             .filter((nodo) => nodo.esVendible)
             .forEach((nodo) => {
-              proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso, ubicacionFisica)
+              proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso, ubicacionFisica, precioVenta)
             })
         } catch (errorProyeccion) {
           console.error('No se pudo proyectar el producto a la capa de venta (HOV):', errorProyeccion)
@@ -307,6 +315,42 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
       }
     },
     [crearProductoCompleto, onTerminoChange],
+  )
+
+  const onGuardarServicio = useCallback(
+    async (
+      input: CrearServicioCatalogoInput,
+      precioVenta?: number,
+    ): Promise<void> => {
+      setBuscando(true)
+      setErrorLocal(null)
+      try {
+        const servicioId = await crearServicioCatalogo(input)
+        const servicioCatalogo: ServicioCatalogo = {
+          id: servicioId,
+          rubro: input.rubro,
+          tipoServicio: input.tipoServicio,
+          nombre: input.nombre,
+          descripcion: input.descripcion,
+          duracionMinutos: input.duracionMinutos,
+          estado: 'ACTIVO',
+          creadoEn: new Date().toISOString(),
+        }
+        try {
+          proyectarServicioAHov(servicioCatalogo, 'default', precioVenta)
+        } catch (errorProyeccion) {
+          console.error('No se pudo proyectar el servicio a HOV:', errorProyeccion)
+        }
+        setCreandoAbierto(false)
+        setPasoNuevo(1)
+      } catch (error) {
+        setErrorLocal(resolverMensajeError(error))
+        throw error
+      } finally {
+        setBuscando(false)
+      }
+    },
+    [],
   )
 
   const onLimpiarError = useCallback((): void => {
@@ -347,6 +391,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
     onPasoSiguiente,
     onPasoAnterior,
     onGuardarProducto,
+    onGuardarServicio,
     onLimpiarError,
   }
 }

@@ -129,6 +129,7 @@ export function CatalogoFarmaciaWorkspace(): ReactElement {
               onPasoAnterior={catalogo.onPasoAnterior}
               onCancelar={catalogo.onCerrarCreacion}
               onGuardar={catalogo.onGuardarProducto}
+              onGuardarServicio={catalogo.onGuardarServicio}
             />
           )}
 

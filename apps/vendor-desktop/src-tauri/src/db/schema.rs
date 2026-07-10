@@ -193,6 +193,20 @@ CREATE INDEX IF NOT EXISTS idx_ejec_turno ON ejecucion_servicio(turno_id);
 CREATE INDEX IF NOT EXISTS idx_ejec_timestamp ON ejecucion_servicio(timestamp_inicio);
 CREATE INDEX IF NOT EXISTS idx_ejec_horario ON ejecucion_servicio(servicio_id, timestamp_inicio);
 
+CREATE TABLE IF NOT EXISTS servicio_catalogo (
+  id TEXT PRIMARY KEY,
+  rubro TEXT NOT NULL DEFAULT 'FARMACIA',
+  tipo_servicio TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+  duracion_minutos INTEGER,
+  estado TEXT NOT NULL DEFAULT 'ACTIVO',
+  creado_en TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_serv_cat_rubro
+  ON servicio_catalogo(rubro, estado);
+
 CREATE VIEW IF NOT EXISTS reporte_digemid_privado AS
 SELECT
   pc.codigo_digemid AS CodProd,

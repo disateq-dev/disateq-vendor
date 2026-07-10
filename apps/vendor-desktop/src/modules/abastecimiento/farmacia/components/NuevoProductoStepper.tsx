@@ -1,6 +1,8 @@
 import { Check, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState, type ReactElement } from 'react'
 import { obtenerUbicacionesFisicasSugeridas } from '../../../../domains/catalog/hov.service'
+import { obtenerMargenDefecto } from '../../../../domains/catalog/servicio.service'
+import type { CrearServicioCatalogoInput, TipoServicioFarmacia } from '../../../../domains/catalog/servicio.types'
 import {
   buscarEnCatalogoMaestro,
   obtenerDetalleCatalogoMaestro,
@@ -29,7 +31,6 @@ import type {
   ProductoComercial,
   TipoFormaVenta,
   TipoRecursoOperacional,
-  TipoServicioFarmacia,
 } from '../../../../domains/farmacia/types'
 
 interface NuevoProductoStepperProps {
@@ -47,6 +48,11 @@ interface NuevoProductoStepperProps {
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
     ubicacionFisica?: string,
+    precioVenta?: number,
+  ) => Promise<void>
+  onGuardarServicio: (
+    input: CrearServicioCatalogoInput,
+    precioVenta?: number,
   ) => Promise<void>
 }
 
@@ -83,11 +89,14 @@ interface PresentacionForm {
   unidadConteo: string
   codigoBarras?: string
   costoCompra?: number
+  precioVenta?: number
 }
 
 interface PasoPresentacionProps {
   presentacion: PresentacionForm
   setPresentacion: (presentacion: PresentacionForm) => void
+  margenDefecto: number
+  onCostoCompraChange: (costo: number | undefined) => void
 }
 
 interface NodoExtraForm {
@@ -115,6 +124,7 @@ interface ProductoGeneralForm {
   descripcionPresentacion: string
   factorConversionBase: number
   costoCompra?: number
+  precioVenta?: number
 }
 
 interface ServicioForm {
@@ -122,6 +132,7 @@ interface ServicioForm {
   tipoServicio: TipoServicioFarmacia
   descripcion?: string
   duracionMinutos?: number
+  precioVenta?: number
 }
 
 interface StepperHeaderProps {
@@ -343,7 +354,7 @@ function PasoRegulatorio({ comercial, estadoRegistroSanitario, setComercial, set
   )
 }
 
-function PasoPresentacion({ presentacion, setPresentacion }: PasoPresentacionProps): ReactElement {
+function PasoPresentacion({ presentacion, setPresentacion, margenDefecto }: PasoPresentacionProps): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción" value={presentacion.descripcion} onChange={(e) => setPresentacion({ ...presentacion, descripcion: e.target.value })} />
@@ -352,6 +363,22 @@ function PasoPresentacion({ presentacion, setPresentacion }: PasoPresentacionPro
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" placeholder="Unidades totales en esta presentación" value={presentacion.factorConversionBase} onChange={(e) => setPresentacion({ ...presentacion, factorConversionBase: Number(e.target.value) })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Código de barras" value={presentacion.codigoBarras ?? ''} onChange={(e) => setPresentacion({ ...presentacion, codigoBarras: e.target.value || undefined })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Costo de compra" value={presentacion.costoCompra ?? ''} onChange={(e) => setPresentacion({ ...presentacion, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
+      <label className="space-y-1 md:col-span-2">
+        <span className="text-[11px] font-bold uppercase text-slate-500">Precio de venta al público (opcional)</span>
+        <input
+          className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder={
+            presentacion.costoCompra
+              ? `Sugerido: ${(presentacion.costoCompra * (1 + margenDefecto)).toFixed(2)}`
+              : 'Precio de venta al público'
+          }
+          value={presentacion.precioVenta ?? ''}
+          onChange={(e) => setPresentacion({ ...presentacion, precioVenta: e.target.value ? Number(e.target.value) : undefined })}
+        />
+      </label>
     </div>
   )
 }
@@ -437,17 +464,39 @@ function PasoProductoGeneralUno({ formulario, setFormulario }: { formulario: Pro
   )
 }
 
-function PasoProductoGeneralDos({ formulario, setFormulario }: { formulario: ProductoGeneralForm; setFormulario: (formulario: ProductoGeneralForm) => void }): ReactElement {
+function PasoProductoGeneralDos({ formulario, setFormulario, margenDefecto }: { formulario: ProductoGeneralForm; setFormulario: (formulario: ProductoGeneralForm) => void; margenDefecto: number }): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción de presentación" value={formulario.descripcionPresentacion} onChange={(e) => setFormulario({ ...formulario, descripcionPresentacion: e.target.value })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" placeholder="Unidades totales en este paquete" value={formulario.factorConversionBase} onChange={(e) => setFormulario({ ...formulario, factorConversionBase: Number(e.target.value) })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Costo de compra (opcional)" value={formulario.costoCompra ?? ''} onChange={(e) => setFormulario({ ...formulario, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
+      <label className="space-y-1 md:col-span-2">
+        <span className="text-[11px] font-bold uppercase text-slate-500">Precio de venta al público (opcional)</span>
+        <input
+          className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder={
+            formulario.costoCompra
+              ? `Sugerido: ${(formulario.costoCompra * (1 + margenDefecto)).toFixed(2)}`
+              : 'Precio de venta al público'
+          }
+          value={formulario.precioVenta ?? ''}
+          onChange={(e) => setFormulario({ ...formulario, precioVenta: e.target.value ? Number(e.target.value) : undefined })}
+        />
+      </label>
     </div>
   )
 }
 
-function PasoServicio({ formulario, setFormulario }: { formulario: ServicioForm; setFormulario: (formulario: ServicioForm) => void }): ReactElement {
+function PasoServicio({
+  formulario,
+  setFormulario,
+}: {
+  formulario: ServicioForm
+  setFormulario: (formulario: ServicioForm) => void
+}): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Nombre del servicio" value={formulario.nombre} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} />
@@ -457,8 +506,15 @@ function PasoServicio({ formulario, setFormulario }: { formulario: ServicioForm;
           {TIPOS_SERVICIO.map((tipo) => <option key={tipo} value={tipo}>{etiqueta(tipo, LABEL_TIPO_SERVICIO)}</option>)}
         </select>
       </label>
-      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción (opcional)" value={formulario.descripcion ?? ''} onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value || undefined })} />
+      <label className="space-y-1 md:col-span-2">
+        <span className="text-[11px] font-bold uppercase text-slate-500">Descripción (opcional)</span>
+        <textarea className="w-full rounded-xl border border-[var(--dv-input-border)] px-3 py-2 text-[13px]" rows={3} maxLength={1000} placeholder="Describe el servicio, procedimiento, materiales incluidos..." value={formulario.descripcion ?? ''} onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value || undefined })} />
+      </label>
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Duración estimada en minutos (opcional)" value={formulario.duracionMinutos ?? ''} onChange={(e) => setFormulario({ ...formulario, duracionMinutos: e.target.value ? Number(e.target.value) : undefined })} />
+      <label className="space-y-1">
+        <span className="text-[11px] font-bold uppercase text-slate-500">Precio de venta al público (opcional)</span>
+        <input className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" step="0.01" placeholder="S/ 0.00" value={formulario.precioVenta ?? ''} onChange={(e) => setFormulario({ ...formulario, precioVenta: e.target.value ? Number(e.target.value) : undefined })} />
+      </label>
     </div>
   )
 }
@@ -472,6 +528,7 @@ export function NuevoProductoStepper({
   onPasoAnterior,
   onCancelar,
   onGuardar,
+  onGuardarServicio,
 }: NuevoProductoStepperProps): ReactElement {
   const [tipoRecurso, setTipoRecurso] = useState<TipoRecursoOperacional | null>(null)
   const [similares, setSimilares] = useState<ProductoComercial[]>([])
@@ -480,6 +537,7 @@ export function NuevoProductoStepper({
   const [buscandoDigemid, setBuscandoDigemid] = useState<boolean>(false)
   const [sugerenciaDigemidElegida, setSugerenciaDigemidElegida] = useState<DetalleCatalogoMaestro | null>(null)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
+  const [margenDefecto, setMargenDefecto] = useState<number>(0.30)
   const [generico, setGenerico] = useState<CrearProductoGenericoInput>({
     ifa: '',
     concentracion: '',
@@ -516,6 +574,10 @@ export function NuevoProductoStepper({
     nombre: terminoBusqueda,
     tipoServicio: 'INYECTABLE',
   })
+
+  useEffect(() => {
+    obtenerMargenDefecto().then(setMargenDefecto).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (tipoRecurso !== 'MEDICAMENTO' || comercial.nombreComercial.trim().length < 4) {
@@ -686,7 +748,15 @@ export function NuevoProductoStepper({
       esVendible: true,
       esComprable: false,
     }))
-    await onGuardar('MEDICAMENTO', generico, comercial, presentacionInput, nodosInput, ubicacionFisica.trim() || undefined)
+    await onGuardar(
+      'MEDICAMENTO',
+      generico,
+      comercial,
+      presentacionInput,
+      nodosInput,
+      ubicacionFisica.trim() || undefined,
+      presentacion.precioVenta && presentacion.precioVenta > 0 ? presentacion.precioVenta : undefined,
+    )
   }
 
   const guardarProductoGeneral = async (): Promise<void> => {
@@ -730,35 +800,20 @@ export function NuevoProductoStepper({
       },
       nodosInput,
       ubicacionFisica.trim() || undefined,
+      productoGeneral.precioVenta && productoGeneral.precioVenta > 0 ? productoGeneral.precioVenta : undefined,
     )
   }
 
   const guardarServicio = async (): Promise<void> => {
-    await onGuardar(
-      'SERVICIO',
+    await onGuardarServicio(
       {
-        ifa: servicio.nombre,
-        concentracion: '-',
-        formaFarmaceutica: 'OTRO',
-        categoriaFarmacia: 'OTRO',
-        permiteFraccion: false,
+        rubro: 'FARMACIA',
+        tipoServicio: servicio.tipoServicio,
+        nombre: servicio.nombre,
+        descripcion: servicio.descripcion,
+        duracionMinutos: servicio.duracionMinutos,
       },
-      {
-        nombreComercial: servicio.nombre,
-        nombreFabricante: '-',
-        condicionVenta: 'SIN_RECETA',
-        tipoRecurso: 'SERVICIO',
-        requiereLote: false,
-        requiereCadenaFrio: false,
-      },
-      {
-        productoComercialId: '',
-        descripcion: servicio.nombre,
-        fraccionDIGEMID: 1,
-        unidadConteo: 'servicio',
-        factorConversionBase: 1,
-      },
-      [],
+      servicio.precioVenta && servicio.precioVenta > 0 ? servicio.precioVenta : undefined,
     )
   }
 
@@ -840,7 +895,7 @@ export function NuevoProductoStepper({
           {tipoRecurso === 'MEDICAMENTO' && paso === 3 && <PasoRegulatorio comercial={comercial} estadoRegistroSanitario={estadoRegistroSanitario} setComercial={setComercial} setEstadoRegistroSanitario={setEstadoRegistroSanitario} />}
           {tipoRecurso === 'MEDICAMENTO' && paso === 4 && (
             <div className="space-y-5">
-              <PasoPresentacion presentacion={presentacion} setPresentacion={setPresentacion} />
+              <PasoPresentacion presentacion={presentacion} setPresentacion={setPresentacion} margenDefecto={margenDefecto} onCostoCompraChange={() => {}} />
               <PasoFormasVenta
                 descripcionRaiz={presentacion.descripcion}
                 nodosExtra={nodosExtra}
@@ -852,7 +907,7 @@ export function NuevoProductoStepper({
             </div>
           )}
           {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 1 && <PasoProductoGeneralUno formulario={productoGeneral} setFormulario={setProductoGeneral} />}
-          {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 2 && <PasoProductoGeneralDos formulario={productoGeneral} setFormulario={setProductoGeneral} />}
+          {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 2 && <PasoProductoGeneralDos formulario={productoGeneral} setFormulario={setProductoGeneral} margenDefecto={margenDefecto} />}
           {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 3 && (
             <PasoFormasVenta
               descripcionRaiz={productoGeneral.descripcionPresentacion}
