@@ -79,6 +79,7 @@ interface PasoRegulatorioProps {
 interface PresentacionForm {
   descripcion: string
   fraccionDIGEMID: number
+  factorConversionBase: number
   unidadConteo: string
   codigoBarras?: string
   costoCompra?: number
@@ -98,7 +99,7 @@ interface NodoExtraForm {
 }
 
 interface PasoFormasVentaProps {
-  presentacion: PresentacionForm
+  descripcionRaiz: string
   nodosExtra: NodoExtraForm[]
   ubicacionFisica: string
   setUbicacionFisica: (valor: string) => void
@@ -112,6 +113,7 @@ interface ProductoGeneralForm {
   unidadVenta: string
   codigoBarras?: string
   descripcionPresentacion: string
+  factorConversionBase: number
   costoCompra?: number
 }
 
@@ -346,7 +348,8 @@ function PasoPresentacion({ presentacion, setPresentacion }: PasoPresentacionPro
     <div className="grid gap-4 md:grid-cols-2">
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción" value={presentacion.descripcion} onChange={(e) => setPresentacion({ ...presentacion, descripcion: e.target.value })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Unidad de conteo" value={presentacion.unidadConteo} onChange={(e) => setPresentacion({ ...presentacion, unidadConteo: e.target.value })} />
-      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" placeholder="Factor de conversión" value={presentacion.fraccionDIGEMID} onChange={(e) => setPresentacion({ ...presentacion, fraccionDIGEMID: Number(e.target.value) })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" placeholder="Fracción DIGEMID (uso regulatorio)" value={presentacion.fraccionDIGEMID} onChange={(e) => setPresentacion({ ...presentacion, fraccionDIGEMID: Number(e.target.value) })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" placeholder="Unidades totales en esta presentación" value={presentacion.factorConversionBase} onChange={(e) => setPresentacion({ ...presentacion, factorConversionBase: Number(e.target.value) })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Código de barras" value={presentacion.codigoBarras ?? ''} onChange={(e) => setPresentacion({ ...presentacion, codigoBarras: e.target.value || undefined })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Costo de compra" value={presentacion.costoCompra ?? ''} onChange={(e) => setPresentacion({ ...presentacion, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
     </div>
@@ -354,7 +357,7 @@ function PasoPresentacion({ presentacion, setPresentacion }: PasoPresentacionPro
 }
 
 function PasoFormasVenta({
-  presentacion,
+  descripcionRaiz,
   nodosExtra,
   ubicacionFisica,
   setUbicacionFisica,
@@ -368,7 +371,7 @@ function PasoFormasVenta({
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-[#E3F1FA] bg-[#E3F1FA] p-4">
-        <div className="text-[12px] font-bold text-slate-800">{presentacion.descripcion || 'Presentación original'}</div>
+        <div className="text-[12px] font-bold text-slate-800">{descripcionRaiz || 'Presentación original'}</div>
         <div className="mt-1 text-[11px] font-semibold text-[#1E88C7]">Nodo raíz · vendible · comprable</div>
       </div>
       <label className="space-y-1">
@@ -438,6 +441,7 @@ function PasoProductoGeneralDos({ formulario, setFormulario }: { formulario: Pro
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" placeholder="Descripción de presentación" value={formulario.descripcionPresentacion} onChange={(e) => setFormulario({ ...formulario, descripcionPresentacion: e.target.value })} />
+      <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="1" placeholder="Unidades totales en este paquete" value={formulario.factorConversionBase} onChange={(e) => setFormulario({ ...formulario, factorConversionBase: Number(e.target.value) })} />
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Costo de compra (opcional)" value={formulario.costoCompra ?? ''} onChange={(e) => setFormulario({ ...formulario, costoCompra: e.target.value ? Number(e.target.value) : undefined })} />
     </div>
   )
@@ -496,6 +500,7 @@ export function NuevoProductoStepper({
   const [presentacion, setPresentacion] = useState<PresentacionForm>({
     descripcion: '',
     fraccionDIGEMID: 1,
+    factorConversionBase: 1,
     unidadConteo: '',
   })
   const [nodosExtra, setNodosExtra] = useState<NodoExtraForm[]>([])
@@ -505,6 +510,7 @@ export function NuevoProductoStepper({
     categoriaGeneral: 'OTRO',
     unidadVenta: '',
     descripcionPresentacion: '',
+    factorConversionBase: 1,
   })
   const [servicio, setServicio] = useState<ServicioForm>({
     nombre: terminoBusqueda,
@@ -567,7 +573,7 @@ export function NuevoProductoStepper({
     }
   }, [tipoRecurso, paso, generico.ifa, generico.concentracion, generico.formaFarmaceutica])
 
-  const totalPasos = tipoRecurso === 'MEDICAMENTO' ? 4 : tipoRecurso === 'PRODUCTO_GENERAL' ? 2 : 1
+  const totalPasos = tipoRecurso === 'MEDICAMENTO' ? 4 : tipoRecurso === 'PRODUCTO_GENERAL' ? 3 : 1
 
   const cancelar = (): void => {
     setSimilares([])
@@ -640,6 +646,7 @@ export function NuevoProductoStepper({
         return Boolean(
           presentacion.descripcion.trim()
           && presentacion.fraccionDIGEMID >= 1
+          && presentacion.factorConversionBase >= 1
           && presentacion.unidadConteo.trim()
           && !nodosExtra.some((nodo) => !nodo.nombreFormaVenta.trim() || nodo.unidadesEnNodoPadre < 1),
         )
@@ -647,7 +654,8 @@ export function NuevoProductoStepper({
     }
     if (tipoRecurso === 'PRODUCTO_GENERAL') {
       if (paso === 1) return Boolean(productoGeneral.nombre.trim() && productoGeneral.unidadVenta.trim())
-      if (paso === 2) return Boolean(productoGeneral.descripcionPresentacion.trim())
+      if (paso === 2) return Boolean(productoGeneral.descripcionPresentacion.trim() && productoGeneral.factorConversionBase >= 1)
+      if (paso === 3) return !nodosExtra.some((nodo) => !nodo.nombreFormaVenta.trim() || nodo.unidadesEnNodoPadre < 1)
     }
     if (tipoRecurso === 'SERVICIO') return Boolean(servicio.nombre.trim())
     return false
@@ -666,7 +674,6 @@ export function NuevoProductoStepper({
     const presentacionInput: CrearPresentacionInput = {
       productoComercialId: '',
       ...presentacion,
-      factorConversionBase: presentacion.fraccionDIGEMID,
     }
     const nodosInput: CrearNodoInput[] = nodosExtra.map((nodo) => ({
       presentacionId: '',
@@ -683,6 +690,18 @@ export function NuevoProductoStepper({
   }
 
   const guardarProductoGeneral = async (): Promise<void> => {
+    const nodosInput: CrearNodoInput[] = nodosExtra.map((nodo) => ({
+      presentacionId: '',
+      idTemporal: nodo.idTemporal,
+      nodoPadreLocalId: nodo.nodoPadreLocalId ?? undefined,
+      nombreFormaVenta: nodo.nombreFormaVenta,
+      tipoFormaVenta: nodo.tipoFormaVenta,
+      unidadesEnNodoPadre: nodo.unidadesEnNodoPadre,
+      unidadesBase: nodo.unidadesEnNodoPadre,
+      esVendible: true,
+      esComprable: false,
+    }))
+
     await onGuardar(
       'PRODUCTO_GENERAL',
       {
@@ -705,11 +724,12 @@ export function NuevoProductoStepper({
         descripcion: productoGeneral.descripcionPresentacion,
         fraccionDIGEMID: 1,
         unidadConteo: productoGeneral.unidadVenta,
-        factorConversionBase: 1,
+        factorConversionBase: productoGeneral.factorConversionBase,
         codigoBarras: productoGeneral.codigoBarras,
         costoCompra: productoGeneral.costoCompra,
       },
-      [],
+      nodosInput,
+      ubicacionFisica.trim() || undefined,
     )
   }
 
@@ -761,15 +781,27 @@ export function NuevoProductoStepper({
       <section className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-6 py-5">
         <h3 className="text-[14px] font-bold text-slate-700">¿Qué vas a registrar?</h3>
         <div className="space-y-3">
-          <button type="button" onClick={() => setTipoRecurso('MEDICAMENTO')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
+          <button type="button" onClick={() => {
+            setNodosExtra([])
+            setUbicacionFisica('')
+            setTipoRecurso('MEDICAMENTO')
+          }} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
             <span className="text-2xl" aria-hidden="true">💊</span>
             <span><span className="block text-[14px] font-bold text-slate-700">Medicamento</span><span className="mt-1 block text-[12px] text-slate-500">Fármacos con principio activo, concentración, registro sanitario y lote.</span></span>
           </button>
-          <button type="button" onClick={() => setTipoRecurso('PRODUCTO_GENERAL')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
+          <button type="button" onClick={() => {
+            setNodosExtra([])
+            setUbicacionFisica('')
+            setTipoRecurso('PRODUCTO_GENERAL')
+          }} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
             <span className="text-2xl" aria-hidden="true">📦</span>
             <span><span className="block text-[14px] font-bold text-slate-700">Producto general</span><span className="mt-1 block text-[12px] text-slate-500">Pañales, jabones, suplementos, dispositivos y otros productos sin modelo farmacéutico.</span></span>
           </button>
-          <button type="button" onClick={() => setTipoRecurso('SERVICIO')} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
+          <button type="button" onClick={() => {
+            setNodosExtra([])
+            setUbicacionFisica('')
+            setTipoRecurso('SERVICIO')
+          }} className="flex w-full items-center gap-4 rounded-2xl border-2 border-[#E3F1FA] px-6 py-5 text-left">
             <span className="text-2xl" aria-hidden="true">✚</span>
             <span><span className="block text-[14px] font-bold text-slate-700">Servicio</span><span className="mt-1 block text-[12px] text-slate-500">Aplicación de inyectables, nebulizaciones, controles y otros servicios.</span></span>
           </button>
@@ -810,7 +842,7 @@ export function NuevoProductoStepper({
             <div className="space-y-5">
               <PasoPresentacion presentacion={presentacion} setPresentacion={setPresentacion} />
               <PasoFormasVenta
-                presentacion={presentacion}
+                descripcionRaiz={presentacion.descripcion}
                 nodosExtra={nodosExtra}
                 ubicacionFisica={ubicacionFisica}
                 setUbicacionFisica={setUbicacionFisica}
@@ -821,13 +853,27 @@ export function NuevoProductoStepper({
           )}
           {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 1 && <PasoProductoGeneralUno formulario={productoGeneral} setFormulario={setProductoGeneral} />}
           {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 2 && <PasoProductoGeneralDos formulario={productoGeneral} setFormulario={setProductoGeneral} />}
+          {tipoRecurso === 'PRODUCTO_GENERAL' && paso === 3 && (
+            <PasoFormasVenta
+              descripcionRaiz={productoGeneral.descripcionPresentacion}
+              nodosExtra={nodosExtra}
+              ubicacionFisica={ubicacionFisica}
+              setUbicacionFisica={setUbicacionFisica}
+              sugerenciasUbicacion={sugerenciasUbicacion}
+              setNodosExtra={setNodosExtra}
+            />
+          )}
           {tipoRecurso === 'SERVICIO' && paso === 1 && <PasoServicio formulario={servicio} setFormulario={setServicio} />}
         </div>
         {(errorLocal || error) && <div className="mt-5 rounded-xl bg-[#E3F1FA] px-4 py-3 text-[12px] font-bold text-[#1E88C7]">{errorLocal ?? error}</div>}
         <footer className="mt-6 flex justify-between gap-3">
           <div className="flex items-center gap-3">
             {paso === 1 && (
-              <button type="button" onClick={() => setTipoRecurso(null)} className="text-[12px] font-bold text-[#1E88C7]">
+              <button type="button" onClick={() => {
+                setNodosExtra([])
+                setUbicacionFisica('')
+                setTipoRecurso(null)
+              }} className="text-[12px] font-bold text-[#1E88C7]">
                 ← Cambiar tipo
               </button>
             )}
