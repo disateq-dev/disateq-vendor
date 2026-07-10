@@ -391,14 +391,14 @@ export function ContextBar({
 
     return (
       <section
-        className="flex h-[52px] shrink-0 items-center gap-2 px-3"
+        className="flex h-[44px] shrink-0 items-center gap-2 px-3"
         style={{ backgroundColor: bg, borderBottom: `1px solid ${accent}22` }}
         onMouseLeave={() => onHover(null)}
       >
         {/* Anchor — módulo expandido */}
         <button
           onClick={() => { setExpandido(null); setFocusOpcion(0); setBarraActiva(false); }}
-          className="flex shrink-0 h-11 items-center gap-1.5 px-3 text-[14.5px] font-bold transition select-none"
+          className="flex shrink-0 h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none"
           style={{ borderBottom: `3px solid ${accent}` }}
         >
           {(() => { const Icon = MODULE_ICON[expandido]; return <span style={{ color: accent }}><Icon size={20} /></span>; })()}
@@ -431,7 +431,7 @@ export function ContextBar({
     function renderOpcion(opcion: OpcionSecundaria, estaActiva: boolean, tieneFoco: boolean, accent: string, modulo: ActiveModule, idx: number) {
       if (opcion.placeholder) {
         return (
-          <span key={opcion.key} className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold select-none cursor-default opacity-30" style={{ color: accent }}>
+          <span key={opcion.key} className="px-2.5 py-0.5 rounded-full text-[13px] font-semibold select-none cursor-default opacity-30" style={{ color: accent }}>
             {opcion.label}
           </span>
         );
@@ -445,7 +445,7 @@ export function ContextBar({
           onMouseEnter={() => {
             if (idx >= 0) setFocusOpcion(idx);
           }}
-          className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold transition outline-none"
+          className="px-2.5 py-0.5 rounded-full text-[13px] font-semibold transition outline-none"
           style={
             tieneFoco || (!barraActiva && estaActiva)
               ? { backgroundColor: accent, color: "white" }
@@ -461,7 +461,7 @@ export function ContextBar({
   // ── Vista global — todos los módulos ─────────────────────
   return (
     <section
-      className="flex h-[52px] shrink-0 items-center px-3 gap-1 bg-white"
+      className="flex h-[44px] shrink-0 items-center px-3 gap-1 bg-white"
       onMouseLeave={() => { setHoverModulo(null); onHover(null); }}
     >
       {MODULES_ORDER.map((modulo, idx) => {
@@ -495,18 +495,25 @@ export function ContextBar({
                 onHover(modulo);
               }}
               title={!acceso ? "Sin acceso" : undefined}
-              className={`flex h-11 items-center gap-1.5 px-3 font-bold transition select-none border-b-[3px] ${barraActiva ? "text-[13.5px]" : "text-[13.5px]"}`}
+              className={`flex h-9 items-center gap-1.5 px-3 font-bold transition select-none border-b-[3px] ${barraActiva ? "text-[13.5px]" : "text-[13.5px]"}`}
               style={(() => {
                 if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };
-                if (!barraActiva) return { borderColor: "transparent", color: "#2C2A26", cursor: "pointer" };
-                const esLengueta = tieneCursor || moduloActivoVisual === modulo;
+                if (!barraActiva) {
+                  if (hoverModulo === modulo) return {
+                    borderColor: accent,
+                    backgroundColor: `${accent}14`,
+                    borderRadius: "8px 8px 0 0",
+                    cursor: "pointer",
+                  };
+                  return { borderColor: "transparent", color: "#2C2A26", cursor: "pointer" };
+                }
+                const esLengueta = tieneCursor || moduloActivoVisual === modulo || hoverModulo === modulo;
                 if (esLengueta) return {
                   borderColor: accent,
                   backgroundColor: `${accent}14`,
                   borderRadius: "8px 8px 0 0",
                   cursor: "pointer",
                 };
-                if (hoverModulo === modulo) return { opacity: 0.85, borderColor: `${accent}60`, backgroundColor: `${accent}08`, borderRadius: "8px 8px 0 0", cursor: "pointer" };
                 return { opacity: 0.65, borderColor: "transparent", cursor: "pointer" };
               })()}
             >
