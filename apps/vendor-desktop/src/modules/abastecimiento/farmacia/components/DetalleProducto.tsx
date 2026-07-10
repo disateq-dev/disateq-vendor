@@ -32,7 +32,7 @@ import {
   verificarHistorialProducto,
   asignarPrincipiosAProducto,
 } from '../../../../domains/farmacia/farmacia.service'
-import { proyectarAHov, retirarHovDeNodo, retirarHovsDeProducto, reactivarHovsDeProducto } from '../../../../domains/farmacia/hov-projector.service'
+import { proyectarAHov, retirarHovDeNodo, retirarHovsDeProducto, reactivarHovsDeProducto, sincronizarValorOperacionalFarmacia } from '../../../../domains/farmacia/hov-projector.service'
 import { usePOS } from '../../../../context/POSContext'
 import { ComboboxFiltrado } from '../../../../components/ComboboxFiltrado'
 import { LABEL_CAMPO, LABEL_CONDICION_VENTA, LABEL_FORMA_FARMACEUTICA } from '../../../../domains/catalog/etiquetas-ui'
@@ -794,6 +794,25 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
     setGuardando(true)
     try {
       await crearValorOperacional(input)
+      const nodoSincronizado = nodos.find((nodo) => nodo.id === formularioNuevo.nodoId)
+      if (nodoSincronizado !== undefined) {
+        try {
+          sincronizarValorOperacionalFarmacia(nodoSincronizado, {
+            tipo: formularioNuevo.tipo,
+            valor,
+            moneda: 'PEN',
+            condicionCantidadMinima:
+              formularioNuevo.tipo === 'VENTA_MAYOREO' && formularioNuevo.condicionMinima !== ''
+                ? parseFloat(formularioNuevo.condicionMinima)
+                : undefined,
+            vigenciaDesde: formularioNuevo.vigenciaDesde,
+            vigenciaHasta: formularioNuevo.vigenciaHasta || undefined,
+            estado: 'ACTIVO',
+          })
+        } catch (errorSincronizacion) {
+          console.error('No se pudo sincronizar el precio de farmacia con el catálogo de ventas:', errorSincronizacion)
+        }
+      }
       setFormularioNuevo(null)
       const valores = await obtenerValoresNodo(formularioNuevo.nodoId)
       setValoresPorNodo((actuales) => ({ ...actuales, [formularioNuevo.nodoId]: valores }))
@@ -802,7 +821,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
     } finally {
       setGuardando(false)
     }
-  }, [formularioNuevo])
+  }, [formularioNuevo, nodos])
 
   const onGuardarEdicion = useCallback(async (): Promise<void> => {
     if (formularioEdicion === null) return
@@ -824,6 +843,25 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
     setGuardando(true)
     try {
       await modificarValorOperacional(input)
+      const nodoSincronizado = nodos.find((nodo) => nodo.id === formularioEdicion.nodoId)
+      if (nodoSincronizado !== undefined && valorExistente !== undefined) {
+        try {
+          sincronizarValorOperacionalFarmacia(nodoSincronizado, {
+            tipo: valorExistente.tipo,
+            valor,
+            moneda: 'PEN',
+            condicionCantidadMinima:
+              valorExistente.tipo === 'VENTA_MAYOREO' && formularioEdicion.condicionMinima !== ''
+                ? parseFloat(formularioEdicion.condicionMinima)
+                : undefined,
+            vigenciaDesde: valorExistente.vigenciaDesde,
+            vigenciaHasta: formularioEdicion.vigenciaHasta || undefined,
+            estado: formularioEdicion.estado,
+          })
+        } catch (errorSincronizacion) {
+          console.error('No se pudo sincronizar el precio de farmacia con el catálogo de ventas:', errorSincronizacion)
+        }
+      }
       setFormularioEdicion(null)
       const valores = await obtenerValoresNodo(formularioEdicion.nodoId)
       setValoresPorNodo((actuales) => ({ ...actuales, [formularioEdicion.nodoId]: valores }))
@@ -832,7 +870,7 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
     } finally {
       setGuardando(false)
     }
-  }, [formularioEdicion, valoresPorNodo])
+  }, [formularioEdicion, nodos, valoresPorNodo])
 
   if (cargando) {
     return <div className="text-[13px] font-semibold text-[var(--dv-mod-abastecimiento)]">Cargando precios...</div>
@@ -881,7 +919,14 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
             {valoresNodo.map((v) => (
               <div key={v.id} className="flex items-center justify-between gap-2 py-2 border-b border-[var(--dv-border)] last:border-0">
                 <div>
-                  <div className="text-[12px] font-bold text-[var(--dv-text-primary)]">{ETIQUETA_TIPO[v.tipo]}</div>
+                  <div className="text-[12px] font-bold text-[var(--dv-text-primary)]">
+                    {ETIQUETA_TIPO[v.tipo]}
+                    {v.tipo === 'VENTA_FRECUENTE' && (
+                      <span className="ml-2 text-[10px] font-semibold text-amber-600">
+                        Aún no se aplica automáticamente en el cobro -- pendiente de integración con Clientes
+                      </span>
+                    )}
+                  </div>
                   {v.tipo === 'VENTA_MAYOREO' && v.condicionCantidadMinima !== undefined && (
                     <div className="text-[11px] text-[var(--dv-text-muted)]">Mín. {v.condicionCantidadMinima} unidades</div>
                   )}
@@ -922,6 +967,11 @@ function PreciosTab({ nodos, nombreProducto, nombreFabricante }: PreciosTabProps
                     <option key={tipo} value={tipo}>{ETIQUETA_TIPO[tipo]}</option>
                   ))}
                 </select>
+                {formularioNuevo.tipo === 'VENTA_FRECUENTE' && (
+                  <p className="text-[10px] font-semibold text-amber-600">
+                    Aún no se aplica automáticamente en el cobro -- pendiente de integración con Clientes
+                  </p>
+                )}
                 <input
                   type="number"
                   placeholder="Precio S/"

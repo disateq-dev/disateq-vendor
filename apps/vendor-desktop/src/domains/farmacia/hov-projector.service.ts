@@ -1,4 +1,5 @@
-import type { NodoFraccionamiento, PresentacionComercial, ProductoComercial, TipoRecursoOperacional } from './types'
+import type { NodoFraccionamiento, PresentacionComercial, ProductoComercial, TipoRecursoOperacional, ValorOperacionalFarmacia } from './types'
+import type { TipoValorOperacional as TipoValorOperacionalCatalogo } from '../catalog/valor-operacional.types'
 import { crearHOV, reactivarHOV, retirarHOV } from '../catalog/hov.service'
 import { crearValor, suspenderValor } from '../catalog/valor-operacional.service'
 import * as hovStore from '../catalog/hov.store'
@@ -87,4 +88,48 @@ export function sincronizarValorHov(nodo: NodoFraccionamiento, nuevoValor: numbe
     condiciones: { cantidadMinima: null, contextoOperacionalId: null, identidadOperacionalId: null },
     vigencia: { desde: new Date().toISOString(), hasta: null },
   })
+}
+
+export function sincronizarValorOperacionalFarmacia(
+  nodo: NodoFraccionamiento,
+  valorFarmacia: Pick<ValorOperacionalFarmacia, 'tipo' | 'valor' | 'vigenciaDesde' | 'estado'> &
+    Partial<Pick<ValorOperacionalFarmacia, 'moneda' | 'condicionCantidadMinima' | 'vigenciaHasta'>>,
+): void {
+  const tipoCatalogoPorTipoFarmacia: Partial<Record<ValorOperacionalFarmacia['tipo'], TipoValorOperacionalCatalogo>> = {
+    VENTA_NORMAL: 'NORMAL',
+    VENTA_MAYOREO: 'MAYORISTA',
+    VENTA_PROMOCION: 'OFERTA',
+  }
+
+  if (valorFarmacia.tipo === 'VENTA_FRECUENTE') {
+    console.warn('La sincronización de precio para cliente frecuente no está implementada porque el sistema de catálogo no tiene forma de identificar al cliente en el momento de la venta')
+    return
+  }
+
+  const tipoCatalogo = tipoCatalogoPorTipoFarmacia[valorFarmacia.tipo]
+  if (tipoCatalogo === undefined) return
+
+  const hov = hovStore.getAllHOVs().find(h => h.nodoFraccionamientoId === nodo.id)
+  if (!hov) return
+
+  const activos = valorStore.getValoresActivosPorHOV(hov.id).filter(v => v.tipo === tipoCatalogo)
+  activos.forEach(v => suspenderValor(v.id))
+
+  if (valorFarmacia.estado === 'ACTIVO') {
+    crearValor({
+      hovId: hov.id,
+      tipo: tipoCatalogo,
+      valor: valorFarmacia.valor,
+      moneda: valorFarmacia.moneda ?? 'PEN',
+      condiciones: {
+        cantidadMinima: tipoCatalogo === 'MAYORISTA' ? valorFarmacia.condicionCantidadMinima ?? null : null,
+        contextoOperacionalId: null,
+        identidadOperacionalId: null,
+      },
+      vigencia: {
+        desde: valorFarmacia.vigenciaDesde,
+        hasta: valorFarmacia.vigenciaHasta ?? null,
+      },
+    })
+  }
 }
