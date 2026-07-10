@@ -208,10 +208,6 @@ export function ContextBar({
     cbRefs.current = { onChange, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange };
   });
 
-  useEffect(() => {
-    setModuloActivoVisual((actual) => actual === null ? null : active);
-  }, [active]);
-
   // ── Bloqueo operacional ───────────────────────────────────
   useEffect(() => {
     if (isBlocking && (active !== "cash" || cashSubView !== "turno")) {
@@ -224,6 +220,7 @@ export function ContextBar({
   // ── Notificar navMode al shell ────────────────────────────
   useEffect(() => {
     document.dispatchEvent(new CustomEvent("pos:navMode", { detail: { active: barraActiva } }));
+    setModuloActivoVisual(null);
   }, [barraActiva]);
 
   // ── Listener evento disateq:navegar ──────────────────────
@@ -465,7 +462,7 @@ export function ContextBar({
   // ── Vista global — todos los módulos ─────────────────────
   return (
     <section
-      className="flex h-[52px] shrink-0 items-center px-3 gap-1 bg-[var(--dv-surface-base)]"
+      className="flex h-[52px] shrink-0 items-center px-3 gap-1 bg-white"
       onMouseLeave={() => { setHoverModulo(null); onHover(null); }}
     >
       {MODULES_ORDER.map((modulo, idx) => {
@@ -499,21 +496,23 @@ export function ContextBar({
                 onHover(modulo);
               }}
               title={!acceso ? "Sin acceso" : undefined}
-              className="flex h-11 items-center gap-1.5 px-3 text-[14.5px] font-bold transition select-none border-b-[3px]"
-              style={
-                !acceso
-                  ? { opacity: 0.3, borderColor: "transparent", cursor: "default" }
-                  : tieneCursor
-                    ? { borderColor: `${accent}80`, backgroundColor: `${accent}05`, cursor: "pointer" }
-                    : hoverModulo === modulo
-                      ? { opacity: 0.9, borderColor: `${accent}80`, cursor: "pointer" }
-                    : moduloActivoVisual === modulo
-                      ? { opacity: 1, borderColor: accent, cursor: "pointer" }
-                      : { opacity: 0.7, borderColor: "transparent", cursor: "pointer" }
-              }
+              className={`flex h-11 items-center gap-1.5 px-3 font-bold transition select-none border-b-[3px] ${barraActiva ? "text-[13.5px]" : "text-[13.5px]"}`}
+              style={(() => {
+                if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };
+                if (!barraActiva) return { borderColor: "transparent", color: "#2C2A26", cursor: "pointer" };
+                const esLengueta = tieneCursor || moduloActivoVisual === modulo;
+                if (esLengueta) return {
+                  borderColor: accent,
+                  backgroundColor: `${accent}14`,
+                  borderRadius: "8px 8px 0 0",
+                  cursor: "pointer",
+                };
+                if (hoverModulo === modulo) return { opacity: 0.85, borderColor: `${accent}60`, backgroundColor: `${accent}08`, borderRadius: "8px 8px 0 0", cursor: "pointer" };
+                return { opacity: 0.65, borderColor: "transparent", cursor: "pointer" };
+              })()}
             >
               <span style={{ color: acceso ? accent : "#2C2A26" }}><Icon size={20} /></span>
-              <span style={{ color: acceso ? "#2C2A26" : "var(--dv-text-primary)" }}>{MODULE_LABEL[modulo]}</span>
+              <span style={{ color: "#2C2A26" }}>{MODULE_LABEL[modulo]}</span>
             </button>
             {esUltimoAntesSep && <Separador />}
           </div>
