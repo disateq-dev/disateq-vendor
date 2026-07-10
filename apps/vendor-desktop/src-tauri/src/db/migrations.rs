@@ -32,6 +32,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v10_campos_catalogo_ifa(db).await?;
     migrar_v11_tipo_recurso_producto_comercial(db).await?;
     migrar_v12_servicio_catalogo(db).await?;
+    migrar_v13_seed_config_establecimiento(db).await?;
 
     Ok(())
 }
@@ -935,6 +936,67 @@ async fn migrar_v12_servicio_catalogo(db: &sqlx::SqlitePool) -> Result<(), Strin
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (12)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v13_seed_config_establecimiento(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 13 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    let tiene_fila = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM config_establecimiento",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if tiene_fila == 0 {
+        let creado_en = sqlx::query_scalar::<_, String>(
+            "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let uuid = sqlx::query_scalar::<_, String>(
+            "SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))",
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "INSERT OR IGNORE INTO config_establecimiento
+               (id, rubro_activo, margen_defecto, creado_en)
+             VALUES (?, 'FARMACIA', 0.30, ?)",
+        )
+        .bind(&uuid)
+        .bind(&creado_en)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (13)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
