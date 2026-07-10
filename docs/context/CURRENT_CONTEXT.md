@@ -1,12 +1,14 @@
 # CURRENT_CONTEXT — DISATEQ VENDOR™
-**Última actualización:** 09 Jul 2026
-**Commit activo en `main`:** `608c7f8` — "feat(farmacia): persistir tipoRecurso en ProductoComercial"
+**Última actualización:** 09 Jul 2026 (sesión tarde/noche)
+**Commit activo en `main`:** `621a448` — "feat(farmacia): formas de venta para PRODUCTO_GENERAL y separacion fraccionDIGEMID/factorConversionBase"
 
 ## Estado — sin trabajo pendiente de commitear
 
 `git status --short` verificado limpio en chat tras el último commit. Cadena completa de la sesión del 09 Jul 2026, más reciente primero:
 
 ```
+621a448 feat(farmacia): formas de venta para PRODUCTO_GENERAL y separacion fraccionDIGEMID/factorConversionBase
+a79b1cf fix(farmacia): puentear precios de PreciosTab hacia el catalogo de Ventas
 608c7f8 feat(farmacia): persistir tipoRecurso en ProductoComercial
 9224531 feat(farmacia): correccion de presentaciones y nodos de fraccionamiento en PresentacionesTab
 56693b9 feat(farmacia): arbol flexible de formas de venta y nivel INTERMEDIA en el Stepper
@@ -19,78 +21,115 @@ ccd1838 docs(context): cierre de sesion 08 Jul 2026 - DIGEMID validado, ubicacio
 86eca61 feat(farmacia): conectar Catalogo Maestro DIGEMID al Paso 1 del Stepper de registro MEDICAMENTO
 ```
 
-**Nota de proceso de esta sesión:** el prompt de persistencia de `tipoRecurso` quedó sin commitear varios turnos porque la sesión se desvió a investigar un hallazgo mayor (ver más abajo) y nunca se volvió a cerrar explícitamente hasta el final. Se detectó recién al verificar `git status --short` antes de escribir este documento — confirma que la regla de "nunca asumir un commit sin verlo confirmado en el chat" sigue siendo necesaria.
+Todos los commits de esta sesión (`a79b1cf`, `621a448`) fueron verificados con `git show --stat -1` y `git status --short` reales en el chat, no asumidos.
+
+**Dato de aseo pendiente:** el producto de prueba `ZZ-PRUEBA PAÑAL` (usado para validar el commit `621a448`) sigue en la base de datos real — nunca se borró tras la última corrección. Sin lotes ni movimientos, calificaría para borrado físico completo por el mismo flujo ya usado con `ZZ-PRUEBA ARBOL` en esta misma sesión (Ctrl+Supr en la ficha → sin historial → "ELIMINAR DEFINITIVAMENTE"). Pendiente para el inicio de la próxima sesión si Fernando no lo hizo ya.
 
 ---
 
-## HALLAZGO CRÍTICO DE LA SESIÓN — `npx tsc --noEmit` no verificaba nada real
+## DOS HALLAZGOS CRÍTICOS DE ESTA SESIÓN — mismo patrón: escritura y lectura desconectadas
 
-**El más importante de todo lo encontrado hoy.** `tsconfig.json` (raíz) es un archivo de *project references* con `"files": []` y sin `include` propio. El código real de la app vive bajo `tsconfig.app.json` (`"include": ["src"]`). Ejecutar `npx tsc --noEmit` (sin `-p`) desde la carpeta del proyecto usa el `tsconfig.json` raíz, que sin la bandera `--build` **no desciende a los proyectos referenciados** — compila cero archivos y siempre reporta éxito, sin importar el estado real del código.
+Esta sesión arrancó como una ronda de validación runtime de pendientes ya "resueltos" en el código, y en dos de cuatro casos la validación destapó que el código escribía en un lugar que nadie leía. Ambos hallazgos comparten estructura: una capa persiste un dato correctamente, pero el consumidor real busca ese dato en otro lugar, y nada los conecta. Ningún error de compilación ni de `cargo check` los detectó — solo se vieron al ejecutar el flujo completo de punta a punta en la app real.
 
-**Impacto:** todo `npx tsc --noEmit` reportado como "limpio" en sesiones anteriores a hoy (incluida toda la sesión del 08 Jul 2026) probablemente no verificó nada. `cargo check` no está afectado — es una herramienta separada, siempre fue confiable.
+### Hallazgo 1 — Precios de Farmacia nunca llegaban a Ventas
 
-**Comando correcto, ya en uso desde esta sesión en adelante:**
-```
-npx tsc -p tsconfig.app.json --noEmit
-```
+`PreciosTab` (`DetalleProducto.tsx`) guardaba precios vía `crearValorOperacional`/`modificarValorOperacional` en la tabla SQLite `valor_operacional` (tipos `VENTA_NORMAL/VENTA_MAYOREO/VENTA_FRECUENTE/VENTA_PROMOCION`, indexado por `nodo_id`). El módulo VENTAS arma su catálogo buscable vía `construirCatalogo()` → `resolverValor()`, que lee exclusivamente de `domains/catalog/valor-operacional.store.ts`, persistido en `localStorage` (tipos `NORMAL/OFERTA/PREFERENCIAL/MAYORISTA/LIBRE`, indexado por `hovId`). **Ningún camino conectaba ambos** — cualquier precio configurado en Farmacia era invisible en el punto de venta, silenciosamente, sin ningún error.
 
-Al correrlo por primera vez de verdad, aparecieron 18 errores reales — 3 causados por el propio trabajo de esta sesión (ya corregidos) y 15 preexistentes de sesiones anteriores, nunca detectados hasta hoy. De esos 15, se resolvieron 6 en esta misma sesión (ver Deuda Técnica Resuelta). Quedan 9 preexistentes sin tocar — ver Deuda Técnica Registrada.
+**Resuelto:** nueva función `sincronizarValorOperacionalFarmacia()` en `hov-projector.service.ts`, invocada desde `PreciosTab.onGuardarNuevo`/`onGuardarEdicion`. Traduce y sincroniza `VENTA_NORMAL→NORMAL`, `VENTA_MAYOREO→MAYORISTA`, `VENTA_PROMOCION→OFERTA`. `VENTA_FRECUENTE` queda **explícitamente excluido** (no puenteado) porque `PREFERENCIAL` en el catálogo requiere `identidadOperacionalId` de un cliente específico, y Farmacia no captura eso — puentearlo igual habría aplicado el precio de "cliente frecuente" a cualquier comprador. Advertencia visible en la UI de `PreciosTab` para ese tipo. Commit `a79b1cf`. **Validado en runtime**: precio creado en `PreciosTab` se refleja correctamente en la búsqueda de VENTAS.
 
----
+**Deuda colateral registrada, no resuelta:** el flujo de borrado físico de producto (`retirarHovsDeProducto` + `eliminar_producto_comercial_fisico`) limpia SQLite correctamente en cascada, pero no limpia las entradas del store de catálogo en `localStorage` — quedan huérfanas apuntando a HOVs `RETIRADA` de productos que ya no existen. No rompe nada visible hoy (`construirCatalogo` solo lee HOVs `ACTIVA`), pero es basura acumulativa. No se tocó por no estar en la ruta directa de lo trabajado.
 
-## DEUDA TÉCNICA RESUELTA HOY (09 Jul 2026)
+### Hallazgo 2 — `factorConversionBase` (operacional) conflacionado con `fraccionDIGEMID` (regulatorio)
 
-- **`useIngresosMercaderia.ts` no proyectaba a HOV — RESUELTO.** Además del hallazgo original, se encontró que `onGuardarProductoYAgregarLinea` tenía una firma de 4 parámetros mientras `NuevoProductoStepper` siempre invoca 6 (`tipoRecurso`, `generico`, `comercial`, `presentacion`, `nodosExtra`, `ubicacionFisica`) — esto desplazaba los argumentos posicionalmente y corrompía los datos antes de llegar a `crearProductoCompleto`. Firma corregida y proyección a HOV agregada, mismo patrón que `useCatalogoFarmacia`. Commit `a763b20`.
-- **Módulo COMPRAS legado eliminado.** `PurchasesWorkspace.tsx` (huérfano, no importado desde ningún lado) borrado. `domains/purchases/store` se mantiene intacto porque `InventoryWorkspace.tsx` (inventario genérico, rubros no-farmacia) sí lo consume para lectura — aunque hoy no exista ningún punto de escritura activo en la app (ver deuda nueva abajo). Commit `9c877dc`.
-- **Presentaciones y nodos de fraccionamiento eran de solo lectura — RESUELTO Y VALIDADO EN RUNTIME.** Backend: 4 comandos Rust nuevos (`modificar_presentacion`, `modificar_nodo`, `verificar_historial_presentacion`, `verificar_historial_nodo`), con bloqueo transaccional de campos estructurales (`fraccionDIGEMID`, `unidadConteo`, `factorConversionBase` en presentación; `tipoFormaVenta`, `unidadesBase` en nodo) cuando la entidad ya tiene lotes o movimientos, motivo obligatorio en ese caso, auditoría campo por campo en `correccion_catalogo`. UI de corrección completa en `PresentacionesTab`. Commits `0fb24ea` (backend) y `9224531` (UI). **Validado en runtime real:** bloqueo por historial visible (Amoxil), presentación sin historial editable libremente (Amoxaren), nodo raíz sin selector de tipo y con "Unidades base" bloqueado con mensaje propio, guardado real con motivo confirmado persistiendo tras recarga de vista.
-- **`TipoFormaVenta.INTERMEDIA` agregado** — nivel de empaque intermedio (blister, tira, sobre, envase) entre presentación mayor y unidad mínima, disponible para cualquier tipo de recurso, siempre opcional y manual (sin sugerencia automática por forma farmacéutica — decisión explícita, mismo criterio que ya rige `estadoRegistroSanitario`: evitar mapeos automáticos que puedan fallar en el caso equivocado). Visible y funcional en runtime (selector de tipo de nodo). Commit `0fb24ea`/`56693b9`.
-- **Árbol de formas de venta flexible** — un nodo extra ahora puede depender de otro nodo extra recién agregado, no solo de la presentación raíz (`nodoPadreLocalId`, resuelto vía creación secuencial con mapa `idTemporal → id real` en `useCatalogoFarmacia` y `useIngresosMercaderia`, reemplazando el `Promise.all` en paralelo de antes). Selector "Depende de" en el Stepper restringido a nodos anteriores en la lista, sin ciclos ni referencias hacia adelante. Commit `56693b9`. **No validado en runtime todavía** — solo se probó edición de nodos existentes, no la creación de un nodo dependiente de otro vía el nuevo selector del Stepper.
-- **`tipoRecurso` persistido en `ProductoComercial`** — antes solo existía de forma transitoria durante la creación. Migración `v11` (`tipo_recurso TEXT NOT NULL DEFAULT 'MEDICAMENTO'`, idempotente), Rust y puente TypeScript actualizados. Necesario para poder reproyectar la HOV de un nodo que se reactiva después de creado. Commit `608c7f8`.
-- **Hueco de HOV multi-recurso corregido.** `existeHOVActiva` y la migración legacy de `category` asumían que `productoId` siempre existía, pero HOV soporta tres tipos de recurso (`productoId`/`servicioId`/`productoGeneralId`, los tres opcionales) — para SERVICIO o PRODUCTO_GENERAL la comparación `undefined === undefined` podía detectar falsos duplicados entre recursos distintos. Commit `f5aae7b`.
-- **Bug `value`→`valor` en `DetalleProducto.tsx` corregido.** Cuatro usos de `<ComboboxFiltrado>` en el modo "corrigiendo" de producto (condición de venta, refrigeración, vencimiento, estado de registro sanitario) pasaban `value` cuando el componente solo reconoce `valor` — estos cuatro selectores nunca mostraban ni guardaban correctamente el valor seleccionado. Commit `56693b9`.
+`GLOSARIO.md` §11 y el esquema SQL (`presentacion_comercial`) ya definían `fraccionDIGEMID` (dato regulatorio, exclusivo del reporte oficial DIGEMID) y `factorConversionBase` (dato operacional genérico, gobierna el árbol de fraccionamiento) como campos **independientes**. El Stepper los conflacionaba: un solo input etiquetado "Factor de conversión" alimentaba únicamente `fraccionDIGEMID`, y `guardarMedicamento()` derivaba `factorConversionBase` de ese mismo valor. Funcionaba por coincidencia en MEDICAMENTO. Para PRODUCTO_GENERAL, ninguno de los dos se pedía — `factorConversionBase` quedaba hardcodeado en `1`, sin importar el empaque real (ej. un paquete de 100 pañales quedaba registrado con 1 sola unidad base), lo que habría corrompido el descuento de inventario desde la primera venta de una unidad fraccionada.
+
+**Detectado por pregunta directa de Fernando** cuestionando por qué el fraccionamiento dependería de un campo con nombre DIGEMID — la pregunta fue correcta y llevó directo a la causa raíz.
+
+**Resuelto:** ambos campos ahora se capturan por separado en `PasoPresentacion` (MEDICAMENTO) y en `PasoProductoGeneralDos` (PRODUCTO_GENERAL, que ahora sí pide "Unidades totales en este paquete"). `fraccionDIGEMID` se mantiene en `1` fijo para PRODUCTO_GENERAL (no aplica, correcto). Commit `621a448`. **Validado en runtime:** paquete de 100 unidades con pack 2x1 y unidad suelta, `unidadesBase` correctas en los tres niveles (100/2/1).
 
 ---
 
-## DEUDA TÉCNICA REGISTRADA (nueva o pendiente)
+## OTROS RESULTADOS DE ESTA SESIÓN
 
-- **9 errores preexistentes de TypeScript, recién descubiertos por el hallazgo de `tsconfig`, sin tocar todavía:**
-  - `OperationalBar.tsx` (×2) — variables declaradas sin usar (`opciones`, `idx`). Cosmético, cero riesgo.
-  - `SelectorPrincipiosActivos.tsx` — al cargar principios activos ya vinculados a un producto, reconstruye un `PrincipioActivo` incompleto (faltan `descripcionUso`, `grupoTerapeutico`, `condicionVentaIfa`, `esCombinacion`; hardcodea `esEsencialMinsa`/`esPsicotropico` en `false`). Los badges ESENCIAL/CONTROLADO no se muestran bien para principios ya guardados, solo para los recién buscados en la sesión activa.
-  - `PrincipiosActivosWorkspace.tsx` (×2) — `onGuardar={(datos) => void estado.onGuardarXxx(...)}` retorna `void` en vez de `Promise<void>`. Cosmético de tipos, el guardado real sigue funcionando.
-  - `CobroPanel.tsx` (×2) — variable sin usar (`i`) + `onClick={confirmEmit}` pasa el `MouseEvent` como si fuera el parámetro `confirmacion`. Funciona por casualidad (`confirmacion?.accion ?? 'guardar'` cae siempre en el default correcto), pero es frágil ante un refactor futuro. Está en el módulo de cobro activo — vale la pena resolverlo con cuidado, no de pasada.
-  - `ClienteBuscador.tsx`, `SalesWorkspace.tsx` — variables/funciones sin usar. Cosmético.
-- **Badge "Llegan N" / "Ingreso reciente" en `InventoryWorkspace.tsx` (rubros no-farmacia) sin fuente de datos.** Lee `domains/purchases/store`, pero desde que se borró `PurchasesWorkspace.tsx` no queda ningún punto de escritura activo en toda la app — el badge está condenado a mostrar siempre cero, silenciosamente. Decidir: diseñar un flujo de "compras" genérico real, o quitar el badge.
-- **`CatalogoFarmaciaWorkspace.tsx` → "Agregar forma de venta" en `PresentacionesTab` sigue siendo `window.alert('Nueva forma de venta pendiente')`**, sin implementar. Declarado desde antes, confirmado en runtime hoy, no resuelto.
-- **`GLOSARIO.md` §11 sigue sin actualizar.** El documento declara deliberadamente que `NodoFraccionamiento`/`TipoFormaVenta`/`unidadesBase` quedan fuera "pendiente de rediseño profundo" — ese rediseño (taxonomía BLISTER/INTERMEDIA, árbol flexible, doctrina PACK-mismo-producto vs. combo-multi-producto fuera de alcance, distinción PROMOCION-nodo vs. VENTA_PROMOCION-precio) se decidió y se implementó hoy, pero el documento de gobernanza no se tocó — requiere aprobación explícita de Fernando antes de editarlo, no se hizo por iniciativa propia.
-- Warnings preexistentes en `cargo check`, no generados por ninguna sesión reciente: campos `unit_price` y `tipo_documento` nunca leídos — **ya localizados:** `src-tauri/src/thermal.rs` (`PrintLine`/`PrintCustomer`), confirmado en cada `cargo check` de esta sesión. Pendiente de decidir si se usan o se eliminan.
-- `Ctrl+Espacio` inicia `navIdx` en 0 en lugar de en el módulo activo — comportamiento aceptado por Fernando.
-- `ComboboxFiltrado.tsx`: ícono `Check` conserva `text-[#45b356]` hardcodeado — mapea a `--dv-color-new`, pendiente aplicar.
-- Botón EDITAR usa `#005BE3` hardcodeado en varios workspaces, sin token equivalente en el sistema `--dv-*`. Decisión de crear `--dv-color-edit`: todavía no tomada.
-- `OperationalBar.tsx` mantiene `MODULE_ACCENT`/`MODULE_BG` hardcodeados, sin consumir `--dv-mod-*`. Decisión vigente: dejarlo para el final del hilo de color.
-- `InventoryWorkspace.tsx` conserva `#2A7CA8` (highlight puntual) — evaluado y descartado como remanente.
-- Exclusiones deliberadas de la migración de rojo destructivo (documentadas): `RolesOperacionalesWorkspace.tsx`, `ReportesWorkspace.tsx` (~línea 598), `ComprobantesWorkspace.tsx`.
-- **Doctrina de botones (`ARQUITECTURA_UX.md`) desactualizada frente a `index.css`**: "Sólido verde = confirmar" con `#45b356` en el documento, vs. `--dv-color-confirm: #3B6B34` distinto de `--dv-color-new: #45b356` en el token. El color real en código de ABASTECIMIENTO/Farmacia es `#1E88C7`, no `#3B6B34` como afirma `ARQUITECTURA_UX.md` §8. No resuelto.
-- `ServicioFarmacia`/`crear_servicio_farmacia` (Rust) quedan con su nombre actual — la promoción de Servicio a `domains/catalog/` es solo de la capa TypeScript; renombrar el backend Rust es migración aparte, fuera de alcance hasta que un segundo rubro lo necesite.
+- **Árbol flexible de nodos en creación — validado en runtime, primera vez.** Un nodo puede depender de otro nodo recién creado en el mismo formulario del Stepper (no solo de la presentación raíz), confirmado con consulta SQL directa contra `nodo_fraccionamiento.nodo_padre_id` — la cadena de IDs resolvió correctamente a dos niveles de profundidad. Cierra la brecha dejada abierta por el commit `56693b9` de la sesión anterior.
+- **PRODUCTO_GENERAL ganó paso 3 de "Formas de venta".** Antes el Stepper de PRODUCTO_GENERAL tenía 2 pasos y nunca exponía fraccionamiento — no había forma de registrar un caso como "paquete de pañales → pack 2x1 → unidad suelta" pese a que el backend (`NodoFraccionamiento`) siempre lo soportó sin restricción de tipo de recurso (decisión ya registrada en `GLOSARIO.md` §11 desde la sesión anterior). Se agregó reutilizando `PasoFormasVenta` (ya agnóstico de tipo de recurso, solo se le generalizó la prop `presentacion` → `descripcionRaiz`), con reseteo de `nodosExtra`/`ubicacionFisica` al cambiar de tipo de recurso para evitar arrastre de estado entre flujos. Commit `621a448` (mismo commit que el Hallazgo 2, cambios relacionados en el mismo archivo).
+- **Auditoría de `eliminar_producto_comercial_fisico` (Rust) confirmada correcta.** Bloquea correctamente por `TIENE_HISTORIAL` si hay `movimiento` o `lote`, y si no los hay, borra en cascada transaccional `valor_operacional → nodo_fraccionamiento → presentacion_comercial → producto_comercial`, limpiando `producto_generico` si queda huérfano. Usado dos veces en esta sesión para limpiar datos de prueba (`ZZ-PRUEBA ARBOL`, confirmado borrado; `ZZ-PRUEBA PAÑAL`, pendiente).
+
+---
+
+## CONVERSACIÓN ABIERTA, NO RESUELTA — Auditoría Sistémica de Integridad de Flujos de Datos
+
+Fernando planteó, tras el Hallazgo 1, que el patrón "una capa escribe donde otra no lee" no debería seguir descubriéndose módulo por módulo en producción. Se acordó terminología precisa: no es "load testing" (no aplica a una app de escritorio de un solo operador), es una **auditoría sistémica de integridad de flujos de datos** — mapa completo de almacenes (SQLite/Rust, `localStorage` por dominio, estado en memoria Zustand), y verificación de que cada par escritura↔lectura tenga un camino real conectado, más auditoría de patrones N+1 en queries SQLite (ya se detectó uno candidato: `buscarPresentacionesParaIngreso` en `farmacia.service.ts` hace una query por producto en `Promise.all` en vez de un JOIN) y de qué `localStorage` stores son caché vs. fuente de verdad.
+
+**No se definió alcance ni se ejecutó nada todavía.** Quedó pausada para priorizar el parche P0 del Hallazgo 1, y no se retomó después. Debe confirmarse con Fernando al inicio de la próxima sesión si se aborda como iniciativa propia o se sigue con la cola de validación funcional pendiente.
+
+---
+
+## DEUDA TÉCNICA RESUELTA EN SESIONES ANTERIORES (histórico, sin cambios)
+
+- **`useIngresosMercaderia.ts` no proyectaba a HOV — RESUELTO.** Firma de `onGuardarProductoYAgregarLinea` corregida de 4 a 6 parámetros, proyección a HOV agregada. Commit `a763b20`.
+- **Módulo COMPRAS legado eliminado.** `PurchasesWorkspace.tsx` borrado; `domains/purchases/store` se mantiene por lectura de `InventoryWorkspace.tsx` sin escritura activa. Commit `9c877dc`.
+- **Presentaciones y nodos de fraccionamiento eran de solo lectura — RESUELTO Y VALIDADO.** 4 comandos Rust nuevos con bloqueo transaccional por historial, motivo obligatorio, auditoría en `correccion_catalogo`. Commits `0fb24ea`/`9224531`.
+- **`TipoFormaVenta.INTERMEDIA` agregado.** Commit `0fb24ea`/`56693b9`.
+- **Árbol de formas de venta flexible implementado.** Commit `56693b9` (validación en creación completada esta sesión, ver arriba).
+- **`tipoRecurso` persistido en `ProductoComercial`.** Migración `v11`. Commit `608c7f8`.
+- **Hueco de HOV multi-recurso corregido.** Commit `f5aae7b`.
+- **Bug `value`→`valor` en `DetalleProducto.tsx` corregido.** Commit `56693b9`.
+
+---
+
+## DEUDA TÉCNICA REGISTRADA (acumulada, sin resolver)
+
+- **9 errores preexistentes de TypeScript** (confirmados de nuevo, sin cambios, en cada `npx tsc -p tsconfig.app.json --noEmit` de esta sesión):
+  - `OperationalBar.tsx` (×2) — variables sin usar (`opciones`, `idx`). Cosmético.
+  - `SelectorPrincipiosActivos.tsx` — reconstruye `PrincipioActivo` incompleto al cargar principios ya vinculados (faltan `descripcionUso`, `grupoTerapeutico`, `condicionVentaIfa`, `esCombinacion`).
+  - `PrincipiosActivosWorkspace.tsx` (×2) — `onGuardar` retorna `void` en vez de `Promise<void>`. Cosmético.
+  - `CobroPanel.tsx` (×2) — variable sin usar (`i`) + `onClick={confirmEmit}` pasa `MouseEvent` como si fuera `confirmacion`. Funciona por casualidad, frágil ante refactor.
+  - `ClienteBuscador.tsx`, `SalesWorkspace.tsx` — variables sin usar. Cosmético.
+- **Entradas huérfanas en `localStorage` del catálogo tras borrado físico de producto** (nuevo, ver Hallazgo 1) — `retirarHovsDeProducto` no limpia el store de precios de catálogo.
+- **Patrón N+1 candidato en `buscarPresentacionesParaIngreso`** (`farmacia.service.ts`) — una query por producto en `Promise.all` en vez de JOIN. Detectado durante la conversación de auditoría sistémica, no confirmado con medición real ni resuelto.
+- Badge "Llegan N" en `InventoryWorkspace.tsx` sin fuente de datos desde que se borró COMPRAS.
+- `CatalogoFarmaciaWorkspace.tsx` → "Agregar forma de venta" en `PresentacionesTab` sigue siendo `window.alert('Nueva forma de venta pendiente')`.
+- **`GLOSARIO.md` §11 sigue sin actualizar** — ahora con dos pendientes adicionales de esta sesión: la distinción `fraccionDIGEMID` (regulatorio, solo MEDICAMENTO) vs. `factorConversionBase` (operacional, todo tipo de recurso) debería registrarse ahí también. Sigue requiriendo aprobación explícita de Fernando antes de editar el documento.
+- Warnings preexistentes en `cargo check`: `unit_price`/`tipo_documento` nunca leídos en `thermal.rs`.
+- `Ctrl+Espacio` inicia `navIdx` en 0 — aceptado por Fernando.
+- `ComboboxFiltrado.tsx`: ícono `Check` con `text-[#45b356]` hardcodeado, pendiente aplicar `--dv-color-new`.
+- Botón EDITAR usa `#005BE3` hardcodeado sin token `--dv-*` equivalente.
+- `OperationalBar.tsx` mantiene `MODULE_ACCENT`/`MODULE_BG` hardcodeados.
+- `InventoryWorkspace.tsx` conserva `#2A7CA8` — evaluado y descartado como remanente.
+- Exclusiones deliberadas de migración de rojo destructivo: `RolesOperacionalesWorkspace.tsx`, `ReportesWorkspace.tsx` (~línea 598), `ComprobantesWorkspace.tsx`.
+- Contradicción `ARQUITECTURA_UX.md` vs. `index.css`/código real sobre color de confirmación y color de ABASTECIMIENTO — no resuelta.
+- `ServicioFarmacia`/`crear_servicio_farmacia` (Rust) sin renombrar — fuera de alcance hasta segundo rubro.
+- **`VENTA_FRECUENTE` sin puente a Ventas** (ver Hallazgo 1) — pendiente de integración con dominio de Clientes para poder identificar al cliente en el momento de la venta.
 
 ---
 
 ## DECISIONES DE DISEÑO ACTIVAS
 
-### Rediseño de taxonomía de formas de venta — decidido e implementado 09 Jul 2026
-Repaso operacional completo (`GLOSARIO.md` §11 pendiente de actualizar con esto):
+### Puente de precios Farmacia → Catálogo — decidido e implementado 09 Jul 2026 (sesión tarde)
+`sincronizarValorOperacionalFarmacia()` en `hov-projector.service.ts` traduce `VENTA_NORMAL/VENTA_MAYOREO/VENTA_PROMOCION` hacia `NORMAL/MAYORISTA/OFERTA` en el store de catálogo tras cada creación/edición en `PreciosTab`. `VENTA_FRECUENTE` deliberadamente no puenteado — ver Hallazgo 1.
+
+### Separación `fraccionDIGEMID` / `factorConversionBase` — decidido e implementado 09 Jul 2026 (sesión tarde)
+Campos independientes en la UI de creación para ambos tipos de recurso que los usan. `fraccionDIGEMID`: exclusivo de MEDICAMENTO, alimenta solo el reporte regulatorio. `factorConversionBase`: universal, gobierna el árbol de fraccionamiento real. Ver Hallazgo 2.
+
+### Formas de venta para PRODUCTO_GENERAL — decidido e implementado 09 Jul 2026 (sesión tarde)
+`PasoFormasVenta` (paso 3 del Stepper para este tipo de recurso) reutilizado tal cual de MEDICAMENTO, sin restricción — casos reales como pañales (paquete → pack → unidad suelta) ya soportados de punta a punta.
+
+### Rediseño de taxonomía de formas de venta — decidido e implementado 09 Jul 2026 (sesión anterior)
+Repaso operacional completo (`GLOSARIO.md` §11 pendiente de actualizar con esto, ahora con dos puntos adicionales de la sesión de hoy):
 - **Arquetipos de empaque por forma farmacéutica**, no un único modelo para todo: sólidos discretos fraccionables (tableta, cápsula, óvulo, supositorio, parche → caja→blister/tira/sobre→unidad), líquidos/semisólidos a granel (jarabe, crema, solución → caja→envase, normalmente sin fracción), inyectables unitarios (ampolla/vial → la ampolla ya es la unidad mínima), envase único no fraccionable (spray, inhalador → sin nivel más abajo).
 - `TipoFormaVenta.INTERMEDIA` es genérico a propósito (no "BLISTER" específico) — el texto libre `nombreFormaVenta` captura la etiqueta real ("Blister x10", "Tira x4", etc.).
-- Disponible para cualquier `TipoRecursoOperacional`, no solo MEDICAMENTO — sin restricción, porque restringir no compra seguridad y PRODUCTO_GENERAL puede necesitarlo (pañales, cosméticos).
-- Siempre manual, nunca sugerido automáticamente por forma farmacéutica — mismo criterio que ya rige `estadoRegistroSanitario`: una sugerencia que falla en el caso equivocado genera más fricción que confianza.
-- **PACK = estrictamente N unidades del mismo producto.** Un combo multi-producto (ej. Paracetamol + Jarabe) queda expresamente fuera de `NodoFraccionamiento` — es de un solo producto por diseño. Combo multi-producto es concepto futuro separado, no diseñado todavía.
-- **PROMOCION coexiste como dos mecanismos distintos, ambos legítimos, sin fusionar:** `TipoFormaVenta.PROMOCION` (nodo estructural nuevo, cuando la promoción cambia la forma física de venta) vs. `ValorOperacional.VENTA_PROMOCION` (precio temporal con vigencia sobre un nodo ya existente, cuando solo cambia el precio). Pendiente de documentar esta distinción explícitamente en `GLOSARIO.md` cuando se actualice §11.
-- Árbol de nodos genuinamente flexible: `NodoFraccionamiento.nodoPadreId` siempre soportó profundidad arbitraria a nivel de esquema — la limitación era solo de UI/flujo de captura, ya resuelta.
+- Disponible para cualquier `TipoRecursoOperacional`, no solo MEDICAMENTO — confirmado en la práctica esta sesión con PRODUCTO_GENERAL.
+- Siempre manual, nunca sugerido automáticamente por forma farmacéutica.
+- **PACK = estrictamente N unidades del mismo producto.** Combo multi-producto queda expresamente fuera de `NodoFraccionamiento`, concepto futuro separado.
+- **PROMOCION coexiste como dos mecanismos distintos, ambos legítimos, sin fusionar:** `TipoFormaVenta.PROMOCION` (nodo estructural) vs. `ValorOperacional.VENTA_PROMOCION` (precio temporal con vigencia).
+- Árbol de nodos genuinamente flexible — validado en creación esta sesión, no solo en edición.
 
-### `tipoRecurso` como propiedad persistente del producto — decidido e implementado 09 Jul 2026
-Antes transitorio (solo vivía durante la creación). Ahora persiste en `producto_comercial.tipo_recurso`, default `'MEDICAMENTO'` para filas existentes (único tipo probado hasta ahora en datos reales). Necesario para reproyección de HOV en correcciones posteriores a la creación.
+### `tipoRecurso` como propiedad persistente del producto — decidido e implementado 09 Jul 2026 (sesión anterior)
+Persiste en `producto_comercial.tipo_recurso`, default `'MEDICAMENTO'`.
 
 ### Política "cero deuda técnica"
-Al intervenir un módulo, no debe quedar deuda técnica ni residuos sin resolver dentro del alcance tocado. No se cierra una auditoría con hallazgos sueltos. **Extendida hoy:** un hallazgo colateral (ej. el bug `value`/`valor`, el módulo COMPRAS huérfano, el hueco de HOV multi-recurso) se resuelve en la misma sesión si está directamente en la ruta de lo que se está tocando, aunque no haya sido pedido originalmente — no se deja para "otra sesión" solo porque no estaba en el plan inicial.
+Al intervenir un módulo, no debe quedar deuda técnica ni residuos sin resolver dentro del alcance tocado. Un hallazgo colateral se resuelve en la misma sesión si está directamente en la ruta de lo que se está tocando. **Extendida hoy:** cuando un hallazgo colateral es demasiado profundo para resolver de paso (ej. la limpieza de `localStorage` huérfano tras borrado físico), se registra explícitamente como deuda nombrada en vez de dejarlo implícito — no alcanza con "no se tocó", debe quedar escrito por qué y qué falta.
 
 ### Doctrina de separación cromática módulo vs. comando
 El color de identidad de módulo nunca coincide con el color de un botón de comando. Todo color de módulo: denso (accent) + atenuado (bg).
@@ -102,55 +141,58 @@ El color de identidad de módulo nunca coincide con el color de un botón de com
 `apps/vendor-desktop/src/index.css`, 38+ tokens. Paleta vigente: TURNO `#C59B6D`, VENTAS `#128C7E`, ABASTECIMIENTO `#1E88C7` (bg `#E3F1FA`, border `#A0CFE8`), CLIENTES `#1E7E4F`, REPORTES `#5C5FA8`, COMPROBANTES `#7B4F6E`, CONFIG `#4A5265`.
 
 ### Doctrina multi-rubro (`GLOSARIO.md` §2-3)
-`farmacia/` es dominio específico de rubro, no genérico de abastecimiento. Resto de rubros usa `InventoryWorkspace.tsx` genérico hasta tener dominio propio. **Nota nueva:** ese genérico hoy tiene una lectura (`domains/purchases`) sin ninguna escritura activa — ver deuda técnica.
+`farmacia/` es dominio específico de rubro, no genérico de abastecimiento.
 
 ### `CONTRATO_ARQUITECTURA.md` no existe
 Nunca se creó, es residuo de plantilla. Documentos rectores reales: `ARQUITECTURA_UX.md` y `GLOSARIO.md`.
 
 ### Doctrina de borrado en Farmacia — IRREVOCABLE
-Nunca borrado duro salvo condición estricta: **sin movimientos NI lotes registrados**. Con historial → baja suave, reversible. Sin historial → borrado físico completo, transaccional en cascada. **Extendida hoy** al mismo criterio aplicado a corrección (no borrado) de presentaciones y nodos: campos estructurales bloqueados con historial, libres sin él.
+Nunca borrado duro salvo condición estricta: **sin movimientos NI lotes registrados**. Con historial → baja suave, reversible. Sin historial → borrado físico completo, transaccional en cascada. Backend Rust (`eliminar_producto_comercial_fisico`) re-auditado y confirmado correcto esta sesión, usado en runtime dos veces para limpieza de datos de prueba.
 
-### Puente HOV Farmacia → Ventas — completo, simétrico, ahora también desde Ingresos y reproyectable tras corrección
-`HOV.productoId = ProductoComercial.id`, `HOV.nodoFraccionamientoId = NodoFraccionamiento.id`. Alta (`proyectarAHov`), baja suave (`retirarHovsDeProducto`/`retirarHovDeNodo`), reactivación (`reactivarHovsDeProducto`), borrado físico. Validado end-to-end en la app real desde el Catálogo. **Ya no tiene la brecha de Ingresos** (resuelta hoy). Multi-recurso (`productoId`/`servicioId`/`productoGeneralId`) con detección de duplicados corregida.
+### Puente HOV Farmacia → Ventas — completo para HOV/existencia, incompleto para precios de VENTA_FRECUENTE
+`HOV.productoId = ProductoComercial.id`, `HOV.nodoFraccionamientoId = NodoFraccionamiento.id`. Alta, baja suave, reactivación, borrado físico — todo validado. El puente de **precios** (no de existencia de HOV) tenía la brecha del Hallazgo 1, ahora cerrada salvo `VENTA_FRECUENTE`.
 
-### NuevoProductoStepper — orden operacional MEDICAMENTO
-Paso 1 = Identificación. Paso 2 = Composición y uso clínico. PRODUCTO_GENERAL y SERVICIO ya tenían el orden correcto.
+### NuevoProductoStepper — orden operacional
+MEDICAMENTO: 4 pasos (Comercial → Composición → Regulatorio → Presentación+Formas de venta). PRODUCTO_GENERAL: 3 pasos, ahora con Formas de venta (nuevo hoy). SERVICIO: 1 paso.
 
 ### Catálogo Maestro Regulatorio DIGEMID — conectado, validado en runtime
-`catalogo_digemid.sqlite` (~13 MB, 18,397 medicamentos), `ATTACH DATABASE` solo lectura. Conectado al Paso 1 del Stepper MEDICAMENTO. `estadoRegistroSanitario` deliberadamente nunca se autocompleta.
+`catalogo_digemid.sqlite` (~13 MB, 18,397 medicamentos), `ATTACH DATABASE` solo lectura. Conectado al Paso 1 del Stepper MEDICAMENTO.
 
 ### Ubicación física de venta
-Vive en `HOV.ubicacionFisica`, texto libre, sin enum de sistema, autocompletado por frecuencia de uso del propio establecimiento.
+Vive en `HOV.ubicacionFisica`, texto libre, autocompletado por frecuencia de uso del establecimiento.
 
 ---
 
 ## PRÓXIMA VENTANA DE TRABAJO
 
-1. **Actualizar `GLOSARIO.md` §11** con la taxonomía de formas de venta decidida hoy (INTERMEDIA genérico, árbol flexible, PACK-mismo-producto vs. combo-multi-producto fuera de alcance, distinción PROMOCION-nodo vs. VENTA_PROMOCION-precio) — requiere aprobación explícita de Fernando antes de tocar el documento.
-2. **Validar en runtime la creación de un nodo dependiente de otro** vía el nuevo selector "Depende de" del Stepper (árbol flexible nunca probado en creación, solo en edición).
-3. Revisión funcional de PRECIOS (`PreciosTab`) — nunca probada con datos reales.
-4. Revisión funcional del registro de PRODUCTO_GENERAL (Stepper, 2 pasos) — nunca probado.
-5. Revisión funcional del registro de SERVICIO (Stepper, 1 paso) — nunca probado.
-6. Implementar "Agregar forma de venta" en `PresentacionesTab` (hoy `window.alert`).
-7. Decidir destino del badge "Llegan N" en `InventoryWorkspace.tsx` (sin fuente de datos desde que se borró COMPRAS) — diseñar flujo de compras genérico real, o quitar el badge.
-8. Resolver los 9 errores preexistentes de TypeScript recién descubiertos (ver Deuda Técnica Registrada) — empezar por `CobroPanel.tsx` por estar en el módulo de cobro activo.
-9. Implementar Servicio como concepto compartido en `domains/catalog/` (decisión confirmada, no implementada).
-10. Diseñar flujo de "Pendientes de Revisión" (151) y "No Farmacéuticos" (1,248) del Catálogo Maestro.
-11. Decidir `--dv-color-edit` (`#005BE3`), aplicar `--dv-color-new` al ícono `Check` de `ComboboxFiltrado.tsx`, refactor `OperationalBar.tsx` a `var(--dv-mod-*)`.
-12. Resolver contradicción `ARQUITECTURA_UX.md` vs. `index.css`/código real sobre color de confirmación y color de ABASTECIMIENTO.
-13. Brecha 8 DIGEMID (sustancias controladas/psicotrópicos), laboratorios master table, `BoxSlotType → TipoCaja`, `Operador.codigo` cleanup.
-14. Auditoría profunda de CONFIG, TURNO, COMPROBANTES, CLIENTES, REPORTES, VENTAS.
-15. Decidir qué hacer con `unit_price`/`tipo_documento` en `src-tauri/src/thermal.rs` (ya localizados, campos nunca leídos).
+1. **Decidir el alcance de la Auditoría Sistémica de Integridad de Flujos de Datos** (conversación abierta, ver sección dedicada arriba) — o retomar la cola de validación funcional pendiente.
+2. **Borrar `ZZ-PRUEBA PAÑAL`** de la base de datos real si no se hizo al cierre de esta sesión.
+3. Revisión funcional del registro de SERVICIO (Stepper, 1 paso) — nunca probado. Único tipo de recurso que queda sin validar en runtime.
+4. Resolver limpieza de `localStorage` huérfano en borrado físico de producto (ver Deuda Técnica Registrada).
+5. Investigar y confirmar/descartar el patrón N+1 en `buscarPresentacionesParaIngreso`.
+6. Actualizar `GLOSARIO.md` §11 con la taxonomía de formas de venta y la separación `fraccionDIGEMID`/`factorConversionBase` — requiere aprobación explícita de Fernando antes de tocar el documento.
+7. Implementar "Agregar forma de venta" en `PresentacionesTab` (hoy `window.alert`).
+8. Decidir destino del badge "Llegan N" en `InventoryWorkspace.tsx`.
+9. Resolver los 9 errores preexistentes de TypeScript — empezar por `CobroPanel.tsx`.
+10. Diseñar el puente de `VENTA_FRECUENTE` cuando el dominio de Clientes esté listo para identificar al comprador en el momento de la venta.
+11. Implementar Servicio como concepto compartido en `domains/catalog/`.
+12. Diseñar flujo de "Pendientes de Revisión" (151) y "No Farmacéuticos" (1,248) del Catálogo Maestro.
+13. Decidir `--dv-color-edit`, aplicar `--dv-color-new` al ícono `Check` de `ComboboxFiltrado.tsx`, refactor `OperationalBar.tsx` a `var(--dv-mod-*)`.
+14. Resolver contradicción `ARQUITECTURA_UX.md` vs. código real sobre color de confirmación y ABASTECIMIENTO.
+15. Brecha 8 DIGEMID, laboratorios master table, `BoxSlotType → TipoCaja`, `Operador.codigo` cleanup.
+16. Auditoría profunda de CONFIG, TURNO, COMPROBANTES, CLIENTES, REPORTES, VENTAS.
+17. Decidir destino de `unit_price`/`tipo_documento` en `thermal.rs`.
 
 ---
 
 ## REGLA DE INICIO DE PRÓXIMA SESIÓN
 
 1. Leer este archivo completo.
-2. Confirmar con Fernando la prioridad de la próxima ventana — no asumir.
+2. Confirmar con Fernando la prioridad de la próxima ventana — no asumir. En particular, decidir explícitamente entre la Auditoría Sistémica y la cola de validación funcional restante (solo queda SERVICIO).
 3. Leer filesystem antes de diseñar cualquier prompt — verificar ruteo real.
-4. Aplicar política de cero deuda técnica: componentes reales, no solo archivo raíz — y resolver hallazgos colaterales en la misma sesión si están en la ruta de lo tocado, no diferirlos automáticamente.
-5. Antes de dar por buena una pieza de datos externa, verificar con consultas reales contra el archivo — no confiar solo en su documentación.
-6. **Antes de escribir este documento al cierre de sesión, verificar `git log --oneline` y `git status --short` reales — no asumir que un commit propuesto se ejecutó si no se vio confirmación explícita en el chat.** (Confirmado necesario de nuevo hoy: un prompt completo quedó sin commitear varios turnos por una desviación de la sesión.)
+4. Aplicar política de cero deuda técnica: componentes reales, no solo archivo raíz — y resolver hallazgos colaterales en la misma sesión si están en la ruta de lo tocado. Si el hallazgo es demasiado profundo para resolver de paso, registrarlo explícitamente con detalle, no dejarlo implícito.
+5. Antes de dar por buena una pieza de datos externa o un componente "ya resuelto", verificar con consultas reales o con ejecución real en la app — no confiar solo en que el código compile o en el reporte de una sesión anterior. Esta sesión confirmó dos veces que código sintácticamente correcto y sin errores de TypeScript puede estar completamente desconectado en runtime.
+6. Antes de escribir este documento al cierre de sesión, verificar `git log --oneline` y `git status --short` reales — no asumir que un commit propuesto se ejecutó si no se vio confirmación explícita en el chat.
 7. Si Codex se detiene por un consumidor ambiguo de una función, auditar ese consumidor directamente antes de reescribir el prompt.
-8. **Usar siempre `npx tsc -p tsconfig.app.json --noEmit` para verificación de TypeScript — nunca `npx tsc --noEmit` sin la bandera `-p`.** El `tsconfig.json` raíz es un archivo de project references con `"files": []` que no verifica nada por defecto sin ella. Cualquier verificación de TypeScript hecha sin esta bandera, en cualquier sesión, debe considerarse no confiable.
+8. **Usar siempre `npx tsc -p tsconfig.app.json --noEmit` para verificación de TypeScript — nunca `npx tsc --noEmit` sin la bandera `-p`.**
+9. **Nueva regla de esta sesión: cuando una funcionalidad tiene una escritura (guardar/crear) y una lectura (buscar/mostrar) en módulos o dominios distintos, verificar explícitamente que ambos apunten al mismo almacén de datos antes de dar la funcionalidad por completa — no asumir que "compila y no da error" significa "está conectado". Este fue el patrón exacto de los dos hallazgos críticos de hoy.**
