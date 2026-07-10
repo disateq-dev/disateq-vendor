@@ -78,29 +78,29 @@ interface OpcionSecundaria {
 }
 
 const CASH_OPCIONES: OpcionSecundaria[] = [
-  { key: "turno",            label: "GESTIÓN"     },
-  { key: "supervision-caja", label: "SUPERVISIÓN" },
+  { key: "turno",            label: "Gestión"     },
+  { key: "supervision-caja", label: "Supervisión" },
 ];
 
 const ABAST_OPCIONES: OpcionSecundaria[] = [
-  { key: "productos",    label: "PRODUCTOS"    },
+  { key: "productos",    label: "Productos"    },
   { key: "ifa",          label: "IFA"          },
-  { key: "proveedores",  label: "PROVEEDORES"  },
-  { key: "laboratorios", label: "LABORATORIOS", placeholder: true },
-  { key: "ingresos",     label: "INGRESOS",     separadorAntes: true },
-  { key: "inventarios",  label: "INVENTARIOS"  },
-  { key: "traslados",    label: "TRASLADOS",    placeholder: true },
+  { key: "proveedores",  label: "Proveedores"  },
+  { key: "laboratorios", label: "Laboratorios", placeholder: true },
+  { key: "ingresos",     label: "Ingresos",     separadorAntes: true },
+  { key: "inventarios",  label: "Inventarios"  },
+  { key: "traslados",    label: "Traslados",    placeholder: true },
 ];
 
 const CONFIG_OPCIONES: OpcionSecundaria[] = [
-  { key: "negocio",     label: "NEGOCIO"     },
-  { key: "operacion",   label: "OPERACIÓN"   },
-  { key: "roles",       label: "ROLES"       },
-  { key: "operadores",  label: "OPERADORES"  },
-  { key: "cajas",       label: "CAJAS"       },
-  { key: "capacidades", label: "CAPACIDADES" },
-  { key: "experiencia", label: "EXPERIENCIA" },
-  { key: "rubro",       label: "RUBRO"       },
+  { key: "negocio",     label: "Negocio"     },
+  { key: "operacion",   label: "Operación"   },
+  { key: "roles",       label: "Roles"       },
+  { key: "operadores",  label: "Operadores"  },
+  { key: "cajas",       label: "Cajas"       },
+  { key: "capacidades", label: "Capacidades" },
+  { key: "experiencia", label: "Experiencia" },
+  { key: "rubro",       label: "Rubro"       },
 ];
 
 function getOpciones(modulo: ActiveModule, puedeSupervisar: boolean): OpcionSecundaria[] {
@@ -444,7 +444,6 @@ export function ContextBar({
           }}
           onMouseEnter={() => {
             if (idx >= 0) setFocusOpcion(idx);
-            setOpcionActiva(modulo, opcion.key, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
           }}
           className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold transition outline-none"
           style={
