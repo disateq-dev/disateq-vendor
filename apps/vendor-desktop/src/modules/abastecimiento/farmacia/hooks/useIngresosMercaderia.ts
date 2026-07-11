@@ -416,6 +416,8 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
         requiereLote: comercial.requiereLote,
         fabricante: comercial.nombreFabricante,
       })
+      // Contrato escritura doble: SQLite actualizado → Zustand debe reflejar el cambio
+      void useFarmaciaStore.getState().cargarResumenInventario()
       setCreandoProductoAbierto(false)
     } catch (guardarError) {
       setError(resolverMensajeError(guardarError))
@@ -519,6 +521,8 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
       }
       await registrarIngreso(input)
       limpiarEstado()
+      // Contrato escritura doble: SQLite actualizado → Zustand debe reflejar el cambio
+      void useFarmaciaStore.getState().cargarResumenInventario()
     } catch (confirmarError) {
       setError(resolverMensajeError(confirmarError))
     } finally {
