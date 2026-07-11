@@ -2,6 +2,7 @@ import { Boxes, Package } from 'lucide-react'
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import type { Lote, ResumenInventarioFarmacia } from '../../../domains/farmacia/types'
 import { modificarStockMinimo, obtenerInventarioFarmacia, obtenerLotesVigentes } from '../../../domains/farmacia/farmacia.service'
+import { obtenerPedidosActivosPorPresentacion } from '../../../domains/farmacia/pedido-proveedor'
 
 function estadoDisponibilidad(total: number, stockMinimo: number): 'DISPONIBLE' | 'BAJO_STOCK' | 'AGOTADO' {
   if (total <= 0) return 'AGOTADO'
@@ -19,6 +20,7 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
   const [cargandoLotes, setCargandoLotes] = useState<boolean>(false)
   const [umbralEdicion, setUmbralEdicion] = useState<string>('')
   const [guardandoUmbral, setGuardandoUmbral] = useState<boolean>(false)
+  const [pendientesPorPresentacion, setPendientesPorPresentacion] = useState<Record<string, number>>({})
 
   const inventarioFiltrado = busqueda === ''
     ? inventario
@@ -28,6 +30,14 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
     try {
       const resultado = await obtenerInventarioFarmacia()
       setInventario(resultado)
+      // Cargar pendientes de pedidos a proveedor (falla silenciosa)
+      obtenerPedidosActivosPorPresentacion()
+        .then(pendientes => {
+          const mapa: Record<string, number> = {}
+          pendientes.forEach(p => { mapa[p.presentacionId] = p.unidadesPendientes })
+          setPendientesPorPresentacion(mapa)
+        })
+        .catch(() => { /* falla silenciosa — badge queda vacío */ })
     } catch (cargaError) {
       setError(cargaError instanceof Error ? cargaError.message : String(cargaError))
     } finally {
@@ -127,6 +137,11 @@ export function InventarioFarmaciaWorkspace(): ReactElement {
                 </div>
                 <p className="text-[11px] font-semibold text-slate-400 mt-1">
                   {item.totalDisponible.toFixed(0)} unidades disponibles
+                  {(pendientesPorPresentacion[item.presentacionId] ?? 0) > 0 && (
+                    <span className="ml-2 font-bold text-amber-600">
+                      · Llegan {pendientesPorPresentacion[item.presentacionId]}
+                    </span>
+                  )}
                 </p>
               </button>
             )
