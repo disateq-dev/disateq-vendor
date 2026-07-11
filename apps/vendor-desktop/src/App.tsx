@@ -15,6 +15,7 @@ import { ProveedoresWorkspace } from './modules/abastecimiento/farmacia/Proveedo
 import { IngresosMercaderiaWorkspace } from './modules/abastecimiento/farmacia/IngresosMercaderiaWorkspace'
 import { InventarioFarmaciaWorkspace } from './modules/abastecimiento/farmacia/InventarioFarmaciaWorkspace'
 import { PrincipiosActivosWorkspace } from './modules/abastecimiento/farmacia/PrincipiosActivosWorkspace'
+import { PedidoProveedorWorkspace } from './modules/abastecimiento/farmacia/PedidoProveedorWorkspace'
 import { POSProvider, usePOS } from "./context/POSContext";
 import { useFarmaciaStore } from "./domains/farmacia/farmacia.store";
 import { verificarIntegridadCacheFarmacia } from "./domains/catalog/startup-integrity.service";
@@ -22,7 +23,7 @@ import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
 export type CashSubView             = "turno" | "supervision-caja";
-export type AbastecimientoSubModule = "productos" | "ifa" | "proveedores" | "laboratorios" | "ingresos" | "inventarios" | "traslados";
+export type AbastecimientoSubModule = "productos" | "ifa" | "proveedores" | "laboratorios" | "ingresos" | "inventarios" | "traslados" | "pedidos";
 export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
 
 function AppRoot() {
@@ -117,6 +118,7 @@ function AppRoot() {
           <span className="text-[12px] font-semibold uppercase tracking-wider text-[#9ca3af]">Próximamente</span>
         </div>
       )}
+      {activeModule === "abastecimiento" && abastecimientoSubModule === "pedidos" && <PedidoProveedorWorkspace />}
     </AppShell>
   );
 }

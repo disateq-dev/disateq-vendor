@@ -90,6 +90,7 @@ const ABAST_OPCIONES: OpcionSecundaria[] = [
   { key: "ingresos",     label: "Ingresos",     separadorAntes: true },
   { key: "inventarios",  label: "Inventarios"  },
   { key: "traslados",    label: "Traslados",    placeholder: true },
+  { key: "pedidos",      label: "Pedidos",      separadorAntes: true },
 ];
 
 const CONFIG_OPCIONES: OpcionSecundaria[] = [
