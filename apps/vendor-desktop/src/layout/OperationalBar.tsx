@@ -285,7 +285,6 @@ export function ContextBar({
             const idx = MODULES_ORDER.indexOf(destino);
             setNavIdx(idx);
             setExpandido(destino);
-            const opciones = getOpciones(destino, accessRef.current.puedeSupervisarCaja).filter(o => !o.placeholder);
             setFocusOpcion(0);
           } else {
             setBarraActiva(false);
@@ -409,7 +408,7 @@ export function ContextBar({
 
         {/* Opciones secundarias */}
         <div className="flex items-center gap-1 flex-1 overflow-hidden">
-          {opciones.map((opcion, idx) => {
+          {opciones.map((opcion) => {
             const opcionIdx = opcionesActivas.findIndex(o => o.key === opcion.key);
             const estaActiva = opcionActiva === opcion.key;
             const tieneFoco = barraActiva && opcionIdx === focusOpcion && !opcion.placeholder;

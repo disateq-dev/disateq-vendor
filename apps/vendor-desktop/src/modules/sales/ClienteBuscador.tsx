@@ -1056,13 +1056,6 @@ function FormularioRUC({
     buscarLocal()
   }
 
-  function ingresoManual(): void {
-    setFuente('MANUAL')
-    setEditando(true)
-    setClienteId(null)
-    setFase('RESULTADO')
-  }
-
   async function actualizarSunat(): Promise<void> {
     if (buscando) return
     await consultarSunat()

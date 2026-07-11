@@ -760,7 +760,7 @@ export function CobroPanel() {
           {/* TIPO DE COMPROBANTE + CORRELATIVO */}
           <div className="shrink-0 flex flex-col px-4 pt-2 pb-0">
             <div className="flex gap-px rounded-lg bg-[#f1f5f9] p-0.5">
-              {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt, i) => (
+              {(["nota", "boleta", "factura", "cotizacion"] as DocType[]).map((dt) => (
                 <button
                   key={dt}
                   title={`Tecla [Ctrl + ${dt === "nota" ? 7 : dt === "boleta" ? 8 : dt === "factura" ? 9 : 4}]`}
@@ -1092,7 +1092,7 @@ export function CobroPanel() {
           <div className="flex gap-1.5 items-stretch">
             <button
               title="Tecla [Ctrl + Insert]"
-              onClick={confirmEmit}
+              onClick={() => confirmEmit()}
               disabled={!canConfirm}
               className="flex w-[25%] items-center justify-center gap-1.5 rounded-2xl bg-[#F5A623] py-3.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-[0_4px_14px_rgba(245,166,35,0.30)] transition hover:bg-[#e09610] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none"
             >

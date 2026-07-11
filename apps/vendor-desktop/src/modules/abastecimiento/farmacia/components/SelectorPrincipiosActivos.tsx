@@ -45,6 +45,10 @@ export function SelectorPrincipiosActivos({
             activo: true,
             esEsencialMinsa: false,
             esPsicotropico: false,
+            descripcionUso: '',
+            grupoTerapeutico: '',
+            condicionVentaIfa: 'OTC' as const,
+            esCombinacion: false,
           }))
         setPrincipiosSeleccionados(seleccionados)
         onCambio(seleccionados.map((principio) => principio.id))

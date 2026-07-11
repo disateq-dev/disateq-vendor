@@ -434,7 +434,7 @@ export function PrincipiosActivosWorkspace(): ReactElement {
               cargando={estado.cargando}
               error={estado.error}
               operadorId={operadorId}
-              onGuardar={(datos) => void estado.onGuardarEdicion(datos as ModificarPrincipioActivoInput)}
+              onGuardar={async (datos) => { await estado.onGuardarEdicion(datos as ModificarPrincipioActivoInput) }}
               onCancelar={() => { estado.onVolverBusqueda(); void estado.onRecargarDetalle() }}
             />
           )}
@@ -445,7 +445,7 @@ export function PrincipiosActivosWorkspace(): ReactElement {
               cargando={estado.cargando}
               error={estado.error}
               operadorId={operadorId}
-              onGuardar={(datos) => void estado.onGuardarNuevo(datos as CrearPrincipioActivoInput)}
+              onGuardar={async (datos) => { await estado.onGuardarNuevo(datos as CrearPrincipioActivoInput) }}
               onCancelar={estado.onVolverBusqueda}
             />
           )}

@@ -138,7 +138,7 @@ function TileBadge({ p }: { p: ProductoBuscable }) {
 
 export function SalesWorkspace() {
   const posContext = usePOS() as POSRuntimeContext;
-  const { enterSearch, cashSession, zone, cobroOpen, closeCobro, openCobro, visualMode } = posContext;
+  const { enterSearch, cashSession, cobroOpen, closeCobro, openCobro, visualMode } = posContext;
   const rubroConfig = useMemo(() => {
     const bc = loadBusinessConfig();
     return RUBROS[bc.rubro];
