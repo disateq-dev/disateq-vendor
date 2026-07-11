@@ -37,7 +37,7 @@ export function LineaIngresoCard({
           <Trash2 className="h-4 w-4" />
         </button>
       </header>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
         <label className="space-y-1">
           <span className="text-[11px] font-bold uppercase text-slate-500">Cantidad</span>
           <input
@@ -55,6 +55,20 @@ export function LineaIngresoCard({
             min="0"
             value={linea.costoUnitario ?? ''}
             onChange={(event: ChangeEvent<HTMLInputElement>) => onActualizar({ costoUnitario: event.target.value ? Number(event.target.value) : undefined })}
+            className="h-10 w-full rounded-xl border border-[var(--dv-input-border)] px-3"
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-[11px] font-bold uppercase text-slate-500">Precio de venta (opcional)</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={linea.precioVenta ?? ''}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              onActualizar({ precioVenta: event.target.value ? Number(event.target.value) : undefined })
+            }
+            placeholder="S/ 0.00"
             className="h-10 w-full rounded-xl border border-[var(--dv-input-border)] px-3"
           />
         </label>

@@ -7,31 +7,10 @@ import { LineaIngresoCard } from './components/LineaIngresoCard'
 import { NuevoProductoStepper } from './components/NuevoProductoStepper'
 import { SelectorProveedorIngreso } from './components/SelectorProveedorIngreso'
 import { useIngresosMercaderia } from './hooks/useIngresosMercaderia'
-import { crearServicioCatalogo } from '../../../domains/catalog/servicio.service'
-import { proyectarServicioAHov } from '../../../domains/farmacia/hov-projector.service'
-import type { CrearServicioCatalogoInput, ServicioCatalogo } from '../../../domains/catalog/servicio.types'
 
 export function IngresosMercaderiaWorkspace(): ReactElement {
   const ingresos = useIngresosMercaderia()
   const lineasConLote = ingresos.lineas.filter((linea) => linea.requiereLote).length
-  const onGuardarServicio = async (
-    input: CrearServicioCatalogoInput,
-    precioVenta?: number,
-  ): Promise<void> => {
-    const servicioId = await crearServicioCatalogo(input)
-    const servicio: ServicioCatalogo = {
-      id: servicioId,
-      rubro: input.rubro,
-      tipoServicio: input.tipoServicio,
-      nombre: input.nombre,
-      descripcion: input.descripcion,
-      duracionMinutos: input.duracionMinutos,
-      estado: 'ACTIVO',
-      creadoEn: new Date().toISOString(),
-    }
-    proyectarServicioAHov(servicio, 'default', precioVenta)
-    ingresos.onCerrarCreacionProducto()
-  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#1E88C7]/50 bg-[#FDFCF9]">
@@ -102,7 +81,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
             onPasoAnterior={ingresos.onPasoAnteriorProducto}
             onCancelar={ingresos.onCerrarCreacionProducto}
             onGuardar={ingresos.onGuardarProductoYAgregarLinea}
-            onGuardarServicio={onGuardarServicio}
+            onGuardarServicio={ingresos.onGuardarServicio}
           />
         </div>
       )}

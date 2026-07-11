@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buscarPresentacionesParaIngreso, buscarProveedores, consultarRuc, crearNodo, crearPresentacion, crearProveedor, obtenerNodosFraccionamiento, registrarIngreso } from '../../../../domains/farmacia/farmacia.service'
-import { proyectarAHov } from '../../../../domains/farmacia/hov-projector.service'
+import { proyectarAHov, proyectarServicioAHov, sincronizarValorHov } from '../../../../domains/farmacia/hov-projector.service'
+import { crearServicioCatalogo } from '../../../../domains/catalog/servicio.service'
+import { getAllHOVs } from '../../../../domains/catalog/hov.store'
+import { getValoresActivosPorHOV } from '../../../../domains/catalog/valor-operacional.store'
+import { crearValor, suspenderValor } from '../../../../domains/catalog/valor-operacional.service'
+import type { CrearServicioCatalogoInput, ServicioCatalogo } from '../../../../domains/catalog/servicio.types'
 import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
 import type {
   CrearNodoInput,
@@ -22,6 +27,8 @@ import { usePOS } from '../../../../context/POSContext'
 
 export interface LineaIngresoDraft extends LineaIngreso {
   id: string
+  productoComercialId?: string
+  precioVenta?: number
 }
 
 interface UseIngresosMercaderiaResult {
@@ -68,7 +75,9 @@ interface UseIngresosMercaderiaResult {
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
     ubicacionFisica?: string,
+    precioVenta?: number,
   ): Promise<void>
+  onGuardarServicio(input: CrearServicioCatalogoInput, precioVenta?: number): Promise<void>
   onEliminarLinea(id: string): void
   onActualizarLinea(id: string, cambios: Partial<LineaIngresoDraft>): void
   onUsarLoteGenerico(id: string): void
@@ -297,6 +306,7 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
       {
         id: crypto.randomUUID(),
         presentacionId: r.presentacionId,
+        productoComercialId: r.productoComercialId,
         productoNombre: r.productoNombre,
         presentacionDescripcion: r.descripcion,
         cantidad: 1,
@@ -319,6 +329,7 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
     presentacion: CrearPresentacionInput,
     nodosExtra: CrearNodoInput[],
     ubicacionFisica?: string,
+    precioVenta?: number,
   ): Promise<void> => {
     setCargando(true)
     try {
@@ -385,6 +396,13 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
           .forEach((nodo: NodoFraccionamiento) => {
             proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso, ubicacionFisica)
           })
+        if (precioVenta !== undefined && precioVenta > 0) {
+          nodosCreados
+            .filter((nodo: NodoFraccionamiento) => nodo.esVendible)
+            .forEach((nodo: NodoFraccionamiento) => {
+              sincronizarValorHov(nodo, precioVenta)
+            })
+        }
       } catch (errorProyeccion) {
         console.error('No se pudo proyectar el producto a la capa de venta (HOV):', errorProyeccion)
       }
@@ -404,6 +422,34 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
       setCargando(false)
     }
   }, [crearProductoCompleto, onAgregarLinea])
+
+  const onGuardarServicio = useCallback(async (
+    input: CrearServicioCatalogoInput,
+    precioVenta?: number,
+  ): Promise<void> => {
+    setCargando(true)
+    setError(null)
+    try {
+      const servicioId = await crearServicioCatalogo(input)
+      const servicio: ServicioCatalogo = {
+        id: servicioId,
+        rubro: input.rubro,
+        tipoServicio: input.tipoServicio,
+        nombre: input.nombre,
+        descripcion: input.descripcion,
+        duracionMinutos: input.duracionMinutos,
+        estado: 'ACTIVO',
+        creadoEn: new Date().toISOString(),
+      }
+      proyectarServicioAHov(servicio, 'default', precioVenta)
+      setCreandoProductoAbierto(false)
+    } catch (guardarError) {
+      setError(resolverMensajeError(guardarError))
+      throw guardarError
+    } finally {
+      setCargando(false)
+    }
+  }, [])
 
   const onEliminarLinea = useCallback((id: string): void => {
     setLineas((actuales) => actuales.filter((linea) => linea.id !== id))
@@ -443,6 +489,32 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
           esLoteGenerico: linea.esLoteGenerico,
         })),
       }
+      const hovsTodos = getAllHOVs()
+      for (const linea of lineas) {
+        if ((linea.precioVenta ?? 0) > 0 && linea.productoComercialId !== undefined) {
+          const hovsDelProducto = hovsTodos.filter(
+            (h: import('../../../../domains/catalog/hov.types').HOV) =>
+              h.productoId === linea.productoComercialId && h.estado === 'ACTIVA',
+          )
+          for (const hov of hovsDelProducto) {
+            const valoresActivos = getValoresActivosPorHOV(hov.id).filter(
+              (v: import('../../../../domains/catalog/valor-operacional.types').ValorOperacional) =>
+                v.tipo === 'NORMAL' && v.estado === 'ACTIVO',
+            )
+            for (const valor of valoresActivos) {
+              suspenderValor(valor.id)
+            }
+            crearValor({
+              hovId: hov.id,
+              tipo: 'NORMAL',
+              valor: linea.precioVenta!,
+              moneda: 'PEN',
+              condiciones: { cantidadMinima: null, contextoOperacionalId: 'default', identidadOperacionalId: null },
+              vigencia: { desde: new Date().toISOString(), hasta: null },
+            })
+          }
+        }
+      }
       await registrarIngreso(input)
       limpiarEstado()
     } catch (confirmarError) {
@@ -467,6 +539,6 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
     onAbrirCreacionProducto, onCerrarCreacionProducto, onTerminoProductoChange, onAgregarLinea,
     onPasoSiguienteProducto, onPasoAnteriorProducto, onGuardarProductoYAgregarLinea,
     onEliminarLinea, onActualizarLinea, onUsarLoteGenerico,
-    onUsarLoteReal, onConfirmarIngreso, onCancelar, onLimpiarError,
+    onUsarLoteReal, onConfirmarIngreso, onCancelar, onLimpiarError, onGuardarServicio,
   }
 }
