@@ -242,4 +242,41 @@ WHERE nf_raiz.nodo_padre_id IS NULL
   AND nf_raiz.estado = 'ACTIVO'
   AND pc.estado = 'ACTIVO'
   AND pc.codigo_digemid IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS pedido_proveedor (
+  id TEXT PRIMARY KEY,
+  proveedor_id TEXT NOT NULL REFERENCES proveedor(id),
+  operador_id TEXT NOT NULL,
+  estado TEXT NOT NULL DEFAULT 'BORRADOR',
+  referencia TEXT,
+  observacion TEXT,
+  fecha_esperada TEXT,
+  creado_en TEXT NOT NULL,
+  modificado_en TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pedido_proveedor_estado
+  ON pedido_proveedor(proveedor_id, estado);
+
+CREATE INDEX IF NOT EXISTS idx_pedido_proveedor_fecha
+  ON pedido_proveedor(fecha_esperada);
+
+CREATE TABLE IF NOT EXISTS linea_pedido_proveedor (
+  id TEXT PRIMARY KEY,
+  pedido_id TEXT NOT NULL REFERENCES pedido_proveedor(id),
+  presentacion_id TEXT NOT NULL REFERENCES presentacion_comercial(id),
+  producto_nombre TEXT NOT NULL,
+  presentacion_descripcion TEXT NOT NULL,
+  cantidad_pedida REAL NOT NULL,
+  cantidad_recibida REAL NOT NULL DEFAULT 0,
+  costo_unitario_acordado REAL,
+  requiere_lote INTEGER NOT NULL DEFAULT 0,
+  creado_en TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_linea_pedido_pedido
+  ON linea_pedido_proveedor(pedido_id);
+
+CREATE INDEX IF NOT EXISTS idx_linea_pedido_presentacion
+  ON linea_pedido_proveedor(presentacion_id);
 "#;

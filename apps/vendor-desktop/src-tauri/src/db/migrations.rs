@@ -33,6 +33,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v11_tipo_recurso_producto_comercial(db).await?;
     migrar_v12_servicio_catalogo(db).await?;
     migrar_v13_seed_config_establecimiento(db).await?;
+    migrar_v14_pedido_proveedor(db).await?;
 
     Ok(())
 }
@@ -997,6 +998,125 @@ async fn migrar_v13_seed_config_establecimiento(db: &sqlx::SqlitePool) -> Result
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (13)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v14_pedido_proveedor(db: &sqlx::SqlitePool) -> Result<(), String> {
+    let existe_proveedor = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'proveedor'",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_proveedor == 0 {
+        return Ok(());
+    }
+
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 14 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    let existe_pedido = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'pedido_proveedor'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_pedido == 0 {
+        sqlx::query(
+            "CREATE TABLE pedido_proveedor (
+              id TEXT PRIMARY KEY,
+              proveedor_id TEXT NOT NULL REFERENCES proveedor(id),
+              operador_id TEXT NOT NULL,
+              estado TEXT NOT NULL DEFAULT 'BORRADOR',
+              referencia TEXT,
+              observacion TEXT,
+              fecha_esperada TEXT,
+              creado_en TEXT NOT NULL,
+              modificado_en TEXT NOT NULL
+            )",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "CREATE INDEX idx_pedido_proveedor_estado ON pedido_proveedor(proveedor_id, estado)",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "CREATE INDEX idx_pedido_proveedor_fecha ON pedido_proveedor(fecha_esperada)",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    let existe_linea = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'linea_pedido_proveedor'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_linea == 0 {
+        sqlx::query(
+            "CREATE TABLE linea_pedido_proveedor (
+              id TEXT PRIMARY KEY,
+              pedido_id TEXT NOT NULL REFERENCES pedido_proveedor(id),
+              presentacion_id TEXT NOT NULL REFERENCES presentacion_comercial(id),
+              producto_nombre TEXT NOT NULL,
+              presentacion_descripcion TEXT NOT NULL,
+              cantidad_pedida REAL NOT NULL,
+              cantidad_recibida REAL NOT NULL DEFAULT 0,
+              costo_unitario_acordado REAL,
+              requiere_lote INTEGER NOT NULL DEFAULT 0,
+              creado_en TEXT NOT NULL
+            )",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "CREATE INDEX idx_linea_pedido_pedido ON linea_pedido_proveedor(pedido_id)",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query(
+            "CREATE INDEX idx_linea_pedido_presentacion ON linea_pedido_proveedor(presentacion_id)",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (14)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
