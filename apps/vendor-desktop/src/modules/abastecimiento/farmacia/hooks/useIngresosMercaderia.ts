@@ -3,8 +3,10 @@ import { buscarPresentacionesParaIngreso, buscarProveedores, consultarRuc, crear
 import { proyectarAHov, proyectarServicioAHov, sincronizarValorHov } from '../../../../domains/farmacia/hov-projector.service'
 import { crearServicioCatalogo } from '../../../../domains/catalog/servicio.service'
 import { getAllHOVs } from '../../../../domains/catalog/hov.store'
+import type { HOV } from '../../../../domains/catalog/hov.types'
 import { getValoresActivosPorHOV } from '../../../../domains/catalog/valor-operacional.store'
 import { crearValor, suspenderValor } from '../../../../domains/catalog/valor-operacional.service'
+import type { ValorOperacional } from '../../../../domains/catalog/valor-operacional.types'
 import type { CrearServicioCatalogoInput, ServicioCatalogo } from '../../../../domains/catalog/servicio.types'
 import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
 import type {
@@ -493,12 +495,12 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
       for (const linea of lineas) {
         if ((linea.precioVenta ?? 0) > 0 && linea.productoComercialId !== undefined) {
           const hovsDelProducto = hovsTodos.filter(
-            (h: import('../../../../domains/catalog/hov.types').HOV) =>
+            (h: HOV) =>
               h.productoId === linea.productoComercialId && h.estado === 'ACTIVA',
           )
           for (const hov of hovsDelProducto) {
             const valoresActivos = getValoresActivosPorHOV(hov.id).filter(
-              (v: import('../../../../domains/catalog/valor-operacional.types').ValorOperacional) =>
+              (v: ValorOperacional) =>
                 v.tipo === 'NORMAL' && v.estado === 'ACTIVO',
             )
             for (const valor of valoresActivos) {
