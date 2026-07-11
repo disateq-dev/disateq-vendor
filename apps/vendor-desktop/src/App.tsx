@@ -17,6 +17,7 @@ import { InventarioFarmaciaWorkspace } from './modules/abastecimiento/farmacia/I
 import { PrincipiosActivosWorkspace } from './modules/abastecimiento/farmacia/PrincipiosActivosWorkspace'
 import { POSProvider, usePOS } from "./context/POSContext";
 import { useFarmaciaStore } from "./domains/farmacia/farmacia.store";
+import { verificarIntegridadCacheFarmacia } from "./domains/catalog/startup-integrity.service";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
@@ -63,6 +64,7 @@ function AppRoot() {
   useEffect(() => {
     if (activeOperator && activeOperator.id !== prevOpId.current) {
       if (rubro === 'farmacia') {
+        void verificarIntegridadCacheFarmacia()
         void useFarmaciaStore.getState().cargarResumenInventario()
       }
       if (cashSession.isOpen) {
