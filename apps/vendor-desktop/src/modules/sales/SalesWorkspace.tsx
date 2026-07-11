@@ -717,7 +717,7 @@ export function SalesWorkspace() {
                 </p>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 px-3 pb-3 pt-1">
                   {visualItems.map((product) => {
-                    const isOut  = product.stockStatus === "out";
+                    const isOut  = product.stockStatus === "out" && product.tipoRecurso !== 'SERVICIO';
                     const price  = tilePrice(product);
                     const formasCount = product.tieneMultiplesFormas
                       ? agruparPorProducto(catalogoActivo).find(g => g.formasVenta.some(f => f.hovId === product.hovId))?.formasVenta.length ?? 1
