@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import type {
   EstadoRegistroSanitario,
+  CrearNodoInput,
   ModificarProductoComercialInput,
   CorregirDatosOperacionalesInput,
   ModificarPresentacionInput,
@@ -17,6 +18,7 @@ import {
 } from '../../../../domains/catalog/hov.service'
 import type { HOV } from '../../../../domains/catalog/hov.types'
 import {
+  crearNodo,
   crearValorOperacional,
   desactivarProductoComercial,
   eliminarProductoComercialFisico,
@@ -25,6 +27,7 @@ import {
   modificarValorOperacional,
   modificarPresentacion,
   modificarNodo,
+  obtenerNodosFraccionamiento,
   obtenerValoresNodo,
   reactivarProductoComercial,
   verificarHistorialPresentacion,
@@ -124,6 +127,15 @@ function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
 function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, nombreFabricante }: PresentacionesTabProps): ReactElement {
   const { activeOperator } = usePOS()
   const tiposFormaVentaEditables: NodoFraccionamiento['tipoFormaVenta'][] = ['FRACCION', 'PACK', 'PROMOCION', 'INTERMEDIA']
+  interface FormularioNuevoNodo {
+    nombreFormaVenta: string
+    tipoFormaVenta: 'FRACCION' | 'PACK' | 'PROMOCION' | 'INTERMEDIA'
+    unidadesBase: string
+    esVendible: boolean
+    esComprable: boolean
+    nodoPadreId: string
+    descripcionPromo: string
+  }
   const [hovs, setHovs] = useState<HOV[]>([])
   const [presentacionesLocales, setPresentacionesLocales] = useState<PresentacionComercial[]>(presentaciones)
   const [nodosLocales, setNodosLocales] = useState<NodoFraccionamiento[]>(nodos)
@@ -141,6 +153,10 @@ function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, no
   const [motivoNodo, setMotivoNodo] = useState<string>('')
   const [guardandoNodo, setGuardandoNodo] = useState<boolean>(false)
   const [errorNodo, setErrorNodo] = useState<string | null>(null)
+  const [presentacionAgregarNodoId, setPresentacionAgregarNodoId] = useState<string | null>(null)
+  const [formularioNuevoNodo, setFormularioNuevoNodo] = useState<FormularioNuevoNodo | null>(null)
+  const [guardandoNuevoNodo, setGuardandoNuevoNodo] = useState<boolean>(false)
+  const [errorNuevoNodo, setErrorNuevoNodo] = useState<string | null>(null)
 
   useEffect(() => {
     setPresentacionesLocales(presentaciones)
@@ -346,6 +362,92 @@ function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, no
     }
   }
 
+  function onAbrirFormularioNuevoNodo(presentacionId: string): void {
+    onCancelarPresentacion()
+    onCancelarNodo()
+    setPresentacionAgregarNodoId(presentacionId)
+    setFormularioNuevoNodo({
+      nombreFormaVenta: '',
+      tipoFormaVenta: 'FRACCION',
+      unidadesBase: '',
+      esVendible: true,
+      esComprable: false,
+      nodoPadreId: '',
+      descripcionPromo: '',
+    })
+    setErrorNuevoNodo(null)
+  }
+
+  function onCancelarNuevoNodo(): void {
+    setPresentacionAgregarNodoId(null)
+    setFormularioNuevoNodo(null)
+    setErrorNuevoNodo(null)
+  }
+
+  async function onGuardarNuevoNodo(presentacion: PresentacionComercial): Promise<void> {
+    if (!formularioNuevoNodo) return
+
+    if (!formularioNuevoNodo.nombreFormaVenta.trim()) {
+      setErrorNuevoNodo('El nombre de la forma de venta es obligatorio')
+      return
+    }
+    const unidadesBase = Number(formularioNuevoNodo.unidadesBase)
+    if (!Number.isFinite(unidadesBase) || unidadesBase <= 0) {
+      setErrorNuevoNodo('Las unidades base deben ser un número mayor a 0')
+      return
+    }
+
+    const nodoRaiz = nodosLocales.find(
+      n => n.presentacionId === presentacion.id && n.tipoFormaVenta === 'PRESENTACION_ORIGINAL'
+    )
+    const nodoPadreIdFinal = formularioNuevoNodo.nodoPadreId || nodoRaiz?.id
+
+    const input: CrearNodoInput = {
+      presentacionId: presentacion.id,
+      nodoPadreId: nodoPadreIdFinal,
+      nombreFormaVenta: formularioNuevoNodo.nombreFormaVenta.trim(),
+      tipoFormaVenta: formularioNuevoNodo.tipoFormaVenta,
+      unidadesBase,
+      esVendible: formularioNuevoNodo.esVendible,
+      esComprable: formularioNuevoNodo.esComprable,
+      descripcionPromo: formularioNuevoNodo.tipoFormaVenta === 'PROMOCION'
+        ? formularioNuevoNodo.descripcionPromo.trim() || undefined
+        : undefined,
+    }
+
+    setGuardandoNuevoNodo(true)
+    setErrorNuevoNodo(null)
+    try {
+      const nuevoId = await crearNodo(input)
+      const nodosRefrescados = await obtenerNodosFraccionamiento(presentacion.id)
+      const nodoCreado = nodosRefrescados.find(n => n.id === nuevoId)
+      if (nodoCreado?.esVendible) {
+        try {
+          proyectarAHov(
+            nodoCreado,
+            presentacion,
+            producto,
+            null,
+            'default',
+            producto.tipoRecurso,
+            undefined
+          )
+        } catch (errorHov) {
+          console.error('No se pudo proyectar la nueva forma de venta a HOV:', errorHov)
+        }
+      }
+      const otrasPresent = nodosLocales.filter(n => n.presentacionId !== presentacion.id)
+      const nodosActualizados = [...otrasPresent, ...nodosRefrescados]
+      setNodosLocales(nodosActualizados)
+      refrescarHovs(nodosActualizados)
+      onCancelarNuevoNodo()
+    } catch (errorGuardar) {
+      setErrorNuevoNodo(errorGuardar instanceof Error ? errorGuardar.message : String(errorGuardar))
+    } finally {
+      setGuardandoNuevoNodo(false)
+    }
+  }
+
   const sugerenciasUbicacion = obtenerUbicacionesFisicasSugeridas()
 
   return (
@@ -476,7 +578,8 @@ function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, no
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => window.alert('Nueva forma de venta pendiente')}
+                    onClick={() => onAbrirFormularioNuevoNodo(presentacion.id)}
+                    disabled={presentacionAgregarNodoId === presentacion.id}
                     className="rounded-full border border-[var(--dv-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-mod-abastecimiento)]"
                   >
                     Agregar forma de venta
@@ -672,6 +775,101 @@ function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, no
                   )
                 })}
             </div>
+            {presentacionAgregarNodoId === presentacion.id && formularioNuevoNodo !== null && (
+              <div className="mt-3 rounded-xl border border-[var(--dv-mod-abastecimiento-border)] bg-[var(--dv-mod-abastecimiento-bg)] p-3">
+                {errorNuevoNodo !== null && (
+                  <p className="mb-2 rounded-lg border border-[var(--dv-color-danger-border)] bg-[var(--dv-color-danger-bg)] px-3 py-2 text-[11px] font-semibold text-[var(--dv-color-danger)]">
+                    {errorNuevoNodo}
+                  </p>
+                )}
+                <div className="grid grid-cols-3 gap-2">
+                  <label className="col-span-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Nombre forma de venta</span>
+                    <input
+                      autoFocus
+                      type="text"
+                      value={formularioNuevoNodo.nombreFormaVenta}
+                      onChange={e => setFormularioNuevoNodo({ ...formularioNuevoNodo, nombreFormaVenta: e.target.value })}
+                      placeholder="Ej: Blíster x10, Caja x20, Unidad"
+                      className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                    />
+                  </label>
+                  <label>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Tipo</span>
+                    <select
+                      value={formularioNuevoNodo.tipoFormaVenta}
+                      onChange={e => setFormularioNuevoNodo({ ...formularioNuevoNodo, tipoFormaVenta: e.target.value as FormularioNuevoNodo['tipoFormaVenta'] })}
+                      className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                    >
+                      <option value="FRACCION">Fracción</option>
+                      <option value="PACK">Pack</option>
+                      <option value="PROMOCION">Promoción</option>
+                      <option value="INTERMEDIA">Intermedia</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Unidades base</span>
+                    <input
+                      type="number"
+                      value={formularioNuevoNodo.unidadesBase}
+                      onChange={e => setFormularioNuevoNodo({ ...formularioNuevoNodo, unidadesBase: e.target.value })}
+                      placeholder="Ej: 10"
+                      min="1"
+                      className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold tabular-nums text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                    />
+                  </label>
+                  <div className="flex items-center gap-4 pt-5">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formularioNuevoNodo.esVendible}
+                        onChange={e => setFormularioNuevoNodo({ ...formularioNuevoNodo, esVendible: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-[11px] font-bold text-[var(--dv-text-primary)]">Vendible</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formularioNuevoNodo.esComprable}
+                        onChange={e => setFormularioNuevoNodo({ ...formularioNuevoNodo, esComprable: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-[11px] font-bold text-[var(--dv-text-primary)]">Comprable</span>
+                    </label>
+                  </div>
+                  {formularioNuevoNodo.tipoFormaVenta === 'PROMOCION' && (
+                    <label className="col-span-3">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--dv-text-muted)]">Descripción de la promoción</span>
+                      <input
+                        type="text"
+                        value={formularioNuevoNodo.descripcionPromo}
+                        onChange={e => setFormularioNuevoNodo({ ...formularioNuevoNodo, descripcionPromo: e.target.value })}
+                        placeholder="Ej: 2x1 en caja grande"
+                        className="mt-1 h-8 w-full rounded-lg border border-[var(--dv-input-border)] bg-[var(--dv-input-bg)] px-2 text-[12px] font-semibold text-[var(--dv-text-primary)] outline-none focus:border-[var(--dv-input-border-focus)]"
+                      />
+                    </label>
+                  )}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void onGuardarNuevoNodo(presentacion)}
+                    disabled={guardandoNuevoNodo}
+                    className="rounded-lg bg-[#45b356] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
+                  >
+                    GUARDAR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onCancelarNuevoNodo}
+                    className="rounded-lg border border-[var(--dv-color-exit-border)] px-3 py-1.5 text-[11px] font-bold text-[var(--dv-color-exit)]"
+                  >
+                    CANCELAR
+                  </button>
+                </div>
+              </div>
+            )}
           </article>
           )
         })}
