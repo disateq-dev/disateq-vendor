@@ -21,6 +21,7 @@ import { ConfirmacionRecetaPanel } from "./components/ConfirmacionRecetaPanel";
 import { ConfirmacionVencimientoPanel } from "./components/ConfirmacionVencimientoPanel";
 
 function statusChip(p: ProductoBuscable) {
+  if (p.tipoRecurso === 'SERVICIO') return <span className="flex items-center gap-0.5 text-[#45b356]"><CircleCheck size={10} strokeWidth={2} />Servicio disponible</span>;
   if (p.stockStatus === "low") return <span className="flex items-center gap-0.5 text-amber-500"><AlertTriangle size={10} strokeWidth={2} />Queda poco</span>;
   if (p.stockStatus === "out") return <span className="flex items-center gap-0.5 text-red-400"><CircleX size={10} strokeWidth={2} />Sin unidades</span>;
   return <span className="flex items-center gap-0.5 text-[#45b356]"><CircleCheck size={10} strokeWidth={2} />Disponible</span>;
@@ -32,6 +33,7 @@ function tilePrice(p: ProductoBuscable): { prefix: string; cls: string } {
 }
 
 function dotColor(p: ProductoBuscable): string {
+  if (p.tipoRecurso === 'SERVICIO') return "#34d399";
   if (p.stockStatus === "out") return "#f87171";
   if (p.stockStatus === "low") return "#fbbf24";
   return "#34d399";
@@ -268,7 +270,7 @@ export function SalesWorkspace() {
   }, []);
 
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
-    if (p.stockStatus === "out") return;
+    if (p.stockStatus === "out" && p.tipoRecurso !== 'SERVICIO') return;
     if (p.condicionVenta === "CON_RECETA" || p.condicionVenta === "CONTROLADO") {
       setConfirmaReceta({ producto: p, condicion: p.condicionVenta });
       return;

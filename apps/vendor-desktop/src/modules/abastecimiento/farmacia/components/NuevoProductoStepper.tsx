@@ -493,9 +493,11 @@ function PasoProductoGeneralDos({ formulario, setFormulario, margenDefecto }: { 
 function PasoServicio({
   formulario,
   setFormulario,
+  margenDefecto,
 }: {
   formulario: ServicioForm
   setFormulario: (formulario: ServicioForm) => void
+  margenDefecto: number
 }): ReactElement {
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -513,7 +515,7 @@ function PasoServicio({
       <input className="h-11 rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" placeholder="Duración estimada en minutos (opcional)" value={formulario.duracionMinutos ?? ''} onChange={(e) => setFormulario({ ...formulario, duracionMinutos: e.target.value ? Number(e.target.value) : undefined })} />
       <label className="space-y-1">
         <span className="text-[11px] font-bold uppercase text-slate-500">Precio de venta al público (opcional)</span>
-        <input className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" step="0.01" placeholder="S/ 0.00" value={formulario.precioVenta ?? ''} onChange={(e) => setFormulario({ ...formulario, precioVenta: e.target.value ? Number(e.target.value) : undefined })} />
+        <input className="h-11 w-full rounded-xl border border-[var(--dv-input-border)] px-3" type="number" min="0" step="0.01" placeholder={`Ej: margen del ${(margenDefecto * 100).toFixed(0)}%`} value={formulario.precioVenta ?? ''} onChange={(e) => setFormulario({ ...formulario, precioVenta: e.target.value ? Number(e.target.value) : undefined })} />
       </label>
     </div>
   )
@@ -918,7 +920,7 @@ export function NuevoProductoStepper({
               setNodosExtra={setNodosExtra}
             />
           )}
-          {tipoRecurso === 'SERVICIO' && paso === 1 && <PasoServicio formulario={servicio} setFormulario={setServicio} />}
+          {tipoRecurso === 'SERVICIO' && paso === 1 && <PasoServicio formulario={servicio} setFormulario={setServicio} margenDefecto={margenDefecto} />}
         </div>
         {(errorLocal || error) && <div className="mt-5 rounded-xl bg-[#E3F1FA] px-4 py-3 text-[12px] font-bold text-[#1E88C7]">{errorLocal ?? error}</div>}
         <footer className="mt-6 flex justify-between gap-3">

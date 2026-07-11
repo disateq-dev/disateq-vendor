@@ -6,6 +6,7 @@ import type { TipoValorOperacional } from './valor-operacional.types'
 import { loadMovimientos } from '../inventory/persistence'
 import { deriveDisponibilidad, useInventoryStore } from '../inventory/store'
 import { useFarmaciaStore } from '../../domains/farmacia/farmacia.store'
+import type { TipoRecursoOperacional } from '../farmacia/types'
 import { calcularNivelVencimiento, type NivelVencimiento } from '../farmacia/vencimiento.utils'
 
 export interface ProductoBuscable {
@@ -24,6 +25,7 @@ export interface ProductoBuscable {
   dciTexto?: string
   nivelVencimiento?: NivelVencimiento
   diasAlVencimiento?: number
+  tipoRecurso: TipoRecursoOperacional
 }
 
 function mapearDisponibilidad(
@@ -96,6 +98,7 @@ export function obtenerProductosBuscables(
         dciTexto: productoComercial?.ifa,
         nivelVencimiento: semaforo.nivel ?? undefined,
         diasAlVencimiento: semaforo.dias ?? undefined,
+        tipoRecurso: getHOVById(item.hovId)?.tipoRecurso ?? 'MEDICAMENTO',
       }
     })
   } catch {
