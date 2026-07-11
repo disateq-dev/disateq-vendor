@@ -16,6 +16,7 @@ import { IngresosMercaderiaWorkspace } from './modules/abastecimiento/farmacia/I
 import { InventarioFarmaciaWorkspace } from './modules/abastecimiento/farmacia/InventarioFarmaciaWorkspace'
 import { PrincipiosActivosWorkspace } from './modules/abastecimiento/farmacia/PrincipiosActivosWorkspace'
 import { POSProvider, usePOS } from "./context/POSContext";
+import { useFarmaciaStore } from "./domains/farmacia/farmacia.store";
 import { LoginScreen } from "./modules/login/LoginScreen";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
@@ -61,6 +62,9 @@ function AppRoot() {
   // turno abierto (sesión recuperada), ir directo a VENTAS; si no, a TURNO.
   useEffect(() => {
     if (activeOperator && activeOperator.id !== prevOpId.current) {
+      if (rubro === 'farmacia') {
+        void useFarmaciaStore.getState().cargarResumenInventario()
+      }
       if (cashSession.isOpen) {
         setActiveModule("sales");
       } else {
@@ -69,7 +73,7 @@ function AppRoot() {
       }
     }
     prevOpId.current = activeOperator?.id ?? null;
-  }, [activeOperator, cashSession.isOpen]);
+  }, [activeOperator, cashSession.isOpen, rubro]);
 
   if (!activeOperator) return <LoginScreen />;
 

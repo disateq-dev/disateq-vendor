@@ -67,4 +67,6 @@ export async function despacharConFefo(lines: LineaPreVenta[], docNumber: string
       continue
     }
   }
+
+  void useFarmaciaStore.getState().cargarResumenInventario()
 }

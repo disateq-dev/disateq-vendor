@@ -58,6 +58,11 @@ export function obtenerProductosBuscables(
     const disponibilidadService = {
       getUnidadesDisponibles(productoId: string): number {
         try {
+          const resumen = useFarmaciaStore.getState().resumenInventario
+          if (resumen.length > 0) {
+            const item = resumen.find(r => r.productoId === productoId)
+            if (item !== undefined) return item.totalDisponible
+          }
           return deriveDisponibilidad(loadMovimientos(), productoId)
         } catch {
           return 0
