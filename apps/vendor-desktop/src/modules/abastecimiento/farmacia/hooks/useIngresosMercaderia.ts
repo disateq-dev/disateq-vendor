@@ -9,6 +9,8 @@ import { crearValor, suspenderValor } from '../../../../domains/catalog/valor-op
 import type { ValorOperacional } from '../../../../domains/catalog/valor-operacional.types'
 import type { CrearServicioCatalogoInput, ServicioCatalogo } from '../../../../domains/catalog/servicio.types'
 import { useFarmaciaStore } from '../../../../domains/farmacia/farmacia.store'
+import { obtenerPedidosActivosPorPresentacion } from '../../../../domains/farmacia/pedido-proveedor'
+import { invoke } from '@tauri-apps/api/core'
 import type {
   CrearNodoInput,
   CrearPresentacionInput,
@@ -53,6 +55,7 @@ interface UseIngresosMercaderiaResult {
   error: string | null
   historialReciente: unknown[]
   ingresoValido: boolean
+  pendientesPorPresentacion: Record<string, number>
   onTerminoProveedorChange(t: string): void
   onSeleccionarProveedor(p: Proveedor): void
   onAbrirCreacionProveedorSunat(): void
@@ -118,6 +121,7 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
   const [pasoNuevoProducto, setPasoNuevoProducto] = useState<number>(1)
   const [cargando, setCargando] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendientesPorPresentacion, setPendientesPorPresentacion] = useState<Record<string, number>>({})
   const crearProductoCompleto = useFarmaciaStore((state) => state.crearProductoCompleto)
   const { activeOperator, cashSession } = usePOS()
   const runtimeIdSesion = activeOperator ? `${activeOperator.id}-${cashSession.openedAt?.toISOString() ?? 'sin-turno'}` : 'sin-operador'
@@ -144,6 +148,16 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
   useEffect(() => () => {
     if (timerProveedorRef.current !== null) window.clearTimeout(timerProveedorRef.current)
     if (timerProductoRef.current !== null) window.clearTimeout(timerProductoRef.current)
+  }, [])
+
+  useEffect(() => {
+    obtenerPedidosActivosPorPresentacion()
+      .then(pendientes => {
+        const mapa: Record<string, number> = {}
+        pendientes.forEach(p => { mapa[p.presentacionId] = p.unidadesPendientes })
+        setPendientesPorPresentacion(mapa)
+      })
+      .catch(() => { /* falla silenciosa — solo afecta al badge informativo */ })
   }, [])
 
   const onTerminoProveedorChange = useCallback((t: string): void => {
@@ -520,6 +534,15 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
         }
       }
       await registrarIngreso(input)
+      // Puente INGRESOS ↔ Pedido: vincular cantidades recibidas a pedidos abiertos (fire-and-forget)
+      for (const linea of lineas) {
+        void invoke('vincular_ingreso_a_pedido', {
+          presentacionId: linea.presentacionId,
+          cantidadRecibida: linea.cantidad,
+        }).catch((e: unknown) => {
+          console.error('No se pudo vincular el ingreso al pedido proveedor:', e)
+        })
+      }
       limpiarEstado()
       // Contrato escritura doble: SQLite actualizado → Zustand debe reflejar el cambio
       void useFarmaciaStore.getState().cargarResumenInventario()
@@ -537,7 +560,7 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
     proveedorSeleccionado, lineas, buscandoProveedor, resultadosProveedor, terminoProveedor,
     creandoProveedorAbierto, modoCreacionProveedor, rucConsultaProveedor, datosRucProveedor, consultandoSunatProveedor,
     buscadorProductoAbierto, terminoProducto, resultadosProducto, creandoProductoAbierto, pasoNuevoProducto,
-    cargando, error, historialReciente, ingresoValido,
+    cargando, error, historialReciente, ingresoValido, pendientesPorPresentacion,
     onTerminoProveedorChange, onSeleccionarProveedor, onAbrirCreacionProveedorSunat,
     onAbrirCreacionProveedorManual, onCerrarCreacionProveedor, onRucProveedorChange,
     onConsultarRucProveedor, onGuardarProveedorSunatYSeleccionar, onGuardarProveedorManualYSeleccionar,

@@ -141,7 +141,8 @@ pub fn run() {
       commands::pedidos::marcar_en_transito,
       commands::pedidos::cancelar_pedido_proveedor,
       commands::pedidos::recibir_lineas_pedido,
-      commands::pedidos::obtener_pedidos_activos_por_presentacion])
+      commands::pedidos::obtener_pedidos_activos_por_presentacion,
+      commands::pedidos::vincular_ingreso_a_pedido])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

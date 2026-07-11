@@ -60,6 +60,7 @@ export function IngresosMercaderiaWorkspace(): ReactElement {
                 key={linea.id}
                 linea={linea}
                 numero={index + 1}
+                unidadesPendientes={ingresos.pendientesPorPresentacion[linea.presentacionId] ?? 0}
                 onActualizar={(cambios) => ingresos.onActualizarLinea(linea.id, cambios)}
                 onEliminar={() => ingresos.onEliminarLinea(linea.id)}
                 onUsarLoteGenerico={() => ingresos.onUsarLoteGenerico(linea.id)}

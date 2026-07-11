@@ -9,6 +9,7 @@ interface LineaIngresoCardProps {
   onEliminar: () => void
   onUsarLoteGenerico: () => void
   onUsarLoteReal: () => void
+  unidadesPendientes?: number
 }
 
 function fechaHoy(): string {
@@ -22,6 +23,7 @@ export function LineaIngresoCard({
   onEliminar,
   onUsarLoteGenerico,
   onUsarLoteReal,
+  unidadesPendientes,
 }: LineaIngresoCardProps): ReactElement {
   const loteGenerico = `SIN-LOTE-${fechaHoy()}`
 
@@ -33,6 +35,11 @@ export function LineaIngresoCard({
           <h3 className="mt-1 text-[14px] font-bold text-slate-900">{linea.productoNombre}</h3>
           <p className="text-[12px] font-semibold text-slate-500">{linea.presentacionDescripcion}</p>
         </div>
+        {(unidadesPendientes ?? 0) > 0 && (
+          <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">
+            Pedido abierto · {unidadesPendientes} uds.
+          </span>
+        )}
         <button type="button" onClick={onEliminar} className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E3F1FA] text-[#1E88C7]">
           <Trash2 className="h-4 w-4" />
         </button>

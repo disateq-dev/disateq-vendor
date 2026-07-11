@@ -370,3 +370,95 @@ pub async fn obtener_pedidos_activos_por_presentacion(
         })
         .collect()
 }
+
+#[tauri::command]
+pub async fn vincular_ingreso_a_pedido(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    presentacion_id: String,
+    cantidad_recibida: f64,
+) -> Result<(), String> {
+    if cantidad_recibida <= 0.0 {
+        return Ok(());
+    }
+
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    // Buscar líneas con cantidad pendiente en pedidos activos,
+    // ordenadas por fecha de creación del pedido (FIFO)
+    let rows = sqlx::query(
+        "SELECT lpp.id as linea_id, lpp.pedido_id, lpp.cantidad_pedida, lpp.cantidad_recibida
+         FROM linea_pedido_proveedor lpp
+         JOIN pedido_proveedor pp ON pp.id = lpp.pedido_id
+         WHERE lpp.presentacion_id = ?
+           AND pp.estado IN ('CONFIRMADO', 'EN_TRANSITO')
+           AND lpp.cantidad_pedida > lpp.cantidad_recibida
+         ORDER BY pp.creado_en ASC",
+    )
+    .bind(&presentacion_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if rows.is_empty() {
+        return Ok(());
+    }
+
+    let ts = obtener_timestamp(pool).await?;
+    let mut restante = cantidad_recibida;
+    let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
+
+    for row in &rows {
+        if restante <= 0.0 { break; }
+
+        let linea_id: String = row.try_get("linea_id").map_err(|e| e.to_string())?;
+        let pedido_id: String = row.try_get("pedido_id").map_err(|e| e.to_string())?;
+        let cantidad_pedida: f64 = row.try_get("cantidad_pedida").map_err(|e| e.to_string())?;
+        let cantidad_ya_recibida: f64 = row.try_get("cantidad_recibida").map_err(|e| e.to_string())?;
+
+        let pendiente = cantidad_pedida - cantidad_ya_recibida;
+        let a_recibir = restante.min(pendiente);
+
+        sqlx::query(
+            "UPDATE linea_pedido_proveedor SET cantidad_recibida = cantidad_recibida + ? WHERE id = ?",
+        )
+        .bind(a_recibir)
+        .bind(&linea_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        // Recalcular estado del pedido
+        let totales = sqlx::query_as::<_, (f64, f64)>(
+            "SELECT COALESCE(SUM(cantidad_pedida), 0), COALESCE(SUM(cantidad_recibida), 0)
+             FROM linea_pedido_proveedor WHERE pedido_id = ?",
+        )
+        .bind(&pedido_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        let (total_pedido, total_recibido) = totales;
+        let nuevo_estado = if total_recibido >= total_pedido {
+            "RECIBIDO"
+        } else {
+            "RECIBIDO_PARCIAL"
+        };
+
+        sqlx::query(
+            "UPDATE pedido_proveedor SET estado = ?, modificado_en = ? WHERE id = ?",
+        )
+        .bind(nuevo_estado)
+        .bind(&ts)
+        .bind(&pedido_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        restante -= a_recibir;
+    }
+
+    tx.commit().await.map_err(|e| e.to_string())?;
+    Ok(())
+}
