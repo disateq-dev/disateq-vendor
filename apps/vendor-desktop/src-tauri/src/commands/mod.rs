@@ -10,3 +10,4 @@ pub mod reportes;
 pub mod integraciones;
 pub mod ingresos;
 pub mod valores;
+pub mod pedidos;
