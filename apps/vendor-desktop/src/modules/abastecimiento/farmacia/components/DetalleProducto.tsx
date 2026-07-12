@@ -124,18 +124,18 @@ function CampoLectura({ label, valor }: CampoLecturaProps): ReactElement {
   )
 }
 
+interface FormularioNuevoNodo {
+  nombreFormaVenta: string
+  tipoFormaVenta: 'FRACCION' | 'PACK' | 'PROMOCION' | 'INTERMEDIA'
+  unidadesBase: string
+  esVendible: boolean
+  esComprable: boolean
+  nodoPadreId: string
+  descripcionPromo: string
+}
 function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, nombreFabricante }: PresentacionesTabProps): ReactElement {
   const { activeOperator } = usePOS()
   const tiposFormaVentaEditables: NodoFraccionamiento['tipoFormaVenta'][] = ['FRACCION', 'PACK', 'PROMOCION', 'INTERMEDIA']
-  interface FormularioNuevoNodo {
-    nombreFormaVenta: string
-    tipoFormaVenta: 'FRACCION' | 'PACK' | 'PROMOCION' | 'INTERMEDIA'
-    unidadesBase: string
-    esVendible: boolean
-    esComprable: boolean
-    nodoPadreId: string
-    descripcionPromo: string
-  }
   const [hovs, setHovs] = useState<HOV[]>([])
   const [presentacionesLocales, setPresentacionesLocales] = useState<PresentacionComercial[]>(presentaciones)
   const [nodosLocales, setNodosLocales] = useState<NodoFraccionamiento[]>(nodos)

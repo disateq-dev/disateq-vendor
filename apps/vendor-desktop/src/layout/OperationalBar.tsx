@@ -24,6 +24,7 @@ const MODULE_SHORTCUTS: Partial<Record<string, ActiveModule>> = {
 };
 
 // ── Colores canónicos por módulo ──────────────────────────────
+// Sincronizar con tokens --dv-mod-* en index.css si se cambian estos valores
 const MODULE_ACCENT: Record<ActiveModule, string> = {
   cash:           "#C59B6D",
   sales:          "#128C7E",
@@ -34,6 +35,7 @@ const MODULE_ACCENT: Record<ActiveModule, string> = {
   config:         "#4A5265",
 };
 
+// Sincronizar con tokens --dv-mod-* en index.css si se cambian estos valores
 const MODULE_BG: Record<ActiveModule, string> = {
   cash:           "#FFF5E6",
   sales:          "#E2F3F0",
