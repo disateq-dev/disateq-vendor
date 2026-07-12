@@ -36,6 +36,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v14_pedido_proveedor(db).await?;
     migrar_v15_error_log(db).await?;
     migrar_v16_ventas(db).await?;
+    migrar_v17_comprobantes(db).await?;
 
     Ok(())
 }
@@ -1276,6 +1277,136 @@ async fn migrar_v16_ventas(db: &sqlx::SqlitePool) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (16)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v17_comprobantes(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 17 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS comprobante (
+          id TEXT PRIMARY KEY,
+          venta_id TEXT,
+          tipo TEXT NOT NULL,
+          serie TEXT NOT NULL,
+          correlativo INTEGER NOT NULL,
+          codigo_unico TEXT NOT NULL UNIQUE,
+          es_formal INTEGER NOT NULL DEFAULT 0,
+          requiere_envio_sunat INTEGER NOT NULL DEFAULT 0,
+          leyenda_no_formal TEXT,
+          estado TEXT NOT NULL DEFAULT 'EMITIDO',
+          estado_sunat TEXT NOT NULL DEFAULT 'NO_APLICA',
+          motivo_anulacion TEXT,
+          cdr TEXT,
+          fecha_envio_sunat TEXT,
+          emisor_ruc TEXT NOT NULL,
+          emisor_razon_social TEXT NOT NULL,
+          emisor_direccion TEXT NOT NULL,
+          receptor_tipo_doc TEXT NOT NULL,
+          receptor_num_doc TEXT,
+          receptor_nombre TEXT NOT NULL,
+          receptor_es_generico INTEGER NOT NULL DEFAULT 1,
+          receptor_cliente_id TEXT,
+          subtotal REAL NOT NULL,
+          igv REAL NOT NULL,
+          isc REAL NOT NULL DEFAULT 0,
+          total REAL NOT NULL,
+          moneda TEXT NOT NULL DEFAULT 'PEN',
+          metodo_pago TEXT NOT NULL,
+          regimen TEXT NOT NULL DEFAULT 'GENERAL',
+          incluye_detraccion INTEGER NOT NULL DEFAULT 0,
+          operador_id TEXT NOT NULL,
+          sesion_id TEXT,
+          caja_codigo TEXT,
+          enviado_por_canal TEXT NOT NULL DEFAULT 'NINGUNO',
+          emitido_en TEXT NOT NULL,
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS linea_comprobante (
+          id TEXT PRIMARY KEY,
+          comprobante_id TEXT NOT NULL,
+          descripcion TEXT NOT NULL,
+          cantidad REAL NOT NULL,
+          valor_unitario REAL NOT NULL,
+          subtotal REAL NOT NULL,
+          tipo_afectacion_igv TEXT NOT NULL,
+          tasa_igv REAL NOT NULL DEFAULT 0,
+          monto_isc REAL,
+          nota_linea TEXT,
+          codigo_producto_sunat TEXT,
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS correlativo (
+          serie TEXT PRIMARY KEY,
+          tipo TEXT NOT NULL,
+          siguiente INTEGER NOT NULL DEFAULT 1,
+          ultimo_emitido INTEGER NOT NULL DEFAULT 0,
+          creado_en TEXT NOT NULL,
+          actualizado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_comprobante_venta ON comprobante(venta_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_comprobante_sesion ON comprobante(sesion_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_comprobante_fecha ON comprobante(emitido_en)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_comprobante_serie_corr ON comprobante(serie, correlativo)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_linea_comprobante ON linea_comprobante(comprobante_id)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (17)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
