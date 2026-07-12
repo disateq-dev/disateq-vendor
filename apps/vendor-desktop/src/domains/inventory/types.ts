@@ -21,7 +21,7 @@ export interface MovimientoOperacional {
 }
 
 // 1.1 — Estado operacional derivado de existencia + contexto de umbral
-export type EstadoDisponibilidad = 'disponible' | 'bajo_stock' | 'agotado';
+export type EstadoDisponibilidad = 'DISPONIBLE' | 'BAJO_STOCK' | 'AGOTADO';
 
 // 1.2 — Contexto operacional por ítem (umbralMinimo=0 → sin umbral configurado)
 export interface ContextoItem {

@@ -1,6 +1,6 @@
-export type BoxSlotType = "normal" | "contingency-1" | "contingency-2" | "contingencia";
+export type TipoCaja = "PRINCIPAL" | "CONTINGENCIA_1" | "CONTINGENCIA_2" | "CONTINGENCIA";
 
-export type BoxSlotDef = { code: string; type: BoxSlotType };
+export type DefinicionCaja = { codigo: string; type: TipoCaja };
 
 // Única fuente de verdad para bloques operacionales disponibles.
 // Agregar un bloque aquí lo registra automáticamente en cajas y en el selector de operadores.
@@ -10,11 +10,11 @@ export type BlockBase = (typeof BLOCK_BASES)[number];
 
 // Deriva las definiciones de slots para un conjunto de bloques.
 // Patrón fijo: base (principal), base+1 (secundaria-1), base+2 (secundaria-2), base+50 (contingencia).
-export function blockBoxDefs(bases: readonly number[] = BLOCK_BASES): BoxSlotDef[] {
+export function definirCajasDeBloque(bases: readonly number[] = BLOCK_BASES): DefinicionCaja[] {
   return bases.flatMap(b => [
-    { code: String(b),      type: "normal"        },
-    { code: String(b + 1),  type: "contingency-1" },
-    { code: String(b + 2),  type: "contingency-2" },
-    { code: String(b + 50), type: "contingencia"  },
+    { codigo: String(b),      type: "PRINCIPAL"      },
+    { codigo: String(b + 1),  type: "CONTINGENCIA_1" },
+    { codigo: String(b + 2),  type: "CONTINGENCIA_2" },
+    { codigo: String(b + 50), type: "CONTINGENCIA"   },
   ]);
 }

@@ -524,7 +524,7 @@ function PanelGestion({ selectedId, onSelect }: {
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2">
               <PauseCircle size={11} strokeWidth={2} className="shrink-0 text-amber-600" />
-              <span className="text-[10px] font-bold uppercase text-amber-700">SUSPENSIÓN · {selected.codigo}</span>
+              <span className="text-[10px] font-bold uppercase text-amber-700">SUSPENSIÓN · {selected.alias}</span>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">Motivo (obligatorio)</span>
@@ -553,7 +553,7 @@ function PanelGestion({ selectedId, onSelect }: {
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50/60 px-3 py-2">
               <UserX size={11} strokeWidth={2} className="shrink-0 text-red-500" />
-              <span className="text-[10px] font-bold uppercase text-red-600">BAJA · {selected.codigo}</span>
+              <span className="text-[10px] font-bold uppercase text-red-600">BAJA · {selected.alias}</span>
             </div>
             {selected.baseBloque !== null && (
               <p className="text-[10px] text-amber-700">

@@ -57,14 +57,14 @@ export function InventoryWorkspace() {
               const estado     = deriveEstado(paraOperar, umbral);
               const isSelected = selectedItemId === item.itemId;
 
-              const dotColor = estado === "disponible"
+              const dotColor = estado === "DISPONIBLE"
                 ? "bg-[#45b356]"
-                : estado === "bajo_stock"
+                : estado === "BAJO_STOCK"
                 ? "bg-amber-400"
                 : "bg-red-400";
-              const qtyColor = estado === "disponible"
+              const qtyColor = estado === "DISPONIBLE"
                 ? "text-[#45b356]"
-                : estado === "bajo_stock"
+                : estado === "BAJO_STOCK"
                 ? "text-amber-500"
                 : "text-red-500";
 
@@ -147,9 +147,9 @@ export function InventoryWorkspace() {
 // ── STOCK ACTUAL ─────────────────────────────────────────────────────────────
 
 const ESTADO_CFG: Record<EstadoDisponibilidad, { label: string; badge: string; qty: string }> = {
-  disponible: { label: "DISPONIBLE", badge: "bg-[#45b356]/12 text-[#45b356]", qty: "text-[#45b356]"  },
-  bajo_stock: { label: "QUEDA POCO", badge: "bg-amber-100 text-amber-600",    qty: "text-amber-500"  },
-  agotado:    { label: "SIN STOCK",  badge: "bg-red-50 text-red-500",         qty: "text-red-400"    },
+  DISPONIBLE: { label: "DISPONIBLE", badge: "bg-[#45b356]/12 text-[#45b356]", qty: "text-[#45b356]"  },
+  BAJO_STOCK: { label: "QUEDA POCO", badge: "bg-amber-100 text-amber-600",    qty: "text-amber-500"  },
+  AGOTADO:    { label: "SIN STOCK",  badge: "bg-red-50 text-red-500",         qty: "text-red-400"    },
 };
 
 const MS_48H = 48 * 60 * 60 * 1000;
@@ -167,7 +167,7 @@ function formatRelativo(ts: number): string {
   return new Date(ts).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit" });
 }
 
-const ORDEN_ESTADO: Record<EstadoDisponibilidad, number> = { agotado: 0, bajo_stock: 1, disponible: 2 };
+const ORDEN_ESTADO: Record<EstadoDisponibilidad, number> = { AGOTADO: 0, BAJO_STOCK: 1, DISPONIBLE: 2 };
 
 function derivePendienteIngreso(compras: CompraOperacional[], itemId: string): number {
   return compras
@@ -221,8 +221,8 @@ function ViewDisponibilidad({
     return a.item.nombre.localeCompare(b.item.nombre);
   });
 
-  const sinStock   = enriched.filter(e => e.estado === "agotado").length;
-  const pocoStock  = enriched.filter(e => e.estado === "bajo_stock").length;
+  const sinStock   = enriched.filter(e => e.estado === "AGOTADO").length;
+  const pocoStock  = enriched.filter(e => e.estado === "BAJO_STOCK").length;
   const conIngreso = enriched.filter(e => e.pendienteIngreso > 0).length;
 
   return (

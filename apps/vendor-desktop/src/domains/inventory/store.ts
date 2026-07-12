@@ -173,9 +173,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 // 1.1 — Estado operacional derivado de existencia + umbral (CAPA 1)
 // umbral=0 significa sin umbral configurado → solo agotado/disponible
 export function deriveEstado(existencia: number, umbral: number): EstadoDisponibilidad {
-  if (existencia <= 0)      return 'agotado';
-  if (umbral > 0 && existencia <= umbral) return 'bajo_stock';
-  return 'disponible';
+  if (existencia <= 0)      return 'AGOTADO';
+  if (umbral > 0 && existencia <= umbral) return 'BAJO_STOCK';
+  return 'DISPONIBLE';
 }
 
 // 0.3 — Disponibilidad derivada desde el log de movimientos

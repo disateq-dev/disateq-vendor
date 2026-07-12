@@ -8,7 +8,6 @@ export type AsignacionBloque = {
 export type Operador = {
   id: string;
   codigoOperador: string;
-  codigo: string;
   alias: string;
   apellidos: string;
   nombres: string;
@@ -46,7 +45,7 @@ const SEED_VERSION = "6";
 
 const SEED: Operador[] = [
   {
-    id: "op1", codigoOperador: "OP001", codigo: "FTEJADA", alias: "FTEJADA",
+    id: "op1", codigoOperador: "OP001", alias: "FTEJADA",
     apellidos: "TEJADA QUEVEDO", nombres: "FERNANDO MIGUEL", nombreCompleto: "FERNANDO MIGUEL TEJADA QUEVEDO",
     dni: "", telefono: "",
     codigoRol: "ADMIN", nombreRol: "Administrador",
@@ -80,7 +79,6 @@ export function cargarOperadores(): Operador[] {
     return arr.map(o => ({
       id:               typeof o.id === "string" ? o.id : String(Date.now()),
       codigoOperador:   typeof o.codigoOperador === "string" ? o.codigoOperador : (typeof o.operatorCode === "string" ? o.operatorCode : ""),
-      codigo:           typeof o.codigo === "string" ? o.codigo : (typeof o.code === "string" ? o.code : ""),
       alias:            typeof o.alias === "string" ? o.alias : (typeof o.codigo === "string" ? o.codigo : (typeof o.code === "string" ? o.code : "")),
       apellidos:        typeof o.apellidos === "string" ? o.apellidos : "",
       nombres:          typeof o.nombres === "string" ? o.nombres : (typeof o.name === "string" ? o.name : ""),
