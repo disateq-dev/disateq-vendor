@@ -94,7 +94,7 @@ export function ComboboxFiltrado({
           <Check
             size={16}
             strokeWidth={2.5}
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#45b356]"
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--dv-color-new)]"
           />
         ) : (
           <ChevronDown

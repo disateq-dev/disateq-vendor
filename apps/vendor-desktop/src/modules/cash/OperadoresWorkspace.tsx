@@ -45,23 +45,23 @@ function PinForm({ pin, confirm, error, onPin, onConfirm, onSave, onCancel }: {
 }) {
   const ready = pin.length >= 4 && pin === confirm;
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-[#005BE3]/20 bg-[#f4f8ff] px-3 py-2.5">
+    <div className="flex flex-col gap-2 rounded-xl border border-[var(--dv-color-edit)]/20 bg-[#f4f8ff] px-3 py-2.5">
       <div className="flex items-center gap-1.5">
-        <KeyRound size={10} strokeWidth={2} className="text-[#005BE3]" />
-        <span className="text-[9px] font-bold uppercase tracking-wider text-[#005BE3]">CONFIGURAR PIN</span>
+        <KeyRound size={10} strokeWidth={2} className="text-[var(--dv-color-edit)]" />
+        <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--dv-color-edit)]">CONFIGURAR PIN</span>
       </div>
       <div className="flex gap-2">
         <input autoFocus type="password" value={pin} inputMode="numeric"
           onChange={e => onPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
           onKeyDown={e => { if (e.key === "Enter" && ready) onSave(); if (e.key === "Escape") onCancel(); }}
           placeholder="PIN" maxLength={6}
-          className="w-20 rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[13px] font-bold tracking-[0.3em] text-[#2F3E46] outline-none focus:border-[#005BE3] focus:ring-1 focus:ring-[#005BE3]/20 placeholder:tracking-normal placeholder:font-normal placeholder:text-[#d1d9e1]"
+          className="w-20 rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[13px] font-bold tracking-[0.3em] text-[#2F3E46] outline-none focus:border-[var(--dv-color-edit)] focus:ring-1 focus:ring-[var(--dv-color-edit)]/20 placeholder:tracking-normal placeholder:font-normal placeholder:text-[#d1d9e1]"
         />
         <input type="password" value={confirm} inputMode="numeric"
           onChange={e => onConfirm(e.target.value.replace(/\D/g, "").slice(0, 6))}
           onKeyDown={e => { if (e.key === "Enter" && ready) onSave(); if (e.key === "Escape") onCancel(); }}
           placeholder="Confirmar" maxLength={6}
-          className="flex-1 rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#374151] outline-none focus:border-[#005BE3] focus:ring-1 focus:ring-[#005BE3]/20 placeholder:text-[#d1d9e1]"
+          className="flex-1 rounded-xl border border-[#e4e9f0] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#374151] outline-none focus:border-[var(--dv-color-edit)] focus:ring-1 focus:ring-[var(--dv-color-edit)]/20 placeholder:text-[#d1d9e1]"
         />
       </div>
       {error && <p className="text-[9px] font-semibold text-red-500">{error}</p>}
@@ -72,7 +72,7 @@ function PinForm({ pin, confirm, error, onPin, onConfirm, onSave, onCancel }: {
         </button>
         <button onClick={onSave} disabled={!ready}
           className={`flex h-6 flex-1 items-center justify-center rounded-lg text-[9px] font-bold uppercase text-white transition ${
-            ready ? "bg-[#005BE3] hover:bg-[#0049c4]" : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/50"
+            ready ? "bg-[var(--dv-color-edit)] hover:bg-[#0049c4]" : "cursor-not-allowed bg-[var(--dv-color-edit)]/[0.15] text-[var(--dv-color-edit)]/50"
           }`}>
           Guardar
         </button>
@@ -378,8 +378,8 @@ function PanelGestion({ selectedId, onSelect }: {
           disabled={!selected || hasActiveTurno}
           className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
             selected && !hasActiveTurno
-              ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
-              : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/40"
+              ? "bg-[var(--dv-color-edit)] text-white hover:bg-[#0049c4] active:scale-[0.97]"
+              : "cursor-not-allowed bg-[var(--dv-color-edit)]/[0.15] text-[var(--dv-color-edit)]/40"
           }`}>
           <Pencil size={10} strokeWidth={2.5} />EDITAR
         </button>
@@ -495,7 +495,7 @@ function PanelGestion({ selectedId, onSelect }: {
               </div>
               {!pinOpen && (
                 <button onClick={() => { setPinOpen(true); setPinInput(""); setPinConfirm(""); setPinError(""); }}
-                  className="text-[9px] font-semibold text-[#005BE3] transition hover:underline">
+                  className="text-[9px] font-semibold text-[var(--dv-color-edit)] transition hover:underline">
                   {selected.pin !== "" ? "Cambiar" : "Configurar →"}
                 </button>
               )}

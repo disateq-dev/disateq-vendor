@@ -448,8 +448,8 @@ function PanelGestionCajas({
           disabled={!canActOnSel}
           className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
             canActOnSel
-              ? "bg-[#005BE3] text-white hover:bg-[#0049c4] active:scale-[0.97]"
-              : "cursor-not-allowed bg-[#005BE3]/[0.15] text-[#005BE3]/50"
+              ? "bg-[var(--dv-color-edit)] text-white hover:bg-[#0049c4] active:scale-[0.97]"
+              : "cursor-not-allowed bg-[var(--dv-color-edit)]/[0.15] text-[var(--dv-color-edit)]/50"
           }`}>
           <Pencil size={10} strokeWidth={2.5} />EDITAR BLOQUE
         </button>

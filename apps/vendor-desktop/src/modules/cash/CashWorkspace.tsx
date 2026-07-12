@@ -2623,7 +2623,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         movimiento_egreso:  { sym: "−",  cls: "text-red-400"     },
                         fondo_ingreso:      { sym: "→",  cls: "text-amber-500"   },
                         fondo_egreso:       { sym: "←",  cls: "text-amber-600"   },
-                        comprobante:        { sym: "≡",  cls: "text-[#005BE3]"   },
+                        comprobante:        { sym: "≡",  cls: "text-[var(--dv-color-edit)]"   },
                         anulacion:          { sym: "⊘",  cls: "text-red-400"     },
                         cierre:             { sym: "⊗",  cls: "text-[#6b7280]"   },
                       };

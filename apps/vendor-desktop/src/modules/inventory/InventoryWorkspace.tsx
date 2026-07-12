@@ -459,7 +459,7 @@ function ViewMovimientos({
                     ? t === "todos"   ? "bg-[#1f2937] text-white"
                     : t === "entrada" ? "bg-[#45b356] text-white"
                     : t === "salida"  ? "bg-red-500 text-white"
-                    : "bg-[#005BE3] text-white"
+                    : "bg-[var(--dv-color-edit)] text-white"
                     : "border border-[#e4eaea] text-[#6b7280] hover:border-[#1E88C7]/40"
                 }`}
               >
@@ -492,7 +492,7 @@ function ViewMovimientos({
               </Label>
               {filtrados.map(m => {
                 const sign  = m.tipo === "entrada" ? "+" : m.tipo === "salida" ? "−" : "±";
-                const color = m.tipo === "entrada" ? "text-[#45b356]" : m.tipo === "salida" ? "text-red-500" : "text-[#005BE3]";
+                const color = m.tipo === "entrada" ? "text-[#45b356]" : m.tipo === "salida" ? "text-red-500" : "text-[var(--dv-color-edit)]";
                 return (
                   <div key={m.movementId} className="flex items-center gap-3 rounded-xl border border-[#eef2f2] bg-white px-3 py-2">
                     <span className={`w-4 text-center font-bold text-[13px] ${color}`}>{sign}</span>
@@ -892,7 +892,7 @@ function ViewReconciliacion({
           <button
             onClick={handleReconciliar}
             disabled={items.length === 0}
-            className="rounded-lg bg-[#005BE3] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#0049b5] active:scale-95 disabled:opacity-40"
+            className="rounded-lg bg-[var(--dv-color-edit)] px-4 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white transition hover:bg-[#0049b5] active:scale-95 disabled:opacity-40"
           >
             Aplicar
           </button>
@@ -908,7 +908,7 @@ function ViewReconciliacion({
             resultado.delta === 0
               ? "bg-[#45b356]/10 border border-[#45b356]/20"
               : resultado.delta > 0
-              ? "bg-[#005BE3]/8 border border-[#005BE3]/20"
+              ? "bg-[var(--dv-color-edit)]/8 border border-[var(--dv-color-edit)]/20"
               : "bg-red-50 border border-red-200"
           }`}>
             <p className="text-[11px] font-bold text-[#1f2937]">

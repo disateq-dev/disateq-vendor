@@ -27,6 +27,7 @@ button, a, [role="button"], select, label {
   --dv-color-confirm: #3B6B34;
   --dv-color-confirm-text: #FFFFFF;
   --dv-color-new: #45b356;
+  --dv-color-edit: #005BE3;
   --dv-color-danger: #DC2626;
   --dv-color-danger-dark: #B91C1C;
   --dv-color-danger-bg: #FEF2F2;

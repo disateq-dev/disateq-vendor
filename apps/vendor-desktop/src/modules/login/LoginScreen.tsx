@@ -403,8 +403,8 @@ export function LoginScreen() {
                 <>
                   {/* Header modo pin-change */}
                   <div className="flex items-center gap-2 mb-3">
-                    <Lock size={12} className="text-[#005BE3] shrink-0" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#005BE3]">Cambio de PIN</span>
+                    <Lock size={12} className="text-[var(--dv-color-edit)] shrink-0" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--dv-color-edit)]">Cambio de PIN</span>
                   </div>
 
                   {/* CAMPO 2: MOTIVO */}
@@ -441,7 +441,7 @@ export function LoginScreen() {
                       onChange={e => { setPcAuthCode(e.target.value); setPcError(null); }}
                       onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinNuevoRef.current?.focus(); } }}
                       placeholder="Letras y números"
-                      className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:font-normal outline-none focus:border-[#005BE3] focus:ring-2 focus:ring-[#005BE3]/10 transition"
+                      className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:font-normal outline-none focus:border-[var(--dv-color-edit)] focus:ring-2 focus:ring-[var(--dv-color-edit)]/10 transition"
                     />
                   </div>
 
