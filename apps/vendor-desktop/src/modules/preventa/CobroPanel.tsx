@@ -163,7 +163,7 @@ export function CobroPanel() {
         incluyeDetraccion: false,
         porcentajeDetraccion: null,
       },
-      emitidoPor: activeOperator?.id ?? 'default',
+      operadorId: activeOperator?.id ?? 'default',
     } satisfies Parameters<typeof validarComprobante>[0]
     try {
       const resultado = validarComprobante(
@@ -277,7 +277,7 @@ export function CobroPanel() {
       fechaEnvioSUNAT: null,
       motivoAnulacion: null,
       emitidoEn: new Date().toISOString(),
-      emitidoPor: activeOperator?.id ?? "default",
+      operadorId: activeOperator?.id ?? "default",
       enviadoPorCanal: "NINGUNO",
     };
   }
@@ -398,7 +398,7 @@ export function CobroPanel() {
               consentimientoContacto: false,
             }
           : null,
-        emitidoPor:  activeOperator?.id ?? "default",
+        operadorId:  activeOperator?.id ?? "default",
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);
@@ -472,7 +472,7 @@ export function CobroPanel() {
               consentimientoContacto: false,
             }
           : null,
-        emitidoPor:  activeOperator?.id ?? "default",
+        operadorId:  activeOperator?.id ?? "default",
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);

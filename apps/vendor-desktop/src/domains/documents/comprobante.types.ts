@@ -130,7 +130,7 @@ export interface Comprobante {
   motivoAnulacion: string | null
   sessionKey?: string | null
   emitidoEn: string
-  emitidoPor: string
+  operadorId: string
   enviadoPorCanal: CanalEnvio
 }
 
@@ -143,7 +143,7 @@ export interface CrearComprobanteInput {
   moneda: string
   metodoPago: MetodoPago
   tributario: TributarioComprobante
-  emitidoPor: string
+  operadorId: string
 }
 
 export interface ComprobanteStore {

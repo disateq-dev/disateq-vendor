@@ -46,7 +46,7 @@ interface POSContextValue {
   currentSessionEvents: TurnEvent[];
   comprobantes: Comprobante[];
   addComprobante: (comprobante: Comprobante) => void;
-  voidComprobante: (id: string, motivo: string) => void;
+  anularComprobante: (id: string, motivo: string) => void;
   sessionNotice: string | null;
   showNotice: (msg: string) => void;
   operators: Operador[];
@@ -178,7 +178,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     return pool.find(b => b.available) ?? null;
   }, [cashBoxes, activeOperator]);
 
-  const { comprobantes, addComprobante, voidComprobante } = useComprobantes({
+  const { comprobantes, addComprobante, anularComprobante } = useComprobantes({
     cashSessionRef,
     addOpLog,
     addTurnEvent,
@@ -195,7 +195,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       cashMoves, addCashMove, updateCashMove, editCashMove,
       opLogs, addOpLog,
       turnEvents, currentSessionEvents,
-      comprobantes, addComprobante, voidComprobante,
+      comprobantes, addComprobante, anularComprobante,
       sessionNotice, showNotice,
       operators, activeOperator, loginOperator, logoutOperator,
       changeOperatorPin, changeOperatorPinById, resetOperatorPin,

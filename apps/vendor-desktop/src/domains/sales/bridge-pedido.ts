@@ -19,7 +19,7 @@ export interface AddProductBridgeInput {
   operadorTieneCapacidadLibre: boolean
 }
 
-export function traducirATicketLine(
+export function traducirALineaPreVenta(
   input: AddProductBridgeInput
 ): LineaPreVenta {
   return {
@@ -51,7 +51,7 @@ export function sincronizarConcrecion(pedidoId: string): void {
           const hov = getHOVById(linea.hovId)
           if (!hov) return
           const unidadesADescontar = linea.cantidad * linea.factorConversion
-          const raw = localStorage.getItem('disateq:inventory:items')
+          const raw = localStorage.getItem('inv_v0_items')
           if (!raw) return
           const items = JSON.parse(raw) as Array<{
             id: string
@@ -64,7 +64,7 @@ export function sincronizarConcrecion(pedidoId: string): void {
             (item.disponible ?? 0) - unidadesADescontar
           )
           localStorage.setItem(
-            'disateq:inventory:items',
+            'inv_v0_items',
             JSON.stringify(items)
           )
         } catch {

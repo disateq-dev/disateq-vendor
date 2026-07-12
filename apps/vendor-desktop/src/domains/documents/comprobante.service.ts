@@ -141,7 +141,7 @@ export function crearComprobante(
     fechaEnvioSUNAT: null,
     motivoAnulacion: null,
     emitidoEn: new Date().toISOString(),
-    emitidoPor: input.emitidoPor,
+    operadorId: input.operadorId,
     enviadoPorCanal: 'NINGUNO',
   }
 
@@ -180,7 +180,7 @@ export function convertirAFormal(
   tipo: 'FACTURA' | 'BOLETA',
   serie: string,
   receptor: ReceptorComprobante,
-  emitidoPor: string
+  operadorId: string
 ): Comprobante {
   const origen = comprobanteStore.getComprobanteById(id)
   if (!origen) {
@@ -232,7 +232,7 @@ export function convertirAFormal(
     fechaEnvioSUNAT: null,
     motivoAnulacion: null,
     emitidoEn: now,
-    emitidoPor,
+    operadorId,
     enviadoPorCanal: 'NINGUNO',
   }
 

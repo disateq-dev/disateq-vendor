@@ -186,7 +186,7 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
           <p className="text-[12px] font-semibold text-[#374151]">{selected.emisor.razonSocial}</p>
           <p className="text-[11px] text-[#6b7280]">RUC {selected.emisor.ruc}</p>
           <p className="text-[11px] text-[#6b7280]">{selected.emisor.direccion}</p>
-          <p className="text-[11px] text-[#9ca3af]">Emitido por {selected.emitidoPor || "—"}</p>
+          <p className="text-[11px] text-[#9ca3af]">Emitido por {selected.operadorId || "—"}</p>
         </div>
       </div>
 
@@ -388,7 +388,7 @@ function FilterChip({
 }
 
 export function ComprobantesWorkspace() {
-  const { comprobantes, voidComprobante, cashSession, showNotice } = usePOS();
+  const { comprobantes, anularComprobante, cashSession, showNotice } = usePOS();
 
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -473,16 +473,16 @@ export function ComprobantesWorkspace() {
 
   const handleVoid = useCallback((motivo: string) => {
     if (!selectedId || !motivo.trim()) return;
-    const alias = selected?.emitidoPor ?? "Operador";
+    const alias = selected?.operadorId ?? "Operador";
     solicitarAutorizacion(
       "Anular comprobante",
       alias,
       () => {
-        voidComprobante(selectedId, motivo.trim());
+        anularComprobante(selectedId, motivo.trim());
         setSelectedId(null);
       }
     );
-  }, [selectedId, selected, solicitarAutorizacion, voidComprobante]);
+  }, [selectedId, selected, solicitarAutorizacion, anularComprobante]);
 
   const handleConvertir = useCallback((tipo: "BOLETA" | "FACTURA") => {
     if (!selected) return;

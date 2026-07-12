@@ -42,7 +42,7 @@ interface EmitirComprobanteInput {
     whatsapp?: string | null
     consentimientoContacto?: boolean
   } | null
-  emitidoPor: string
+  operadorId: string
   pedidoId: string | null
 }
 
@@ -117,7 +117,7 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
         incluyeDetraccion: false,
         porcentajeDetraccion: null,
       },
-      emitidoPor: input.emitidoPor,
+      operadorId: input.operadorId,
       comprobanteReferenciadoId: null,
     }
 

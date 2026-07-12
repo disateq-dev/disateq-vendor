@@ -41,7 +41,7 @@ export function useComprobantes({
     }
   }, [cashSessionRef, addTurnEvent]);
 
-  const voidComprobante = useCallback((id: string, motivo: string) => {
+  const anularComprobante = useCallback((id: string, motivo: string) => {
     const c = comprobanteStore.getComprobanteById(id);
     if (!c || c.estado === "ANULADO") return;
     const s = cashSessionRef.current;
@@ -60,5 +60,5 @@ export function useComprobantes({
     addTurnEvent(sk, "anulacion", `Comprobante ${c.serie}-${correlStr} anulado`);
   }, [cashSessionRef, addOpLog, addTurnEvent, onAnulacion]);
 
-  return { comprobantes, addComprobante, voidComprobante };
+  return { comprobantes, addComprobante, anularComprobante };
 }

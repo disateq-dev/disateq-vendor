@@ -3,7 +3,7 @@ import { usePreVentaStore } from "../state/preventa.store";
 import {
   obtenerPedidoActivoOCrear,
   sincronizarConcrecion,
-  traducirATicketLine,
+  traducirALineaPreVenta,
   type AddProductBridgeInput
 } from "../../sales/bridge-pedido";
 import { agregarLinea } from '../../sales/pedido.service'
@@ -60,7 +60,7 @@ export const preVentaService = {
       }
     }
     usePreVentaStore.getState().agregarLinea(
-      traducirATicketLine(input),
+      traducirALineaPreVenta(input),
     );
   },
 
