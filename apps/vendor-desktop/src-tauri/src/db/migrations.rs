@@ -35,6 +35,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v13_seed_config_establecimiento(db).await?;
     migrar_v14_pedido_proveedor(db).await?;
     migrar_v15_error_log(db).await?;
+    migrar_v16_ventas(db).await?;
 
     Ok(())
 }
@@ -1181,6 +1182,100 @@ async fn migrar_v15_error_log(db: &sqlx::SqlitePool) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (15)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v16_ventas(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 16 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS venta (
+          id TEXT PRIMARY KEY,
+          codigo TEXT NOT NULL,
+          operador_id TEXT NOT NULL,
+          caja_codigo TEXT,
+          sesion_id TEXT,
+          total REAL NOT NULL,
+          metodo_pago TEXT NOT NULL,
+          tipo_comprobante TEXT NOT NULL DEFAULT 'TIQUE_VENTA',
+          estado TEXT NOT NULL DEFAULT 'CONCRETADA',
+          concretada_en TEXT NOT NULL,
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS linea_venta (
+          id TEXT PRIMARY KEY,
+          venta_id TEXT NOT NULL REFERENCES venta(id),
+          hov_id TEXT NOT NULL,
+          nodo_fraccionamiento_id TEXT,
+          presentacion_id TEXT,
+          nombre_visible TEXT NOT NULL,
+          cantidad REAL NOT NULL,
+          factor_conversion REAL NOT NULL,
+          unidades_base_total REAL NOT NULL,
+          valor_aplicado REAL NOT NULL,
+          tipo_valor TEXT NOT NULL,
+          es_valor_manual INTEGER NOT NULL DEFAULT 0,
+          subtotal REAL NOT NULL,
+          es_servicio INTEGER NOT NULL DEFAULT 0,
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_venta_operador ON venta(operador_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_venta_sesion ON venta(sesion_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_venta_fecha ON venta(concretada_en)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_linea_venta_venta ON linea_venta(venta_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_linea_venta_hov ON linea_venta(hov_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_linea_venta_presentacion ON linea_venta(presentacion_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (16)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

@@ -145,7 +145,10 @@ pub fn run() {
       commands::pedidos::vincular_ingreso_a_pedido,
       commands::log::registrar_evento_log,
       commands::log::obtener_eventos_log,
-      commands::log::obtener_resumen_salud])
+      commands::log::obtener_resumen_salud,
+      commands::ventas::registrar_venta,
+      commands::ventas::obtener_ventas_sesion,
+      commands::ventas::obtener_venta_detalle])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

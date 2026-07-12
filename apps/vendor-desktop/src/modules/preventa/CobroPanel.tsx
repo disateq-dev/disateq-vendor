@@ -415,7 +415,13 @@ export function CobroPanel() {
       "default"
     );
     if (pedidoActivo) {
-      preVentaService.concretarVenta(pedidoActivo);
+      preVentaService.concretarVenta(
+        pedidoActivo,
+        mapearMetodoPago(payMethod),
+        mapearTipoComprobante(docType),
+        cashSession.cashBox && cashSession.openedAt ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}` : null,
+        cashSession.cashBox?.code ?? null,
+      );
     }
 
     setConfirmSheet({
@@ -557,7 +563,13 @@ export function CobroPanel() {
       "default"
     );
     if (pedidoActivo) {
-      preVentaService.concretarVenta(pedidoActivo);
+      preVentaService.concretarVenta(
+        pedidoActivo,
+        mapearMetodoPago(payMethod),
+        mapearTipoComprobante(docType),
+        cashSession.cashBox && cashSession.openedAt ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}` : null,
+        cashSession.cashBox?.code ?? null,
+      );
     }
 
     setConfirmSheet({

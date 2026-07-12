@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
-import { blockBoxDefs } from "../domains/operator/blocks.store";
+import { definirCajasDeBloque } from "../domains/operator/blocks.store";
 import type { Operador } from "../domains/operator/operator.store";
 import { NULL_STATS, type SessionStats, type DocRange, type ByMethod } from "../hooks/useSessionStats";
 
@@ -30,7 +30,13 @@ export type CashSession = {
   motivo?: string; observacion?: string; refOp?: string;
 };
 
-const BOX_DEFS = blockBoxDefs() as { code: string; type: CashBoxType }[];
+const BOX_DEFS: { code: string; type: CashBoxType }[] = definirCajasDeBloque().map(d => ({
+  code: d.codigo,
+  type: d.type === "PRINCIPAL" ? "normal"
+      : d.type === "CONTINGENCIA_1" ? "contingency-1"
+      : d.type === "CONTINGENCIA_2" ? "contingency-2"
+      : "contingencia",
+}));
 const TERMINAL = "PC-VENTAS01";
 
 const LS_SESSION   = "disateq.pos.cashSession";

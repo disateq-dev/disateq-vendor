@@ -1,7 +1,7 @@
 import { pedidoStore } from './pedido.store'
 import { crearPedido, confirmarPedido, iniciarCobro } from './pedido.service'
 import { pedidoOperations } from './pedido.operations'
-import { getHOVById } from '../catalog/hov.store'
+import { registrarVentaEnSQLite } from './venta.service'
 import type { LineaPreVenta } from '../preventa/dto/LineaPreVenta'
 
 export interface AddProductBridgeInput {
@@ -39,38 +39,10 @@ export function traducirALineaPreVenta(
   }
 }
 
-export function sincronizarConcrecion(pedidoId: string): void {
+export function sincronizarConcrecion(pedidoId: string, metodoPago: string, tipoComprobante: string, sesionId: string | null, cajaCodigo: string | null): void {
   try {
     const pedido = pedidoStore.getPedidoById(pedidoId)
     if (!pedido) return
-
-    pedido.lineas
-      .filter(linea => linea.estado === 'ACTIVA')
-      .forEach(linea => {
-        try {
-          const hov = getHOVById(linea.hovId)
-          if (!hov) return
-          const unidadesADescontar = linea.cantidad * linea.factorConversion
-          const raw = localStorage.getItem('inv_v0_items')
-          if (!raw) return
-          const items = JSON.parse(raw) as Array<{
-            id: string
-            disponible?: number
-          }>
-          const item = items.find(entry => entry.id === hov.productoId)
-          if (!item) return
-          item.disponible = Math.max(
-            0,
-            (item.disponible ?? 0) - unidadesADescontar
-          )
-          localStorage.setItem(
-            'inv_v0_items',
-            JSON.stringify(items)
-          )
-        } catch {
-          return
-        }
-      })
 
     try {
       if (pedido.estado === 'ABIERTO') {
@@ -86,6 +58,8 @@ export function sincronizarConcrecion(pedidoId: string): void {
     } catch {
       // estado no permite concreción · continúa sin error
     }
+
+    void registrarVentaEnSQLite({ pedido: pedidoStore.getPedidoById(pedidoId)!, metodoPago, tipoComprobante, sesionId, cajaCodigo })
 
   } catch {
     return
