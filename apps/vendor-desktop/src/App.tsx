@@ -24,7 +24,7 @@ import { LoginScreen } from "./modules/login/LoginScreen";
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
 export type CashSubView             = "turno" | "supervision-caja";
 export type AbastecimientoSubModule = "productos" | "ifa" | "proveedores" | "laboratorios" | "ingresos" | "inventarios" | "traslados" | "pedidos";
-export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades";
+export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "experiencia" | "operadores" | "cajas" | "roles" | "capacidades" | "diagnostico";
 
 function AppRoot() {
   const { activeOperator, cashSession, rubro } = usePOS();

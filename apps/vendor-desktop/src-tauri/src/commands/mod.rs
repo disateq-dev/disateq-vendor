@@ -11,3 +11,4 @@ pub mod integraciones;
 pub mod ingresos;
 pub mod valores;
 pub mod pedidos;
+pub mod log;

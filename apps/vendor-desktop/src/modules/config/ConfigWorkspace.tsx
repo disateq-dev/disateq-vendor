@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users, UserCog, LayoutGrid } from "lucide-react";
+import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users, UserCog, LayoutGrid, Activity } from "lucide-react";
 import { CapacidadesWorkspace } from "./CapacidadesWorkspace";
 import { RolesOperacionalesWorkspace } from "./RolesOperacionalesWorkspace";
 import { OperadoresWorkspace } from "../cash/OperadoresWorkspace";
@@ -11,6 +11,7 @@ import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
 import { pinAutorizacionStore } from "../../config/pin-autorizacion.store";
 import { accesosStore } from "../../domains/operator/accesos.store";
 import { type ConfigSubView } from "../../App";
+import { DiagnósticoWorkspace } from "./DiagnósticoWorkspace";
 
 const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia", "optica", "zapateria", "reparacion", "celulares"];
 
@@ -105,6 +106,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     capacidades: <Sliders     size={13} strokeWidth={2} className="text-[#4A5265]" />,
     experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#4A5265]" />,
     rubro:       <Layers      size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    diagnostico:  <Activity    size={13} strokeWidth={2} className="text-[#4A5265]" />,
   };
   const SUB_LABELS: Record<ConfigSubView, string> = {
     negocio:     "Negocio",
@@ -115,12 +117,14 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     capacidades: "Capacidades operacionales",
     experiencia: "Experiencia",
     rubro:       "Rubro",
+    diagnostico: "Diagnóstico del sistema",
   };
 
   if (configSubView === "operadores")  return <OperadoresWorkspace />;
   if (configSubView === "cajas")       return <CajasWorkspace />;
   if (configSubView === "roles")       return <RolesOperacionalesWorkspace />;
   if (configSubView === "capacidades") return <CapacidadesWorkspace />;
+  if (configSubView === "diagnostico") return <DiagnósticoWorkspace />;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/50 bg-[#FDFCF9]">

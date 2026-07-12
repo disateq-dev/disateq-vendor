@@ -8,6 +8,8 @@ import {
   obtenerValoresNodo,
 } from '../farmacia/farmacia.service'
 
+import { logWarn, logCritical } from '../logging/error-logger'
+
 /**
  * Verificación de integridad de caché al arranque.
  *
@@ -53,8 +55,12 @@ export async function verificarIntegridadCacheFarmacia(): Promise<void> {
                 'default',
                 producto.tipoRecurso,
               )
-            } catch {
-              // HOV ya existe o error no bloqueante — continuar
+            } catch (err) {
+              void logWarn('startup-integrity', 'HOV no proyectable', {
+                nodoId: nodo.id,
+                presentacionId: presentacion.id,
+                error: String(err),
+              })
             }
           }
 
@@ -67,14 +73,19 @@ export async function verificarIntegridadCacheFarmacia(): Promise<void> {
               if (valorNormal !== undefined) {
                 sincronizarValorHov(nodo, valorNormal.valor)
               }
-            } catch {
-              // Error no bloqueante — continuar
+            } catch (err) {
+              void logWarn('startup-integrity', 'Valor no sincronizable', {
+                nodoId: nodo.id,
+                error: String(err),
+              })
             }
           }
         }
       }
     }
-  } catch {
-    // Falla silenciosa — nunca interrumpe el arranque
+  } catch (err) {
+    void logCritical('startup-integrity', 'Fallo en verificación de integridad de caché', {
+      error: String(err),
+    })
   }
 }

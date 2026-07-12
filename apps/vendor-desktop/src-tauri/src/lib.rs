@@ -142,7 +142,10 @@ pub fn run() {
       commands::pedidos::cancelar_pedido_proveedor,
       commands::pedidos::recibir_lineas_pedido,
       commands::pedidos::obtener_pedidos_activos_por_presentacion,
-      commands::pedidos::vincular_ingreso_a_pedido])
+      commands::pedidos::vincular_ingreso_a_pedido,
+      commands::log::registrar_evento_log,
+      commands::log::obtener_eventos_log,
+      commands::log::obtener_resumen_salud])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

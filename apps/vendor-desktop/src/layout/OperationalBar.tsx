@@ -5,6 +5,7 @@ import { useCapacidad } from "../hooks/useCapacidad";
 import { useContextoOperacional } from "../hooks/useContextoOperacional";
 import { usePOS } from "../context/POSContext";
 import { getActiveAuthorizationsForBlock } from "../modules/cash/services/supervision-authorization.service";
+import { HealthDot } from "../components/HealthDot";
 
 // ── Orden visual de módulos ───────────────────────────────────
 const MODULES_ORDER: ActiveModule[] = [
@@ -94,14 +95,15 @@ const ABAST_OPCIONES: OpcionSecundaria[] = [
 ];
 
 const CONFIG_OPCIONES: OpcionSecundaria[] = [
-  { key: "negocio",     label: "Negocio"     },
-  { key: "operacion",   label: "Operación"   },
-  { key: "roles",       label: "Roles"       },
-  { key: "operadores",  label: "Operadores"  },
-  { key: "cajas",       label: "Cajas"       },
-  { key: "capacidades", label: "Capacidades" },
-  { key: "experiencia", label: "Experiencia" },
-  { key: "rubro",       label: "Rubro"       },
+  { key: "negocio",      label: "Negocio"      },
+  { key: "operacion",    label: "Operación"    },
+  { key: "roles",        label: "Roles"        },
+  { key: "operadores",   label: "Operadores"   },
+  { key: "cajas",        label: "Cajas"        },
+  { key: "capacidades",  label: "Capacidades"  },
+  { key: "experiencia",  label: "Experiencia"  },
+  { key: "rubro",        label: "Rubro"        },
+  { key: "diagnostico",  label: "Diagnóstico", separadorAntes: true },
 ];
 
 function getOpciones(modulo: ActiveModule, puedeSupervisar: boolean): OpcionSecundaria[] {
@@ -425,6 +427,14 @@ export function ContextBar({
             return renderOpcion(opcion, estaActiva, tieneFoco, accent, expandido, opcionIdx);
           })}
         </div>
+
+        {expandido === "config" && (
+          <HealthDot
+            onNavigate={() => {
+              setOpcionActiva("config", "diagnostico", onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
+            }}
+          />
+        )}
       </section>
     );
 

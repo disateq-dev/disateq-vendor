@@ -40,6 +40,25 @@ CREATE TABLE IF NOT EXISTS movimiento (
 CREATE INDEX IF NOT EXISTS idx_mov_item ON movimiento(item_id);
 CREATE INDEX IF NOT EXISTS idx_mov_lote ON movimiento(lote_id);
 CREATE INDEX IF NOT EXISTS idx_mov_timestamp ON movimiento(timestamp);
+
+CREATE TABLE IF NOT EXISTS error_log (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  nivel     TEXT NOT NULL,
+  modulo    TEXT NOT NULL,
+  mensaje   TEXT NOT NULL,
+  contexto  TEXT,
+  sesion_id TEXT,
+  timestamp TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_error_log_nivel
+  ON error_log(nivel);
+
+CREATE INDEX IF NOT EXISTS idx_error_log_timestamp
+  ON error_log(timestamp);
+
+CREATE INDEX IF NOT EXISTS idx_error_log_modulo
+  ON error_log(modulo, timestamp);
 "#;
 
 pub const SCHEMA_FARMACIA: &str = r#"
