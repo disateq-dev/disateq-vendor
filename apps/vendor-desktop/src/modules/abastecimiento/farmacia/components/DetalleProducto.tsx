@@ -323,7 +323,7 @@ function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, no
         const presentacionEncontrada = presentacionesLocales.find((presentacion) => presentacion.id === nodo.presentacionId)
         if (presentacionEncontrada !== undefined) {
           try {
-            proyectarAHov(nodoActualizado, presentacionEncontrada, producto, null, 'default', producto.tipoRecurso, undefined)
+            proyectarAHov(nodoActualizado, presentacionEncontrada, producto, 'default', producto.tipoRecurso, undefined)
           } catch (errorHov) {
             console.error('No se pudo proyectar la forma de venta a HOV:', errorHov)
           }
@@ -427,7 +427,6 @@ function PresentacionesTab({ producto, presentaciones, nodos, nombreProducto, no
             nodoCreado,
             presentacion,
             producto,
-            null,
             'default',
             producto.tipoRecurso,
             undefined

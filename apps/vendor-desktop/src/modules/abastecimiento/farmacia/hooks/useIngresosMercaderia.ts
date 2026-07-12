@@ -410,7 +410,7 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
         nodosCreados
           .filter((nodo: NodoFraccionamiento) => nodo.esVendible)
           .forEach((nodo: NodoFraccionamiento) => {
-            proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso, ubicacionFisica)
+            proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, 'default', tipoRecurso, ubicacionFisica)
           })
         if (precioVenta !== undefined && precioVenta > 0) {
           nodosCreados

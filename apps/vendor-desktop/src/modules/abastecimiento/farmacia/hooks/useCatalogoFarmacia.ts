@@ -300,7 +300,7 @@ export function useCatalogoFarmacia(): UseCatalogoFarmaciaResult {
           nodosCreados
             .filter((nodo) => nodo.esVendible)
             .forEach((nodo) => {
-              proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, null, 'default', tipoRecurso, ubicacionFisica, precioVenta)
+              proyectarAHov(nodo, presentacionAssembled, productoComercialAssembled, 'default', tipoRecurso, ubicacionFisica, precioVenta)
             })
         } catch (errorProyeccion) {
           console.error('No se pudo proyectar el producto a la capa de venta (HOV):', errorProyeccion)

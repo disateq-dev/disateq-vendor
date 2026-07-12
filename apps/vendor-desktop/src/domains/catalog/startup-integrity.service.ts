@@ -51,7 +51,6 @@ export async function verificarIntegridadCacheFarmacia(): Promise<void> {
                 nodo,
                 presentacion,
                 producto,
-                null,
                 'default',
                 producto.tipoRecurso,
               )

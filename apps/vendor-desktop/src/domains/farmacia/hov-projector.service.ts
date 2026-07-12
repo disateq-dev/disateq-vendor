@@ -15,7 +15,6 @@ export function proyectarAHov(
   nodo: NodoFraccionamiento,
   presentacion: PresentacionComercial,
   productoComercial: ProductoComercial,
-  valorVenta: number | null,
   contextoOperacionalId: string,
   tipoRecurso: TipoRecursoOperacional,
   ubicacionFisica?: string,
@@ -41,10 +40,6 @@ export function proyectarAHov(
     })
   } else if (hov.estado === 'RETIRADA') {
     hov = reactivarHOV(hov.id)
-  }
-
-  if (valorVenta !== null && valorVenta > 0) {
-    sincronizarValorHov(nodo, valorVenta)
   }
 
   if (precioVenta !== undefined && precioVenta > 0) {
