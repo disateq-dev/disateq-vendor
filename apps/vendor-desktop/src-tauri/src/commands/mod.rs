@@ -13,3 +13,4 @@ pub mod valores;
 pub mod pedidos;
 pub mod log;
 pub mod ventas;
+pub mod comprobantes;

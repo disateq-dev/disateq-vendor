@@ -148,7 +148,14 @@ pub fn run() {
       commands::log::obtener_resumen_salud,
       commands::ventas::registrar_venta,
       commands::ventas::obtener_ventas_sesion,
-      commands::ventas::obtener_venta_detalle])
+      commands::ventas::obtener_venta_detalle,
+      commands::comprobantes::registrar_comprobante,
+      commands::comprobantes::obtener_siguiente_correlativo,
+      commands::comprobantes::obtener_comprobantes_sesion,
+      commands::comprobantes::obtener_comprobantes_historial,
+      commands::comprobantes::obtener_comprobante_detalle,
+      commands::comprobantes::anular_comprobante_sqlite,
+      commands::comprobantes::actualizar_estado_sunat])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
