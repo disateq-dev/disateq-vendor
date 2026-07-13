@@ -38,6 +38,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v16_ventas(db).await?;
     migrar_v17_comprobantes(db).await?;
     migrar_v18_sesion_caja(db).await?;
+    migrar_v19_operadores(db).await?;
 
     Ok(())
 }
@@ -1518,6 +1519,188 @@ async fn migrar_v18_sesion_caja(db: &sqlx::SqlitePool) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (18)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v19_operadores(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 19 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS operador (
+          id TEXT PRIMARY KEY,
+          codigo_operador TEXT NOT NULL,
+          alias TEXT NOT NULL,
+          apellidos TEXT NOT NULL,
+          nombres TEXT NOT NULL,
+          nombre_completo TEXT NOT NULL,
+          dni TEXT,
+          telefono TEXT,
+          codigo_rol TEXT NOT NULL,
+          nombre_rol TEXT NOT NULL,
+          base_bloque INTEGER,
+          asignacion_bloque_en TEXT,
+          liberacion_bloque_en TEXT,
+          estado TEXT NOT NULL DEFAULT 'ACTIVO',
+          motivo_estado TEXT,
+          fecha_estado TEXT,
+          pin TEXT NOT NULL DEFAULT '',
+          pin_salt TEXT,
+          capacidades TEXT NOT NULL DEFAULT '[]',
+          registrado_en TEXT NOT NULL,
+          registrado_por TEXT NOT NULL,
+          modificado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("CREATE UNIQUE INDEX IF NOT EXISTS idx_operador_codigo ON operador(codigo_operador)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE UNIQUE INDEX IF NOT EXISTS idx_operador_alias ON operador(alias)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_operador_estado ON operador(estado)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS rol (
+          id TEXT PRIMARY KEY,
+          codigo TEXT NOT NULL,
+          nombre TEXT NOT NULL,
+          descripcion TEXT NOT NULL DEFAULT '',
+          capacidades TEXT NOT NULL DEFAULT '[]',
+          requiere_bloque INTEGER NOT NULL DEFAULT 0,
+          activo INTEGER NOT NULL DEFAULT 1,
+          creado_en TEXT NOT NULL,
+          creado_por TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("CREATE UNIQUE INDEX IF NOT EXISTS idx_rol_codigo ON rol(codigo)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_rol_activo ON rol(activo)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let ahora = sqlx::query_scalar::<_, String>(
+        "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let cantidad_roles = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM rol")
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if cantidad_roles == 0 {
+        for (codigo, nombre, descripcion, capacidades) in [
+            (
+                "VEN",
+                "Ventas",
+                "Operación de venta — apertura de turno, cobro, emisión de comprobantes",
+                "[\"gestionar_clientes\"]",
+            ),
+            (
+                "GES",
+                "Gestor",
+                "Gestión integral de la operación",
+                "[\"observar_comprobantes_global\",\"anular_comprobantes\",\"corregir_arqueos\",\"reaperturar_cierres\",\"regularizar_incidencias\",\"observar_continuidad\",\"ver_reportes\",\"gestionar_clientes\",\"gestionar_inventarios\",\"gestionar_compras\"]",
+            ),
+            (
+                "SOP",
+                "Soporte",
+                "Asistencia técnica y diagnóstico operacional",
+                "[\"observar_continuidad\"]",
+            ),
+            (
+                "ADMIN",
+                "Administrador",
+                "Acceso total al sistema",
+                "[\"acceso_total\"]",
+            ),
+        ] {
+            let id = uuid::Uuid::new_v4().to_string();
+            sqlx::query(
+                "INSERT OR IGNORE INTO rol
+                   (id, codigo, nombre, descripcion, capacidades, requiere_bloque, activo, creado_en, creado_por)
+                 VALUES (?, ?, ?, ?, ?, 0, 1, ?, 'SISTEMA')",
+            )
+            .bind(&id)
+            .bind(codigo)
+            .bind(nombre)
+            .bind(descripcion)
+            .bind(capacidades)
+            .bind(&ahora)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+    }
+
+    let cantidad_operadores = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM operador")
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if cantidad_operadores == 0 {
+        let id = uuid::Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT OR IGNORE INTO operador
+               (id, codigo_operador, alias, apellidos, nombres, nombre_completo, dni, telefono,
+                codigo_rol, nombre_rol, base_bloque, asignacion_bloque_en, liberacion_bloque_en,
+                estado, motivo_estado, fecha_estado, pin, pin_salt, capacidades, registrado_en,
+                registrado_por, modificado_en)
+             VALUES (?, 'OP001', 'FTEJADA', 'TEJADA QUEVEDO', 'FERNANDO MIGUEL',
+                'FERNANDO MIGUEL TEJADA QUEVEDO', NULL, NULL, 'ADMIN', 'Administrador', 900,
+                ?, NULL, 'ACTIVO', NULL, NULL,
+                'b9776d7ddf459c9ad5b0e1d6ac61e27befb5e99fd62446677600d7472e88a8cc', NULL,
+                '[\"corregir_arqueos\",\"reaperturar_cierres\",\"regularizar_incidencias\",\"observar_comprobantes_global\",\"anular_comprobantes\",\"observar_continuidad\",\"gestionar_operadores\",\"gestionar_roles\",\"gestionar_capacidades\",\"gestionar_cajas\",\"gestionar_inventarios\",\"gestionar_compras\",\"gestionar_clientes\",\"ver_reportes\",\"acceso_total\"]',
+                ?, 'SISTEMA', ?)",
+        )
+        .bind(&id)
+        .bind(&ahora)
+        .bind(&ahora)
+        .bind(&ahora)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (19)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
