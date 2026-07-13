@@ -14,3 +14,4 @@ pub mod pedidos;
 pub mod log;
 pub mod ventas;
 pub mod comprobantes;
+pub mod sesion_caja;

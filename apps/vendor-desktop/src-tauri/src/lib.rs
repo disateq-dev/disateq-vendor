@@ -155,7 +155,15 @@ pub fn run() {
       commands::comprobantes::obtener_comprobantes_historial,
       commands::comprobantes::obtener_comprobante_detalle,
       commands::comprobantes::anular_comprobante_sqlite,
-      commands::comprobantes::actualizar_estado_sunat])
+      commands::comprobantes::actualizar_estado_sunat,
+      commands::sesion_caja::abrir_sesion_caja,
+      commands::sesion_caja::cerrar_sesion_caja,
+      commands::sesion_caja::registrar_movimiento_caja,
+      commands::sesion_caja::actualizar_movimiento_caja,
+      commands::sesion_caja::registrar_evento_turno,
+      commands::sesion_caja::obtener_sesion_activa,
+      commands::sesion_caja::obtener_historial_sesiones,
+      commands::sesion_caja::obtener_movimientos_sesion])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
