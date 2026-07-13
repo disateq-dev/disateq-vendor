@@ -3,6 +3,12 @@ import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
 import { definirCajasDeBloque } from "../domains/operator/blocks.store";
 import type { Operador } from "../domains/operator/operator.store";
 import { NULL_STATS, type SessionStats, type DocRange, type ByMethod } from "../hooks/useSessionStats";
+import {
+  abrirSesionCajaEnSQLite,
+  cerrarSesionCajaEnSQLite,
+  registrarMovimientoCajaEnSQLite,
+  actualizarMovimientoCajaEnSQLite,
+} from '../domains/cash/sesion-caja-sqlite.service'
 
 export type CashBoxType = "normal" | "contingency-1" | "contingency-2" | "contingencia";
 export type MoveType             = "ingreso" | "egreso";
@@ -283,6 +289,26 @@ export function useCaja({
       ...(regularizationMode   ? { regularizationMode   } : {}),
     };
     setCashMoves(prev => [...prev, move]);
+    const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : '';
+    if (sk) {
+      void registrarMovimientoCajaEnSQLite(
+        sk,
+        type,
+        amount,
+        motivo,
+        observacion ?? null,
+        refId ?? null,
+        s.operator,
+        s.cashBox?.code ?? '',
+        s.terminal,
+        sourceType,
+        fromApertura,
+        fromVendido,
+        regularizationStatus ?? null,
+        regularizationMode ?? null,
+        move.timestamp,
+      );
+    }
     const verb   = refId ? "registró reposición" : type === "ingreso" ? "registró ingreso" : "registró egreso";
     const srcLbl = sourceType === "apertura" ? "fondo de cambio" : sourceType === "vendido" ? "caja del día" : "dinero prestado";
     const obs = observacion ? ` · ${observacion}` : "";
@@ -310,6 +336,7 @@ export function useCaja({
       ? { ...m, regularizationStatus: status, ...(mode ? { regularizationMode: mode } : {}) }
       : m
     ));
+    void actualizarMovimientoCajaEnSQLite(id, status, mode ?? null);
     addOpLog(`[REGULARIZACIÓN] ${s.operator} — CAJA ${s.cashBox?.code ?? "?"} — S/${target.amount.toFixed(2)} ${modeLabel}: ${target.motivo}`);
     if (s.cashBox && s.openedAt && (target.sourceType === "apertura" || target.sourceType === "externo")) {
       const sk     = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
@@ -356,6 +383,19 @@ export function useCaja({
     const tag = isExceptional ? " [EXCEPCIONAL]" : "";
     const now = new Date();
     setCashSession({ isOpen: true, cashBox: box, operator, operatorId, terminal: TERMINAL, openedAt: now, apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
+    void abrirSesionCajaEnSQLite(
+      `${boxCode}-${now.toISOString()}`,
+      boxCode,
+      box.type,
+      operator,
+      operatorId ?? null,
+      TERMINAL,
+      apertura,
+      trimmedMotivo ?? null,
+      null,
+      trimmedRefOp ?? null,
+      now.toISOString(),
+    );
     const base  = `${operator} abrió CAJA ${boxCode}${tag} · fondo S/ ${apertura.toFixed(2)}`;
     const extra = [trimmedMotivo && `Motivo: ${trimmedMotivo}`, trimmedRefOp && `Ref: ${trimmedRefOp}`].filter(Boolean).join(" · ");
     addOpLog(extra ? `${base} — ${extra}` : base);
@@ -392,6 +432,11 @@ export function useCaja({
     const sk = s.openedAt ? `${code}-${s.openedAt.toISOString()}` : "";
     addTurnEvent(sk, "cierre", `Cierre de turno · Caja ${code}`);
     setUsedCodes(prev => { const next = new Set(prev); next.add(code); return next; });
+    void cerrarSesionCajaEnSQLite(
+      sk,
+      new Date().toISOString(),
+      'ok',
+    );
     setCashSession({ isOpen: false, cashBox: null, operator: "", operatorId: undefined, terminal: TERMINAL, openedAt: null, apertura: 0 });
     addOpLog(`${op} cerró CAJA ${code}`);
   }, [addOpLog, addTurnEvent, resetStats, setCobroOpen, setZone]);

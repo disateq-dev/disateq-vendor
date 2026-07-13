@@ -6,6 +6,7 @@ import {
   saveTurnEvents,
 } from "../domains/cash/turn-events.store";
 import type { CashSession } from "../context/POSContext";
+import { registrarEventoTurnoEnSQLite } from '../domains/cash/sesion-caja-sqlite.service'
 
 const LS_OPLOGS = "disateq.pos.opLogs";
 
@@ -55,6 +56,7 @@ export function useBitacora({ cashSessionRef, initialOpLogs }: UseBitacoraDeps) 
       text,
     };
     setTurnEvents(prev => [...prev, entry]);
+    void registrarEventoTurnoEnSQLite(entry.sessionKey, entry.type, entry.text, entry.ts);
   }, []);
 
   const cashSession = cashSessionRef.current;
