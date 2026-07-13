@@ -37,6 +37,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v15_error_log(db).await?;
     migrar_v16_ventas(db).await?;
     migrar_v17_comprobantes(db).await?;
+    migrar_v18_sesion_caja(db).await?;
 
     Ok(())
 }
@@ -1407,6 +1408,116 @@ async fn migrar_v17_comprobantes(db: &sqlx::SqlitePool) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (17)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v18_sesion_caja(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 18 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sesion_caja (
+          id TEXT PRIMARY KEY,
+          caja_codigo TEXT NOT NULL,
+          caja_tipo TEXT NOT NULL,
+          operador_nombre TEXT NOT NULL,
+          operador_id TEXT,
+          terminal TEXT NOT NULL,
+          apertura REAL NOT NULL DEFAULT 0,
+          motivo TEXT,
+          observacion TEXT,
+          ref_op TEXT,
+          estado TEXT NOT NULL DEFAULT 'ABIERTA',
+          close_signal TEXT,
+          abierta_en TEXT NOT NULL,
+          cerrada_en TEXT,
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS movimiento_caja (
+          id TEXT PRIMARY KEY,
+          sesion_id TEXT NOT NULL,
+          tipo TEXT NOT NULL,
+          monto REAL NOT NULL,
+          motivo TEXT NOT NULL,
+          observacion TEXT,
+          ref_id TEXT,
+          operador_nombre TEXT NOT NULL,
+          caja_codigo TEXT NOT NULL,
+          terminal TEXT NOT NULL,
+          source_type TEXT NOT NULL,
+          from_apertura REAL NOT NULL DEFAULT 0,
+          from_vendido REAL NOT NULL DEFAULT 0,
+          regularization_status TEXT,
+          regularization_mode TEXT,
+          timestamp TEXT NOT NULL,
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS evento_turno (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          sesion_id TEXT NOT NULL,
+          tipo TEXT NOT NULL,
+          texto TEXT NOT NULL,
+          ts TEXT NOT NULL,
+          creado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_sesion_caja_estado ON sesion_caja(estado)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_sesion_caja_fecha ON sesion_caja(abierta_en)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_movimiento_caja_sesion ON movimiento_caja(sesion_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_movimiento_caja_timestamp ON movimiento_caja(timestamp)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_evento_turno_sesion ON evento_turno(sesion_id)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (18)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
