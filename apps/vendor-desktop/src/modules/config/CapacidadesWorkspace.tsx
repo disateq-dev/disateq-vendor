@@ -102,7 +102,7 @@ function PanelOperadores({ selectedId, onSelect }: {
                     <div className="flex items-center gap-1.5">
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${
                         isSel ? "bg-[#4A5265] text-white" : "bg-[#F3F4F6] text-[#4A5265]"
-                      }`}>{op.codigo}</span>
+                      }`}>{op.alias}</span>
                       <span className={`truncate text-[12px] font-semibold ${
                         isSel ? "text-[#121416]" : op.estado === "SUSPENDIDO" ? "text-[#9ca3af]" : "text-[#2F3E46]"
                       }`}>{op.nombreCompleto}</span>
@@ -172,7 +172,7 @@ function PanelCapacidades({ operator }: { operator: Operador | null }) {
         <Sliders size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CAPACIDADES</span>
         <span className="text-[#4A5265]/30 mx-0.5">·</span>
-        <span className="rounded bg-[#4A5265] px-1.5 py-0.5 text-[9px] font-bold text-white">{operator.codigo}</span>
+        <span className="rounded bg-[#4A5265] px-1.5 py-0.5 text-[9px] font-bold text-white">{operator.alias}</span>
         <span className="text-[12px] font-semibold text-[#4A5265]">{operator.nombreCompleto}</span>
         {totalEffective > 0 && (
           <span className="ml-auto rounded-md bg-[#4A5265]/15 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-[#4A5265]">

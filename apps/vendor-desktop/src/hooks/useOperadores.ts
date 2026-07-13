@@ -120,7 +120,6 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const op: Operador = {
       id: `op${Date.now()}`,
       codigoOperador: opCode,
-      codigo: data.alias,
       alias: data.alias,
       apellidos: data.apellidos,
       nombres: data.nombres,
@@ -135,7 +134,7 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
       pin: "",
       capacidades: [],
       registradoEn: new Date().toISOString(),
-      registradoPor: activeOperatorRef.current?.codigoOperador || activeOperatorRef.current?.codigo || "SISTEMA",
+      registradoPor: activeOperatorRef.current?.codigoOperador || activeOperatorRef.current?.alias || "SISTEMA",
     };
     const updated = [...operatorsRef.current, op];
     guardarOperadores(updated);
@@ -155,7 +154,6 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const displayName = `${data.nombres.trim()} ${data.apellidos.trim()}`.trim();
     const updated = operatorsRef.current.map(o => o.id === id ? {
       ...o,
-      codigo: data.alias,
       alias: data.alias,
       apellidos: data.apellidos,
       nombres: data.nombres,

@@ -255,7 +255,7 @@ function PanelDetalle({ selectedId, onSelect }: {
                 <div className="flex flex-wrap gap-1">
                   {operatorsWithRole.map(op => (
                     <span key={op.id} className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[9px] font-bold text-[#4A5265]">
-                      {op.codigo} {op.nombreCompleto}
+                      {op.alias} {op.nombreCompleto}
                     </span>
                   ))}
                 </div>
