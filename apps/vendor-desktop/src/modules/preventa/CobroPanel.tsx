@@ -17,6 +17,7 @@ import {
 } from "../../domains/documents/bridge-comprobante";
 import { validarComprobante } from "../../domains/documents/comprobante.validator";
 import { correlativoStore } from "../../domains/documents/correlativo.store";
+import { registrarComprobanteEnSQLite } from "../../domains/documents/comprobante-sqlite.service";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
 import ClienteBuscador, { type ReceptorComprobante } from "../sales/ClienteBuscador";
 import { SheetBody, SheetFooter, SheetHeader, SheetWork } from "../../components/sheet";
@@ -402,6 +403,14 @@ export function CobroPanel() {
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);
+      void registrarComprobanteEnSQLite(
+        comprobante,
+        cashSession.cashBox && cashSession.openedAt
+          ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
+          : null,
+        cashSession.cashBox?.code ?? null,
+        comprobante.pedidoId,
+      );
     } catch {
       addComprobante(buildComprobanteData(dt));
     }
@@ -482,6 +491,14 @@ export function CobroPanel() {
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);
+      void registrarComprobanteEnSQLite(
+        comprobante,
+        cashSession.cashBox && cashSession.openedAt
+          ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
+          : null,
+        cashSession.cashBox?.code ?? null,
+        comprobante.pedidoId,
+      );
       receiptData = construirReceiptData(
         comprobante,
         dateTime,
