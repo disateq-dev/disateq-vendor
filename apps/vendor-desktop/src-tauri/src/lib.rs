@@ -163,7 +163,17 @@ pub fn run() {
       commands::sesion_caja::registrar_evento_turno,
       commands::sesion_caja::obtener_sesion_activa,
       commands::sesion_caja::obtener_historial_sesiones,
-      commands::sesion_caja::obtener_movimientos_sesion])
+      commands::sesion_caja::obtener_movimientos_sesion,
+      commands::operadores::obtener_operadores,
+      commands::operadores::obtener_roles,
+      commands::operadores::crear_operador,
+      commands::operadores::actualizar_operador,
+      commands::operadores::actualizar_estado_operador,
+      commands::operadores::actualizar_pin_operador,
+      commands::operadores::actualizar_capacidades_operador,
+      commands::operadores::crear_rol,
+      commands::operadores::actualizar_rol,
+      commands::operadores::actualizar_capacidades_rol])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
