@@ -11,25 +11,87 @@ import {
   cargarRoles, guardarRoles, establecerCapacidadesRol, estaCodigoRolOcupado,
 } from "../domains/operator/roles.store";
 import { accesosStore } from "../domains/operator/accesos.store";
+import {
+  type OperadorRow,
+  cargarOperadoresSQLite, cargarRolesSQLite,
+  crearOperadorSQLite, actualizarOperadorSQLite,
+  actualizarEstadoOperadorSQLite, actualizarPinOperadorSQLite,
+  actualizarCapacidadesOperadorSQLite,
+  crearRolSQLite, actualizarRolSQLite, actualizarCapacidadesRolSQLite,
+} from "../domains/operator/operador-sqlite.service";
+
+function operadorRowToOperador(row: OperadorRow): Operador {
+  return {
+    id: row.id,
+    codigoOperador: row.codigo_operador,
+    alias: row.alias,
+    apellidos: row.apellidos,
+    nombres: row.nombres,
+    nombreCompleto: row.nombre_completo,
+    dni: row.dni ?? undefined,
+    telefono: row.telefono ?? undefined,
+    codigoRol: row.codigo_rol,
+    nombreRol: row.nombre_rol,
+    baseBloque: row.base_bloque,
+    asignacionBloque: row.asignacion_bloque_en
+      ? { assignedAt: row.asignacion_bloque_en, releasedAt: row.liberacion_bloque_en ?? undefined }
+      : undefined,
+    estado: row.estado as Operador["estado"],
+    motivoEstado: row.motivo_estado ?? undefined,
+    fechaEstado: row.fecha_estado ?? undefined,
+    pin: row.pin,
+    capacidades: (() => { try { return JSON.parse(row.capacidades) as string[]; } catch { return []; } })(),
+    registradoEn: row.registrado_en,
+    registradoPor: row.registrado_por,
+  };
+}
 
 interface UseOperadoresDeps {
   addOpLog: (text: string) => void;
 }
 
 export function useOperadores({ addOpLog }: UseOperadoresDeps) {
-  const [operators, setOperators] = useState<Operador[]>(cargarOperadores);
+  const [operators, setOperators] = useState<Operador[]>([]);
   const operatorsRef = useRef(operators);
   operatorsRef.current = operators;
 
-  // Migración idempotente de PINs en texto plano al montar
+  // Carga inicial desde SQLite con migración one-shot desde localStorage
   useEffect(() => {
-    migrarPinsOperadores(operatorsRef.current).then(migrados => {
-      const cambio = migrados.some((o, i) => o.pin !== operatorsRef.current[i]?.pin);
-      if (cambio) {
-        guardarOperadores(migrados);
+    cargarOperadoresSQLite().then(async rows => {
+      if (rows.length > 0) {
+        setOperators(rows.map(operadorRowToOperador));
+      } else {
+        // SQLite vacío — migrar desde localStorage
+        const legacy = cargarOperadores();
+        const migrados = await migrarPinsOperadores(legacy);
+        await Promise.all(migrados.map(op =>
+          crearOperadorSQLite({
+            id: op.id,
+            codigo_operador: op.codigoOperador,
+            alias: op.alias,
+            apellidos: op.apellidos,
+            nombres: op.nombres,
+            nombre_completo: op.nombreCompleto,
+            dni: op.dni ?? null,
+            telefono: op.telefono ?? null,
+            codigo_rol: op.codigoRol,
+            nombre_rol: op.nombreRol,
+            base_bloque: op.baseBloque,
+            asignacion_bloque_en: op.asignacionBloque?.assignedAt ?? null,
+            estado: op.estado,
+            pin: op.pin,
+            pin_salt: null,
+            capacidades: JSON.stringify(op.capacidades ?? []),
+            registrado_en: op.registradoEn,
+            registrado_por: op.registradoPor,
+          })
+        ));
         setOperators(migrados);
       }
-    }).catch(() => { /* migración silenciosa */ });
+    }).catch(() => {
+      // Fallback final a localStorage
+      setOperators(cargarOperadores());
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -95,6 +157,7 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     if (!updated) return false;
     guardarOperadores(updated);
     setOperators(updated);
+    void actualizarPinOperadorSQLite(id, newHash, null);
     const op = operatorsRef.current.find(o => o.id === id);
     if (op) {
       addOpLog(`[PIN] ${op.nombreCompleto} reseteó su PIN${motivo ? ` · ${motivo}` : ""}`);
@@ -139,6 +202,26 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const updated = [...operatorsRef.current, op];
     guardarOperadores(updated);
     setOperators(updated);
+    void crearOperadorSQLite({
+      id: op.id,
+      codigo_operador: op.codigoOperador,
+      alias: op.alias,
+      apellidos: op.apellidos,
+      nombres: op.nombres,
+      nombre_completo: op.nombreCompleto,
+      dni: op.dni ?? null,
+      telefono: op.telefono ?? null,
+      codigo_rol: op.codigoRol,
+      nombre_rol: op.nombreRol,
+      base_bloque: op.baseBloque,
+      asignacion_bloque_en: op.asignacionBloque?.assignedAt ?? null,
+      estado: op.estado,
+      pin: op.pin,
+      pin_salt: null,
+      capacidades: JSON.stringify(op.capacidades ?? []),
+      registrado_en: op.registradoEn,
+      registrado_por: op.registradoPor,
+    });
     addOpLog(`[OPERADOR] Creado ${op.nombreCompleto} (${op.alias} · ${opCode})${data.blockBase ? ` · BLQ ${data.blockBase}` : ""}`);
     return op;
   }, [addOpLog]);
@@ -171,6 +254,23 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     } : o);
     guardarOperadores(updated);
     setOperators(updated);
+    const opActualizado = updated.find(o => o.id === id);
+    if (opActualizado) {
+      void actualizarOperadorSQLite({
+        id: opActualizado.id,
+        alias: opActualizado.alias,
+        apellidos: opActualizado.apellidos,
+        nombres: opActualizado.nombres,
+        nombre_completo: opActualizado.nombreCompleto,
+        dni: opActualizado.dni ?? null,
+        telefono: opActualizado.telefono ?? null,
+        codigo_rol: opActualizado.codigoRol,
+        nombre_rol: opActualizado.nombreRol,
+        base_bloque: opActualizado.baseBloque,
+        asignacion_bloque_en: opActualizado.asignacionBloque?.assignedAt ?? null,
+        liberacion_bloque_en: opActualizado.asignacionBloque?.releasedAt ?? null,
+      });
+    }
     if (blockChanged) {
       addOpLog(data.blockBase !== null
         ? `[OPERADOR] ${displayName} asignado a BLQ ${data.blockBase}`
@@ -197,6 +297,12 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const updated = operatorsRef.current.map(o => o.id === id ? updatedOp : o);
     guardarOperadores(updated);
     setOperators(updated);
+    void actualizarEstadoOperadorSQLite(
+      id,
+      updatedOp.estado,
+      updatedOp.motivoEstado ?? null,
+      updatedOp.fechaEstado ?? null,
+    );
     const label = status === "ACTIVO" ? "reactivado" : status === "SUSPENDIDO" ? "suspendido" : "dado de baja";
     const reasonTag = reason ? ` · Motivo: ${reason}` : "";
     addOpLog(`[OPERADOR] ${op.nombreCompleto} ${label}${reasonTag}`);
@@ -220,6 +326,23 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const updated = liberarBloque(operatorsRef.current, id);
     guardarOperadores(updated);
     setOperators(updated);
+    const opLiberado = updated.find(o => o.id === id);
+    if (opLiberado) {
+      void actualizarOperadorSQLite({
+        id: opLiberado.id,
+        alias: opLiberado.alias,
+        apellidos: opLiberado.apellidos,
+        nombres: opLiberado.nombres,
+        nombre_completo: opLiberado.nombreCompleto,
+        dni: opLiberado.dni ?? null,
+        telefono: opLiberado.telefono ?? null,
+        codigo_rol: opLiberado.codigoRol,
+        nombre_rol: opLiberado.nombreRol,
+        base_bloque: null,
+        asignacion_bloque_en: null,
+        liberacion_bloque_en: new Date().toISOString(),
+      });
+    }
     addOpLog(`[OPERADOR] ${op.nombreCompleto} liberó BLQ ${blk}`);
   }, [addOpLog]);
 
@@ -227,10 +350,48 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const updated = establecerCapacidades(operatorsRef.current, id, capabilities);
     guardarOperadores(updated);
     setOperators(updated);
+    void actualizarCapacidadesOperadorSQLite(id, JSON.stringify(capabilities));
   }, []);
 
   // ── Roles ────────────────────────────────────────────────────
-  const [roles, setRoles] = useState<Rol[]>(cargarRoles);
+  const [roles, setRoles] = useState<Rol[]>([]);
+  // Carga inicial de roles desde SQLite con migración one-shot desde localStorage
+  useEffect(() => {
+    cargarRolesSQLite().then(async rows => {
+      if (rows.length > 0) {
+        setRoles(rows.map(r => ({
+          id: r.id,
+          codigo: r.codigo,
+          nombre: r.nombre,
+          descripcion: r.descripcion,
+          capacidades: (() => { try { return JSON.parse(r.capacidades) as string[]; } catch { return []; } })(),
+          requiereBloque: r.requiere_bloque === 1,
+          activo: r.activo === 1,
+          creadoEn: r.creado_en,
+          creadoPor: r.creado_por,
+        })));
+      } else {
+        // SQLite vacío — migrar desde localStorage
+        const legacy = cargarRoles();
+        await Promise.all(legacy.map(r =>
+          crearRolSQLite({
+            id: r.id,
+            codigo: r.codigo,
+            nombre: r.nombre,
+            descripcion: r.descripcion,
+            capacidades: JSON.stringify(r.capacidades ?? []),
+            requiere_bloque: r.requiereBloque ? 1 : 0,
+            creado_en: r.creadoEn,
+            creado_por: r.creadoPor,
+          })
+        ));
+        setRoles(legacy);
+      }
+    }).catch(() => {
+      setRoles(cargarRoles());
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const rolesRef = useRef(roles);
   rolesRef.current = roles;
 
@@ -251,6 +412,16 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const updated = [...rolesRef.current, role];
     guardarRoles(updated);
     setRoles(updated);
+    void crearRolSQLite({
+      id: role.id,
+      codigo: role.codigo,
+      nombre: role.nombre,
+      descripcion: role.descripcion,
+      capacidades: JSON.stringify(role.capacidades ?? []),
+      requiere_bloque: role.requiereBloque ? 1 : 0,
+      creado_en: role.creadoEn,
+      creado_por: role.creadoPor,
+    });
     return role;
   }, []);
 
@@ -263,6 +434,7 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     );
     guardarRoles(updated);
     setRoles(updated);
+    void actualizarRolSQLite({ id, codigo: code, nombre: data.name.trim(), descripcion: data.description.trim() });
     return true;
   }, []);
 
@@ -270,12 +442,14 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const updated = rolesRef.current.map(r => r.id === id ? { ...r, activo: active } : r);
     guardarRoles(updated);
     setRoles(updated);
+    void actualizarCapacidadesRolSQLite(id, JSON.stringify(updated.find(r => r.id === id)?.capacidades ?? []), active ? 1 : 0);
   }, []);
 
   const updateRoleCapabilities = useCallback((id: string, capabilities: string[]): void => {
     const updated = establecerCapacidadesRol(rolesRef.current, id, capabilities);
     guardarRoles(updated);
     setRoles(updated);
+    void actualizarCapacidadesRolSQLite(id, JSON.stringify(capabilities));
   }, []);
 
   return {
