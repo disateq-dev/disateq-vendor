@@ -106,6 +106,20 @@ Todos cerrados (H1-H5 previos).
 - `apps/vendor-desktop/docs/roles-equipo.md` — generado por Codex, no pertenece al proyecto. Eliminar en próxima oportunidad.
 - `apps/cargo-check-temp/` — directorio no rastreado (Codex artifact). Eliminar en próxima oportunidad.
 
+### Backlog v2.0 — Multi-POS con sincronización LAN
+**Decisión Fernando (14 Jul 2026):** DISATEQ Vendor™ v2.0 soportará 2–4 cajas simultáneas por establecimiento con stock compartido. Patrón arquitectónico elegido: híbrido offline-first con nodo principal LAN + sync hacia VPS.
+
+Patrón:
+- Cada PC corre Tauri + SQLite local (igual que hoy)
+- PC principal expone API REST liviana en LAN — actúa como árbitro de stock
+- Estrategia de reserva: lock liviano con timeout 300ms → modo degradado optimista si el nodo no responde
+- Sincronización hacia VPS: cola de eventos, en tiempo real cuando hay red
+
+**Preparación a incorporar en v1.0 (costo mínimo, máximo valor futuro):**
+- Agregar columna `sincronizado_en TEXT NULL` en tablas `venta` y `comprobante`
+- NULL = pendiente de sync con nodo central; timestamp = ya sincronizado
+- Se incorpora en la próxima migración SQLite que toquemos (v20 o superior)
+
 ---
 
 ## Próxima ventana de trabajo — prioridad
