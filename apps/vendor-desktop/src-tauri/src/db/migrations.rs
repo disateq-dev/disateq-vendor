@@ -40,6 +40,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v18_sesion_caja(db).await?;
     migrar_v19_operadores(db).await?;
     migrar_v20_bonus_distribuidor(db).await?;
+    migrar_v21_sesion_caja_arqueo(db).await?;
 
     Ok(())
 }
@@ -1771,6 +1772,61 @@ async fn migrar_v20_bonus_distribuidor(db: &sqlx::SqlitePool) -> Result<(), Stri
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (20)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v21_sesion_caja_arqueo(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 21 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    let existe_arqueo_json = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('sesion_caja') WHERE name = 'arqueo_json'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_arqueo_json == 0 {
+        sqlx::query("ALTER TABLE sesion_caja ADD COLUMN arqueo_json TEXT")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let existe_correction_json = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('sesion_caja') WHERE name = 'correction_json'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_correction_json == 0 {
+        sqlx::query("ALTER TABLE sesion_caja ADD COLUMN correction_json TEXT")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (21)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
