@@ -39,6 +39,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v17_comprobantes(db).await?;
     migrar_v18_sesion_caja(db).await?;
     migrar_v19_operadores(db).await?;
+    migrar_v20_bonus_distribuidor(db).await?;
 
     Ok(())
 }
@@ -1701,6 +1702,75 @@ async fn migrar_v19_operadores(db: &sqlx::SqlitePool) -> Result<(), String> {
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (19)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v20_bonus_distribuidor(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 20 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    let existe_unidades_facturadas = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('movimiento') WHERE name = 'unidades_facturadas'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_unidades_facturadas == 0 {
+        sqlx::query("ALTER TABLE movimiento ADD COLUMN unidades_facturadas REAL")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let existe_sincronizado_en_venta = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('venta') WHERE name = 'sincronizado_en'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_sincronizado_en_venta == 0 {
+        sqlx::query("ALTER TABLE venta ADD COLUMN sincronizado_en TEXT")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let existe_sincronizado_en_comprobante = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('comprobante') WHERE name = 'sincronizado_en'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if existe_sincronizado_en_comprobante == 0 {
+        sqlx::query("ALTER TABLE comprobante ADD COLUMN sincronizado_en TEXT")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (20)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
