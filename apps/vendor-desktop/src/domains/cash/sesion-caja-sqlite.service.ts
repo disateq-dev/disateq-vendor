@@ -16,6 +16,8 @@ export interface SesionCajaRow {
   close_signal: string | null
   abierta_en: string
   cerrada_en: string | null
+  arqueo_json: string | null
+  correction_json: string | null
 }
 
 export interface MovimientoCajaRow {
@@ -75,12 +77,14 @@ export async function cerrarSesionCajaEnSQLite(
   sesionId: string,
   cerradaEn: string,
   closeSignal: string,
+  arqueoJson: string | null = null,
 ): Promise<{ ok: boolean }> {
   try {
     await invoke('cerrar_sesion_caja', {
       sesion_id: sesionId,
       cerrada_en: cerradaEn,
       close_signal: closeSignal,
+      arqueo_json: arqueoJson,
     })
     return { ok: true }
   } catch {
@@ -199,5 +203,25 @@ export async function obtenerMovimientosSesionSQLite(
   } catch {
     await logError('sesion-caja-sqlite', 'No se pudo obtener los movimientos de sesión desde SQLite')
     return []
+  }
+}
+
+export async function actualizarSesionCajaCorrection(
+  sesionId: string,
+  closeSignal: string,
+  correctionJson: string | null,
+  arqueoJson: string | null,
+): Promise<{ ok: boolean }> {
+  try {
+    await invoke('actualizar_sesion_caja_correction', {
+      sesion_id: sesionId,
+      close_signal: closeSignal,
+      correction_json: correctionJson,
+      arqueo_json: arqueoJson,
+    })
+    return { ok: true }
+  } catch {
+    await logError('sesion-caja-sqlite', 'No se pudo actualizar la corrección de sesión de caja en SQLite')
+    return { ok: false }
   }
 }

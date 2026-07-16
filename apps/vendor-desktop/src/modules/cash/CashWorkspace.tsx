@@ -18,8 +18,7 @@ import {
 import { loadBusinessConfig } from "../../config/business";
 import { loadOpsConfig } from "../../config/ops";
 import {
-  recordSessionOpen, recordSessionClose, getCurrentSessionId,
-  loadSessionHistory, type SessionEntry,
+  getCurrentSessionId, loadSessionHistory, actualizarSesionCajaCorrection, type SessionEntry,
 } from "./services/session-history.service";
 import { AutorizacionEjecucionCard } from "./AutorizacionEjecucionCard";
 import {
@@ -247,7 +246,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       return raw ? (JSON.parse(raw) as ArqueoData) : null;
     } catch { return null; }
   });
-  const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>(() => loadSessionHistory());
+  const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>([]);
   const [selectedCode,    setSelectedCode]    = useState<string>(() => {
     const principalCode = activeOperator?.baseBloque != null ? String(activeOperator.baseBloque) : null;
     const principalBox  = principalCode ? cashBoxes.find(b => b.code === principalCode) : null;
@@ -270,6 +269,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   // ── timer ─────────────────────────────────────────────────────
   const [duration, setDuration] = useState("");
+  useEffect(() => {
+    loadSessionHistory().then(setSessionHistory);
+  }, []);
+
   useEffect(() => {
     if (!openedAt) { setDuration(""); return; }
     const update = () => setDuration(formatDuration(openedAt));
@@ -478,7 +481,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     ? sessionHistory.find(e => e.id === pendingCorrectionAuth.sessionId) ?? null
     : null;
   function handleCorrectionExecuted() {
-    setSessionHistory(loadSessionHistory());
+    loadSessionHistory().then(setSessionHistory);
     setAuthRefresh(v => v + 1);
     if (pendingCorrectionAuth) acknowledgeAuthorization(pendingCorrectionAuth.id);
   }
@@ -588,14 +591,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       if (!selectedBox.available) return;
       openCashSession(selectedBox.code, amt, aperturaMotivo.trim() || undefined, aperturaRefOp.trim() || undefined);
     }
-    const sid = Date.now().toString();
-    const boxLabel =
-      selectedBox.type === "normal"        ? "PRINCIPAL"     :
-      selectedBox.type === "contingency-1" ? "SECUNDARIA 01" :
-      selectedBox.type === "contingency-2" ? "SECUNDARIA 02" :
-      "CONTINGENCIA";
-    recordSessionOpen(sid, selectedBox.code, boxLabel, operatorName, new Date().toISOString(), amt);
-    setSessionHistory(loadSessionHistory());
+    loadSessionHistory().then(setSessionHistory);
     onOpened?.();
   }
 
@@ -712,7 +708,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     }
   }
 
-  function handleConfirmClose() {
+  async function handleConfirmClose() {
     const now = new Date();
     const p   = (n: number) => String(n).padStart(2, "0");
     const arqueo: ArqueoData = {
@@ -745,19 +741,21 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     // Persistir snapshot del arqueo antes de destruir la sesión — permite reimprimir si el print falla
     try { localStorage.setItem("disateq.pos.lastArqueo", JSON.stringify(arqueo)); } catch { /* quota */ }
     setLastArqueo(arqueo);
-    const closeSid = getCurrentSessionId();
+    const closeSid = await getCurrentSessionId();
+    const closeSignal = moneyIsZero(diferencia) ? "ok" as const : "warn" as const;
     if (closeSid) {
-      const closeSignal = moneyIsZero(diferencia) ? "ok" as const : "warn" as const;
-      recordSessionClose(closeSid, new Date().toISOString(), closeSignal, arqueo);
       if (cierreAutorizado) {
         const pendingAuth = loadAuthorizations().find(
           a => a.sessionId === closeSid && a.type === "cierre_activo" && a.status === "emitida",
         );
         if (pendingAuth) markAuthorizationExecuted(pendingAuth.id, operatorName);
       }
-      setSessionHistory(loadSessionHistory());
     }
     closeCashSession();
+    if (closeSid) {
+      await actualizarSesionCajaCorrection(closeSid, closeSignal, null, JSON.stringify(arqueo));
+      loadSessionHistory().then(setSessionHistory);
+    }
     setClosingStage(0);
     setContadoEfe(""); setContadoYape(""); setContadoTar("");
     setValidatedAt(null); setObservations(""); setZeroMotive("");
@@ -833,7 +831,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   // Refresca historial al volver a Gestión Turno desde Corregir arqueo
   useEffect(() => {
     if (cashSubView === "turno") {
-      setSessionHistory(loadSessionHistory());
+      loadSessionHistory().then(setSessionHistory);
       setAuthRefresh(v => v + 1);
     }
   }, [cashSubView]);

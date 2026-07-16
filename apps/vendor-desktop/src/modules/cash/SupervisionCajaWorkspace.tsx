@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield, CheckCircle, ClipboardList, Clock, Printer, ShieldCheck } from "lucide-react";
 import { usePOS } from "../../context/POSContext";
 import {
@@ -150,7 +150,7 @@ interface SupervisionCajaProps {
 export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaProps = {}) {
   const { activeOperator, operators, cashSession } = usePOS();
 
-  const [history]                      = useState<SessionEntry[]>(() => loadSessionHistory());
+  const [history, setHistory]           = useState<SessionEntry[]>([]);
   const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
   const [selectedId,     setSelectedId]     = useState<string | null>(null);
   const [motivoPreset,   setMotivoPreset]   = useState("");
@@ -158,6 +158,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const [obsExpanded,    setObsExpanded]    = useState(false);
   const [obsAuthType,    setObsAuthType]    = useState<"correccion_cierre" | "correccion_apertura">("correccion_cierre");
 
+  const [currentSid, setCurrentSid]     = useState<string | null>(null);
   const [filterEstado,       setFilterEstado]       = useState<"todos" | "abierto" | "sin_cierre" | "cerrado">("todos");
   const [filterCaja,         setFilterCaja]         = useState("");
   const [filterOperadorCode, setFilterOperadorCode] = useState("");
@@ -171,7 +172,8 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const uniqueCajas      = [...new Set(history.map(e => e.boxCode))].sort();
   const cajaOptions      = filterBlockPrefix ? uniqueCajas.filter(c => c[0] === filterBlockPrefix) : uniqueCajas;
 
-  const currentSid = getCurrentSessionId();
+  useEffect(() => { loadSessionHistory().then(setHistory); }, []);
+  useEffect(() => { getCurrentSessionId().then(setCurrentSid); }, [cashSession.isOpen]);
 
   const filtered = history.slice(0, 60).filter(e => {
     if (filterEstado !== "todos") {

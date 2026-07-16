@@ -1,8 +1,12 @@
 import type { ArqueoData } from "../../../print/printTicket";
+import {
+  obtenerHistorialSesionesSQLite,
+  obtenerSesionActivaSQLite,
+  actualizarSesionCajaCorrection,
+  type SesionCajaRow,
+} from "../../../domains/cash/sesion-caja-sqlite.service";
 
-const LS_HISTORY     = "disateq.pos.sessionHistory";
-const LS_CURRENT_SID = "disateq.pos.currentSessionId";
-const MAX_RECORDS    = 50;
+export { actualizarSesionCajaCorrection };
 
 export type CloseSignal = "ok" | "warn";
 
@@ -40,100 +44,96 @@ export type SessionEntry = {
   correction?: CorrectionRecord;
 };
 
-export function loadSessionHistory(): SessionEntry[] {
+function parseArqueo(row: SesionCajaRow): ArqueoData | null {
+  if (row.arqueo_json === null) return null;
   try {
-    const raw = localStorage.getItem(LS_HISTORY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Partial<SessionEntry>[];
-    return parsed.map(e => ({
-      id:          e.id          ?? "",
-      boxCode:     e.boxCode     ?? "",
-      boxLabel:    e.boxLabel    ?? "PRINCIPAL",
-      operator:    e.operator    ?? "",
-      openedAt:    e.openedAt    ?? "",
-      closedAt:    e.closedAt    ?? null,
-      closeSignal: e.closeSignal ?? null,
-      apertura:    e.apertura    ?? 0,
-      arqueo:      e.arqueo      ?? null,
-      ...(e.correction ? { correction: e.correction } : {}),
-    }));
-  } catch { return []; }
+    return JSON.parse(row.arqueo_json) as ArqueoData;
+  } catch {
+    return null;
+  }
 }
 
-export function recordSessionOpen(
+function parseCorrection(row: SesionCajaRow): CorrectionRecord | undefined {
+  if (row.correction_json === null) return undefined;
+  try {
+    return JSON.parse(row.correction_json) as CorrectionRecord;
+  } catch {
+    return undefined;
+  }
+}
+
+function mapSesionCajaRow(row: SesionCajaRow): SessionEntry {
+  const correction = parseCorrection(row);
+  return {
+    id: row.id,
+    boxCode: row.caja_codigo,
+    boxLabel: `CAJA ${row.caja_tipo}`,
+    operator: row.operador_nombre,
+    openedAt: row.abierta_en,
+    closedAt: row.cerrada_en ?? null,
+    closeSignal: row.close_signal as CloseSignal | null,
+    apertura: row.apertura,
+    arqueo: parseArqueo(row),
+    ...(correction ? { correction } : {}),
+  };
+}
+
+export async function loadSessionHistory(): Promise<SessionEntry[]> {
+  try {
+    const rows = await obtenerHistorialSesionesSQLite(60);
+    return rows.map(mapSesionCajaRow);
+  } catch {
+    return [];
+  }
+}
+
+export async function getCurrentSessionId(): Promise<string | null> {
+  try {
+    const sesion = await obtenerSesionActivaSQLite();
+    return sesion !== null ? sesion.id : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function recordSessionOpen(
   sid: string, boxCode: string, boxLabel: string,
   operator: string, openedAt: string, apertura: number,
-): void {
-  try {
-    const hist = loadSessionHistory();
-    const entry: SessionEntry = {
-      id: sid, boxCode, boxLabel, operator, openedAt,
-      closedAt: null, closeSignal: null, apertura, arqueo: null,
-    };
-    const trimmed = [entry, ...hist].slice(0, MAX_RECORDS);
-    localStorage.setItem(LS_HISTORY, JSON.stringify(trimmed));
-    localStorage.setItem(LS_CURRENT_SID, sid);
-  } catch { /* quota */ }
+): Promise<void> {
+  void sid;
+  void boxCode;
+  void boxLabel;
+  void operator;
+  void openedAt;
+  void apertura;
 }
 
-export function recordSessionClose(
+export async function recordSessionClose(
   sid: string, closedAt: string, closeSignal: CloseSignal, arqueo: ArqueoData,
-): void {
-  try {
-    const hist = loadSessionHistory();
-    const updated = hist.map(e =>
-      e.id === sid ? { ...e, closedAt, closeSignal, arqueo } : e,
-    );
-    localStorage.setItem(LS_HISTORY, JSON.stringify(updated));
-    localStorage.removeItem(LS_CURRENT_SID);
-  } catch { /* quota */ }
+): Promise<void> {
+  void sid;
+  void closedAt;
+  void closeSignal;
+  void arqueo;
 }
 
-export function getCurrentSessionId(): string | null {
-  return localStorage.getItem(LS_CURRENT_SID);
-}
-
-// Rectificación de cierre — actualiza closeSignal y registra corrección
-export function recordSessionCorrection(
+export async function recordSessionCorrection(
   sid: string,
   correction: CorrectionRecord,
   newSignal: CloseSignal,
-): void {
+): Promise<void> {
   try {
-    const hist = loadSessionHistory();
-    const updated = hist.map(e => {
-      if (e.id !== sid) return e;
-      const arqueo = (e.arqueo && correction.newContado)
-        ? {
-            ...e.arqueo,
-            contadoEfe:   correction.newContado.efe,
-            contadoYape:  correction.newContado.yape,
-            contadoTar:   correction.newContado.tar,
-            contadoTotal: correction.newContado.total,
-            diferencia:   correction.newDiferencia ?? e.arqueo.diferencia,
-          }
-        : e.arqueo;
-      return { ...e, closeSignal: newSignal, arqueo, correction };
-    });
-    localStorage.setItem(LS_HISTORY, JSON.stringify(updated));
-  } catch { /* quota */ }
+    await actualizarSesionCajaCorrection(sid, newSignal, JSON.stringify(correction), null);
+  } catch {
+  }
 }
 
-// Rectificación de apertura — actualiza el fondo de apertura sin cambiar closeSignal
-export function recordAperturaCorrection(
+export async function recordAperturaCorrection(
   sid: string,
   correction: CorrectionRecord,
-): void {
+): Promise<void> {
   try {
-    const hist = loadSessionHistory();
-    const updated = hist.map(e => {
-      if (e.id !== sid) return e;
-      return {
-        ...e,
-        apertura:   correction.newApertura ?? e.apertura,
-        correction,
-      };
-    });
-    localStorage.setItem(LS_HISTORY, JSON.stringify(updated));
-  } catch { /* quota */ }
+    await actualizarSesionCajaCorrection(sid, correction.newSignal, JSON.stringify(correction), null);
+  } catch {
+  }
 }

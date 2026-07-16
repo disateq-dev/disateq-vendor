@@ -907,7 +907,11 @@ export function CajasWorkspace() {
   const [blocks,         setBlocks]         = useState<OperationalBlock[]>(MOCK_BLOCKS);
   const [selectedId,     setSelectedId]     = useState<string | null>("b100");
   const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
-  const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>(() => loadSessionHistory());
+  const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>([]);
+
+  useEffect(() => {
+    loadSessionHistory().then(setSessionHistory);
+  }, []);
 
   const lastActivity = (() => {
     const map = new Map<string, LastActivity>();
@@ -941,7 +945,7 @@ export function CajasWorkspace() {
 
   function handleAuthExecuted() {
     setAuthorizations(loadAuthorizations());
-    setSessionHistory(loadSessionHistory());
+    loadSessionHistory().then(setSessionHistory);
   }
 
   return (
