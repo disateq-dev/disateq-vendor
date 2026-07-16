@@ -50,8 +50,14 @@ export function LineaIngresoCard({
           <input
             type="number"
             min="0"
-            value={linea.cantidad}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => onActualizar({ cantidad: Number(event.target.value) })}
+            value={linea.unidadesFacturadas}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              const unidadesFacturadas = Number(event.target.value)
+              onActualizar({
+                unidadesFacturadas,
+                ...(linea.tieneBonus ? {} : { unidadesRecibidas: unidadesFacturadas }),
+              })
+            }}
             className="h-10 w-full rounded-xl border border-[var(--dv-input-border)] px-3"
           />
         </label>
@@ -80,6 +86,26 @@ export function LineaIngresoCard({
           />
         </label>
       </div>
+      {!linea.tieneBonus ? (
+        <button
+          type="button"
+          onClick={() => onActualizar({ tieneBonus: true, unidadesRecibidas: linea.unidadesFacturadas })}
+          className="mt-2 text-[12px] font-bold text-[#1E88C7]"
+        >
+          + Agregar bonus distribuidor
+        </button>
+      ) : (
+        <label className="mt-3 block space-y-1">
+          <span className="text-[11px] font-bold uppercase text-slate-500">Unidades recibidas físicamente (bonus)</span>
+          <input
+            type="number"
+            min={linea.unidadesFacturadas}
+            value={linea.unidadesRecibidas}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => onActualizar({ unidadesRecibidas: Number(event.target.value) })}
+            className="h-10 w-full rounded-xl border border-[var(--dv-input-border)] px-3"
+          />
+        </label>
+      )}
       {linea.requiereLote && (
         <div className="mt-4 rounded-xl border border-[#E3F1FA] bg-[#E3F1FA] p-3">
           {linea.esLoteGenerico ? (

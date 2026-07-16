@@ -533,7 +533,8 @@ export async function registrarIngreso(input: RegistrarIngresoInput): Promise<st
     runtimeId: input.runtimeId,
     lineas: input.lineas.map((linea) => ({
       presentacionId: linea.presentacionId,
-      cantidad: linea.cantidad,
+      unidadesFacturadas: linea.unidadesFacturadas,
+      unidadesRecibidas: linea.unidadesRecibidas,
       costoUnitario: linea.costoUnitario ?? null,
       requiereLote: linea.requiereLote,
       numeroLote: linea.numeroLote ?? null,

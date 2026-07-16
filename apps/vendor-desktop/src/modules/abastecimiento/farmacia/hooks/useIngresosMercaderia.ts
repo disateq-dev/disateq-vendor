@@ -33,6 +33,7 @@ export interface LineaIngresoDraft extends LineaIngreso {
   id: string
   productoComercialId?: string
   precioVenta?: number
+  tieneBonus: boolean
 }
 
 interface UseIngresosMercaderiaResult {
@@ -98,7 +99,7 @@ function resolverMensajeError(error: unknown): string {
 }
 
 function lineaValida(linea: LineaIngresoDraft): boolean {
-  if (linea.cantidad <= 0) return false
+  if (linea.unidadesFacturadas <= 0) return false
   if (!linea.requiereLote) return true
   return linea.esLoteGenerico || (!!linea.numeroLote?.trim() && !!linea.fechaVencimiento?.trim())
 }
@@ -325,7 +326,9 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
         productoComercialId: r.productoComercialId,
         productoNombre: r.productoNombre,
         presentacionDescripcion: r.descripcion,
-        cantidad: 1,
+        unidadesFacturadas: 1,
+        unidadesRecibidas: 1,
+        tieneBonus: false,
         costoUnitario: undefined,
         requiereLote: r.requiereLote,
         numeroLote: '',
@@ -499,7 +502,8 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
         runtimeId: runtimeIdSesion,
         lineas: lineas.map((linea) => ({
           presentacionId: linea.presentacionId,
-          cantidad: linea.cantidad,
+          unidadesFacturadas: linea.unidadesFacturadas,
+          unidadesRecibidas: linea.unidadesRecibidas,
           costoUnitario: linea.costoUnitario,
           requiereLote: linea.requiereLote,
           numeroLote: linea.numeroLote || undefined,
@@ -538,7 +542,8 @@ export function useIngresosMercaderia(): UseIngresosMercaderiaResult {
       for (const linea of lineas) {
         void invoke('vincular_ingreso_a_pedido', {
           presentacionId: linea.presentacionId,
-          cantidadRecibida: linea.cantidad,
+          cantidadRecibida: linea.unidadesRecibidas,
+          cantidadFacturada: linea.unidadesFacturadas,
         }).catch((e: unknown) => {
           console.error('No se pudo vincular el ingreso al pedido proveedor:', e)
         })

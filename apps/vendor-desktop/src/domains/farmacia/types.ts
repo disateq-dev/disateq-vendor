@@ -364,7 +364,8 @@ export interface LineaIngreso {
   presentacionId: string
   productoNombre: string
   presentacionDescripcion: string
-  cantidad: number
+  unidadesFacturadas: number
+  unidadesRecibidas: number
   costoUnitario?: number
   requiereLote: boolean
   numeroLote?: string
@@ -378,7 +379,8 @@ export interface RegistrarIngresoInput {
   runtimeId: string
   lineas: {
     presentacionId: string
-    cantidad: number
+    unidadesFacturadas: number
+    unidadesRecibidas: number
     costoUnitario?: number
     requiereLote: boolean
     numeroLote?: string
