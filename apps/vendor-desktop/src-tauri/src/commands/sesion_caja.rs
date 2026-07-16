@@ -56,13 +56,15 @@ pub async fn cerrar_sesion_caja(
     sesion_id: String,
     cerrada_en: String,
     close_signal: String,
+    arqueo_json: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
     let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    sqlx::query("UPDATE sesion_caja SET estado = 'CERRADA', cerrada_en = ?, close_signal = ? WHERE id = ?")
+    sqlx::query("UPDATE sesion_caja SET estado = 'CERRADA', cerrada_en = ?, close_signal = ?, arqueo_json = ? WHERE id = ?")
         .bind(&cerrada_en)
         .bind(&close_signal)
+        .bind(&arqueo_json)
         .bind(&sesion_id)
         .execute(pool)
         .await
@@ -282,4 +284,26 @@ pub async fn obtener_movimientos_sesion(
     }).collect();
 
     Ok(json!(movimientos?))
+}
+
+#[tauri::command]
+pub async fn actualizar_sesion_caja_correction(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    sesion_id: String,
+    close_signal: String,
+    correction_json: Option<String>,
+    arqueo_json: Option<String>,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    sqlx::query("UPDATE sesion_caja SET close_signal = ?, correction_json = ?, arqueo_json = ? WHERE id = ?")
+        .bind(&close_signal)
+        .bind(&correction_json)
+        .bind(&arqueo_json)
+        .bind(&sesion_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }

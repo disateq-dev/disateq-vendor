@@ -158,6 +158,7 @@ pub fn run() {
       commands::comprobantes::actualizar_estado_sunat,
       commands::sesion_caja::abrir_sesion_caja,
       commands::sesion_caja::cerrar_sesion_caja,
+      commands::sesion_caja::actualizar_sesion_caja_correction,
       commands::sesion_caja::registrar_movimiento_caja,
       commands::sesion_caja::actualizar_movimiento_caja,
       commands::sesion_caja::registrar_evento_turno,
