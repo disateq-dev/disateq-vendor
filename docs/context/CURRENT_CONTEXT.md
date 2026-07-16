@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
-**Última actualización:** 2026-07-13
-**Último commit:** `d6eb12c`
+**Última actualización:** 2026-07-16
+**Último commit:** `8b729c0`
 **Rama:** `main`
 **Working tree:** limpio
 
@@ -66,11 +66,19 @@ Diferido aceptable del Paso D:
 ### Faena 27: Paso C — Turno/sesión en SQLite — Commits `d7e6870`→`ec34c16` ✅
 ### Faena 28: Paso D — Operadores en SQLite — Commits `7489622`→`d6eb12c` ✅
 
-Sesión 13 Jul 2026 — adicionalmente:
+Sesión 13 Jul 2026:
 - Push de `main` a `origin` completado (primera vez — 2959 objetos subidos)
 - `origin/main` tracking configurado con `--set-upstream`
 - Análisis de seguridad PIN: SHA-256 con salt estático — riesgo bajo en producción Tauri (DevTools deshabilitado en release); `pin_salt` agregado a tabla para futura mejora PBKDF2
 - Análisis PWA vs Tauri: Tauri es la decisión correcta por impresión térmica ESC/POS nativa
+
+### Faena 29: Sesión 16 Jul 2026 ✅
+- Limpieza artefactos Codex: `apps/vendor-desktop/docs/roles-equipo.md` eliminado del repo — commit `8b729c0`
+- `apps/cargo-check-temp/` eliminado del filesystem (estaba untracked — nunca versionado)
+- Auditoría comandos Rust de desactivación: los 3 comandos marcados como "faltantes" en GLOSARIO §11 **ya estaban implementados y registrados** — deuda funcional cerrada
+  - `desactivar_proveedor` ✅ en `proveedores.rs` + registrado en `lib.rs`
+  - `desactivar_producto_comercial` ✅ en `productos.rs` + registrado en `lib.rs`
+  - `desactivar_servicio_catalogo` ✅ en `servicios.rs` + registrado en `lib.rs` (nombre técnico correcto; ver deuda de naming abajo)
 
 ---
 
@@ -89,7 +97,7 @@ Todos cerrados (H1-H5 previos).
 - F2 — doble movimiento `despacharConFefo` productos con lote. Diferido hasta eliminar `inventoryService` legacy.
 
 ### Deuda de INGRESOS
-- **D-INGRESOS-4 — Bonus distribuidor:** `unidades_facturadas` vs `unidades_recibidas`. Complejidad media-alta. **Diferido.**
+- **D-INGRESOS-4 — Bonus distribuidor:** `unidades_facturadas` vs `unidades_recibidas`. Complejidad media-alta. **Próxima prioridad — requiere diseño arquitectónico.**
 
 ### Deuda de PRECIOS
 - **D-PRECIOS-1 — Precio por lote:** complejidad alta. **Diferido.**
@@ -98,18 +106,25 @@ Todos cerrados (H1-H5 previos).
 - **CajasWorkspace desacoplada de blocks.store:** mock data. Requiere sesión dedicada. **Diferido.**
 
 ### Deudas funcionales — Dominio farmacia
-- `desactivar_proveedor` — comando Rust faltante
-- `desactivar_producto_comercial` — comando Rust faltante
-- `desactivar_servicio_farmacia` — comando Rust faltante
+- ~~`desactivar_proveedor`~~ ✅ CERRADO — implementado y registrado
+- ~~`desactivar_producto_comercial`~~ ✅ CERRADO — implementado y registrado
+- ~~`desactivar_servicio_farmacia`~~ ✅ CERRADO — implementado como `desactivar_servicio_catalogo` (nombre técnico correcto)
 
-### Artefacto pendiente de limpieza
-- `apps/vendor-desktop/docs/roles-equipo.md` — generado por Codex, no pertenece al proyecto. Eliminar en próxima oportunidad.
-- `apps/cargo-check-temp/` — directorio no rastreado (Codex artifact). Eliminar en próxima oportunidad.
+### Deuda de naming — Dominio farmacia (baja prioridad, no bloquea)
+- `desactivar_servicio_catalogo` expone nombre técnico de tabla; el GLOSARIO §11 usa `ServicioFarmacia` como entidad canónica. No requiere cambio urgente — la tabla `servicio_catalogo` es infraestructura, el comando es interno.
+- `actualizar_proveedor` en `proveedores.rs` usa verbo `actualizar` — no está en la lista canónica §4 del GLOSARIO (canónico: `modificar`). Idem `ActualizarProveedorInput` → `ModificarProveedorInput`. Baja urgencia, no bloquea ningún flujo.
+
+### Deudas de naming — GLOSARIO §8 pendientes
+- `BoxSlotType` / `BoxSlotDef` / campo `code` → `TipoCaja` (`PRINCIPAL/AUXILIAR/EXCEPCIONAL`) / `DefinicionCaja` / campo `codigo`
+- `ActualizarProveedorInput` → `ModificarProveedorInput`
+- `TicketLineDTO` / `TicketLineBridge` → `LineaPreVenta`
+- `emitidoPor` → `operadorId`
+- `disponible/bajo_stock/agotado` → `DISPONIBLE/BAJO_STOCK/AGOTADO`
 
 ### Backlog v2.0 — Multi-POS con sincronización LAN
-**Decisión Fernando (14 Jul 2026):** DISATEQ Vendor™ v2.0 soportará 2–4 cajas simultáneas por establecimiento con stock compartido. Patrón arquitectónico elegido: híbrido offline-first con nodo principal LAN + sync hacia VPS.
+**Decisión Fernando (14 Jul 2026):** DISATEQ Vendor™ v2.0 soportará 2–4 cajas simultáneas por establecimiento con stock compartido.
 
-Patrón:
+Patrón arquitectónico elegido: híbrido offline-first con nodo principal LAN + sync hacia VPS.
 - Cada PC corre Tauri + SQLite local (igual que hoy)
 - PC principal expone API REST liviana en LAN — actúa como árbitro de stock
 - Estrategia de reserva: lock liviano con timeout 300ms → modo degradado optimista si el nodo no responde
@@ -124,10 +139,10 @@ Patrón:
 
 ## Próxima ventana de trabajo — prioridad
 
-1. **D-INGRESOS-4** — bonus distribuidor (alta complejidad, requiere diseño cuidadoso)
-2. **session-history.service.ts** — migración lectura a SQLite (async)
+1. **D-INGRESOS-4** — bonus distribuidor (alta complejidad, requiere diseño arquitectónico — PRÓXIMA ACCIÓN)
+2. **`session-history.service.ts`** — migración lectura a SQLite (async, diferido aceptable)
 3. **Segundo rubro** — desbloqueado por §8; consolidar flujo SQLite primero
-4. **Limpieza artefactos** — `roles-equipo.md`, `cargo-check-temp/`
+4. **`CajasWorkspace`** — desacoplar de mock data (sesión dedicada)
 
 ---
 
@@ -164,10 +179,13 @@ Patrón:
 - `commands/ventas.rs` — 3 comandos
 - `commands/comprobantes.rs` — 7 comandos
 - `commands/sesion_caja.rs` — 8 comandos
-- `commands/operadores.rs` — 10 comandos ✅ NUEVO
+- `commands/operadores.rs` — 10 comandos ✅
 - `commands/pedidos.rs` — 9 comandos
 - `commands/log.rs` — 3 comandos
-- + farmacia: productos, presentaciones, proveedores, lotes, movimientos, servicios, valores, ingresos, reportes, integraciones, catalogo_maestro
+- `commands/proveedores.rs` — 5 comandos (crear, obtener, buscar, actualizar, desactivar) ✅
+- `commands/productos.rs` — múltiples (crear, obtener, modificar, desactivar, reactivar, eliminar, principios activos) ✅
+- `commands/servicios.rs` — 5 comandos (crear, obtener, desactivar, registrar_ejecucion, obtener_margen) ✅
+- + presentaciones, lotes, movimientos, valores, reportes, integraciones, catalogo_maestro
 
 **Tokens de color activos (`index.css`):**
 - `--dv-color-edit: #005BE3`
