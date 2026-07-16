@@ -375,9 +375,10 @@ pub async fn obtener_pedidos_activos_por_presentacion(
 pub async fn vincular_ingreso_a_pedido(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     presentacion_id: String,
-    cantidad_recibida: f64,
+    _cantidad_recibida: f64,
+    cantidad_facturada: f64,
 ) -> Result<(), String> {
-    if cantidad_recibida <= 0.0 {
+    if cantidad_facturada <= 0.0 {
         return Ok(());
     }
 
@@ -406,7 +407,7 @@ pub async fn vincular_ingreso_a_pedido(
     }
 
     let ts = obtener_timestamp(pool).await?;
-    let mut restante = cantidad_recibida;
+    let mut restante = cantidad_facturada;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     for row in &rows {
@@ -462,3 +463,4 @@ pub async fn vincular_ingreso_a_pedido(
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
 }
+

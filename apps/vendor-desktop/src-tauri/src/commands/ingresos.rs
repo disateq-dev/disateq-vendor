@@ -5,7 +5,8 @@ use uuid::Uuid;
 #[derive(Deserialize)]
 pub(crate) struct LineaIngreso {
     presentacion_id: String,
-    cantidad: f64,
+    unidades_recibidas: f64,
+    unidades_facturadas: f64,
     costo_unitario: Option<f64>,
     requiere_lote: bool,
     numero_lote: Option<String>,
@@ -59,8 +60,8 @@ pub async fn registrar_ingreso(
             .bind(numero_lote)
             .bind(linea.fecha_vencimiento.clone())
             .bind(None::<String>)
-            .bind(linea.cantidad)
-            .bind(linea.cantidad)
+            .bind(linea.unidades_recibidas)
+            .bind(linea.unidades_recibidas)
             .bind(&proveedor_id)
             .bind(linea.costo_unitario)
             .bind("VIGENTE")
@@ -75,12 +76,12 @@ pub async fn registrar_ingreso(
 
         let movimiento_id = Uuid::new_v4().to_string();
         sqlx::query(
-            "INSERT INTO movimiento (id, item_id, tipo, unidades_base, lote_id, nodo_id, causa, referencia_id, operador_id, timestamp, runtime_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO movimiento (id, item_id, tipo, unidades_base, lote_id, nodo_id, causa, referencia_id, operador_id, timestamp, runtime_id, unidades_facturadas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&movimiento_id)
         .bind(&linea.presentacion_id)
         .bind("entrada")
-        .bind(linea.cantidad)
+        .bind(linea.unidades_recibidas)
         .bind(lote_id)
         .bind(None::<String>)
         .bind("compra")
@@ -88,6 +89,7 @@ pub async fn registrar_ingreso(
         .bind(&operador_id)
         .bind(&timestamp)
         .bind(&runtime_id)
+        .bind(linea.unidades_facturadas)
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
