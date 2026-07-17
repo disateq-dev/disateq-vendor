@@ -64,7 +64,8 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
   // Carga inicial desde SQLite con migración one-shot desde localStorage
   useEffect(() => {
     cargarOperadoresSQLite().then(async rows => {
-      if (rows.length > 0) {
+      const normales = rows.filter(r => r.estado !== "SISTEMA");
+      if (normales.length > 0) {
         const cargados = rows.map(operadorRowToOperador);
         todosOperadoresRef.current = cargados;
         setOperators(ocultarOperadoresSistema(cargados));
@@ -198,9 +199,10 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const newHash = await hashPinAsync(newPin);
     const updated = establecerPin(operatorsRef.current, id, newHash);
     if (!updated) return false;
+    const sqlResult = await actualizarPinOperadorSQLite(id, newHash, null);
+    if (!sqlResult.ok) return false;
     guardarOperadores(updated);
     setOperators(updated);
-    void actualizarPinOperadorSQLite(id, newHash, null);
     const op = operatorsRef.current.find(o => o.id === id);
     if (op) {
       addOpLog(`[PIN] ${op.nombreCompleto} reseteó su PIN${motivo ? ` · ${motivo}` : ""}`);
@@ -245,7 +247,7 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
     const updated = [...operatorsRef.current, op];
     guardarOperadores(updated);
     setOperators(updated);
-    void crearOperadorSQLite({
+    crearOperadorSQLite({
       id: op.id,
       codigo_operador: op.codigoOperador,
       alias: op.alias,
@@ -264,6 +266,16 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
       capacidades: JSON.stringify(op.capacidades ?? []),
       registrado_en: op.registradoEn,
       registrado_por: op.registradoPor,
+    }).then(result => {
+      if (!result.ok) {
+        const revertido = operatorsRef.current.filter(o => o.id !== op.id);
+        guardarOperadores(revertido);
+        setOperators(revertido);
+      }
+    }).catch(() => {
+      const revertido = operatorsRef.current.filter(o => o.id !== op.id);
+      guardarOperadores(revertido);
+      setOperators(revertido);
     });
     addOpLog(`[OPERADOR] Creado ${op.nombreCompleto} (${op.alias} · ${opCode})${data.blockBase ? ` · BLQ ${data.blockBase}` : ""}`);
     return op;
