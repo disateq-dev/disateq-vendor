@@ -77,7 +77,26 @@ export async function crearOperadorSQLite(params: {
   registrado_por: string
 }): Promise<{ ok: boolean }> {
   try {
-    await invoke('crear_operador', { ...params })
+    await invoke('crear_operador', {
+      id: params.id,
+      codigoOperador: params.codigo_operador,
+      alias: params.alias,
+      apellidos: params.apellidos,
+      nombres: params.nombres,
+      nombreCompleto: params.nombre_completo,
+      dni: params.dni,
+      telefono: params.telefono,
+      codigoRol: params.codigo_rol,
+      nombreRol: params.nombre_rol,
+      baseBloque: params.base_bloque,
+      asignacionBloqueEn: params.asignacion_bloque_en,
+      estado: params.estado,
+      pin: params.pin,
+      pinSalt: params.pin_salt,
+      capacidades: params.capacidades,
+      registradoEn: params.registrado_en,
+      registradoPor: params.registrado_por,
+    })
     return { ok: true }
   } catch {
     await logError('operator-sqlite', 'No se pudo crear el operador en SQLite')
@@ -100,7 +119,20 @@ export async function actualizarOperadorSQLite(params: {
   liberacion_bloque_en: string | null
 }): Promise<{ ok: boolean }> {
   try {
-    await invoke('actualizar_operador', { ...params })
+    await invoke('actualizar_operador', {
+      id: params.id,
+      alias: params.alias,
+      apellidos: params.apellidos,
+      nombres: params.nombres,
+      nombreCompleto: params.nombre_completo,
+      dni: params.dni,
+      telefono: params.telefono,
+      codigoRol: params.codigo_rol,
+      nombreRol: params.nombre_rol,
+      baseBloque: params.base_bloque,
+      asignacionBloqueEn: params.asignacion_bloque_en,
+      liberacionBloqueEn: params.liberacion_bloque_en,
+    })
     return { ok: true }
   } catch {
     await logError('operator-sqlite', 'No se pudo actualizar el operador en SQLite')
@@ -115,7 +147,12 @@ export async function actualizarEstadoOperadorSQLite(
   fecha_estado: string | null,
 ): Promise<{ ok: boolean }> {
   try {
-    await invoke('actualizar_estado_operador', { id, estado, motivo_estado, fecha_estado })
+    await invoke('actualizar_estado_operador', {
+      id,
+      estado,
+      motivoEstado: motivo_estado,
+      fechaEstado: fecha_estado,
+    })
     return { ok: true }
   } catch {
     await logError('operator-sqlite', 'No se pudo actualizar el estado del operador en SQLite')
@@ -129,7 +166,11 @@ export async function actualizarPinOperadorSQLite(
   pin_salt: string | null,
 ): Promise<{ ok: boolean }> {
   try {
-    await invoke('actualizar_pin_operador', { id, pin, pin_salt })
+    await invoke('actualizar_pin_operador', {
+      id,
+      pin,
+      pinSalt: pin_salt,
+    })
     return { ok: true }
   } catch {
     await logError('operator-sqlite', 'No se pudo actualizar el PIN del operador en SQLite')
@@ -161,7 +202,16 @@ export async function crearRolSQLite(params: {
   creado_por: string
 }): Promise<{ ok: boolean }> {
   try {
-    await invoke('crear_rol', { ...params })
+    await invoke('crear_rol', {
+      id: params.id,
+      codigo: params.codigo,
+      nombre: params.nombre,
+      descripcion: params.descripcion,
+      capacidades: params.capacidades,
+      requiereBloque: params.requiere_bloque,
+      creadoEn: params.creado_en,
+      creadoPor: params.creado_por,
+    })
     return { ok: true }
   } catch {
     await logError('operator-sqlite', 'No se pudo crear el rol en SQLite')
@@ -176,7 +226,12 @@ export async function actualizarRolSQLite(params: {
   descripcion: string
 }): Promise<{ ok: boolean }> {
   try {
-    await invoke('actualizar_rol', { ...params })
+    await invoke('actualizar_rol', {
+      id: params.id,
+      codigo: params.codigo,
+      nombre: params.nombre,
+      descripcion: params.descripcion,
+    })
     return { ok: true }
   } catch {
     await logError('operator-sqlite', 'No se pudo actualizar el rol en SQLite')
@@ -190,7 +245,11 @@ export async function actualizarCapacidadesRolSQLite(
   activo?: number,
 ): Promise<{ ok: boolean }> {
   try {
-    await invoke('actualizar_capacidades_rol', { id, capacidades, activo: activo ?? null })
+    await invoke('actualizar_capacidades_rol', {
+      id,
+      capacidades,
+      activo: activo ?? null,
+    })
     return { ok: true }
   } catch {
     await logError('operator-sqlite', 'No se pudo actualizar las capacidades del rol en SQLite')
