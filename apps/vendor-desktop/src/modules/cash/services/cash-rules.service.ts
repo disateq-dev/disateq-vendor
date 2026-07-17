@@ -1,40 +1,30 @@
 import type { CashBox } from "../../../context/POSContext";
+import type { TipoCaja } from "../../../domains/operator/blocks.store";
 import { moneyGt } from "../../../lib/money";
 
-// ── contingency prerequisites ───────────────────────────────────
-
 export function prereqCode(box: CashBox): string {
-  if (box.type === "contingency-1") return box.code.slice(0, 2) + "0"; // 101 → 100
-  if (box.type === "contingency-2") return box.code.slice(0, 2) + "1"; // 102 → 101
-  if (box.type === "contingencia")  return box.code[0] + "00";          // 150 → 100
+  const tipoCaja: TipoCaja = box.tipoCaja;
+
+  if (tipoCaja === "AUXILIAR") return String(Number(box.code) - 1);
+  if (tipoCaja === "EXCEPCIONAL") return box.code[0] + "00";
   return "";
 }
 
 export function isContingencyBox(box: CashBox | null): boolean {
-  return !!box && box.type !== "normal";
+  return !!box && box.tipoCaja !== "PRINCIPAL";
 }
-
-// ── opening mode classification ─────────────────────────────────
-//
-// normal:      caja principal — sin autorización adicional
-// contingency: caja contingente con prerequisito cumplido (principal usada/cerrada) — motivo obligatorio
-// exceptional: caja contingente sin prerequisito (principal NUNCA usada hoy) — PIN + motivo obligatorio
 
 export type OpeningMode = "normal" | "contingency" | "exceptional";
 
 export function detectOpeningMode(box: CashBox | null): OpeningMode {
-  if (!box || box.type === "normal") return "normal";
-  if (box.type === "contingencia") return "exceptional"; // apertura excepcional: siempre PIN + motivo
-  if (box.available) return "contingency";               // secundaria con prereq cumplido: solo motivo
-  if (!box.available && !box.used && box.type === "contingency-1") return "exceptional";
+  if (!box || box.tipoCaja === "PRINCIPAL") return "normal";
+  if (box.tipoCaja === "EXCEPCIONAL") return "exceptional";
+  if (box.tipoCaja === "AUXILIAR" && box.available) return "contingency";
+  if (box.tipoCaja === "AUXILIAR" && !box.available && !box.used) return "exceptional";
   return "normal";
 }
 
-// ── authorization constants ─────────────────────────────────────
-
 export const MIN_MOTIVO_LEN = 5;
-
-// ── apertura validation ─────────────────────────────────────────
 
 export function canOpenSession(
   isOpen: boolean,
@@ -47,8 +37,7 @@ export function canOpenSession(
 ): boolean {
   if (isOpen) return false;
   if (!box) return false;
-  // "contingencia" type: available=true cuando principal no usada; siempre requiere PIN
-  if (box.type === "contingencia") {
+  if (box.tipoCaja === "EXCEPCIONAL") {
     if (!box.available || box.used) return false;
   } else {
     const boxOk = mode === "exceptional" ? (!box.used && !box.available) : box.available;
@@ -61,8 +50,6 @@ export function canOpenSession(
   if (mode === "exceptional") return ctgPin === expectedCtgPin && ctgJustif.trim().length >= MIN_MOTIVO_LEN;
   return true;
 }
-
-// ── move form validation ────────────────────────────────────────
 
 export function validateCanAddMove(totalAmt: number, motivo: string): boolean {
   return moneyGt(totalAmt, 0) && motivo.trim().length > 0;

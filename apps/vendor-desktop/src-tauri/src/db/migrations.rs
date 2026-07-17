@@ -41,6 +41,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v19_operadores(db).await?;
     migrar_v20_bonus_distribuidor(db).await?;
     migrar_v21_sesion_caja_arqueo(db).await?;
+    migrar_v22_bloque_operacional(db).await?;
 
     Ok(())
 }
@@ -1827,6 +1828,80 @@ async fn migrar_v21_sesion_caja_arqueo(db: &sqlx::SqlitePool) -> Result<(), Stri
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (21)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v22_bloque_operacional(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 22 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS bloque_operacional (
+          id TEXT PRIMARY KEY,
+          base INTEGER NOT NULL UNIQUE,
+          auxiliares INTEGER NOT NULL DEFAULT 2,
+          activo INTEGER NOT NULL DEFAULT 1,
+          creado_en TEXT NOT NULL,
+          creado_por TEXT NOT NULL,
+          modificado_en TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_bloque_activo ON bloque_operacional(activo)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let ahora = sqlx::query_scalar::<_, String>(
+        "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let cantidad_bloques = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM bloque_operacional")
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if cantidad_bloques == 0 {
+        let id = uuid::Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT INTO bloque_operacional
+               (id, base, auxiliares, activo, creado_en, creado_por, modificado_en)
+             VALUES (?, 900, 2, 1, ?, 'SISTEMA', ?)",
+        )
+        .bind(&id)
+        .bind(&ahora)
+        .bind(&ahora)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (22)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

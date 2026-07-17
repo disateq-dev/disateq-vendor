@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
-import { definirCajasDeBloque } from "../domains/operator/blocks.store";
+import { definirCajasDeBloque, type TipoCaja } from "../domains/operator/blocks.store";
 import type { Operador } from "../domains/operator/operator.store";
 import { NULL_STATS, type SessionStats, type DocRange, type ByMethod } from "../hooks/useSessionStats";
 import {
@@ -10,7 +10,7 @@ import {
   actualizarMovimientoCajaEnSQLite,
 } from '../domains/cash/sesion-caja-sqlite.service'
 
-export type CashBoxType = "normal" | "contingency-1" | "contingency-2" | "contingencia";
+export type CashBoxType = TipoCaja;
 export type MoveType             = "ingreso" | "egreso";
 export type MoveSource           = "apertura" | "vendido" | "externo";
 export type RegularizationStatus = "por_regularizar" | "regularizado" | "anulado";
@@ -26,7 +26,7 @@ export type CashMove = {
 };
 
 export type CashBox = {
-  code: string; type: CashBoxType; used: boolean; available: boolean;
+  code: string; tipoCaja: TipoCaja; used: boolean; available: boolean;
 };
 
 export type CashSession = {
@@ -36,12 +36,9 @@ export type CashSession = {
   motivo?: string; observacion?: string; refOp?: string;
 };
 
-const BOX_DEFS: { code: string; type: CashBoxType }[] = definirCajasDeBloque().map(d => ({
+const BOX_DEFS: { code: string; tipoCaja: CashBoxType }[] = definirCajasDeBloque().map(d => ({
   code: d.codigo,
-  type: d.type === "PRINCIPAL" ? "normal"
-      : d.type === "CONTINGENCIA_1" ? "contingency-1"
-      : d.type === "CONTINGENCIA_2" ? "contingency-2"
-      : "contingencia",
+  tipoCaja: d.tipoCaja,
 }));
 const TERMINAL = "PC-VENTAS01";
 
@@ -133,13 +130,11 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
     const used = usedCodes.has(def.code);
     let available = false;
     if (!used) {
-      if (def.type === "normal") {
+      if (def.tipoCaja === "PRINCIPAL") {
         available = true;
-      } else if (def.type === "contingency-1") {
-        available = usedCodes.has(def.code.slice(0, 2) + "0");
-      } else if (def.type === "contingency-2") {
-        available = usedCodes.has(def.code.slice(0, 2) + "1");
-      } else if (def.type === "contingencia") {
+      } else if (def.tipoCaja === "AUXILIAR") {
+        available = usedCodes.has(String(Number(def.code) - 1));
+      } else if (def.tipoCaja === "EXCEPCIONAL") {
         available = !usedCodes.has(def.code[0] + "00");
       }
     }
@@ -212,10 +207,9 @@ export function recoverOperationalState(): RecoveredState {
 
   let resolvedCodes = codes;
   let recoveryLog: string | null = null;
-  if (session.isOpen && session.cashBox && session.cashBox.type !== "normal") {
+  if (session.isOpen && session.cashBox && session.cashBox.tipoCaja !== "PRINCIPAL") {
     const box    = session.cashBox;
-    const prereq = box.type === "contingency-1" ? box.code.slice(0, 2) + "0"
-                 : box.type === "contingency-2" ? box.code.slice(0, 2) + "1"
+    const prereq = box.tipoCaja === "AUXILIAR" ? String(Number(box.code) - 1)
                  : box.code[0] + "00";
     if (!codes.has(prereq)) {
       const next = new Set(codes);
@@ -386,7 +380,7 @@ export function useCaja({
     void abrirSesionCajaEnSQLite(
       `${boxCode}-${now.toISOString()}`,
       boxCode,
-      box.type,
+      box.tipoCaja,
       operator,
       operatorId ?? null,
       TERMINAL,

@@ -65,7 +65,7 @@ export function CobroPanel() {
   const lines = useLineasPreVenta();
   const { cobroOpen, closeCobro, cashSession, showNotice, recordSale, addComprobante, printFlow, activeOperator } = usePOS();
   const { cashBox } = cashSession;
-  const isCtg = !!cashBox && cashBox.type !== "normal";
+  const isCtg = !!cashBox && cashBox.tipoCaja !== "PRINCIPAL";
   const tasaIGV = loadBusinessConfig().tasaIGV;
 
   // ── main state ──────────────────────────────────────────────────────────────

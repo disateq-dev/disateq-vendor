@@ -18,7 +18,7 @@ const SEP = <span className="mx-[7px] text-[#1e3060]">·</span>;
 export function StatusBar() {
   const { cashSession, sessionStats, cashMoves } = usePOS();
   const { isOpen, cashBox, terminal, openedAt } = cashSession;
-  const isCtg = !!cashBox && cashBox.type !== "normal";
+  const isCtg = !!cashBox && cashBox.tipoCaja !== "PRINCIPAL";
 
   const ingTotal = cashMoves.reduce((s, m) => m.type === "ingreso" ? s + m.amount : s, 0);
   const egTotal  = cashMoves.reduce((s, m) => m.type === "egreso"  ? s + m.amount : s, 0);

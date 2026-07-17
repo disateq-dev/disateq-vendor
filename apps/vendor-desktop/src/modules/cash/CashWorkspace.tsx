@@ -132,26 +132,24 @@ function BoxRow({ box, isActive, isSelected, onSelect }: {
                     "bloqueada";
 
   const typeLabel =
-    box.type === "normal"        ? "PRINCIPAL"     :
-    box.type === "contingency-1" ? "SECUNDARIA 01" :
-    box.type === "contingency-2" ? "SECUNDARIA 02" :
-    "CONTINGENCIA";
+    box.tipoCaja === "PRINCIPAL" ? "PRINCIPAL" :
+    box.tipoCaja === "AUXILIAR" ? "AUXILIAR" :
+    "EXCEPCIONAL";
 
   const comentario =
-    box.type === "normal"        ? "Flujo principal de ventas"          :
-    box.type === "contingency-1" ? "Primera continuación operacional"    :
-    box.type === "contingency-2" ? "Segunda continuación operacional"    :
+    box.tipoCaja === "PRINCIPAL" ? "Flujo principal de ventas" :
+    box.tipoCaja === "AUXILIAR" ? "Continuación operacional" :
     "Apertura excepcional autorizada";
 
   const prereq = prereqCode(box);
   const observacion = estado === "bloqueada"
-    ? (box.type === "contingencia"
+    ? (box.tipoCaja === "EXCEPCIONAL"
         ? `Requiere caja ${prereq} sin apertura`
         : `Requiere caja ${prereq} cerrada`)
     : "";
 
   const clickable = !isActive && box.available && !!onSelect;
-  const isContg = box.type === "contingencia";
+  const isContg = box.tipoCaja === "EXCEPCIONAL";
 
   return (
     <div
@@ -579,7 +577,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       if (ctgPin !== configuredCtgPin) { setCtgPinError(true); return; }
       if (!ctgJustif.trim()) return;
       // Marcar caja principal como omitida + abrir contingente excepcionalmente
-      const primaryCode = selectedBox.type === "contingencia"
+      const primaryCode = selectedBox.tipoCaja === "EXCEPCIONAL"
         ? selectedBox.code[0] + "00"          // 150 → "100"
         : selectedBox.code.slice(0, 2) + "0"; // 101 → "100"
       openCashSession(selectedBox.code, amt, ctgJustif.trim(), aperturaRefOp.trim() || undefined, [primaryCode]);

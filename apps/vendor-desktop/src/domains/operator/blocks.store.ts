@@ -1,20 +1,31 @@
-export type TipoCaja = "PRINCIPAL" | "CONTINGENCIA_1" | "CONTINGENCIA_2" | "CONTINGENCIA";
+export type TipoCaja = "PRINCIPAL" | "AUXILIAR" | "EXCEPCIONAL";
 
-export type DefinicionCaja = { codigo: string; type: TipoCaja };
+export interface DefinicionCaja {
+  codigo: string;
+  tipoCaja: TipoCaja;
+}
 
-// Única fuente de verdad para bloques operacionales disponibles.
-// Agregar un bloque aquí lo registra automáticamente en cajas y en el selector de operadores.
-export const BLOCK_BASES = [100, 200, 300, 400, 500, 900] as const;
+export interface BloqueOperacional {
+  id: string;
+  base: number;
+  auxiliares: number;
+  activo: boolean;
+  creadoEn: string;
+  creadoPor: string;
+  modificadoEn: string;
+}
 
-export type BlockBase = (typeof BLOCK_BASES)[number];
+export const BLOCK_BASES: readonly number[] = [100, 200, 300, 400, 500, 900];
 
-// Deriva las definiciones de slots para un conjunto de bloques.
-// Patrón fijo: base (principal), base+1 (secundaria-1), base+2 (secundaria-2), base+50 (contingencia).
 export function definirCajasDeBloque(bases: readonly number[] = BLOCK_BASES): DefinicionCaja[] {
-  return bases.flatMap(b => [
-    { codigo: String(b),      type: "PRINCIPAL"      },
-    { codigo: String(b + 1),  type: "CONTINGENCIA_1" },
-    { codigo: String(b + 2),  type: "CONTINGENCIA_2" },
-    { codigo: String(b + 50), type: "CONTINGENCIA"   },
+  const auxiliares = 2;
+
+  return bases.flatMap(base => [
+    { codigo: String(base), tipoCaja: "PRINCIPAL" },
+    ...Array.from({ length: auxiliares }, (_, indice) => ({
+      codigo: String(base + indice + 1),
+      tipoCaja: "AUXILIAR" as const,
+    })),
+    { codigo: String(base + 50), tipoCaja: "EXCEPCIONAL" },
   ]);
 }

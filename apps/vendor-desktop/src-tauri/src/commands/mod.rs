@@ -16,3 +16,4 @@ pub mod ventas;
 pub mod comprobantes;
 pub mod sesion_caja;
 pub mod operadores;
+pub mod bloques;

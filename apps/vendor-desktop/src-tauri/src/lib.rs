@@ -174,7 +174,12 @@ pub fn run() {
       commands::operadores::actualizar_capacidades_operador,
       commands::operadores::crear_rol,
       commands::operadores::actualizar_rol,
-      commands::operadores::actualizar_capacidades_rol])
+      commands::operadores::actualizar_capacidades_rol,
+      commands::bloques::crear_bloque_operacional,
+      commands::bloques::obtener_bloques_operacionales,
+      commands::bloques::actualizar_auxiliares_bloque,
+      commands::bloques::activar_bloque_operacional,
+      commands::bloques::desactivar_bloque_operacional])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
