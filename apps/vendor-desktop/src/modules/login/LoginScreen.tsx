@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Shield, LogIn, HelpCircle, Lock, CheckCircle2, X, Check, Settings } from "lucide-react";
+import { Shield, LogIn, Lock, CheckCircle2, X, Check, Settings } from "lucide-react";
 import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -359,14 +359,14 @@ export function LoginScreen() {
         <div className="w-full flex flex-col flex-1">
 
         {/* Fecha + hora */}
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-end mb-4">
           <div className="text-right">
             <p className="text-[10.5px] text-[#a0aec0] leading-none tracking-wide">{fmtDate(now)}</p>
             <p className="text-[22px] font-semibold tabular-nums text-[#1a2d4e] leading-tight mt-0.5">{fmtTime(now)}</p>
           </div>
         </div>
 
-        <div className="flex flex-col w-full min-h-0 overflow-y-auto">
+        <div className="flex flex-col w-full">
 
           {/* CAMPO 1: USUARIO / OPERADOR — sin label, placeholder interno */}
           <div className="mb-2">
@@ -404,7 +404,7 @@ export function LoginScreen() {
           </div>
 
           {/* ══ VISTA: KEYPAD ════════════════════════════════════════ */}
-          {view === "keypad" && (
+          {view === "keypad" && selected !== null && (
             <>
               {esSistema ? (
                 <>
@@ -446,7 +446,7 @@ export function LoginScreen() {
               ) : (
                 <>
                   {/* PIN — sin label, placeholder operacional */}
-                  <div className="mb-5 relative">
+                  <div className="mb-1 relative">
                     <div className="relative">
                       <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
                       <input
@@ -475,26 +475,32 @@ export function LoginScreen() {
                     )}
                   </div>
 
+                  {/* Hint olvidó PIN — visible inmediatamente debajo del campo */}
+                  <p className="mb-3 text-[9px] text-[#4b5563] text-right leading-snug">
+                    ¿Olvidó su PIN?{" "}
+                    <button type="button" onClick={switchToPinChange} className="font-bold underline text-[#2154d8] hover:text-[#1a44b8] transition">Para regenerarlo CLIC AQUÍ</button>
+                  </p>
+
                   {/* Keypad */}
-                  <div className="grid grid-cols-3 gap-2 mb-1 w-full">
+                  <div className="grid grid-cols-3 gap-1.5 mb-1 w-full">
                     {["7","8","9","4","5","6","1","2","3"].map(d => (
                       <button key={d} onClick={() => addDigit(d)}
-                        className="h-12 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[17px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
+                        className="h-10 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[16px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
                         {d}
                       </button>
                     ))}
                     <button onClick={removeLast}
-                      className="h-12 rounded-xl border border-[#fde8e8] bg-[#fff8f8] text-[#f87171] transition hover:bg-[#fff1f1] hover:border-[#fcd4d4] active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em]">
+                      className="h-10 rounded-xl border border-[#fde8e8] bg-[#fff8f8] text-[#f87171] transition hover:bg-[#fff1f1] hover:border-[#fcd4d4] active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em]">
                       <span className="text-[13px] leading-none">⌫</span>Borrar
                     </button>
                     <button onClick={() => addDigit("0")}
-                      className="h-12 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[17px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
+                      className="h-10 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[16px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
                       0
                     </button>
                     <button
                       onClick={() => attemptLogin(pin)}
                       disabled={!selected || pin.length < 4}
-                      className={`h-12 rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] ${
+                      className={`h-10 rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] ${
                         selected && pin.length >= 4
                           ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_4px_20px_rgba(69,179,86,0.45)]"
                           : "bg-[#f5f8fc] border border-[#e4edf6] text-[#b8c4d4] cursor-not-allowed"
@@ -640,14 +646,7 @@ export function LoginScreen() {
           ) : null}
           {view === "keypad" && (
             <div className="flex flex-col items-end gap-1">
-              <button onClick={switchToPinChange}
-                className="flex items-center gap-1.5 text-[10px] font-medium text-[#2154d8] hover:text-[#1a44b8] transition">
-                <HelpCircle size={11} />¿Olvidó su PIN?
-              </button>
-              <p className="text-[9px] text-[#4b5563] text-right leading-snug">
-                Podrá regenerarlo en la siguiente ventana{" "}
-                <button type="button" onClick={switchToPinChange} className="font-bold underline hover:text-[#1a44b8] transition">CLIC AQUÍ</button>
-              </p>
+              <div />
               <button
                 onClick={() => setMostrarSistema(v => !v)}
                 title="Acceso técnico"
