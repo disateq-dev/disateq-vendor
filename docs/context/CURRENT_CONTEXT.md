@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
 **Última actualización:** 2026-07-16
-**Último commit:** `f4cef9f`
+**Último commit:** `831c52d`
 **Rama:** `main`
 **Working tree:** limpio
 
@@ -38,24 +38,26 @@ Tablas: `operador`, `rol` (v19)
 - `sesion_caja.correction_json TEXT` — correcciones de supervisión serializadas como JSON
 
 **session-history → SQLite ✅ COMPLETADO — commit `1cc2772`**
-- `session-history.service.ts` completamente reescrito: lectura desde `obtenerHistorialSesionesSQLite()`, escritura mediante `actualizarSesionCajaCorrection()`
-- `recordSessionOpen` y `recordSessionClose` son no-ops — la escritura la hace `useCaja.ts` directamente
-- `recordSessionCorrection` y `recordAperturaCorrection` llaman a `actualizarSesionCajaCorrection()` en SQLite
-- `loadSessionHistory()` y `getCurrentSessionId()` son async — todos los consumidores actualizados
-- localStorage eliminado del dominio historial de sesiones
+- `session-history.service.ts` 100% SQLite, localStorage eliminado del dominio historial
 
 **Migración v22 + dominio BloqueOperacional ✅ COMPLETADO — commit `f4cef9f`**
-- Rust: tabla `bloque_operacional` (v22), seed base=900 para ADMIN, 5 comandos CRUD
-- TS: `blocks.store.ts` reescrito — `TipoCaja` canónico `PRINCIPAL|AUXILIAR|EXCEPCIONAL`, `DefinicionCaja.tipoCaja`
-- TS: `bloque-operacional-sqlite.service.ts` — capa de acceso SQLite (5 funciones)
-- `useCaja.ts`: `CashBoxType=TipoCaja`, `CashBox.type→tipoCaja`, lógica prereq AUXILIAR por código (`Number(code)-1`)
-- `cash-rules.service.ts`: reescritura completa sobre `TipoCaja` canónico
-- `StatusBar.tsx`, `CobroPanel.tsx`, `CashWorkspace.tsx`: `box.type→box.tipoCaja`, valores viejos eliminados
-- Deuda §8 GLOSARIO liquidada: `BoxSlotType`/`CONTINGENCIA_1`/`CONTINGENCIA_2` eliminados del codebase
+- Rust: tabla `bloque_operacional` (v22), seed base=900, 5 comandos CRUD
+- TS: `blocks.store.ts` → `TipoCaja` canónico `PRINCIPAL|AUXILIAR|EXCEPCIONAL`
+- TS: `bloque-operacional-sqlite.service.ts` — 5 funciones de acceso SQLite
+- `useCaja.ts`, `cash-rules.service.ts`, `StatusBar.tsx`, `CobroPanel.tsx`, `CashWorkspace.tsx`: `box.type` → `box.tipoCaja`, valores viejos eliminados
+- Deuda §8 GLOSARIO liquidada: `BoxSlotType`/`CONTINGENCIA_1`/`CONTINGENCIA_2` eliminados
+
+**CajasWorkspace → SQLite ✅ COMPLETADO — commits `831c52d`, `f4cef9f`**
+- `useBloques.ts`: hook con carga desde SQLite en mount, CRUD async write→reload, `derivarSlots`
+- `CajasWorkspace.tsx`: reescritura completa sobre `BloqueOperacional` canónico
+- `MOCK_BLOCKS` eliminado; `OperationalBlock`/`CajaSlot`/`SlotType` eliminados
+- `hasHistorial` derivado en tiempo real desde `sessionHistory` — sin campo persistido
+- `lastActivity` memoizado con `useMemo`
+- Estado de carga y error visible en UI
 
 Diferido aceptable del Paso D:
 - `accesosStore` (bitácora de accesos) sigue en localStorage — cap 200 eventos
-- `changeOperatorPin` / `changeOperatorPinById` — no tienen escritura SQLite aún (uso infrecuente)
+- `changeOperatorPin` / `changeOperatorPinById` — sin escritura SQLite aún (uso infrecuente)
 
 Diferido aceptable — dominio supervisión:
 - `supervision-authorization.service.ts` — autorizaciones de supervisión siguen en localStorage. Migración futura.
@@ -66,92 +68,73 @@ Diferido aceptable — dominio supervisión:
 
 ### Faenas 21–28: ver historial anterior ✅
 
-### Faena 29: Sesión 16 Jul 2026 ✅
-- Limpieza artefactos Codex — commit `8b729c0`
-- Auditoría comandos Rust desactivación: los 3 ya implementados — deuda cerrada
-- CURRENT_CONTEXT actualizado — commit `a40eef1`
+### Faena 29 ✅ — Limpieza artefactos Codex, auditoría comandos Rust desactivación
 
-### Faena 30: D-INGRESOS-4 — Bonus Distribuidor ✅ — commits `82f6dc9`, `9a39762`, `6f850f0`
-El sistema distingue unidades_facturadas (fiscal) de unidades_recibidas (físico). FEFO opera sobre lo físico. Pedido se reconcilia con lo facturado.
+### Faena 30 ✅ — D-INGRESOS-4 Bonus Distribuidor (commits `82f6dc9`, `9a39762`, `6f850f0`)
 
-### Faena 31: session-history → SQLite ✅ — commits `660cb7f`, `0f64928`, `1cc2772`
+### Faena 31 ✅ — session-history → SQLite (commits `660cb7f`, `0f64928`, `1cc2772`)
 
-**Alcance:**
-- F-1 (`660cb7f`): migración v21 — `arqueo_json` + `correction_json` en `sesion_caja`
-- F-2 (`0f64928`): `cerrar_sesion_caja` recibe `arqueo_json`; nuevo comando `actualizar_sesion_caja_correction`
-- F-3 (`1cc2772`): capa TS completa — `sesion-caja-sqlite.service.ts`, `session-history.service.ts`, `CashWorkspace.tsx`, `CajasWorkspace.tsx`, `SupervisionCajaWorkspace.tsx`
+### Faena 32 ✅ — CajasWorkspace completo en SQLite + naming canónico TipoCaja
 
-**Rule #6 verificado:**
-```
-Apertura  → abrirSesionCajaEnSQLite() → SQLite ✅ | recordSessionOpen() = no-op ✅
-Cierre    → cerrarSesionCajaEnSQLite(arqueoJson) → SQLite ✅ | recordSessionClose() = no-op ✅
-Corrección → recordSessionCorrection/recordAperturaCorrection → actualizarSesionCajaCorrection() → SQLite ✅
-Lectura   → loadSessionHistory() → obtenerHistorialSesionesSQLite(60) → mapSesionCajaRow() ✅
-SessionId → getCurrentSessionId() → obtenerSesionActivaSQLite() ✅
-localStorage: eliminado de todo el dominio historial ✅
-```
-
-### Faena 32: CajasWorkspace — Fase 1 (dominio + naming) ✅ — commit `f4cef9f`
-
-**Alcance:**
-- E-1: Rust migración v22 + 5 comandos `bloques.rs` registrados en `lib.rs`
+**Fase 1 (commit `f4cef9f`) — 11 archivos:**
+- E-1: Rust migración v22, 5 comandos `bloques.rs`, registro en `lib.rs`
 - E-2: `blocks.store.ts` reescrito; `bloque-operacional-sqlite.service.ts` creado
 - E-3: `useCaja.ts` + `cash-rules.service.ts` migrados a `TipoCaja` canónico
 - E-4: `StatusBar.tsx`, `CobroPanel.tsx`, `CashWorkspace.tsx` — `box.type` eliminado
 
-**Rule #6 — estado al cierre de Fase 1:**
+**Fase 2 (commit `831c52d`) — 2 archivos:**
+- E-5: `modules/cash/hooks/useBloques.ts` — hook completo con estado, CRUD, `derivarSlots`
+- E-6: `CajasWorkspace.tsx` — reescritura total, MOCK_BLOCKS eliminado, UI conectada a SQLite
+
+**Rule #6 verificado al cierre:**
 ```
-Crear bloque  → crearBloqueEnSQLite() → crear_bloque_operacional → SQLite ✅
-Editar        → actualizarAuxiliaresEnSQLite() → actualizar_auxiliares_bloque → SQLite ✅
-Activar       → activarBloqueEnSQLite() → activar_bloque_operacional → SQLite ✅
-Desactivar    → desactivarBloqueEnSQLite() → desactivar_bloque_operacional → SQLite ✅
-Leer          → cargarBloquesOperacionales() → obtener_bloques_operacionales → SQLite ✅
-UI → SQLite   → CajasWorkspace.tsx aún usa MOCK_BLOCKS — PENDIENTE Fase 2
-BOX_DEFS      → definirCajasDeBloque() usa array estático — PENDIENTE Fase 2
+Crear bloque  → crearBloque() → crearBloqueEnSQLite() → SQLite ✅ → recarga estado ✅
+Editar        → editarAuxiliares() → actualizarAuxiliaresEnSQLite() → SQLite ✅ → recarga ✅
+Activar       → activarBloque() → activarBloqueEnSQLite() → SQLite ✅ → recarga ✅
+Desactivar    → desactivarBloque() → desactivarBloqueEnSQLite() → SQLite ✅ → recarga ✅
+Leer          → useBloques() mount → cargarBloquesOperacionales() → SQLite ✅
+hasHistorial  → derivado de sessionHistory en tiempo real ✅
+MOCK_BLOCKS   → eliminado ✅
+cargo check   → limpio ✅ (2 warnings preexistentes en thermal.rs)
+tsc           → cero errores ✅
 ```
 
-**Pendiente Fase 2 (próxima sesión):** `CajasWorkspace.tsx` + hook `useBloques.ts` — conectar UI a SQLite, eliminar `MOCK_BLOCKS`.
-
-**cargo check:** ✅ limpio (2 warnings preexistentes en thermal.rs, no relacionados)
-**tsc:** ✅ cero errores
+Diferido aceptable de Faena 32:
+- `BOX_DEFS` en `useCaja.ts` sigue usando `definirCajasDeBloque()` con array estático `[100,200,300,400,500,900]`. En el futuro debe derivarse de los bloques reales leídos desde SQLite para que `cashBoxes` refleje exactamente los bloques configurados. No bloquea producción — el seed de v22 garantiza que el bloque 900 existe, y los demás se crean desde la UI.
 
 ---
 
 ## Estado de deuda técnica vigente
 
 ### Diferido aceptable
-- `accesosStore` → bitácora de accesos sigue en localStorage — cap 200 eventos. Migración futura a tabla `acceso_operador`.
+- `accesosStore` → bitácora de accesos en localStorage. Migración futura a `acceso_operador`.
 - `changeOperatorPin` / `changeOperatorPinById` → sin escritura SQLite aún.
-- `supervision-authorization.service.ts` → autorizaciones de supervisión en localStorage. Migración futura.
+- `supervision-authorization.service.ts` → autorizaciones en localStorage. Migración futura.
 - F2 — doble movimiento `despacharConFefo` productos con lote. Diferido hasta eliminar `inventoryService` legacy.
+- `BOX_DEFS` estático en `useCaja.ts` — ver nota arriba.
 
 ### Deuda de PRECIOS
 - **D-PRECIOS-1 — Precio por lote:** complejidad alta. **Diferido.**
 
-### Deuda arquitectónica — Cajas
-- **CajasWorkspace Fase 2:** desacoplar de `MOCK_BLOCKS`, conectar a `useBloques` + SQLite. **PRIORIDAD INMEDIATA.**
-- `BOX_DEFS` en `useCaja.ts` sigue usando `definirCajasDeBloque()` con array estático. En Fase 2 debe derivarse de los bloques reales leídos desde SQLite.
-
-### Deudas de naming — GLOSARIO §8 (residuo — baja prioridad)
+### Deudas de naming — GLOSARIO §8 (residuo — baja prioridad, no bloquean)
 - `ActualizarProveedorInput` → `ModificarProveedorInput`
 - `TicketLineDTO` / `TicketLineBridge` → `LineaPreVenta`
 - `emitidoPor` → `operadorId`
 - `disponible/bajo_stock/agotado` → `DISPONIBLE/BAJO_STOCK/AGOTADO`
-- `actualizar_proveedor` → `modificar_proveedor` (verbo no canónico §4)
+- `actualizar_proveedor` → `modificar_proveedor`
 - `desactivar_servicio_catalogo` → entidad canónica §11 es `ServicioFarmacia`
 - `BoxSlotType` / `BoxSlotDef` / campo `code` → **LIQUIDADO en Faena 32** ✅
 
-### Backlog v2.0 — Multi-POS con sincronización LAN
-Preparación incorporada en v20: `sincronizado_en` en `venta` y `comprobante`.
+### Backlog v2.0
+- Multi-POS con sincronización LAN: `sincronizado_en` en `venta` y `comprobante` (v20) ya preparado.
 
 ---
 
 ## Próxima ventana de trabajo — prioridad
 
-1. **CajasWorkspace Fase 2** — hook `useBloques.ts` + reescritura `CajasWorkspace.tsx` conectada a SQLite, eliminación de `MOCK_BLOCKS` y tipos internos propios (sesión dedicada, alta complejidad)
-2. **Segundo rubro** — desbloqueado; iniciar arquitectura
-3. **`supervision-authorization.service.ts`** — migración a SQLite (diferido aceptable)
-4. **Deudas de naming §8** — cleanup cuando haya ventana
+1. **Segundo rubro** — arquitectura del segundo vertical (desbloqueado desde §8)
+2. **`supervision-authorization.service.ts`** — migración a SQLite (diferido aceptable)
+3. **Deudas de naming §8** — cleanup cuando haya ventana
 
 ---
 
@@ -185,24 +168,19 @@ Preparación incorporada en v20: `sincronizado_en` en `venta` y `comprobante`.
 - `desactivar_bloque_operacional` ✅
 
 **Comandos Rust registrados — sesion_caja:**
-- `abrir_sesion_caja` ✅
-- `cerrar_sesion_caja` (con arqueo_json) ✅
-- `actualizar_sesion_caja_correction` ✅
-- `registrar_movimiento_caja` ✅
-- `actualizar_movimiento_caja` ✅
-- `registrar_evento_turno` ✅
-- `obtener_sesion_activa` ✅
-- `obtener_historial_sesiones` ✅
-- `obtener_movimientos_sesion` ✅
+- `abrir_sesion_caja`, `cerrar_sesion_caja`, `actualizar_sesion_caja_correction`
+- `registrar_movimiento_caja`, `actualizar_movimiento_caja`, `registrar_evento_turno`
+- `obtener_sesion_activa`, `obtener_historial_sesiones`, `obtener_movimientos_sesion`
 
 **Servicios TS activos — dominio bloques:**
 - `blocks.store.ts` — `TipoCaja`, `DefinicionCaja`, `BloqueOperacional`, `BLOCK_BASES`, `definirCajasDeBloque()` ✅
-- `bloque-operacional-sqlite.service.ts` — 5 funciones CRUD sobre SQLite ✅
+- `bloque-operacional-sqlite.service.ts` — 5 funciones CRUD ✅
+- `modules/cash/hooks/useBloques.ts` — hook React completo ✅
 
 **Servicios TS activos — dominio cash:**
-- `sesion-caja-sqlite.service.ts` — 9 funciones, incluye `actualizarSesionCajaCorrection` ✅
-- `session-history.service.ts` — 100% SQLite, localStorage eliminado ✅
-- `turn-events.store.ts` — sigue en localStorage (eventos de turno en tiempo real, diferido)
+- `sesion-caja-sqlite.service.ts` — 9 funciones ✅
+- `session-history.service.ts` — 100% SQLite ✅
+- `turn-events.store.ts` — localStorage (diferido)
 
 **Tokens de color activos (`index.css`):**
 - `--dv-color-edit: #005BE3`
@@ -216,8 +194,9 @@ Preparación incorporada en v20: `sincronizado_en` en `venta` y `comprobante`.
 - `DefinicionCaja.tipoCaja` (no `.type`)
 - `CashBox.tipoCaja` (no `.type`)
 - `CashBoxType = TipoCaja` — alias directo
-- Prereq de `AUXILIAR` = `String(Number(code) - 1)` — derivado del código, no del tipo
-- Prereq de `EXCEPCIONAL` = `code[0] + "00"` — la PRINCIPAL del bloque
+- `DefinicionSlot` = `{ codigo, tipoCaja, hasHistorial }` — tipo de presentación UI
+- Prereq `AUXILIAR` = `String(Number(code) - 1)` — geométrico, no por tipo
+- Prereq `EXCEPCIONAL` = `code[0] + "00"`
 
 **Naming canónico — dominio operator:**
 - `Operador.alias` (campo `codigo` eliminado)
@@ -230,7 +209,7 @@ Preparación incorporada en v20: `sincronizado_en` en `venta` y `comprobante`.
 
 **sessionKey canónico:** `"{boxCode}-{openedAt.toISOString()}"` — PK de `sesion_caja`.
 
-**Contrato escritura doble (D3):** toda operación SQLite refresca Zustand correspondiente.
+**Contrato escritura doble (D3):** toda operación SQLite refresca Zustand/estado React correspondiente.
 
 **Reglas de apertura de sesión (obligatorias):**
 1. Leer este archivo antes de cualquier acción.
