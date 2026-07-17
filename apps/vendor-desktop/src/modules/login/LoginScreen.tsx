@@ -35,11 +35,11 @@ const PC_MOTIVOS = [
   "OLVIDO PIN",
   "CAMBIO PREVENTIVO",
   "PIN COMPROMETIDO",
-  "RECOMENDACION PERIODICA",
+  "RECOMENDACIÓN PERIÓDICA",
   "CAMBIO SUPERVISOR",
 ] as const;
 
-const DAYS = ["DOM","LUN","MAR","MIE","JUE","VIE","SAB"];
+const DAYS = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function fmtDate(d: Date) {
   return `${DAYS[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
@@ -50,8 +50,8 @@ function fmtTime(d: Date) {
 
 function validatePin(p: string): string | null {
   if (!p)                return "Requerido";
-  if (!/^\d+$/.test(p)) return "Solo numeros";
-  if (p.length < 4)     return "Minimo 4 digitos";
+  if (!/^\d+$/.test(p)) return "Solo números";
+  if (p.length < 4)     return "Mínimo 4 dígitos";
   return null;
 }
 
@@ -193,7 +193,7 @@ export function LoginScreen() {
   async function attemptLoginSistema() {
     if (!selectedSistemaId || pinSistema.length < 1) return;
     const ok = await loginRef.current(selectedSistemaId, pinSistema);
-    if (!ok) { setErrorSistema("Contrasena incorrecta. Intente nuevamente."); setPinSistema(""); }
+    if (!ok) { setErrorSistema("Contraseña incorrecta. Intente nuevamente."); setPinSistema(""); }
   }
 
   function addDigit(d: string) {
@@ -221,14 +221,14 @@ export function LoginScreen() {
     if (!id)             { setPcError("Seleccione un operador");            aliasSelectRef.current?.focus(); return; }
     if (!pcMotivo)       { setPcError("Seleccione un motivo");              pcMotivoRef.current?.focus();    return; }
     const auth = pcAuthCode.trim();
-    if (!auth)           { setPcError("Codigo de autorizacion requerido");  pcAuthCodeRef.current?.focus();  return; }
-    if (!/[a-zA-Z]/.test(auth)) { setPcError("El codigo debe contener letras");  pcAuthCodeRef.current?.focus(); return; }
-    if (!/[0-9]/.test(auth))    { setPcError("El codigo debe contener numeros"); pcAuthCodeRef.current?.focus(); return; }
+    if (!auth)           { setPcError("Código de autorización requerido");  pcAuthCodeRef.current?.focus();  return; }
+    if (!/[a-zA-Z]/.test(auth)) { setPcError("El código debe contener letras");   pcAuthCodeRef.current?.focus(); return; }
+    if (!/[0-9]/.test(auth))    { setPcError("El código debe contener números"); pcAuthCodeRef.current?.focus(); return; }
     const errNuevo = validatePin(pcPinNuevo);
     if (errNuevo)        { setPcError(`Nuevo PIN: ${errNuevo}`);            pcPinNuevoRef.current?.focus();  return; }
     if (pcPinNuevo !== pcPinConfirm) { setPcError("Los PINes no coinciden"); pcPinConfRef.current?.focus(); return; }
     resetOperatorPin(id, pcPinNuevo).then(ok => {
-      if (!ok) { setPcError("Operador invalido"); aliasSelectRef.current?.focus(); return; }
+      if (!ok) { setPcError("Operador inválido"); aliasSelectRef.current?.focus(); return; }
       setPcSuccess(true);
     }).catch(() => setPcError("Error al actualizar PIN."));
   }
@@ -298,7 +298,7 @@ export function LoginScreen() {
           <Shield size={22} className="shrink-0 text-[#45b356]" />
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#45b356] leading-none">Acceso seguro</p>
-            <p className="text-[10px] text-[#a0aec0] mt-1 leading-none">Acceso local sin conexion de red</p>
+            <p className="text-[10px] text-[#a0aec0] mt-1 leading-none">Acceso local · sin conexión de red</p>
           </div>
         </div>
         <div className="[flex-grow:3]" />
@@ -307,7 +307,7 @@ export function LoginScreen() {
             <div className="rounded-xl bg-[#45b356]/[0.07] px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#45b356]" />
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#2d6640]">Turno activo Caja {cashSession.cashBox.code}</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#2d6640]">Turno activo · Caja {cashSession.cashBox.code}</p>
               </div>
               <p className="text-[11px] text-[#4a7a55] pl-4 leading-snug">Puede continuar sin reapertura</p>
             </div>
@@ -317,7 +317,7 @@ export function LoginScreen() {
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#c8d3e0]" />
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7a99]">Sin turno activo</p>
               </div>
-              <p className="text-[11px] text-[#a0aec0] pl-4 leading-snug">Abrir caja en Gestion Turno</p>
+              <p className="text-[11px] text-[#a0aec0] pl-4 leading-snug">Abrir caja en Gestión Turno</p>
             </div>
           )}
         </div>
@@ -325,7 +325,7 @@ export function LoginScreen() {
           <p className="text-[10px] text-[#b0bec8] leading-[1.5] text-justify">
             Todos los derechos reservados. Hechos los registros de ley.
             Sujeto a las leyes nacionales e internacionales de derechos de autor.
-            Prohibida su reproduccion parcial o total.
+            Prohibida su reproducción parcial o total.
           </p>
         </div>
       </div>
@@ -349,7 +349,7 @@ export function LoginScreen() {
               <>
                 <div className="flex items-center gap-2 mb-4">
                   <Settings size={12} className="text-[#4a5265] shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#4a5265]">Acceso Tecnico</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#4a5265]">Acceso Técnico</span>
                 </div>
 
                 <div className="mb-3">
@@ -360,7 +360,7 @@ export function LoginScreen() {
                       onChange={e => { setSelectedSistemaId(e.target.value); setErrorSistema(null); }}
                       className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#4a5265] focus:ring-2 focus:ring-[#4a5265]/10 transition cursor-pointer"
                     >
-                      <option value="" disabled hidden>Seleccione usuario tecnico</option>
+                      <option value="" disabled hidden>Seleccione usuario técnico</option>
                       {operadoresSistema.map(op => (
                         <option key={op.id} value={op.id}>{op.alias}</option>
                       ))}
@@ -386,7 +386,7 @@ export function LoginScreen() {
                         if (e.key === "Enter")  { e.preventDefault(); void attemptLoginSistema(); }
                         if (e.key === "Escape") { e.preventDefault(); switchToKeypad(); }
                       }}
-                      placeholder="Contrasena de acceso tecnico"
+                      placeholder="Contraseña de acceso técnico"
                       className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[15px] font-bold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#4a5265] focus:ring-2 focus:ring-[#4a5265]/10 transition"
                     />
                   </div>
@@ -442,7 +442,7 @@ export function LoginScreen() {
                   </div>
                   {activeOps.length === 0 && (
                     <p className="mt-1.5 text-[10px] font-semibold text-amber-600">
-                      Sin operadores activos configure operadores en GESTION TURNO
+                      Sin operadores activos — configure operadores en GESTIÓN TURNO
                     </p>
                   )}
                 </div>
@@ -469,7 +469,7 @@ export function LoginScreen() {
                             if (e.key === "Escape") { e.preventDefault(); resetToAlias(); }
                           }}
                           onFocus={() => setStep("pin")}
-                          placeholder="Ingrese PIN de 4 a 6 numeros"
+                          placeholder="Ingrese PIN de 4 a 6 números"
                           maxLength={6}
                           className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                         />
@@ -480,8 +480,8 @@ export function LoginScreen() {
                     </div>
 
                     <p className="mb-5 text-[9px] text-[#4b5563] text-right leading-snug">
-                      Olvido su PIN?{" "}
-                      <button type="button" onClick={switchToPinChange} className="font-bold underline text-[#2154d8] hover:text-[#1a44b8] transition">Para regenerarlo CLIC AQUI</button>
+                      ¿Olvidó su PIN?{" "}
+                      <button type="button" onClick={switchToPinChange} className="font-bold underline text-[#2154d8] hover:text-[#1a44b8] transition">Para regenerarlo CLIC AQUÍ</button>
                     </p>
 
                     <div className="grid grid-cols-3 gap-1.5 mb-1 w-full">
@@ -551,14 +551,14 @@ export function LoginScreen() {
                         </div>
 
                         <div className="mb-2">
-                          <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Codigo de Autorizacion</label>
+                          <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Código de Autorización</label>
                           <input
                             ref={pcAuthCodeRef}
                             type="text" inputMode="text" autoComplete="off"
                             value={pcAuthCode}
                             onChange={e => { setPcAuthCode(e.target.value); setPcError(null); }}
                             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinNuevoRef.current?.focus(); } }}
-                            placeholder="Letras y numeros"
+                            placeholder="Letras y números"
                             className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:font-normal outline-none focus:border-[var(--dv-color-edit)] focus:ring-2 focus:ring-[var(--dv-color-edit)]/10 transition"
                           />
                         </div>
@@ -574,7 +574,7 @@ export function LoginScreen() {
                                 value={pcPinNuevo}
                                 onChange={e => { setPcPinNuevo(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
                                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinConfRef.current?.focus(); } }}
-                                placeholder="4-6 num."
+                                placeholder="4–6 núm."
                                 className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                               />
                             </div>
@@ -589,7 +589,7 @@ export function LoginScreen() {
                                 value={pcPinConfirm}
                                 onChange={e => { setPcPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
                                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
-                                placeholder="4-6 num."
+                                placeholder="4–6 núm."
                                 className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                               />
                             </div>
@@ -641,7 +641,7 @@ export function LoginScreen() {
             {view === "keypad" && (
               <button
                 onClick={switchToAccesoTecnico}
-                title="Acceso tecnico"
+                title="Acceso técnico"
                 className="flex h-5 w-5 items-center justify-center rounded-md transition active:scale-95 text-[#c8d3e0] hover:text-[#8090a8]"
               >
                 <Settings size={11} strokeWidth={1.8} />
