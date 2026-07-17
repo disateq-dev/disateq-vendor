@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Shield, LogIn, HelpCircle, Lock, CheckCircle2, X, Check } from "lucide-react";
+import { Shield, LogIn, HelpCircle, Lock, CheckCircle2, X, Check, Settings } from "lucide-react";
 import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -58,10 +58,6 @@ function validatePin(p: string): string | null {
 export function LoginScreen() {
   const { operators, loginOperator, cashSession, resetOperatorPin } = usePOS();
   const [operadoresSistema, setOperadoresSistema] = useState<LoginOperador[]>([]);
-  const activeOps = [
-    ...operators.filter(o => o.estado === "ACTIVO"),
-    ...operadoresSistema.filter(o => String(o.estado) === "SISTEMA"),
-  ];
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
   useEffect(() => {
@@ -107,6 +103,11 @@ export function LoginScreen() {
   const [pcPinConfirm, setPcPinConfirm] = useState("");
   const [pcError,      setPcError]      = useState<string | null>(null);
   const [pcSuccess,    setPcSuccess]    = useState(false);
+  const [mostrarSistema, setMostrarSistema] = useState(false);
+  const activeOps = [
+    ...operators.filter(o => o.estado === "ACTIVO"),
+    ...(mostrarSistema ? operadoresSistema.filter(o => String(o.estado) === "SISTEMA") : []),
+  ];
 
   // ── DOM refs ──────────────────────────────────────────────────────
   const aliasSelectRef = useRef<HTMLSelectElement>(null);
@@ -215,6 +216,13 @@ export function LoginScreen() {
   function removeLast() { setPin(p => p.slice(0, -1)); setError(null); }
 
   function selectOp(id: string) { setSelectedId(id); setStep("alias"); setPin(""); setError(null); }
+
+  useEffect(() => {
+    if (!mostrarSistema) {
+      const seleccionadoSistema = operadoresSistema.find(o => o.id === selectedIdRef.current && String(o.estado) === "SISTEMA");
+      if (seleccionadoSistema) selectOp("");
+    }
+  }, [mostrarSistema]);
 
   // ── Pin-change submit ─────────────────────────────────────────────
   // Orden validación = orden campos: OPERADOR, MOTIVO, CÓDIGO, NUEVO PIN, CONFIRMAR
@@ -640,6 +648,17 @@ export function LoginScreen() {
                 Podrá regenerarlo en la siguiente ventana{" "}
                 <button type="button" onClick={switchToPinChange} className="font-bold underline hover:text-[#1a44b8] transition">CLIC AQUÍ</button>
               </p>
+              <button
+                onClick={() => setMostrarSistema(v => !v)}
+                title="Acceso técnico"
+                className={`mt-1 flex h-5 w-5 items-center justify-center rounded-md transition active:scale-95 ${
+                  mostrarSistema
+                    ? "text-[#4a5265] bg-[#4a5265]/10"
+                    : "text-[#c8d3e0] hover:text-[#8090a8]"
+                }`}
+              >
+                <Settings size={11} strokeWidth={1.8} />
+              </button>
             </div>
           )}
         </div>
