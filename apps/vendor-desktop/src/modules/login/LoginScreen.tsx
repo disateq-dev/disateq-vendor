@@ -111,6 +111,7 @@ export function LoginScreen() {
   // ── DOM refs ──────────────────────────────────────────────────────
   const aliasSelectRef = useRef<HTMLSelectElement>(null);
   const pinInputRef    = useRef<HTMLInputElement>(null);
+  const sistemaInputRef = useRef<HTMLInputElement>(null);
   const pcMotivoRef    = useRef<HTMLSelectElement>(null);
   const pcAuthCodeRef  = useRef<HTMLInputElement>(null);
   const pcPinNuevoRef  = useRef<HTMLInputElement>(null);
@@ -122,11 +123,13 @@ export function LoginScreen() {
   const loginRef        = useRef(loginOperator);
   const stepRef         = useRef<LoginStep>("alias");
   const viewRef         = useRef<LoginView>("keypad");
+  const activeOpsRef    = useRef<LoginOperador[]>([]);
   pinStateRef.current   = pin;
   selectedIdRef.current = selectedId;
   loginRef.current      = loginOperator;
   stepRef.current       = step;
   viewRef.current       = view;
+  activeOpsRef.current  = activeOps;
 
   // Clock
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
@@ -144,6 +147,7 @@ export function LoginScreen() {
   }, [pcSuccess]);
 
   const selected = activeOps.find(o => o.id === selectedId) ?? null;
+  const esSistema = selected !== null && String(selected.estado) === "SISTEMA";
   const hasTurn  = cashSession.isOpen && cashSession.cashBox !== null;
 
   // ── Guardar habilitado solo con todos los campos completos ────────
@@ -170,7 +174,13 @@ export function LoginScreen() {
   }
 
   // ── Login flow ────────────────────────────────────────────────────
-  function focusPin() { setStep("pin"); setTimeout(() => pinInputRef.current?.focus(), 0); }
+  function focusPin() {
+    setStep("pin");
+    setTimeout(() => {
+      if (selected !== null && String(selected.estado) === "SISTEMA") sistemaInputRef.current?.focus();
+      else pinInputRef.current?.focus();
+    }, 0);
+  }
 
   function resetToAlias() {
     setStep("alias"); setPin(""); setError(null);
@@ -179,7 +189,9 @@ export function LoginScreen() {
 
   async function attemptLogin(p: string) {
     const id = selectedIdRef.current;
-    if (!id || p.length < 4) return;
+    const esSistemaRef = activeOpsRef.current.find(o => o.id === id);
+    const minLen = esSistemaRef !== undefined && String(esSistemaRef.estado) === "SISTEMA" ? 1 : 4;
+    if (!id || p.length < minLen) return;
     const ok = await loginRef.current(id, p);
     if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
   }
@@ -251,6 +263,8 @@ export function LoginScreen() {
       if (curr === "alias" && tag === "SELECT" && k === "Enter") { e.preventDefault(); focusPin(); return; }
 
       if (curr === "pin" && tag !== "INPUT" && tag !== "SELECT") {
+        const operadorSeleccionado = activeOpsRef.current.find(o => o.id === selectedIdRef.current) ?? null;
+        if (operadorSeleccionado !== null && String(operadorSeleccionado.estado) === "SISTEMA") return;
         if (k >= "0" && k <= "9") { e.preventDefault(); addDigit(k); }
         else if (k === "Backspace") { e.preventDefault(); setPin(p => p.slice(0, -1)); setError(null); }
         else if (k === "Enter") {
@@ -384,63 +398,104 @@ export function LoginScreen() {
           {/* ══ VISTA: KEYPAD ════════════════════════════════════════ */}
           {view === "keypad" && (
             <>
-              {/* PIN — sin label, placeholder operacional */}
-              <div className="mb-5 relative">
-                <div className="relative">
-                  <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
-                  <input
-                    ref={pinInputRef}
-                    type="password"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={pin}
-                    onChange={e => {
-                      const v = e.target.value.replace(/\D/g, "").slice(0, 6);
-                      setPin(v); setError(null);
-                      if (v.length === 6) setTimeout(() => attemptLogin(v), 0);
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === "Enter")  { e.preventDefault(); attemptLogin(pin); }
-                      if (e.key === "Escape") { e.preventDefault(); resetToAlias(); }
-                    }}
-                    onFocus={() => setStep("pin")}
-                    placeholder="Ingrese PIN de 4 a 6 números"
-                    maxLength={6}
-                    className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
-                  />
-                </div>
-                {error && (
-                  <p className="absolute left-0 top-full mt-1 text-[10px] font-semibold text-red-500">{error}</p>
-                )}
-              </div>
+              {esSistema ? (
+                <>
+                  {/* PIN — sin label, placeholder operacional */}
+                  <div className="mb-5 relative">
+                    <div className="relative">
+                      <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
+                      <input
+                        ref={sistemaInputRef}
+                        type="password"
+                        autoComplete="off"
+                        value={pin}
+                        onChange={e => { setPin(e.target.value); setError(null); }}
+                        onKeyDown={e => {
+                          if (e.key === "Enter")  { e.preventDefault(); attemptLogin(pin); }
+                          if (e.key === "Escape") { e.preventDefault(); resetToAlias(); }
+                        }}
+                        onFocus={() => setStep("pin")}
+                        placeholder="Contraseña de acceso técnico"
+                        className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[18px] font-bold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
+                      />
+                    </div>
+                    {error && (
+                      <p className="absolute left-0 top-full mt-1 text-[10px] font-semibold text-red-500">{error}</p>
+                    )}
+                  </div>
 
-              {/* Keypad */}
-              <div className="grid grid-cols-3 gap-2 mb-1 w-full">
-                {["7","8","9","4","5","6","1","2","3"].map(d => (
-                  <button key={d} onClick={() => addDigit(d)}
-                    className="h-12 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[17px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
-                    {d}
+                  <button
+                    onClick={() => attemptLogin(pin)}
+                    disabled={!selected || pin.length < 1}
+                    className={`h-12 rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] ${
+                      selected && pin.length >= 1
+                        ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_4px_20px_rgba(69,179,86,0.45)]"
+                        : "bg-[#f5f8fc] border border-[#e4edf6] text-[#b8c4d4] cursor-not-allowed"
+                    }`}>
+                    <LogIn size={14} strokeWidth={2.5} />Entrar
                   </button>
-                ))}
-                <button onClick={removeLast}
-                  className="h-12 rounded-xl border border-[#fde8e8] bg-[#fff8f8] text-[#f87171] transition hover:bg-[#fff1f1] hover:border-[#fcd4d4] active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em]">
-                  <span className="text-[13px] leading-none">⌫</span>Borrar
-                </button>
-                <button onClick={() => addDigit("0")}
-                  className="h-12 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[17px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
-                  0
-                </button>
-                <button
-                  onClick={() => attemptLogin(pin)}
-                  disabled={!selected || pin.length < 4}
-                  className={`h-12 rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] ${
-                    selected && pin.length >= 4
-                      ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_4px_20px_rgba(69,179,86,0.45)]"
-                      : "bg-[#f5f8fc] border border-[#e4edf6] text-[#b8c4d4] cursor-not-allowed"
-                  }`}>
-                  <LogIn size={14} strokeWidth={2.5} />Entrar
-                </button>
-              </div>
+                </>
+              ) : (
+                <>
+                  {/* PIN — sin label, placeholder operacional */}
+                  <div className="mb-5 relative">
+                    <div className="relative">
+                      <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b8c4d4]" />
+                      <input
+                        ref={pinInputRef}
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={pin}
+                        onChange={e => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+                          setPin(v); setError(null);
+                          if (v.length === 6) setTimeout(() => attemptLogin(v), 0);
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === "Enter")  { e.preventDefault(); attemptLogin(pin); }
+                          if (e.key === "Escape") { e.preventDefault(); resetToAlias(); }
+                        }}
+                        onFocus={() => setStep("pin")}
+                        placeholder="Ingrese PIN de 4 a 6 números"
+                        maxLength={6}
+                        className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[18px] font-bold tracking-[0.3em] text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
+                      />
+                    </div>
+                    {error && (
+                      <p className="absolute left-0 top-full mt-1 text-[10px] font-semibold text-red-500">{error}</p>
+                    )}
+                  </div>
+
+                  {/* Keypad */}
+                  <div className="grid grid-cols-3 gap-2 mb-1 w-full">
+                    {["7","8","9","4","5","6","1","2","3"].map(d => (
+                      <button key={d} onClick={() => addDigit(d)}
+                        className="h-12 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[17px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
+                        {d}
+                      </button>
+                    ))}
+                    <button onClick={removeLast}
+                      className="h-12 rounded-xl border border-[#fde8e8] bg-[#fff8f8] text-[#f87171] transition hover:bg-[#fff1f1] hover:border-[#fcd4d4] active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em]">
+                      <span className="text-[13px] leading-none">⌫</span>Borrar
+                    </button>
+                    <button onClick={() => addDigit("0")}
+                      className="h-12 rounded-xl border border-[#e4edf6] bg-[#f5f8fc] text-[17px] font-semibold text-[#1a2d4e] transition hover:bg-[#eaf0f9] hover:border-[#ccd8ea] active:scale-95">
+                      0
+                    </button>
+                    <button
+                      onClick={() => attemptLogin(pin)}
+                      disabled={!selected || pin.length < 4}
+                      className={`h-12 rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] ${
+                        selected && pin.length >= 4
+                          ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_4px_20px_rgba(69,179,86,0.45)]"
+                          : "bg-[#f5f8fc] border border-[#e4edf6] text-[#b8c4d4] cursor-not-allowed"
+                      }`}>
+                      <LogIn size={14} strokeWidth={2.5} />Entrar
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
 
