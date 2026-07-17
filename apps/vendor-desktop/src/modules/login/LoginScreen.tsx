@@ -7,6 +7,29 @@ import { usePOS } from "../../context/POSContext";
 
 type LoginStep = "alias" | "pin";
 type LoginView  = "keypad" | "pin-change";
+type LoginOperador = ReturnType<typeof usePOS>["operators"][number];
+type OperadorSistemaRow = {
+  id: string;
+  codigo_operador: string;
+  alias: string;
+  apellidos: string;
+  nombres: string;
+  nombre_completo: string;
+  dni?: string | null;
+  telefono?: string | null;
+  codigo_rol: string;
+  nombre_rol: string;
+  base_bloque?: number | null;
+  asignacion_bloque_en?: string | null;
+  liberacion_bloque_en?: string | null;
+  estado: string;
+  motivo_estado?: string | null;
+  fecha_estado?: string | null;
+  pin: string;
+  capacidades: string;
+  registrado_en: string;
+  registrado_por: string;
+};
 
 const PC_MOTIVOS = [
   "OLVIDO PIN",
@@ -34,9 +57,40 @@ function validatePin(p: string): string | null {
 
 export function LoginScreen() {
   const { operators, loginOperator, cashSession, resetOperatorPin } = usePOS();
-  const activeOps = operators.filter(o => o.estado === "ACTIVO");
+  const [operadoresSistema, setOperadoresSistema] = useState<LoginOperador[]>([]);
+  const activeOps = [
+    ...operators.filter(o => o.estado === "ACTIVO"),
+    ...operadoresSistema.filter(o => String(o.estado) === "SISTEMA"),
+  ];
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
+  useEffect(() => {
+    invoke<OperadorSistemaRow[]>("obtener_operadores").then(rows => {
+      setOperadoresSistema(rows.filter(row => row.estado === "SISTEMA").map(row => ({
+        id: row.id,
+        codigoOperador: row.codigo_operador,
+        alias: row.alias,
+        apellidos: row.apellidos,
+        nombres: row.nombres,
+        nombreCompleto: row.nombre_completo,
+        dni: row.dni ?? undefined,
+        telefono: row.telefono ?? undefined,
+        codigoRol: row.codigo_rol,
+        nombreRol: row.nombre_rol,
+        baseBloque: row.base_bloque ?? null,
+        asignacionBloque: row.asignacion_bloque_en
+          ? { assignedAt: row.asignacion_bloque_en, releasedAt: row.liberacion_bloque_en ?? undefined }
+          : undefined,
+        estado: row.estado as LoginOperador["estado"],
+        motivoEstado: row.motivo_estado ?? undefined,
+        fechaEstado: row.fecha_estado ?? undefined,
+        pin: row.pin,
+        capacidades: (() => { try { return JSON.parse(row.capacidades) as string[]; } catch { return []; } })(),
+        registradoEn: row.registrado_en,
+        registradoPor: row.registrado_por,
+      })));
+    }).catch(() => setOperadoresSistema([]));
+  }, []);
 
   // ── View & login step ─────────────────────────────────────────────
   const [view,       setView]       = useState<LoginView>("keypad");
@@ -310,7 +364,7 @@ export function LoginScreen() {
                 <option value="" disabled hidden>Seleccione OPERADOR</option>
                 {activeOps.map(op => (
                   <option key={op.id} value={op.id}>
-  {op.codigoOperador} · {op.codigoRol} · {op.alias}
+  {String(op.estado) === "SISTEMA" ? `⚙ ACCESO TÉCNICO · ${op.alias}` : `${op.codigoOperador} · ${op.codigoRol} · ${op.alias}`}
                   </option>
                 ))}
               </select>

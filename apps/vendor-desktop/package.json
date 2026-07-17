@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='Stop'; Get-Content 'src-tauri/.env.build' | ForEach-Object { if ($_ -match '^[^#].*=') { $name,$value = $_ -split '=',2; Set-Item -Path Env:$name -Value $value } }; tauri dev\""
   },
   "dependencies": {
     "@fontsource-variable/inter-tight": "^5.2.7",

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   type Operador, type EstadoOperador,
   cargarOperadores, verificarPin, cambiarPin, establecerPin,
@@ -46,12 +47,17 @@ function operadorRowToOperador(row: OperadorRow): Operador {
   };
 }
 
+function ocultarOperadoresSistema(operadores: Operador[]): Operador[] {
+  return operadores.filter(op => String(op.estado) !== "SISTEMA");
+}
+
 interface UseOperadoresDeps {
   addOpLog: (text: string) => void;
 }
 
 export function useOperadores({ addOpLog }: UseOperadoresDeps) {
   const [operators, setOperators] = useState<Operador[]>([]);
+  const todosOperadoresRef = useRef<Operador[]>([]);
   const operatorsRef = useRef(operators);
   operatorsRef.current = operators;
 
@@ -59,7 +65,9 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
   useEffect(() => {
     cargarOperadoresSQLite().then(async rows => {
       if (rows.length > 0) {
-        setOperators(rows.map(operadorRowToOperador));
+        const cargados = rows.map(operadorRowToOperador);
+        todosOperadoresRef.current = cargados;
+        setOperators(ocultarOperadoresSistema(cargados));
       } else {
         // SQLite vacío — migrar desde localStorage
         const legacy = cargarOperadores();
@@ -86,11 +94,14 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
             registrado_por: op.registradoPor,
           })
         ));
-        setOperators(migrados);
+        todosOperadoresRef.current = migrados;
+        setOperators(ocultarOperadoresSistema(migrados));
       }
     }).catch(() => {
       // Fallback final a localStorage
-      setOperators(cargarOperadores());
+      const legacy = cargarOperadores();
+      todosOperadoresRef.current = legacy;
+      setOperators(ocultarOperadoresSistema(legacy));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -100,21 +111,53 @@ export function useOperadores({ addOpLog }: UseOperadoresDeps) {
   activeOperatorRef.current = activeOperator;
 
   const loginOperator = useCallback(async (id: string, pin: string): Promise<boolean> => {
+    const op = todosOperadoresRef.current.find(o => o.id === id);
+    if (!op) return false;
+
+    if (String(op.estado) === "SISTEMA") {
+      const okSistema = await invoke<boolean>("verificar_pin_sistema", {
+        alias: op.alias,
+        pinIngresado: pin,
+      }).catch(error => {
+        if (error === "SISTEMA_NO_CONFIGURADO") return false;
+        return false;
+      });
+
+      if (okSistema) {
+        setActiveOperator(op);
+        addOpLog(`[LOGIN] ${op.nombreCompleto} inició sesión`);
+        accesosStore.registrar({
+          tipo: "LOGIN_OK",
+          operadorAlias: op.alias,
+          operacion: "Inicio de sesión",
+        });
+      } else {
+        accesosStore.registrar({
+          tipo: "LOGIN_FAIL",
+          operadorAlias: op.alias,
+          operacion: "Inicio de sesión",
+          detalle: "PIN incorrecto",
+        });
+      }
+
+      return okSistema;
+    }
+
     const pinHash = await hashPinAsync(pin);
     const ok = verificarPin(operatorsRef.current, id, pinHash);
-    const op = operatorsRef.current.find(o => o.id === id);
-    if (ok && op) {
-      setActiveOperator(op);
-      addOpLog(`[LOGIN] ${op.nombreCompleto} inició sesión`);
+    const operador = operatorsRef.current.find(o => o.id === id);
+    if (ok && operador) {
+      setActiveOperator(operador);
+      addOpLog(`[LOGIN] ${operador.nombreCompleto} inició sesión`);
       accesosStore.registrar({
         tipo: "LOGIN_OK",
-        operadorAlias: op.alias,
+        operadorAlias: operador.alias,
         operacion: "Inicio de sesión",
       });
     } else {
       accesosStore.registrar({
         tipo: "LOGIN_FAIL",
-        operadorAlias: op?.alias ?? id,
+        operadorAlias: operador?.alias ?? id,
         operacion: "Inicio de sesión",
         detalle: "PIN incorrecto",
       });

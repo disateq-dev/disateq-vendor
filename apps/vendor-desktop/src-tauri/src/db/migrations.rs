@@ -42,6 +42,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v20_bonus_distribuidor(db).await?;
     migrar_v21_sesion_caja_arqueo(db).await?;
     migrar_v22_bloque_operacional(db).await?;
+    migrar_v23_operadores_sistema(db).await?;
 
     Ok(())
 }
@@ -1907,4 +1908,184 @@ async fn migrar_v22_bloque_operacional(db: &sqlx::SqlitePool) -> Result<(), Stri
         .map_err(|e| e.to_string())?;
 
     tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v23_operadores_sistema(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version < 23 {
+        let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+        let ahora = sqlx::query_scalar::<_, String>(
+            "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        sqlx::query("DELETE FROM operador WHERE alias = 'FTEJADA'")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let existe_maestro = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM operador WHERE alias = 'MAESTRO'",
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        if existe_maestro == 0 {
+            let id = uuid::Uuid::new_v4().to_string();
+            sqlx::query(
+                "INSERT INTO operador
+                   (id, codigo_operador, alias, apellidos, nombres, nombre_completo, dni, telefono,
+                    codigo_rol, nombre_rol, base_bloque, asignacion_bloque_en, liberacion_bloque_en,
+                    estado, motivo_estado, fecha_estado, pin, pin_salt, capacidades, registrado_en,
+                    registrado_por, modificado_en)
+                 VALUES (?, 'SYS001', 'MAESTRO', 'SISTEMA', 'MAESTRO',
+                    'OPERADOR MAESTRO SISTEMA', NULL, NULL, 'ADMIN', 'Administrador', 900,
+                    ?, NULL, 'SISTEMA', NULL, NULL, '', NULL,
+                    '[\"corregir_arqueos\",\"reaperturar_cierres\",\"regularizar_incidencias\",\"observar_comprobantes_global\",\"anular_comprobantes\",\"observar_continuidad\",\"gestionar_operadores\",\"gestionar_roles\",\"gestionar_capacidades\",\"gestionar_cajas\",\"gestionar_inventarios\",\"gestionar_compras\",\"gestionar_clientes\",\"ver_reportes\",\"acceso_total\"]',
+                    ?, 'SISTEMA', ?)",
+            )
+            .bind(&id)
+            .bind(&ahora)
+            .bind(&ahora)
+            .bind(&ahora)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
+        let existe_soporte = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM operador WHERE alias = 'SOPORTE'",
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        if existe_soporte == 0 {
+            let id = uuid::Uuid::new_v4().to_string();
+            sqlx::query(
+                "INSERT INTO operador
+                   (id, codigo_operador, alias, apellidos, nombres, nombre_completo, dni, telefono,
+                    codigo_rol, nombre_rol, base_bloque, asignacion_bloque_en, liberacion_bloque_en,
+                    estado, motivo_estado, fecha_estado, pin, pin_salt, capacidades, registrado_en,
+                    registrado_por, modificado_en)
+                 VALUES (?, 'SYS002', 'SOPORTE', 'SISTEMA', 'SOPORTE',
+                    'OPERADOR SOPORTE SISTEMA', NULL, NULL, 'SOP', 'Soporte', 900,
+                    ?, NULL, 'SISTEMA', NULL, NULL, '', NULL,
+                    '[\"observar_continuidad\",\"ver_reportes\",\"gestionar_clientes\",\"observar_comprobantes_global\",\"gestionar_inventarios\",\"gestionar_operadores\",\"gestionar_cajas\"]',
+                    ?, 'SISTEMA', ?)",
+            )
+            .bind(&id)
+            .bind(&ahora)
+            .bind(&ahora)
+            .bind(&ahora)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+
+        sqlx::query("INSERT INTO schema_migrations (version) VALUES (23)")
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        tx.commit().await.map_err(|e| e.to_string())?;
+    }
+
+    asegurar_operador_sistema(
+        db,
+        "SYS001",
+        "MAESTRO",
+        "SISTEMA",
+        "MAESTRO",
+        "OPERADOR MAESTRO SISTEMA",
+        "ADMIN",
+        "Administrador",
+        "[\"corregir_arqueos\",\"reaperturar_cierres\",\"regularizar_incidencias\",\"observar_comprobantes_global\",\"anular_comprobantes\",\"observar_continuidad\",\"gestionar_operadores\",\"gestionar_roles\",\"gestionar_capacidades\",\"gestionar_cajas\",\"gestionar_inventarios\",\"gestionar_compras\",\"gestionar_clientes\",\"ver_reportes\",\"acceso_total\"]",
+    )
+    .await?;
+
+    asegurar_operador_sistema(
+        db,
+        "SYS002",
+        "SOPORTE",
+        "SISTEMA",
+        "SOPORTE",
+        "OPERADOR SOPORTE SISTEMA",
+        "SOP",
+        "Soporte",
+        "[\"observar_continuidad\",\"ver_reportes\",\"gestionar_clientes\",\"observar_comprobantes_global\",\"gestionar_inventarios\",\"gestionar_operadores\",\"gestionar_cajas\"]",
+    )
+    .await
+}
+
+async fn asegurar_operador_sistema(
+    db: &sqlx::SqlitePool,
+    codigo_operador: &str,
+    alias: &str,
+    apellidos: &str,
+    nombres: &str,
+    nombre_completo: &str,
+    codigo_rol: &str,
+    nombre_rol: &str,
+    capacidades: &str,
+) -> Result<(), String> {
+    let existe = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM operador WHERE alias = ?")
+        .bind(alias)
+        .fetch_one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if existe > 0 {
+        return Ok(());
+    }
+
+    let ahora = sqlx::query_scalar::<_, String>(
+        "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+    let id = uuid::Uuid::new_v4().to_string();
+
+    sqlx::query(
+        "INSERT OR IGNORE INTO operador
+           (id, codigo_operador, alias, apellidos, nombres, nombre_completo, dni, telefono,
+            codigo_rol, nombre_rol, base_bloque, asignacion_bloque_en, liberacion_bloque_en,
+            estado, motivo_estado, fecha_estado, pin, pin_salt, capacidades, registrado_en,
+            registrado_por, modificado_en)
+         VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 900, ?, NULL, 'SISTEMA',
+            NULL, NULL, '', NULL, ?, ?, 'SISTEMA', ?)",
+    )
+    .bind(&id)
+    .bind(codigo_operador)
+    .bind(alias)
+    .bind(apellidos)
+    .bind(nombres)
+    .bind(nombre_completo)
+    .bind(codigo_rol)
+    .bind(nombre_rol)
+    .bind(&ahora)
+    .bind(capacidades)
+    .bind(&ahora)
+    .bind(&ahora)
+    .execute(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

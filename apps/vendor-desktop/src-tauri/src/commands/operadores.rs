@@ -1,13 +1,32 @@
+use sha2::{Digest, Sha256};
 use serde_json::{json, Value};
 use sqlx::Row;
 use tauri::State;
+
+#[tauri::command]
+pub fn verificar_pin_sistema(alias: String, pin_ingresado: String) -> Result<bool, String> {
+    let _ = alias;
+    let pin_sistema = std::env::var("DISATEQ_SYSTEM_PIN")
+        .map_err(|_| String::from("SISTEMA_NO_CONFIGURADO"))?;
+
+    if pin_sistema.is_empty() {
+        return Err(String::from("SISTEMA_NO_CONFIGURADO"));
+    }
+
+    let hash_ingresado = format!("{:x}", Sha256::digest(pin_ingresado.as_bytes()));
+    let hash_sistema = format!("{:x}", Sha256::digest(pin_sistema.as_bytes()));
+
+    Ok(hash_ingresado == hash_sistema)
+}
 
 #[tauri::command]
 pub async fn obtener_operadores(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT id, codigo_operador, alias, apellidos, nombres, nombre_completo, dni, telefono, codigo_rol, nombre_rol, base_bloque, asignacion_bloque_en, liberacion_bloque_en, estado, motivo_estado, fecha_estado, pin, pin_salt, capacidades, registrado_en, registrado_por, modificado_en FROM operador ORDER BY codigo_operador ASC",
@@ -50,7 +69,9 @@ pub async fn obtener_roles(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT id, codigo, nombre, descripcion, capacidades, requiere_bloque, activo, creado_en, creado_por FROM rol ORDER BY codigo ASC",
@@ -98,12 +119,15 @@ pub async fn crear_operador(
     registrado_por: String,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let modificado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let modificado_en =
+        sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     sqlx::query(
         "INSERT INTO operador (id, codigo_operador, alias, apellidos, nombres, nombre_completo, dni, telefono, codigo_rol, nombre_rol, base_bloque, asignacion_bloque_en, liberacion_bloque_en, estado, motivo_estado, fecha_estado, pin, pin_salt, capacidades, registrado_en, registrado_por, modificado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, NULL, ?, ?, ?, ?, ?, ?)",
@@ -151,12 +175,15 @@ pub async fn actualizar_operador(
     liberacion_bloque_en: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let modificado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let modificado_en =
+        sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     sqlx::query("UPDATE operador SET alias=?, apellidos=?, nombres=?, nombre_completo=?, dni=?, telefono=?, codigo_rol=?, nombre_rol=?, base_bloque=?, asignacion_bloque_en=?, liberacion_bloque_en=?, modificado_en=? WHERE id=?")
         .bind(&alias)
@@ -188,22 +215,27 @@ pub async fn actualizar_estado_operador(
     fecha_estado: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let modificado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let modificado_en =
+        sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
-    sqlx::query("UPDATE operador SET estado=?, motivo_estado=?, fecha_estado=?, modificado_en=? WHERE id=?")
-        .bind(&estado)
-        .bind(&motivo_estado)
-        .bind(&fecha_estado)
-        .bind(&modificado_en)
-        .bind(&id)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "UPDATE operador SET estado=?, motivo_estado=?, fecha_estado=?, modificado_en=? WHERE id=?",
+    )
+    .bind(&estado)
+    .bind(&motivo_estado)
+    .bind(&fecha_estado)
+    .bind(&modificado_en)
+    .bind(&id)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -216,12 +248,15 @@ pub async fn actualizar_pin_operador(
     pin_salt: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let modificado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let modificado_en =
+        sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     sqlx::query("UPDATE operador SET pin=?, pin_salt=?, modificado_en=? WHERE id=?")
         .bind(&pin)
@@ -242,12 +277,15 @@ pub async fn actualizar_capacidades_operador(
     capacidades: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let modificado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let modificado_en =
+        sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     sqlx::query("UPDATE operador SET capacidades=?, modificado_en=? WHERE id=?")
         .bind(&capacidades)
@@ -273,7 +311,9 @@ pub async fn crear_rol(
     creado_por: String,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     sqlx::query("INSERT INTO rol (id, codigo, nombre, descripcion, capacidades, requiere_bloque, activo, creado_en, creado_por) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)")
         .bind(&id)
@@ -300,7 +340,9 @@ pub async fn actualizar_rol(
     descripcion: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     sqlx::query("UPDATE rol SET codigo=?, nombre=?, descripcion=? WHERE id=?")
         .bind(&codigo)
@@ -322,7 +364,9 @@ pub async fn actualizar_capacidades_rol(
     activo: Option<i64>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     if let Some(activo) = activo {
