@@ -1,54 +1,46 @@
-import { useState, useEffect } from "react";
-import { Plus, Pencil, Ban, ToggleRight, Layers, LayoutGrid, ChevronRight, CircleCheck, Monitor, ShieldAlert, User, ShieldCheck, CheckCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Ban,
+  ChevronRight,
+  CheckCircle,
+  CircleCheck,
+  Layers,
+  LayoutGrid,
+  Monitor,
+  Pencil,
+  Plus,
+  ShieldAlert,
+  ShieldCheck,
+  ToggleRight,
+  User,
+} from "lucide-react";
 import { usePOS, type CashSession } from "../../context/POSContext";
-import {
-  loadSessionHistory, recordSessionCorrection, recordAperturaCorrection,
-  type SessionEntry, type CorrectionRecord,
-} from "./services/session-history.service";
+import { definirCajasDeBloque, type BloqueOperacional, type TipoCaja } from "../../domains/operator/blocks.store";
 import { loadTurnEvents } from "../../domains/cash/turn-events.store";
+import useBloques, { type DefinicionSlot } from "./hooks/useBloques";
 import {
-  loadAuthorizations, markAuthorizationExecuted,
+  loadSessionHistory,
+  recordSessionCorrection,
+  recordAperturaCorrection,
+  type SessionEntry,
+  type CorrectionRecord,
+} from "./services/session-history.service";
+import {
+  loadAuthorizations,
+  markAuthorizationExecuted,
   type CajaAuthorization,
 } from "./services/supervision-authorization.service";
 
-// ── tipos ─────────────────────────────────────────────────────────────────
+interface POSRef {
+  operators: ReturnType<typeof usePOS>["operators"];
+  isOpen: boolean;
+  cashBox: CashSession["cashBox"];
+}
 
-type SlotType = "principal" | "secundaria-1" | "secundaria-2" | "secundaria-3" | "secundaria-4" | "contingencia";
-
-type CajaSlot = {
-  code: string;
-  slotType: SlotType;
-  hasHistory: boolean;
-};
-
-type OperationalBlock = {
-  id: string;
-  blockBase: number;
-  active: boolean;
-  slots: CajaSlot[];
-  createdAt: Date;
-  createdBy: string;
-};
-
-type PanelMode   = "view" | "create" | "edit";
+type BlockStatus = "DISPONIBLE" | "ASIGNADO" | "EN_USO" | "INACTIVO";
+type LastActivity = { at: string; operator: string };
+type PanelMode = "view" | "create" | "edit";
 type ThirdAction = "deactivate" | "activate" | null;
-
-// ── mock data ─────────────────────────────────────────────────────────────
-
-const MOCK_BLOCKS: OperationalBlock[] = [
-  {
-    id: "b100", blockBase: 100, active: true,
-    createdAt: new Date("2024-01-10T08:00:00"), createdBy: "ADMIN",
-    slots: [
-      { code: "100", slotType: "principal",    hasHistory: true  },
-      { code: "101", slotType: "secundaria-1", hasHistory: true  },
-      { code: "102", slotType: "secundaria-2", hasHistory: false },
-      { code: "150", slotType: "contingencia", hasHistory: false },
-    ],
-  },
-];
-
-// ── motivos ejecución operador ─────────────────────────────────────────────
 
 const MOTIVOS_EXEC_EXTMP = [
   "Finalicé el turno sin cerrar el sistema",
@@ -67,127 +59,115 @@ const MOTIVOS_EXEC_CORRECCION = [
 ];
 
 const AUTH_EXEC_LABELS: Record<string, string> = {
-  cierre_activo:       "Cierre de sesión activa",
+  cierre_activo: "Cierre de sesión activa",
   cierre_extemporaneo: "Cierre extemporáneo",
-  correccion_cierre:   "Corrección de cierre",
+  correccion_cierre: "Corrección de cierre",
   correccion_apertura: "Corrección de apertura",
 };
 
-// ── helpers ───────────────────────────────────────────────────────────────
-
 function formatCreatedAt(d: Date): string {
-  const dd  = String(d.getDate()).padStart(2, "0");
-  const mm  = String(d.getMonth() + 1).padStart(2, "0");
-  const hh  = String(d.getHours()).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
   const min = String(d.getMinutes()).padStart(2, "0");
   return `${dd}/${mm}/${d.getFullYear()} · ${hh}:${min}`;
 }
 
 function fmtDt(iso: string): string {
   const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function nextBlockBase(blocks: OperationalBlock[]): number {
-  const existing = new Set(blocks.map(b => b.blockBase));
-  let n = 100;
-  while (existing.has(n)) n += 100;
-  return n;
+function slotLabel(tipoCaja: TipoCaja): string {
+  if (tipoCaja === "PRINCIPAL") return "PRINCIPAL";
+  if (tipoCaja === "AUXILIAR") return "AUXILIAR";
+  return "EXCEPCIONAL";
 }
 
-function slotSummary(slots: CajaSlot[]): string {
-  const labels: Record<SlotType, string> = {
-    "principal": "P", "secundaria-1": "S1", "secundaria-2": "S2",
-    "secundaria-3": "S3", "secundaria-4": "S4", "contingencia": "CTG",
-  };
-  return slots.map(s => labels[s.slotType]).join(" · ");
+function slotObservacion(slot: DefinicionSlot, base: number): string {
+  if (slot.tipoCaja === "PRINCIPAL") return "Sin restricciones — flujo principal de ventas";
+  if (slot.tipoCaja === "AUXILIAR") return `Requiere caja ${Number(slot.codigo) - 1} cerrada · motivo obligatorio`;
+  return `Requiere caja ${String(base)} sin apertura · PIN + motivo obligatorio`;
 }
 
-function slotLabel(t: SlotType): string {
-  if (t === "principal")    return "PRINCIPAL";
-  if (t === "secundaria-1") return "SECUNDARIA 01";
-  if (t === "secundaria-2") return "SECUNDARIA 02";
-  if (t === "secundaria-3") return "SECUNDARIA 03";
-  if (t === "secundaria-4") return "SECUNDARIA 04";
-  return "CONTINGENCIA";
+function slotSummary(slots: DefinicionSlot[]): string {
+  return slots.map(slot => {
+    if (slot.tipoCaja === "PRINCIPAL") return "P";
+    if (slot.tipoCaja === "AUXILIAR") return "A";
+    return "CTG";
+  }).join(" · ");
 }
-
-function slotObservacion(slot: CajaSlot, blockBase: number): string {
-  if (slot.slotType === "principal")    return "Sin restricciones — flujo principal de ventas";
-  if (slot.slotType === "secundaria-1") return `Requiere caja ${blockBase} cerrada · motivo obligatorio`;
-  if (slot.slotType === "secundaria-2") return `Requiere caja ${blockBase + 1} cerrada · motivo obligatorio`;
-  if (slot.slotType === "secundaria-3") return `Requiere caja ${blockBase + 2} cerrada · motivo obligatorio`;
-  if (slot.slotType === "secundaria-4") return `Requiere caja ${blockBase + 3} cerrada · motivo obligatorio`;
-  return `Requiere caja ${blockBase} sin apertura · PIN + motivo obligatorio`;
-}
-
-type SecCount = 0 | 1 | 2 | 3 | 4;
-
-const SEC_SLOTS: [SlotType, number][] = [
-  ["secundaria-1", 1], ["secundaria-2", 2], ["secundaria-3", 3], ["secundaria-4", 4],
-];
-
-function buildSlots(base: number, secCount: SecCount, prev?: CajaSlot[]): CajaSlot[] {
-  const histOf = (st: SlotType) => prev?.find(s => s.slotType === st)?.hasHistory ?? false;
-  const slots: CajaSlot[] = [
-    { code: String(base), slotType: "principal", hasHistory: histOf("principal") },
-  ];
-  for (const [st, offset] of SEC_SLOTS) {
-    if (secCount >= offset)
-      slots.push({ code: String(base + offset), slotType: st, hasHistory: histOf(st) });
-  }
-  slots.push({ code: String(base + 50), slotType: "contingencia", hasHistory: histOf("contingencia") });
-  return slots;
-}
-
-// ── interfaces ────────────────────────────────────────────────────────────
-
-interface POSRef {
-  operators: ReturnType<typeof usePOS>["operators"];
-  isOpen: boolean;
-  cashBox: CashSession["cashBox"];
-}
-
-type BlockStatus = "DISPONIBLE" | "ASIGNADO" | "EN_USO" | "INACTIVO";
 
 function getBlockOperator(operators: POSRef["operators"], blockBase: number) {
   return operators.find(o => o.baseBloque === blockBase && o.estado !== "INACTIVO");
 }
 
-function getBlockStatus(pos: POSRef, block: OperationalBlock): BlockStatus {
-  if (!block.active) return "INACTIVO";
-  const inUso = pos.isOpen && pos.cashBox !== null && pos.cashBox.code[0] === String(block.blockBase)[0];
+function getBlockStatus(pos: POSRef, bloque: BloqueOperacional): BlockStatus {
+  if (!bloque.activo) return "INACTIVO";
+  const inUso = pos.isOpen && pos.cashBox !== null && pos.cashBox.code[0] === String(bloque.base)[0];
   if (inUso) return "EN_USO";
-  return getBlockOperator(pos.operators, block.blockBase) ? "ASIGNADO" : "DISPONIBLE";
+  return getBlockOperator(pos.operators, bloque.base) ? "ASIGNADO" : "DISPONIBLE";
 }
 
-// ── PanelCajas — 35% ─────────────────────────────────────────────────────
+function nextBase(bloques: BloqueOperacional[]): number {
+  const existing = new Set(bloques.map(bloque => bloque.base));
+  let n = 100;
+  while (existing.has(n)) n += 100;
+  return n;
+}
 
-type LastActivity = { at: string; operator: string };
+function codigosConHistorial(sessionHistory: SessionEntry[]): Set<string> {
+  return new Set(sessionHistory.map(entry => entry.boxCode));
+}
+
+function previewSlots(base: number, auxiliares: number, codigos: Set<string>): DefinicionSlot[] {
+  let auxiliaresIncluidos = 0;
+  return definirCajasDeBloque([base])
+    .filter(slot => {
+      if (slot.tipoCaja !== "AUXILIAR") return true;
+      auxiliaresIncluidos += 1;
+      return auxiliaresIncluidos <= auxiliares;
+    })
+    .map(slot => ({
+      codigo: slot.codigo,
+      tipoCaja: slot.tipoCaja,
+      hasHistorial: codigos.has(slot.codigo),
+    }));
+}
 
 interface PanelCajasProps {
-  blocks: OperationalBlock[];
+  bloques: BloqueOperacional[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   pos: POSRef;
   lastActivity: Map<string, LastActivity>;
   authBlockPrefixes: Set<string>;
+  codigosConHistorial: Set<string>;
+  derivarSlots: (bloque: BloqueOperacional, codigosConHistorial: Set<string>) => DefinicionSlot[];
 }
 
-function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlockPrefixes }: PanelCajasProps) {
-  const activeCount   = blocks.filter(b => b.active).length;
-  const inactiveCount = blocks.filter(b => !b.active).length;
+function PanelCajas({
+  bloques,
+  selectedId,
+  onSelect,
+  pos,
+  lastActivity,
+  authBlockPrefixes,
+  codigosConHistorial: codigos,
+  derivarSlots,
+}: PanelCajasProps) {
+  const activeCount = bloques.filter(bloque => bloque.activo).length;
+  const inactiveCount = bloques.filter(bloque => !bloque.activo).length;
 
   const statusColor: Record<BlockStatus, string> = {
     DISPONIBLE: "text-[#4A5265]",
-    ASIGNADO:   "text-[#2154d8]/80",
-    EN_USO:     "text-emerald-600",
-    INACTIVO:   "text-[#dc2626]/70",
+    ASIGNADO: "text-[#2154d8]/80",
+    EN_USO: "text-emerald-600",
+    INACTIVO: "text-[#dc2626]/70",
   };
 
   return (
     <div className="flex w-[35%] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
-
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F2F7FA] px-4">
         <Layers size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">ESTADO CAJAS</span>
@@ -202,13 +182,14 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlock
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {blocks.map(block => {
-          const isSel    = block.id === selectedId;
-          const bStatus  = getBlockStatus(pos, block);
-          const blockOp  = getBlockOperator(pos.operators, block.blockBase);
-          const prefix   = String(block.blockBase)[0];
-          const lastAct  = lastActivity.get(prefix);
-          const hasAuth  = authBlockPrefixes.has(prefix);
+        {bloques.map(bloque => {
+          const isSel = bloque.id === selectedId;
+          const bStatus = getBlockStatus(pos, bloque);
+          const blockOp = getBlockOperator(pos.operators, bloque.base);
+          const prefix = String(bloque.base)[0];
+          const lastAct = lastActivity.get(prefix);
+          const hasAuth = authBlockPrefixes.has(prefix);
+          const slots = derivarSlots(bloque, codigos);
           const lastAtFmt = lastAct ? (() => {
             const d = new Date(lastAct.at);
             const dd = String(d.getDate()).padStart(2, "0");
@@ -217,17 +198,18 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlock
             const mn = String(d.getMinutes()).padStart(2, "0");
             return `${dd}/${mm}/${d.getFullYear()} ${hh}:${mn}`;
           })() : null;
+
           return (
             <div
-              key={block.id}
-              onClick={() => onSelect(block.id)}
+              key={bloque.id}
+              onClick={() => onSelect(bloque.id)}
               className={`flex cursor-pointer items-start gap-3 border-l-2 px-4 py-3 transition ${
                 isSel ? "border-[#4A5265] bg-[#EBF4FA]" : "border-transparent hover:bg-[#F2F7FA]"
               }`}>
               <span className={`mt-px shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums ${
                 isSel ? "bg-[#4A5265] text-white" : "bg-[#EBF4FA] text-[#4A5265]"
               }`}>
-                {block.blockBase}
+                {bloque.base}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -242,7 +224,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlock
                 </div>
                 <p className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusColor[bStatus]}`}>
                   {bStatus.replace("_", " ")}&ensp;·&ensp;
-                  <span className="normal-case tracking-normal text-[#9ca3af]">{slotSummary(block.slots)}</span>
+                  <span className="normal-case tracking-normal text-[#9ca3af]">{slotSummary(slots)}</span>
                 </p>
                 {lastAtFmt && (
                   <p className="mt-1 text-[9px] tabular-nums text-[#b0bac8] leading-none">
@@ -254,7 +236,7 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlock
             </div>
           );
         })}
-        {blocks.length === 0 && (
+        {bloques.length === 0 && (
           <div className="flex items-center justify-center py-10">
             <p className="text-[12px] font-semibold text-[#c0cad4]">Sin cajas creadas</p>
           </div>
@@ -264,11 +246,8 @@ function PanelCajas({ blocks, selectedId, onSelect, pos, lastActivity, authBlock
   );
 }
 
-// ── PanelGestionCajas — flex-1 ────────────────────────────────────────────
-
 interface PanelGestionCajasProps {
-  blocks: OperationalBlock[];
-  setBlocks: React.Dispatch<React.SetStateAction<OperationalBlock[]>>;
+  bloques: BloqueOperacional[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   pos: POSRef;
@@ -276,46 +255,65 @@ interface PanelGestionCajasProps {
   onAuthExecuted: () => void;
   operatorName: string;
   sessionHistory: SessionEntry[];
+  codigosConHistorial: Set<string>;
+  derivarSlots: (bloque: BloqueOperacional, codigosConHistorial: Set<string>) => DefinicionSlot[];
+  crearBloque: (base: number, auxiliares: number, creadoPor: string) => Promise<string>;
+  editarAuxiliares: (id: string, auxiliares: number) => Promise<void>;
+  activarBloque: (id: string) => Promise<void>;
+  desactivarBloque: (id: string) => Promise<void>;
 }
 
 function PanelGestionCajas({
-  blocks, setBlocks, selectedId, onSelect, pos,
-  authorizations, onAuthExecuted, operatorName, sessionHistory,
+  bloques,
+  selectedId,
+  onSelect,
+  pos,
+  authorizations,
+  onAuthExecuted,
+  operatorName,
+  sessionHistory,
+  codigosConHistorial: codigos,
+  derivarSlots,
+  crearBloque,
+  editarAuxiliares,
+  activarBloque,
+  desactivarBloque,
 }: PanelGestionCajasProps) {
-  const [mode,               setMode]               = useState<PanelMode>("view");
-  const [editSecondaryCount, setEditSecondaryCount] = useState<SecCount>(2);
-  const [confirmDelete,      setConfirmDelete]      = useState(false);
-
-  // Estado ejecución de autorización
-  const [execFecha,        setExecFecha]        = useState("");
-  const [execSignal,       setExecSignal]       = useState<"ok" | "warn">("ok");
+  const [mode, setMode] = useState<PanelMode>("view");
+  const [editAuxiliares, setEditAuxiliares] = useState(2);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [execFecha, setExecFecha] = useState("");
+  const [execSignal, setExecSignal] = useState<"ok" | "warn">("ok");
   const [execMotivoPreset, setExecMotivoPreset] = useState("");
-  const [execMotivoLibre,  setExecMotivoLibre]  = useState("");
-  const [execNewApertura,  setExecNewApertura]  = useState("");
-  const [execDone,         setExecDone]         = useState(false);
+  const [execMotivoLibre, setExecMotivoLibre] = useState("");
+  const [execNewApertura, setExecNewApertura] = useState("");
+  const [execDone, setExecDone] = useState(false);
 
-  const selected    = blocks.find(b => b.id === selectedId) ?? null;
+  const selected = bloques.find(bloque => bloque.id === selectedId) ?? null;
+  const selectedSlots = selected ? derivarSlots(selected, codigos) : [];
   const canActOnSel = selected !== null;
-  const canDelete   = selected !== null && !selected.slots.some(s => s.hasHistory);
+  const canDelete = selected !== null && !selectedSlots.some(slot => slot.hasHistorial);
 
   useEffect(() => {
     setMode(prev => prev === "create" ? prev : "view");
     setConfirmDelete(false);
-    setExecFecha(""); setExecSignal("ok");
-    setExecMotivoPreset(""); setExecMotivoLibre("");
-    setExecNewApertura(""); setExecDone(false);
+    setExecFecha("");
+    setExecSignal("ok");
+    setExecMotivoPreset("");
+    setExecMotivoLibre("");
+    setExecNewApertura("");
+    setExecDone(false);
   }, [selectedId]);
 
-  // Todas las autorizaciones activas para el bloque seleccionado (en orden de emisión)
   const blockAuths = selected
     ? authorizations
-        .filter(a => selected.slots.some(s => s.code === a.cajaCode) && a.status === "emitida")
+        .filter(authorization => selectedSlots.some(slot => slot.codigo === authorization.cajaCode) && authorization.status === "emitida")
         .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt))
     : [];
-  const activeAuth = blockAuths[0] ?? null; // el operador ejecuta de a una
+  const activeAuth = blockAuths[0] ?? null;
 
   const targetSession: SessionEntry | null = activeAuth
-    ? (sessionHistory.find(e => e.id === activeAuth.sessionId) ?? null)
+    ? (sessionHistory.find(entry => entry.id === activeAuth.sessionId) ?? null)
     : null;
 
   const execMotivoCombined = (execMotivoPreset === "Otro" || execMotivoPreset === "")
@@ -334,26 +332,26 @@ function PanelGestionCajas({
       const correction: CorrectionRecord = {
         correctedBy: operatorName,
         correctedAt: new Date().toISOString(),
-        motivo:      execMotivoCombined,
-        accion:      activeAuth.type === "cierre_extemporaneo" ? "cierre_extemporaneo" : "documentar_diferencia",
-        prevSignal:  activeAuth.type === "cierre_extemporaneo" ? null : "warn",
-        newSignal:   execSignal,
+        motivo: execMotivoCombined,
+        accion: activeAuth.type === "cierre_extemporaneo" ? "cierre_extemporaneo" : "documentar_diferencia",
+        prevSignal: activeAuth.type === "cierre_extemporaneo" ? null : "warn",
+        newSignal: execSignal,
         ...(activeAuth.type === "cierre_extemporaneo" && execFecha
           ? { fechaOperacional: new Date(execFecha).toISOString() } : {}),
       };
-      recordSessionCorrection(activeAuth.sessionId, correction, execSignal);
+      void recordSessionCorrection(activeAuth.sessionId, correction, execSignal);
     } else if (activeAuth.type === "correccion_apertura") {
       const correction: CorrectionRecord = {
-        correctedBy:  operatorName,
-        correctedAt:  new Date().toISOString(),
-        motivo:       execMotivoCombined,
-        accion:       "correccion_apertura",
-        prevSignal:   targetSession?.closeSignal ?? "ok",
-        newSignal:    targetSession?.closeSignal ?? "ok",
+        correctedBy: operatorName,
+        correctedAt: new Date().toISOString(),
+        motivo: execMotivoCombined,
+        accion: "correccion_apertura",
+        prevSignal: targetSession?.closeSignal ?? "ok",
+        newSignal: targetSession?.closeSignal ?? "ok",
         prevApertura: targetSession?.apertura,
-        newApertura:  newAperturaNum,
+        newApertura: newAperturaNum,
       };
-      recordAperturaCorrection(activeAuth.sessionId, correction);
+      void recordAperturaCorrection(activeAuth.sessionId, correction);
     }
     markAuthorizationExecuted(activeAuth.id, operatorName);
     onAuthExecuted();
@@ -361,56 +359,41 @@ function PanelGestionCajas({
   }
 
   const thirdAction: ThirdAction =
-    !canActOnSel        ? null
-    : !selected!.active ? "activate"
-    :                     "deactivate";
-
-  function mutateBlock(fn: (b: OperationalBlock) => OperationalBlock) {
-    if (!selectedId) return;
-    setBlocks(prev => prev.map(b => b.id === selectedId ? fn(b) : b));
-  }
+    !canActOnSel ? null
+    : !selected!.activo ? "activate"
+    : "deactivate";
 
   function handleStartEdit() {
     if (!selected) return;
     setConfirmDelete(false);
-    const secCount = selected.slots.filter(
-      s => s.slotType === "secundaria-1" || s.slotType === "secundaria-2" ||
-           s.slotType === "secundaria-3" || s.slotType === "secundaria-4"
-    ).length as SecCount;
-    setEditSecondaryCount(secCount);
+    setEditAuxiliares(selected.auxiliares);
     setMode("edit");
   }
 
-  function handleSave() {
+  async function handleSave(): Promise<void> {
     if (mode === "create") {
-      const base = nextBlockBase(blocks);
-      const next: OperationalBlock = {
-        id: `b${base}`, blockBase: base, active: true,
-        slots: buildSlots(base, 2),
-        createdAt: new Date(), createdBy: "OPERADOR",
-      };
-      setBlocks(prev => [...prev, next]);
-      onSelect(next.id);
+      const idCreado = await crearBloque(nextBase(bloques), editAuxiliares, operatorName);
+      onSelect(idCreado);
     } else if (mode === "edit" && selected) {
-      mutateBlock(b => ({ ...b, slots: buildSlots(b.blockBase, editSecondaryCount, b.slots) }));
+      await editarAuxiliares(selected.id, editAuxiliares);
     }
     setMode("view");
   }
 
-  function handleDeactivate() {
-    if (!selected || !selected.active) return;
-    mutateBlock(b => ({ ...b, active: false }));
+  async function handleDeactivate(): Promise<void> {
+    if (!selected || !selected.activo) return;
+    await desactivarBloque(selected.id);
     setMode("view");
   }
 
-  function handleActivate() {
-    if (!selected || selected.active) return;
-    mutateBlock(b => ({ ...b, active: true }));
+  async function handleActivate(): Promise<void> {
+    if (!selected || selected.activo) return;
+    await activarBloque(selected.id);
   }
 
-  function handleDelete() {
-    if (!canDelete) return;
-    setBlocks(prev => prev.filter(b => b.id !== selectedId));
+  async function handleDelete(): Promise<void> {
+    if (!selected || !canDelete) return;
+    await desactivarBloque(selected.id);
     onSelect(null);
     setConfirmDelete(false);
     setMode("view");
@@ -418,28 +401,19 @@ function PanelGestionCajas({
 
   const showView = mode === "view" && selected !== null;
   const showForm = mode === "create" || mode === "edit";
-
-  const previewSlots = showForm
-    ? buildSlots(
-        mode === "create" ? nextBlockBase(blocks) : (selected?.blockBase ?? 100),
-        mode === "create" ? 2 : editSecondaryCount,
-        selected?.slots,
-      )
-    : [];
+  const formBase = mode === "create" ? nextBase(bloques) : (selected?.base ?? 100);
+  const formSlots = showForm ? previewSlots(formBase, editAuxiliares, codigos) : [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/40 bg-[#FDFCF9]">
-
-      {/* SheetHeader */}
       <div className="shrink-0 flex h-[42px] items-center gap-2 border-b border-[#4A5265]/15 bg-[#F2F7FA] px-4">
         <LayoutGrid size={13} strokeWidth={2} className="shrink-0 text-[#4A5265]" />
         <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">CONFIGURACIÓN DE CAJAS</span>
       </div>
 
-      {/* ActionBar */}
       <div className="shrink-0 flex items-center gap-1.5 border-b border-[#4A5265]/10 px-4 py-2">
         <button
-          onClick={() => { onSelect(null); setMode("create"); }}
+          onClick={() => { onSelect(null); setEditAuxiliares(2); setMode("create"); }}
           className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
           <Plus size={10} strokeWidth={2.5} />CREAR BLOQUE
         </button>
@@ -460,13 +434,13 @@ function PanelGestionCajas({
           </button>
         )}
         {thirdAction === "deactivate" && (
-          <button onClick={handleDeactivate}
+          <button onClick={() => void handleDeactivate()}
             className="flex items-center gap-1.5 rounded-lg bg-[#dc2626] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#b91c1c] active:scale-[0.97]">
             <Ban size={10} strokeWidth={2.5} />DESACTIVAR
           </button>
         )}
         {thirdAction === "activate" && (
-          <button onClick={handleActivate}
+          <button onClick={() => void handleActivate()}
             className="flex items-center gap-1.5 rounded-lg bg-[#45b356] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.97]">
             <ToggleRight size={10} strokeWidth={2.5} />ACTIVAR
           </button>
@@ -483,26 +457,22 @@ function PanelGestionCajas({
         </button>
       </div>
 
-      {/* Body */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3">
-
-        {/* VIEW */}
         {showView && selected && (
           <div className="flex flex-col gap-4">
-
             {(() => {
               const bStatus = getBlockStatus(pos, selected);
-              const blockOp = getBlockOperator(pos.operators, selected.blockBase);
+              const blockOp = getBlockOperator(pos.operators, selected.base);
               const statusCls: Record<BlockStatus, string> = {
                 DISPONIBLE: "bg-[#EBF4FA] text-[#4A5265]",
-                ASIGNADO:   "bg-[#dbeafe] text-[#2154d8]",
-                EN_USO:     "bg-emerald-100 text-emerald-700",
-                INACTIVO:   "bg-[#FEF2F2] text-[#dc2626]",
+                ASIGNADO: "bg-[#dbeafe] text-[#2154d8]",
+                EN_USO: "bg-emerald-100 text-emerald-700",
+                INACTIVO: "bg-[#FEF2F2] text-[#dc2626]",
               };
               return (
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="rounded-md bg-[#4A5265] px-2.5 py-1 text-[13px] font-bold tabular-nums text-white">
-                    {selected.blockBase}
+                    {selected.base}
                   </span>
                   <span className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase ${statusCls[bStatus]}`}>
                     {bStatus.replace("_", " ")}
@@ -513,39 +483,38 @@ function PanelGestionCajas({
                       <span className="text-[11px] font-semibold text-[#374151]">{blockOp.alias}</span>
                       <span className="text-[10px] text-[#9ca3af]">· {blockOp.codigoOperador}</span>
                     </div>
-                  ) : selected.active && (
+                  ) : selected.activo && (
                     <span className="text-[11px] font-semibold text-[#b0bac8]">Sin operador asignado</span>
                   )}
                 </div>
               );
             })()}
 
-            {/* Composición */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">Composición del bloque</span>
-              {selected.slots.map(slot => {
-                const isContg = slot.slotType === "contingencia";
-                const isSec   = slot.slotType === "secundaria-1" || slot.slotType === "secundaria-2";
-                const slotAuth = activeAuth?.cajaCode === slot.code ? activeAuth : null;
+              {selectedSlots.map(slot => {
+                const isContg = slot.tipoCaja === "EXCEPCIONAL";
+                const isAux = slot.tipoCaja === "AUXILIAR";
+                const slotAuth = activeAuth?.cajaCode === slot.codigo ? activeAuth : null;
                 return (
-                  <div key={slot.code}
+                  <div key={slot.codigo}
                     className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 ${
-                      slotAuth    ? "border-[#2154d8]/30 bg-[#EEF3FD]/50" :
+                      slotAuth ? "border-[#2154d8]/30 bg-[#EEF3FD]/50" :
                       isContg ? "border-amber-100 bg-amber-50/30" :
-                      isSec   ? "border-[#dbeafe] bg-[#f0f6ff]" :
-                                "border-[#e4e9f0] bg-[#f8fafc]"
+                      isAux ? "border-[#dbeafe] bg-[#f0f6ff]" :
+                      "border-[#e4e9f0] bg-[#f8fafc]"
                     }`}>
                     <div className="flex items-center gap-2">
                       {isContg ? <ShieldAlert size={11} strokeWidth={2} className="shrink-0 text-amber-500" /> :
-                       isSec   ? <Monitor size={11} strokeWidth={2} className="shrink-0 text-[#2154d8]/60" /> :
-                                 <CircleCheck size={11} strokeWidth={2} className="shrink-0 text-emerald-500" />}
-                      <span className="text-[12px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
+                       isAux ? <Monitor size={11} strokeWidth={2} className="shrink-0 text-[#2154d8]/60" /> :
+                       <CircleCheck size={11} strokeWidth={2} className="shrink-0 text-emerald-500" />}
+                      <span className="text-[12px] font-bold tabular-nums text-[#374151]">{slot.codigo}</span>
                       <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                        isContg ? "text-amber-600" : isSec ? "text-[#2154d8]/70" : "text-[#4A5265]"
+                        isContg ? "text-amber-600" : isAux ? "text-[#2154d8]/70" : "text-[#4A5265]"
                       }`}>
-                        {slotLabel(slot.slotType)}
+                        {slotLabel(slot.tipoCaja)}
                       </span>
-                      {slot.hasHistory && !slotAuth && (
+                      {slot.hasHistorial && !slotAuth && (
                         <span className="ml-auto rounded bg-[#EBF4FA] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#4A5265]">
                           CON USO
                         </span>
@@ -557,14 +526,13 @@ function PanelGestionCajas({
                       )}
                     </div>
                     <p className={`pl-4 text-[10px] ${isContg ? "text-amber-500/80" : "text-[#b0bac8]"}`}>
-                      {slotObservacion(slot, selected.blockBase)}
+                      {slotObservacion(slot, selected.base)}
                     </p>
                   </div>
                 );
               })}
             </div>
 
-            {/* Autorización activa — superficie de ejecución del operador */}
             {activeAuth && (
               <div className="flex flex-col gap-3 rounded-xl border border-[#2154d8]/30 bg-[#f4f7fe] px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -579,7 +547,6 @@ function PanelGestionCajas({
                   )}
                 </div>
 
-                {/* Info de la autorización */}
                 <div className="flex flex-col gap-1 rounded-lg border border-[#2154d8]/15 bg-white px-3 py-2">
                   <div className="flex justify-between">
                     <span className="text-[10px] text-[#9ca3af]">Acción autorizada</span>
@@ -603,14 +570,12 @@ function PanelGestionCajas({
                   )}
                 </div>
 
-                {/* Sesión activa: operador cierra desde Turno */}
                 {activeAuth.type === "cierre_activo" && (
                   <p className="text-[10px] text-[#6b7280] leading-snug">
                     El cierre se ejecuta desde la pantalla de Gestión Turno.
                   </p>
                 )}
 
-                {/* Formulario corrección de apertura */}
                 {activeAuth.type === "correccion_apertura" && !execDone && (
                   <div className="flex flex-col gap-2">
                     {targetSession && targetSession.apertura > 0 && (
@@ -626,7 +591,9 @@ function PanelGestionCajas({
                         Monto correcto de apertura <span className="text-amber-500">*</span>
                       </span>
                       <input
-                        type="number" min="0" step="0.01"
+                        type="number"
+                        min="0"
+                        step="0.01"
                         value={execNewApertura}
                         onChange={e => setExecNewApertura(e.target.value)}
                         placeholder="0.00"
@@ -671,10 +638,8 @@ function PanelGestionCajas({
                   </div>
                 )}
 
-                {/* Formulario de ejecución — extemporáneo y corrección de cierre */}
                 {(activeAuth.type === "cierre_extemporaneo" || activeAuth.type === "correccion_cierre") && !execDone && (
                   <div className="flex flex-col gap-2">
-
                     {activeAuth.type === "cierre_extemporaneo" && (
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">
@@ -757,34 +722,32 @@ function PanelGestionCajas({
               </div>
             )}
 
-            {/* Trazabilidad bloque */}
             <div className="mt-auto border-t border-[#f1f5f9] pt-3">
               <div className="flex flex-col gap-1">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Creado</span>
-                  <span className="text-[11px] font-semibold tabular-nums text-[#a8b4c4]">{formatCreatedAt(selected.createdAt)}</span>
+                  <span className="text-[11px] font-semibold tabular-nums text-[#a8b4c4]">{formatCreatedAt(new Date(selected.creadoEn))}</span>
                 </div>
                 <div className="flex items-baseline justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-[#c8d4e0]">Por</span>
-                  <span className="text-[11px] font-semibold tracking-wider text-[#a8b4c4]">{selected.createdBy}</span>
+                  <span className="text-[11px] font-semibold tracking-wider text-[#a8b4c4]">{selected.creadoPor}</span>
                 </div>
               </div>
             </div>
 
-            {/* Confirmar eliminación */}
             {confirmDelete && (
               <div className="flex flex-col gap-2 rounded-xl border border-[#dc2626]/30 bg-[#fef2f2] px-3.5 py-2.5">
                 <p className="text-[10px] font-semibold text-[#dc2626]">
-                  ¿Eliminar bloque {selected.blockBase}? Esta acción no se puede deshacer.
+                  ¿Desactivar bloque {selected.base}? El bloque quedará inactivo y no podrá usarse para nuevas sesiones.
                 </p>
                 <div className="flex gap-2">
                   <button onClick={() => setConfirmDelete(false)}
                     className="flex-1 rounded-lg border border-[#e4e9f0] bg-white py-1.5 text-[10px] font-bold uppercase text-[#6b7280] hover:border-[#b0bac8] transition">
                     Cancelar
                   </button>
-                  <button onClick={handleDelete}
+                  <button onClick={() => void handleDelete()}
                     className="flex-1 rounded-lg bg-[#dc2626] py-1.5 text-[10px] font-bold uppercase text-white hover:bg-[#b91c1c] transition">
-                    Confirmar eliminación
+                    Confirmar desactivación
                   </button>
                 </div>
               </div>
@@ -792,46 +755,42 @@ function PanelGestionCajas({
           </div>
         )}
 
-        {/* FORM */}
         {showForm && (
           <div className="flex flex-col gap-4">
-
             <div className="flex items-center gap-2.5 rounded-xl border border-[#e4e9f0] bg-[#fafbfc] px-3 py-2">
               <span className="rounded-md bg-[#4A5265] px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">
-                {mode === "create" ? nextBlockBase(blocks) : selected?.blockBase}
+                {formBase}
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-widest text-[#9ca3af]">
                 {mode === "create" ? "NUEVO BLOQUE OPERACIONAL" : "EDITAR BLOQUE"}
               </span>
             </div>
 
-            {mode === "edit" && (
-              <div className="flex flex-col gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">CAJAS SECUNDARIAS</span>
-                <div className="flex gap-1.5">
-                  {([0, 1, 2, 3, 4] as const).map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setEditSecondaryCount(n)}
-                      className={`flex-1 rounded-xl border py-2 text-[11px] font-bold transition active:scale-[0.97] ${
-                        editSecondaryCount === n
-                          ? "border-[#2154d8] bg-[#eff6ff] text-[#2154d8]"
-                          : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-[#c0cad4]"
-                      }`}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[9px] text-[#9ca3af]">
-                  {editSecondaryCount === 0 ? "Sin cajas secundarias" : `${editSecondaryCount} caja${editSecondaryCount > 1 ? "s" : ""} secundaria${editSecondaryCount > 1 ? "s" : ""} · máx. 4`}
-                </p>
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">CAJAS AUXILIARES</span>
+              <div className="flex gap-1.5">
+                {[0, 1, 2, 3, 4].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setEditAuxiliares(n)}
+                    className={`flex-1 rounded-xl border py-2 text-[11px] font-bold transition active:scale-[0.97] ${
+                      editAuxiliares === n
+                        ? "border-[#2154d8] bg-[#eff6ff] text-[#2154d8]"
+                        : "border-[#e4e9f0] bg-white text-[#6b7280] hover:border-[#c0cad4]"
+                    }`}>
+                    {n}
+                  </button>
+                ))}
               </div>
-            )}
+              <p className="text-[9px] text-[#9ca3af]">
+                {editAuxiliares === 0 ? "Sin cajas auxiliares" : `${editAuxiliares} caja${editAuxiliares > 1 ? "s" : ""} auxiliar${editAuxiliares > 1 ? "es" : ""} · máx. 4`}
+              </p>
+            </div>
 
             {mode === "create" && (
               <div className="rounded-xl border border-[#dbeafe] bg-[#f0f6ff] px-3 py-2.5">
                 <p className="text-[11px] font-semibold text-[#2154d8]/80">
-                  Se crearán 4 cajas: principal, 2 secundarias y contingencia.
+                  Se crearán {editAuxiliares + 2} cajas: 1 principal, {editAuxiliares} auxiliar{editAuxiliares === 1 ? "" : "es"} y 1 excepcional.
                 </p>
                 <p className="mt-1 text-[10px] text-[#9ca3af]">
                   La asignación de operador se realiza en la sección OPERADORES.
@@ -843,26 +802,26 @@ function PanelGestionCajas({
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9ca3af]">
                 {mode === "create" ? "Composición" : "Composición resultante"}
               </span>
-              {previewSlots.map(slot => {
-                const isContg = slot.slotType === "contingencia";
-                const isSec   = slot.slotType === "secundaria-1" || slot.slotType === "secundaria-2";
+              {formSlots.map(slot => {
+                const isContg = slot.tipoCaja === "EXCEPCIONAL";
+                const isAux = slot.tipoCaja === "AUXILIAR";
                 return (
-                  <div key={slot.code}
+                  <div key={slot.codigo}
                     className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
                       isContg ? "border-amber-100 bg-amber-50/30" :
-                      isSec   ? "border-[#dbeafe] bg-[#f0f6ff]" :
-                                "border-[#e4e9f0] bg-[#f8fafc]"
+                      isAux ? "border-[#dbeafe] bg-[#f0f6ff]" :
+                      "border-[#e4e9f0] bg-[#f8fafc]"
                     }`}>
                     {isContg ? <ShieldAlert size={10} strokeWidth={2} className="shrink-0 text-amber-500" /> :
-                     isSec   ? <Monitor size={10} strokeWidth={2} className="shrink-0 text-[#2154d8]/60" /> :
-                               <CircleCheck size={10} strokeWidth={2} className="shrink-0 text-emerald-500" />}
-                    <span className="text-[11px] font-bold tabular-nums text-[#374151]">{slot.code}</span>
+                     isAux ? <Monitor size={10} strokeWidth={2} className="shrink-0 text-[#2154d8]/60" /> :
+                     <CircleCheck size={10} strokeWidth={2} className="shrink-0 text-emerald-500" />}
+                    <span className="text-[11px] font-bold tabular-nums text-[#374151]">{slot.codigo}</span>
                     <span className={`text-[10px] font-semibold uppercase tracking-wide ${
-                      isContg ? "text-amber-600" : isSec ? "text-[#2154d8]/70" : "text-[#4A5265]"
+                      isContg ? "text-amber-600" : isAux ? "text-[#2154d8]/70" : "text-[#4A5265]"
                     }`}>
-                      {slotLabel(slot.slotType)}
+                      {slotLabel(slot.tipoCaja)}
                     </span>
-                    {slot.hasHistory && (
+                    {slot.hasHistorial && (
                       <span className="ml-auto text-[9px] font-bold text-[#9ca3af]">con uso</span>
                     )}
                   </div>
@@ -875,7 +834,7 @@ function PanelGestionCajas({
                 className="flex h-10 flex-1 items-center justify-center rounded-md border border-[#e4e9f0] bg-white text-[13px] font-semibold uppercase tracking-wider text-[#6b7280] transition hover:border-[#b0bac8]">
                 Cancelar
               </button>
-              <button onClick={handleSave}
+              <button onClick={() => void handleSave()}
                 className="flex h-10 flex-1 items-center justify-center rounded-md bg-[#45b356] text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98]">
                 {mode === "create" ? "Crear bloque" : "Guardar cambios"}
               </button>
@@ -883,7 +842,6 @@ function PanelGestionCajas({
           </div>
         )}
 
-        {/* EMPTY */}
         {!showView && !showForm && (
           <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
             <Layers size={24} strokeWidth={1.5} className="text-[#d1d9e1]" />
@@ -891,21 +849,17 @@ function PanelGestionCajas({
             <p className="text-[11px] font-semibold text-[#d1d9e1]">o cree uno nuevo</p>
           </div>
         )}
-
       </div>
     </div>
   );
 }
 
-// ── CajasWorkspace ────────────────────────────────────────────────────────
-
 export function CajasWorkspace() {
+  const { bloques, cargando, errorCarga, crearBloque, editarAuxiliares, activarBloque, desactivarBloque, derivarSlots } = useBloques();
   const { operators, cashSession, activeOperator } = usePOS();
   const pos: POSRef = { operators, isOpen: cashSession.isOpen, cashBox: cashSession.cashBox };
   const operatorName = activeOperator?.nombreCompleto ?? "Operador";
-
-  const [blocks,         setBlocks]         = useState<OperationalBlock[]>(MOCK_BLOCKS);
-  const [selectedId,     setSelectedId]     = useState<string | null>("b100");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
   const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>([]);
 
@@ -913,54 +867,78 @@ export function CajasWorkspace() {
     loadSessionHistory().then(setSessionHistory);
   }, []);
 
-  const lastActivity = (() => {
-    const map = new Map<string, LastActivity>();
-    const history   = sessionHistory;
-    const turnEvs   = loadTurnEvents();
-    const opByKey   = new Map(history.map(e => [`${e.boxCode}-${e.openedAt}`, e.operator]));
-
-    for (const e of history) {
-      const prefix = e.boxCode[0];
-      const at     = e.closedAt ?? e.openedAt;
-      const cur    = map.get(prefix);
-      if (!cur || at > cur.at) map.set(prefix, { at, operator: e.operator });
+  useEffect(() => {
+    if (!cargando && selectedId === null && bloques.length > 0) {
+      setSelectedId(bloques[0].id);
     }
-    for (const e of turnEvs) {
-      const boxCode = e.sessionKey.split("-")[0];
+  }, [bloques, cargando, selectedId]);
+
+  const lastActivity = useMemo(() => {
+    const map = new Map<string, LastActivity>();
+    const turnEvs = loadTurnEvents();
+    const opByKey = new Map(sessionHistory.map(entry => [`${entry.boxCode}-${entry.openedAt}`, entry.operator]));
+
+    for (const entry of sessionHistory) {
+      const prefix = entry.boxCode[0];
+      const at = entry.closedAt ?? entry.openedAt;
+      const cur = map.get(prefix);
+      if (!cur || at > cur.at) map.set(prefix, { at, operator: entry.operator });
+    }
+    for (const event of turnEvs) {
+      const boxCode = event.sessionKey.split("-")[0];
       if (!boxCode) continue;
       const prefix = boxCode[0];
-      const cur    = map.get(prefix);
-      if (!cur || e.ts > cur.at) {
-        map.set(prefix, { at: e.ts, operator: opByKey.get(e.sessionKey) ?? "" });
+      const cur = map.get(prefix);
+      if (!cur || event.ts > cur.at) {
+        map.set(prefix, { at: event.ts, operator: opByKey.get(event.sessionKey) ?? "" });
       }
     }
     return map;
-  })();
+  }, [sessionHistory]);
 
-  const authBlockPrefixes = new Set(
+  const authBlockPrefixes = useMemo(() => new Set(
     authorizations
-      .filter(a => a.status === "emitida")
-      .map(a => a.cajaCode[0]),
-  );
+      .filter(authorization => authorization.status === "emitida")
+      .map(authorization => authorization.cajaCode[0]),
+  ), [authorizations]);
+
+  const codigos = useMemo(() => codigosConHistorial(sessionHistory), [sessionHistory]);
 
   function handleAuthExecuted() {
     setAuthorizations(loadAuthorizations());
     loadSessionHistory().then(setSessionHistory);
   }
 
+  if (errorCarga !== null) {
+    return (
+      <section className="flex min-h-0 flex-1 items-center justify-center">
+        <p className="text-[13px] font-semibold text-[#dc2626]">{errorCarga}</p>
+      </section>
+    );
+  }
+
+  if (cargando) {
+    return (
+      <section className="flex min-h-0 flex-1 items-center justify-center">
+        <p className="text-[13px] font-semibold text-[#9ca3af]">Cargando bloques...</p>
+      </section>
+    );
+  }
+
   return (
     <section className="flex min-h-0 flex-1 gap-2">
       <PanelCajas
-        blocks={blocks}
+        bloques={bloques}
         selectedId={selectedId}
         onSelect={setSelectedId}
         pos={pos}
         lastActivity={lastActivity}
         authBlockPrefixes={authBlockPrefixes}
+        codigosConHistorial={codigos}
+        derivarSlots={derivarSlots}
       />
       <PanelGestionCajas
-        blocks={blocks}
-        setBlocks={setBlocks}
+        bloques={bloques}
         selectedId={selectedId}
         onSelect={setSelectedId}
         pos={pos}
@@ -968,6 +946,12 @@ export function CajasWorkspace() {
         onAuthExecuted={handleAuthExecuted}
         operatorName={operatorName}
         sessionHistory={sessionHistory}
+        codigosConHistorial={codigos}
+        derivarSlots={derivarSlots}
+        crearBloque={crearBloque}
+        editarAuxiliares={editarAuxiliares}
+        activarBloque={activarBloque}
+        desactivarBloque={desactivarBloque}
       />
     </section>
   );
