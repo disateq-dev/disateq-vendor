@@ -105,7 +105,7 @@ export function Topbar() {
                     {cashSession.isOpen && cashSession.cashBox !== null && (
                       <div className="bg-[#fffbeb] border border-[#fde68a] rounded-xl px-4 py-2.5 flex items-start gap-2">
                         <AlertTriangle size={13} className="shrink-0 mt-px text-[#d97706]" />
-                        <p className="text-[11px] font-semibold text-[#d97706] leading-snug">La caja {cashSession.cashBox.code} quedó abierta y disponible. Deberá cerrarla al reingresar.</p>
+                        <p className="text-[11px] font-semibold text-[#d97706] leading-snug">Cuidado, la caja {cashSession.cashBox.code} quedará abierta y disponible. Recuerde cerrarla al reingresar.</p>
                       </div>
                     )}
                     {movPendientes > 0 && (
