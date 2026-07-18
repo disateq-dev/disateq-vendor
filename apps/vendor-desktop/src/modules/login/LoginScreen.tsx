@@ -335,7 +335,7 @@ export function LoginScreen() {
         <div className="w-full flex flex-col flex-1">
 
           {/* Fecha + hora */}
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end mb-10">
             <div className="text-right">
               <p className="text-[10.5px] text-[#a0aec0] leading-none tracking-wide">{fmtDate(now)}</p>
               <p className="text-[22px] font-semibold tabular-nums text-[#1a2d4e] leading-tight mt-0.5">{fmtTime(now)}</p>
@@ -448,7 +448,7 @@ export function LoginScreen() {
                 </div>
 
                 {/* VISTA: KEYPAD */}
-                {view === "keypad" && selected !== null && (
+                {view === "keypad" && (
                   <>
                     <div className="mb-1 relative">
                       <div className="relative">
