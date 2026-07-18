@@ -26,24 +26,13 @@ const MODULE_SHORTCUTS: Partial<Record<string, ActiveModule>> = {
 // ── Colores canónicos por módulo ──────────────────────────────
 // Sincronizar con tokens --dv-mod-* en index.css si se cambian estos valores
 const MODULE_ACCENT: Record<ActiveModule, string> = {
-  cash:           "#C59B6D",
-  sales:          "#128C7E",
-  abastecimiento: "#1E88C7",
-  clientes:       "#1E7E4F",
-  reportes:       "#5C5FA8",
-  comprobantes:   "#7B4F6E",
-  config:         "#4A5265",
-};
-
-// Sincronizar con tokens --dv-mod-* en index.css si se cambian estos valores
-const MODULE_BG: Record<ActiveModule, string> = {
-  cash:           "#FFF5E6",
-  sales:          "#E2F3F0",
-  abastecimiento: "#E3F1FA",
-  clientes:       "#F0FAF4",
-  reportes:       "#ECEDF5",
-  comprobantes:   "#F0EAF0",
-  config:         "#EAECF0",
+  cash:           "#B5741A",
+  sales:          "#0D7A6E",
+  abastecimiento: "#4A7C2F",
+  clientes:       "#1A6BB5",
+  reportes:       "#5A4DB8",
+  comprobantes:   "#9B3E7A",
+  config:         "#5C6478",
 };
 
 // ── Labels de módulos ─────────────────────────────────────────
@@ -388,7 +377,6 @@ export function ContextBar({
   // ── Vista expandida — opciones secundarias ───────────────
   if (expandido) {
     const accent = MODULE_ACCENT[expandido];
-    const bg = MODULE_BG[expandido];
     const opciones = getOpciones(expandido, puedeSupervisarCaja);
     const opcionActiva = getOpcionActiva(expandido, cashSubView, abastecimientoSubModule, configSubView);
     const opcionesActivas = opciones.filter(o => !o.placeholder);
@@ -396,7 +384,7 @@ export function ContextBar({
     return (
       <section
         className="flex h-[44px] shrink-0 items-center gap-2 px-3"
-        style={{ backgroundColor: bg, borderBottom: `1px solid ${accent}22` }}
+        style={{ backgroundColor: "var(--dv-surface-base)", borderBottom: `1px solid ${accent}33` }}
         onMouseLeave={() => onHover(null)}
       >
         {/* Anchor — módulo expandido */}
@@ -473,7 +461,7 @@ export function ContextBar({
   // ── Vista global — todos los módulos ─────────────────────
   return (
     <section
-      className="flex h-[44px] shrink-0 items-center px-3 gap-1 bg-white"
+      className="flex h-[44px] shrink-0 items-center px-3 gap-1" style={{ backgroundColor: "var(--dv-surface-base)" }}
       onMouseLeave={() => { setHoverModulo(null); onHover(null); }}
     >
       {MODULES_ORDER.map((modulo, idx) => {
@@ -507,7 +495,7 @@ export function ContextBar({
                 onHover(modulo);
               }}
               title={!acceso ? "Sin acceso" : undefined}
-              className={`flex h-9 items-center gap-1.5 px-3 font-bold transition select-none border-b-[3px] ${barraActiva ? "text-[13.5px]" : "text-[13.5px]"}`}
+              className="flex h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none border-b-[3px]"
               style={(() => {
                 if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };
                 if (!barraActiva) {

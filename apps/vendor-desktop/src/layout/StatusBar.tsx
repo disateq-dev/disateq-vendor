@@ -38,7 +38,7 @@ export function StatusBar() {
 
   if (!isOpen || !cashBox) {
     return (
-      <div className="flex h-[26px] shrink-0 items-center bg-[#0a1628] px-5">
+      <div className="flex h-[26px] shrink-0 items-center bg-[#0f1f3d] px-5">
         <span className="select-none text-[9px] font-bold uppercase tracking-[0.15em] text-[#2d3f5c]">
           ○&nbsp;&nbsp;sin turno operativo
         </span>
@@ -47,7 +47,7 @@ export function StatusBar() {
   }
 
   return (
-    <div className="flex h-[26px] shrink-0 items-center justify-between bg-[#0a1628] px-5">
+    <div className="flex h-[26px] shrink-0 items-center justify-between bg-[#0f1f3d] px-5">
 
       {/* LEFT — identity */}
       <span className="flex items-center select-none text-[9.5px] font-bold uppercase tracking-[0.13em]">

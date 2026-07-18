@@ -66,7 +66,7 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
   }, [cobroOpen, activeModule]);
 
   return (
-    <main className="h-screen overflow-hidden bg-[#f7f9fc] text-[#111827]">
+    <main className="h-screen overflow-hidden text-[#2C2A26]" style={{ backgroundColor: "var(--dv-surface-base)" }}>
       <section className="flex h-full flex-col">
         <header className="border-b border-[#dde4ec]">
           <Topbar />
