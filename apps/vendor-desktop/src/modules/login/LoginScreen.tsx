@@ -612,7 +612,7 @@ export function LoginScreen() {
                                 value={pcPinNuevo}
                                 onChange={e => { setPcPinNuevo(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
                                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinConfRef.current?.focus(); } }}
-                                placeholder="4–6 núm."
+                                placeholder="4–6 dígitos"
                                 className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                               />
                             </div>
@@ -627,7 +627,7 @@ export function LoginScreen() {
                                 value={pcPinConfirm}
                                 onChange={e => { setPcPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6)); setPcError(null); }}
                                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handlePinChange(); } }}
-                                placeholder="4–6 núm."
+                                placeholder="4–6 dígitos"
                                 className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-[15px] font-bold tracking-[0.25em] text-[#1a2d4e] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] placeholder:text-[#cdd5e0] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                               />
                             </div>

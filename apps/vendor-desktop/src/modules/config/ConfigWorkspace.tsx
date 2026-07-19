@@ -81,6 +81,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   const [adminPinConfirm,   setAdminPinConfirm]   = useState("");
   const [adminPinError,     setAdminPinError]     = useState<string | null>(null);
   const [adminSaved,        setAdminSaved]        = useState(false);
+  const [adminJustSaved,    setAdminJustSaved]    = useState(false);
 
   async function handleSavePinAdmin() {
     setAdminPinError(null);
@@ -108,6 +109,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     setAdminPinNuevo("");
     setAdminPinConfirm("");
     setAdminSaved(true);
+    setAdminJustSaved(true);
     setTimeout(() => setAdminSaved(false), 2500);
   }
 
@@ -260,6 +262,19 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
               </div>
             </div>
 
+            {/* Confirmación persistente tras guardar */}
+            {adminJustSaved && (
+              <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">PIN guardado correctamente</p>
+                  <p className="text-[10px] text-emerald-600 leading-snug">
+                    El PIN de Autorización está activo. Úselo en operaciones sensibles del sistema.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Formulario */}
             <div className="flex flex-col gap-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9ca3af]">
@@ -268,7 +283,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">
-                  Nuevo PIN (6 dígitos)
+                  Nuevo PIN (6 dígitos) {adminPinNuevo.length > 0 && <span className="text-[#4A5265] normal-case tracking-normal font-semibold">{adminPinNuevo.length}/6</span>}
                 </label>
                 <input
                   autoFocus
@@ -278,7 +293,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                   value={adminPinNuevo}
                   onChange={e => { setAdminPinNuevo(e.target.value.replace(/\D/g, "").slice(0, 6)); setAdminPinError(null); }}
                   onKeyDown={e => e.key === "Enter" && handleSavePinAdmin()}
-                  placeholder="••••••"
+                  placeholder="Ingresar 6 dígitos"
                   className={`w-full rounded-xl border px-3 py-2.5 text-[18px] font-bold tracking-[0.4em] text-[#1a2d4e] outline-none placeholder:tracking-normal placeholder:font-normal placeholder:text-[13px] placeholder:text-[#d1d9e1] focus:ring-2 transition ${
                     adminPinError
                       ? "border-red-300 focus:border-red-400 focus:ring-red-200/30"
@@ -289,7 +304,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#b0bac8]">
-                  Confirmar PIN
+                  Confirmar PIN {adminPinConfirm.length > 0 && <span className="text-[#4A5265] normal-case tracking-normal font-semibold">{adminPinConfirm.length}/6</span>}
                 </label>
                 <input
                   type="password"
@@ -298,7 +313,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                   value={adminPinConfirm}
                   onChange={e => { setAdminPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6)); setAdminPinError(null); }}
                   onKeyDown={e => e.key === "Enter" && handleSavePinAdmin()}
-                  placeholder="••••••"
+                  placeholder="Confirmar 6 dígitos"
                   className={`w-full rounded-xl border px-3 py-2.5 text-[18px] font-bold tracking-[0.4em] text-[#1a2d4e] outline-none placeholder:tracking-normal placeholder:font-normal placeholder:text-[13px] placeholder:text-[#d1d9e1] focus:ring-2 transition ${
                     adminPinError
                       ? "border-red-300 focus:border-red-400 focus:ring-red-200/30"
