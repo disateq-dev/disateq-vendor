@@ -329,6 +329,19 @@ export function ContextBar({
           setEsperandoAtajo(false);
           return;
         }
+        if (e.code === "ArrowDown") {
+          e.preventDefault();
+          const target = MODULES_ORDER[s.navIdx];
+          if (!tieneAcceso(target)) return;
+          if (CON_SECUNDARIAS.has(target)) {
+            cbRefs.current.onChange(target);
+            setModuloActivoVisual(target);
+            setExpandido(target);
+            setFocusOpcion(0);
+            setEsperandoAtajo(false);
+          }
+          return;
+        }
         if (e.code === "Enter") {
           e.preventDefault();
           const target = MODULES_ORDER[s.navIdx];
@@ -358,6 +371,14 @@ export function ContextBar({
         if (e.code === "ArrowLeft") {
           e.preventDefault();
           setFocusOpcion(i => (i - 1 + opciones.length) % opciones.length);
+          return;
+        }
+        if (e.code === "ArrowUp") {
+          e.preventDefault();
+          setExpandido(null);
+          setFocusOpcion(0);
+          setNavIdx(MODULES_ORDER.indexOf(s.active));
+          setEsperandoAtajo(false);
           return;
         }
         if (e.code === "Enter") {
@@ -403,6 +424,10 @@ export function ContextBar({
     );
   }
 
+  const expandidoVisible: ActiveModule | null = hoverModulo
+    ? (CON_SECUNDARIAS.has(hoverModulo) ? hoverModulo : null)
+    : expandido;
+
   return (
     <div className="flex flex-col">
       {/* ── FILA 1 — módulos siempre visibles ── */}
@@ -427,10 +452,11 @@ export function ContextBar({
                   cbRefs.current.onChange(modulo);
                   setModuloActivoVisual(modulo);
                   if (CON_SECUNDARIAS.has(modulo)) {
-                    setExpandido(modulo);
+                    const yaExpandido = expandido === modulo;
+                    setExpandido(yaExpandido ? null : modulo);
                     setNavIdx(idx);
                     setFocusOpcion(0);
-                    setBarraActiva(true);
+                    setBarraActiva(yaExpandido ? false : true);
                   } else {
                     setBarraActiva(false);
                     setExpandido(null);
@@ -482,10 +508,10 @@ export function ContextBar({
       </section>
 
       {/* ── FILA 2 — subopciones del módulo activo (solo si tiene) ── */}
-      {expandido && CON_SECUNDARIAS.has(expandido) && (() => {
-        const accent = MODULE_ACCENT[expandido];
-        const opciones = getOpciones(expandido, puedeSupervisarCaja);
-        const opcionActiva = getOpcionActiva(expandido, cashSubView, abastecimientoSubModule, configSubView);
+      {expandidoVisible && CON_SECUNDARIAS.has(expandidoVisible) && (() => {
+        const accent = MODULE_ACCENT[expandidoVisible];
+        const opciones = getOpciones(expandidoVisible, puedeSupervisarCaja);
+        const opcionActiva = getOpcionActiva(expandidoVisible, cashSubView, abastecimientoSubModule, configSubView);
         const opcionesActivas = opciones.filter(o => !o.placeholder);
 
         return (
@@ -501,13 +527,13 @@ export function ContextBar({
                 return (
                   <div key={`sep-${opcion.key}`} className="flex items-center gap-1">
                     <Separador />
-                    {renderOpcion(opcion, estaActiva, tieneFoco, accent, expandido, opcionIdx)}
+                    {renderOpcion(opcion, estaActiva, tieneFoco, accent, expandidoVisible, opcionIdx)}
                   </div>
                 );
               }
-              return renderOpcion(opcion, estaActiva, tieneFoco, accent, expandido, opcionIdx);
+              return renderOpcion(opcion, estaActiva, tieneFoco, accent, expandidoVisible, opcionIdx);
             })}
-            {expandido === "config" && (
+            {expandidoVisible === "config" && (
               <div className="ml-auto">
                 <HealthDot
                   onNavigate={() => {
