@@ -89,7 +89,6 @@ export function LoginScreen() {
     }).catch(() => setOperadoresSistema([]));
   }, []);
 
-  // Vista y paso de login
   const [view,       setView]       = useState<LoginView>("keypad");
   const [step,       setStep]       = useState<LoginStep>("alias");
   const [selectedId, setSelectedId] = useState("");
@@ -97,7 +96,6 @@ export function LoginScreen() {
   const [error,      setError]      = useState<string | null>(null);
   const [now,        setNow]        = useState(new Date());
 
-  // Estado formulario cambio PIN
   const [pcMotivo,     setPcMotivo]     = useState("");
   const [pcAuthCode,   setPcAuthCode]   = useState("");
   const [pcPinNuevo,   setPcPinNuevo]   = useState("");
@@ -105,15 +103,12 @@ export function LoginScreen() {
   const [pcError,      setPcError]      = useState<string | null>(null);
   const [pcSuccess,    setPcSuccess]    = useState(false);
 
-  // Estado acceso tecnico
   const [selectedSistemaId, setSelectedSistemaId] = useState("");
   const [pinSistema,        setPinSistema]        = useState("");
   const [errorSistema,      setErrorSistema]      = useState<string | null>(null);
 
-  // Operadores normales -- SISTEMA nunca aparece en vista principal
   const activeOps = operators.filter(o => o.estado === "ACTIVO");
 
-  // DOM refs
   const aliasSelectRef   = useRef<HTMLSelectElement>(null);
   const pinInputRef      = useRef<HTMLInputElement>(null);
   const sistemaSelectRef = useRef<HTMLSelectElement>(null);
@@ -123,7 +118,6 @@ export function LoginScreen() {
   const pcPinNuevoRef    = useRef<HTMLInputElement>(null);
   const pcPinConfRef     = useRef<HTMLInputElement>(null);
 
-  // Stable refs
   const pinStateRef     = useRef("");
   const selectedIdRef   = useRef("");
   const loginRef        = useRef(loginOperator);
@@ -138,7 +132,7 @@ export function LoginScreen() {
   activeOpsRef.current  = activeOps;
 
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
-  useEffect(() => { try { getCurrentWindow().show().catch(() => {}); } catch { /* no-tauri */ } }, []);
+  useEffect(() => { try { getCurrentWindow().show().catch(() => {}); } catch { } }, []);
   useEffect(() => { aliasSelectRef.current?.focus(); }, []);
   useEffect(() => { if (view === "pin-change")      setTimeout(() => aliasSelectRef.current?.focus(),   0); }, [view]);
   useEffect(() => { if (view === "acceso-tecnico")  setTimeout(() => sistemaSelectRef.current?.focus(), 0); }, [view]);
@@ -154,7 +148,6 @@ export function LoginScreen() {
     /^\d{6}$/.test(pcAuthCode) &&
     pcPinNuevo.length >= 4 && pcPinConfirm.length >= 4;
 
-  // Transiciones
   function switchToPinChange() {
     setPcMotivo(""); setPcAuthCode(""); setPcPinNuevo(""); setPcPinConfirm("");
     setPcError(null); setPcSuccess(false);
@@ -173,7 +166,6 @@ export function LoginScreen() {
     setTimeout(() => aliasSelectRef.current?.focus(), 0);
   }
 
-  // Login flow
   function focusPin() {
     setStep("pin");
     setTimeout(() => pinInputRef.current?.focus(), 0);
@@ -271,7 +263,6 @@ export function LoginScreen() {
     }).catch(() => setPcError("Error al actualizar PIN."));
   }
 
-  // Keyboard handler
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const k        = e.key;
@@ -315,7 +306,6 @@ export function LoginScreen() {
   return (
     <div className="flex h-screen" style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.18s ease" }}>
 
-      {/* SHEET IZQUIERDA */}
       <div
         className="flex w-[45%] shrink-0 flex-col bg-[#f0f4f9] pt-8 pb-5 px-5 cursor-grab active:cursor-grabbing select-none"
         style={{ borderRight: "1px solid #edf2f8" }}
@@ -368,11 +358,9 @@ export function LoginScreen() {
         </div>
       </div>
 
-      {/* SHEET DERECHA */}
       <div className="flex flex-1 flex-col bg-white px-5 pt-8 pb-5">
         <div className="w-full flex flex-col flex-1">
 
-          {/* Fecha + hora */}
           <div className="flex justify-end mb-10">
             <div className="text-right">
               <p className="text-[10.5px] text-[#a0aec0] leading-none tracking-wide">{fmtDate(now)}</p>
@@ -382,7 +370,6 @@ export function LoginScreen() {
 
           <div className="flex flex-col w-full">
 
-            {/* VISTA: ACCESO TECNICO */}
             {view === "acceso-tecnico" && (
               <>
                 <div className="flex items-center gap-2 mb-4">
@@ -446,10 +433,8 @@ export function LoginScreen() {
               </>
             )}
 
-            {/* VISTAS: KEYPAD y PIN-CHANGE */}
             {view !== "acceso-tecnico" && (
               <>
-                {/* Selector operador */}
                 <div className="mb-2">
                   <div className="relative">
                     <select
@@ -485,7 +470,6 @@ export function LoginScreen() {
                   )}
                 </div>
 
-                {/* VISTA: KEYPAD */}
                 {view === "keypad" && (
                   <>
                     <div className="mb-1 relative">
@@ -551,7 +535,6 @@ export function LoginScreen() {
                   </>
                 )}
 
-                {/* VISTA: PIN CHANGE */}
                 {view === "pin-change" && (
                   <>
                     {pcSuccess ? (
@@ -660,7 +643,6 @@ export function LoginScreen() {
 
           </div>
 
-          {/* Acciones inferiores */}
           <div className="mt-auto flex items-start justify-between pt-3">
             {view === "keypad" ? (
               <button
