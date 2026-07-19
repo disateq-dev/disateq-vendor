@@ -388,3 +388,119 @@ pub async fn actualizar_capacidades_rol(
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn configurar_pin_autorizacion(
+    db: tauri::State<'_, sqlx::SqlitePool>,
+    hash: String,
+    configurado_por: String,
+) -> Result<(), String> {
+    let ahora = sqlx::query_scalar::<_, String>(
+        "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
+    )
+    .fetch_one(db.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "UPDATE config_establecimiento SET
+           pin_autorizacion_hash = ?,
+           pin_autorizacion_configurado_en = ?,
+           pin_autorizacion_configurado_por = ?",
+    )
+    .bind(&hash)
+    .bind(&ahora)
+    .bind(&configurado_por)
+    .execute(db.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn obtener_pin_autorizacion_meta(
+    db: tauri::State<'_, sqlx::SqlitePool>,
+) -> Result<Option<serde_json::Value>, String> {
+    let row = sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
+        "SELECT pin_autorizacion_hash, pin_autorizacion_configurado_en, pin_autorizacion_configurado_por
+         FROM config_establecimiento LIMIT 1",
+    )
+    .fetch_optional(db.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    match row {
+        Some((Some(hash), configurado_en, configurado_por)) if !hash.is_empty() => {
+            Ok(Some(serde_json::json!({
+                "hash": hash,
+                "configuradoEn": configurado_en,
+                "configuradoPor": configurado_por
+            })))
+        }
+        _ => Ok(None),
+    }
+}
+
+#[tauri::command]
+pub async fn verificar_pin_autorizacion(
+    db: tauri::State<'_, sqlx::SqlitePool>,
+    hash: String,
+) -> Result<bool, String> {
+    let row = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT pin_autorizacion_hash FROM config_establecimiento LIMIT 1",
+    )
+    .fetch_optional(db.inner())
+    .await
+    .map_err(|e| e.to_string())?
+    .flatten();
+
+    match row {
+        Some(stored_hash) if !stored_hash.is_empty() => Ok(stored_hash == hash),
+        _ => Ok(false),
+    }
+}
+
+#[tauri::command]
+pub async fn registrar_auditoria_operacion(
+    db: tauri::State<'_, sqlx::SqlitePool>,
+    rubro: String,
+    dominio: String,
+    tipo_operacion: String,
+    operador_id: String,
+    operador_alias: String,
+    ejecutado_por: String,
+    detalle: Option<String>,
+    resultado: String,
+) -> Result<(), String> {
+    let ahora = sqlx::query_scalar::<_, String>(
+        "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
+    )
+    .fetch_one(db.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let id = uuid::Uuid::new_v4().to_string();
+
+    sqlx::query(
+        "INSERT INTO auditoria_operacion
+           (id, rubro, dominio, tipo_operacion, operador_id, operador_alias,
+            ejecutado_por, detalle, resultado, ip_terminal, registrado_en)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)",
+    )
+    .bind(&id)
+    .bind(&rubro)
+    .bind(&dominio)
+    .bind(&tipo_operacion)
+    .bind(&operador_id)
+    .bind(&operador_alias)
+    .bind(&ejecutado_por)
+    .bind(&detalle)
+    .bind(&resultado)
+    .bind(&ahora)
+    .execute(db.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

@@ -43,6 +43,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v21_sesion_caja_arqueo(db).await?;
     migrar_v22_bloque_operacional(db).await?;
     migrar_v23_operadores_sistema(db).await?;
+    migrar_v24_pin_autorizacion_auditoria(db).await?;
 
     Ok(())
 }
@@ -2088,4 +2089,135 @@ async fn asegurar_operador_sistema(
     .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+async fn migrar_v24_pin_autorizacion_auditoria(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 24 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    // Columnas PIN de Autorización en config_establecimiento
+    let tiene_pin_hash = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('config_establecimiento') WHERE name = 'pin_autorizacion_hash'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if tiene_pin_hash == 0 {
+        sqlx::query(
+            "ALTER TABLE config_establecimiento ADD COLUMN pin_autorizacion_hash TEXT",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    let tiene_pin_configurado_en = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('config_establecimiento') WHERE name = 'pin_autorizacion_configurado_en'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if tiene_pin_configurado_en == 0 {
+        sqlx::query(
+            "ALTER TABLE config_establecimiento ADD COLUMN pin_autorizacion_configurado_en TEXT",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    let tiene_pin_configurado_por = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('config_establecimiento') WHERE name = 'pin_autorizacion_configurado_por'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if tiene_pin_configurado_por == 0 {
+        sqlx::query(
+            "ALTER TABLE config_establecimiento ADD COLUMN pin_autorizacion_configurado_por TEXT",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
+    // Tabla auditoria_operacion — universal, multi-rubro
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS auditoria_operacion (
+          id                TEXT PRIMARY KEY,
+          rubro             TEXT NOT NULL DEFAULT 'SISTEMA',
+          dominio           TEXT NOT NULL,
+          tipo_operacion    TEXT NOT NULL,
+          operador_id       TEXT NOT NULL,
+          operador_alias    TEXT NOT NULL,
+          ejecutado_por     TEXT NOT NULL,
+          detalle           TEXT,
+          resultado         TEXT NOT NULL,
+          ip_terminal       TEXT,
+          registrado_en     TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_tipo ON auditoria_operacion(tipo_operacion, registrado_en)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_operador ON auditoria_operacion(operador_id, registrado_en)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_ejecutor ON auditoria_operacion(ejecutado_por)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_rubro ON auditoria_operacion(rubro, registrado_en)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_dominio ON auditoria_operacion(dominio, registrado_en)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (24)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
 }

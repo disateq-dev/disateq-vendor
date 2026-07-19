@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users, UserCog, LayoutGrid, Activity } from "lucide-react";
 import { CapacidadesWorkspace } from "./CapacidadesWorkspace";
 import { RolesOperacionalesWorkspace } from "./RolesOperacionalesWorkspace";
@@ -9,7 +9,7 @@ import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../../data/
 import { loadBusinessConfig, saveBusinessConfig } from "../../config/business";
 // ops.ts reservado para configuraciones futuras
 import { pinAutorizacionStore } from "../../config/pin-autorizacion.store";
-import { accesosStore } from "../../domains/operator/accesos.store";
+import { auditoriaService } from "../../domains/auditoria/auditoria.service";
 import { type ConfigSubView } from "../../App";
 import { DiagnósticoWorkspace } from "./DiagnósticoWorkspace";
 
@@ -71,8 +71,12 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
 
   // ── OPERACIÓN ─────────────────────────────────────────────────
   const { activeOperator } = usePOS();
-  const [adminConfigured,   setAdminConfigured]   = useState(() => pinAutorizacionStore.estaConfigurado());
-  const [adminMeta,         setAdminMeta]         = useState(() => pinAutorizacionStore.obtenerMeta());
+  const [adminConfigured,   setAdminConfigured]   = useState(false);
+  const [adminMeta,         setAdminMeta]         = useState<import("../../config/pin-autorizacion.store").PinAutorizacionMeta | null>(null);
+  useEffect(() => {
+    pinAutorizacionStore.estaConfigurado().then(setAdminConfigured).catch(() => {});
+    pinAutorizacionStore.obtenerMeta().then(setAdminMeta).catch(() => {});
+  }, []);
   const [adminPinNuevo,     setAdminPinNuevo]     = useState("");
   const [adminPinConfirm,   setAdminPinConfirm]   = useState("");
   const [adminPinError,     setAdminPinError]     = useState<string | null>(null);
@@ -80,17 +84,27 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
 
   async function handleSavePinAdmin() {
     setAdminPinError(null);
-    if (!/^\d{6}$/.test(adminPinNuevo))           { setAdminPinError("Exactamente 6 dígitos numéricos"); return; }
-    if (adminPinNuevo !== adminPinConfirm)         { setAdminPinError("Los PINes no coinciden"); return; }
+    if (!/^\d{6}$/.test(adminPinNuevo))     { setAdminPinError("Exactamente 6 dígitos numéricos"); return; }
+    if (adminPinNuevo !== adminPinConfirm)   { setAdminPinError("Los PINes no coinciden"); return; }
     const codigo = activeOperator?.codigoOperador ?? activeOperator?.alias ?? "ADMIN";
     await pinAutorizacionStore.configurar(adminPinNuevo, codigo);
-    accesosStore.registrar({
-      tipo: "PIN_AUTORIZACION_CONFIGURADO",
+    // Registrar en auditoría — universal, dominio CONFIGURACION
+    void auditoriaService.registrar({
+      rubro:         "SISTEMA",
+      dominio:       "CONFIGURACION",
+      tipoOperacion: "CONFIGURACION_PIN_AUTORIZACION",
+      operadorId:    activeOperator?.id ?? "DESCONOCIDO",
       operadorAlias: codigo,
-      operacion: "Configuración PIN de Autorización",
+      ejecutadoPor:  codigo,
+      detalle:       { accion: adminConfigured ? "CAMBIO" : "CONFIGURACION_INICIAL" },
+      resultado:     "EXITOSO",
     });
-    setAdminConfigured(true);
-    setAdminMeta(pinAutorizacionStore.obtenerMeta());
+    const [configured, meta] = await Promise.all([
+      pinAutorizacionStore.estaConfigurado(),
+      pinAutorizacionStore.obtenerMeta(),
+    ]);
+    setAdminConfigured(configured);
+    setAdminMeta(meta);
     setAdminPinNuevo("");
     setAdminPinConfirm("");
     setAdminSaved(true);
@@ -236,7 +250,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
                 </p>
                 {adminConfigured && adminMeta ? (
                   <p className="text-[10px] text-emerald-600">
-                    Por {adminMeta.configuradoPor} · {new Date(adminMeta.configuradoEn).toLocaleDateString("es-PE")}
+                    Por {adminMeta.configuradoPor} · {adminMeta.configuradoEn ? new Date(adminMeta.configuradoEn).toLocaleDateString("es-PE") : "—"}
                   </p>
                 ) : (
                   <p className="text-[10px] text-amber-600 leading-snug">

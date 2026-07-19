@@ -1,9 +1,9 @@
-const LS_KEY = "disateq:config:pin-autorizacion";
+import { invoke } from "@tauri-apps/api/core";
 
 export type PinAutorizacionMeta = {
   hash: string;
-  configuradoEn: string;
-  configuradoPor: string;
+  configuradoEn: string | null;
+  configuradoPor: string | null;
 };
 
 async function hashPin(pin: string): Promise<string> {
@@ -14,47 +14,36 @@ async function hashPin(pin: string): Promise<string> {
     .join("");
 }
 
-function cargarMeta(): PinAutorizacionMeta | null {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as Partial<PinAutorizacionMeta>;
-    if (
-      typeof p.hash === "string" &&
-      typeof p.configuradoEn === "string" &&
-      typeof p.configuradoPor === "string"
-    ) return p as PinAutorizacionMeta;
-    return null;
-  } catch { return null; }
-}
-
-function persistirMeta(meta: PinAutorizacionMeta): void {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(meta)); } catch { }
-}
-
 export const pinAutorizacionStore = {
 
-  estaConfigurado(): boolean {
-    return cargarMeta() !== null;
+  async estaConfigurado(): Promise<boolean> {
+    try {
+      const meta = await invoke<PinAutorizacionMeta | null>("obtener_pin_autorizacion_meta");
+      return meta !== null && !!meta.hash;
+    } catch {
+      return false;
+    }
   },
 
   async verificar(pin: string): Promise<boolean> {
-    const meta = cargarMeta();
-    if (!meta) return false;
-    const hash = await hashPin(pin);
-    return hash === meta.hash;
+    try {
+      const hash = await hashPin(pin);
+      return await invoke<boolean>("verificar_pin_autorizacion", { hash });
+    } catch {
+      return false;
+    }
   },
 
   async configurar(pin: string, operadorCodigo: string): Promise<void> {
     const hash = await hashPin(pin);
-    persistirMeta({
-      hash,
-      configuradoEn: new Date().toISOString(),
-      configuradoPor: operadorCodigo,
-    });
+    await invoke<void>("configurar_pin_autorizacion", { hash, configuradoPor: operadorCodigo });
   },
 
-  obtenerMeta(): PinAutorizacionMeta | null {
-    return cargarMeta();
+  async obtenerMeta(): Promise<PinAutorizacionMeta | null> {
+    try {
+      return await invoke<PinAutorizacionMeta | null>("obtener_pin_autorizacion_meta");
+    } catch {
+      return null;
+    }
   },
 };

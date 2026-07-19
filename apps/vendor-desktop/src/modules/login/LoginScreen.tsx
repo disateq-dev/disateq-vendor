@@ -4,6 +4,8 @@ import logoImg from "../../assets/branding/disateq-vendor-login.png";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { usePOS } from "../../context/POSContext";
+import { pinAutorizacionStore } from "../../config/pin-autorizacion.store";
+import { auditoriaService } from "../../domains/auditoria/auditoria.service";
 
 type LoginStep = "alias" | "pin";
 type LoginView  = "keypad" | "pin-change" | "acceso-tecnico";
@@ -32,11 +34,10 @@ type OperadorSistemaRow = {
 };
 
 const PC_MOTIVOS = [
-  "OLVIDO PIN",
-  "CAMBIO PREVENTIVO",
-  "PIN COMPROMETIDO",
-  "RECOMENDACIÓN PERIÓDICA",
-  "CAMBIO SUPERVISOR",
+  "OPERADOR OLVIDÓ SU PIN",
+  "CAMBIO POR POLÍTICA DE SEGURIDAD",
+  "PIN CONOCIDO POR TERCEROS",
+  "SOLICITUD DEL GESTOR",
 ] as const;
 
 const DAYS = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
@@ -150,7 +151,7 @@ export function LoginScreen() {
 
   const pcCanSave =
     !!selectedId && !!pcMotivo &&
-    /[a-zA-Z]/.test(pcAuthCode) && /[0-9]/.test(pcAuthCode) &&
+    /^\d{6}$/.test(pcAuthCode) &&
     pcPinNuevo.length >= 4 && pcPinConfirm.length >= 4;
 
   // Transiciones
@@ -187,13 +188,13 @@ export function LoginScreen() {
     const id = selectedIdRef.current;
     if (!id || p.length < 4) return;
     const ok = await loginRef.current(id, p);
-    if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
+    if (!ok) { setError("PIN incorrecto"); setPin(""); }
   }
 
   async function attemptLoginSistema() {
     if (!selectedSistemaId || pinSistema.length < 1) return;
     const ok = await loginRef.current(selectedSistemaId, pinSistema);
-    if (!ok) { setErrorSistema("Contraseña incorrecta. Intente nuevamente."); setPinSistema(""); }
+    if (!ok) { setErrorSistema("Contraseña incorrecta"); setPinSistema(""); }
   }
 
   function addDigit(d: string) {
@@ -207,7 +208,7 @@ export function LoginScreen() {
       setTimeout(async () => {
         if (!id) return;
         const ok = await loginRef.current(id, next);
-        if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
+        if (!ok) { setError("PIN incorrecto"); setPin(""); }
       }, 0);
     }
   }
@@ -215,20 +216,57 @@ export function LoginScreen() {
   function removeLast() { setPin(p => p.slice(0, -1)); setError(null); }
   function selectOp(id: string) { setSelectedId(id); setStep("alias"); setPin(""); setError(null); }
 
-  function handlePinChange() {
+  async function handlePinChange() {
     setPcError(null);
     const id = selectedIdRef.current;
-    if (!id)             { setPcError("Seleccione un operador");            aliasSelectRef.current?.focus(); return; }
-    if (!pcMotivo)       { setPcError("Seleccione un motivo");              pcMotivoRef.current?.focus();    return; }
-    const auth = pcAuthCode.trim();
-    if (!auth)           { setPcError("Código de autorización requerido");  pcAuthCodeRef.current?.focus();  return; }
-    if (!/[a-zA-Z]/.test(auth)) { setPcError("El código debe contener letras");   pcAuthCodeRef.current?.focus(); return; }
-    if (!/[0-9]/.test(auth))    { setPcError("El código debe contener números"); pcAuthCodeRef.current?.focus(); return; }
+    if (!id)       { setPcError("Seleccione un operador");           aliasSelectRef.current?.focus(); return; }
+    if (!pcMotivo) { setPcError("Seleccione un motivo");             pcMotivoRef.current?.focus();    return; }
+    if (!/^\d{6}$/.test(pcAuthCode)) {
+      setPcError("El código de autorización debe ser exactamente 6 dígitos numéricos");
+      pcAuthCodeRef.current?.focus();
+      return;
+    }
     const errNuevo = validatePin(pcPinNuevo);
-    if (errNuevo)        { setPcError(`Nuevo PIN: ${errNuevo}`);            pcPinNuevoRef.current?.focus();  return; }
+    if (errNuevo)  { setPcError(`Nuevo PIN: ${errNuevo}`);           pcPinNuevoRef.current?.focus();  return; }
     if (pcPinNuevo !== pcPinConfirm) { setPcError("Los PINes no coinciden"); pcPinConfRef.current?.focus(); return; }
+
+    // Verificar PIN de autorización contra SQLite
+    const pinValido = await pinAutorizacionStore.verificar(pcAuthCode);
+    const operador = activeOps.find(o => o.id === id) ?? null;
+    const operadorAlias = operador?.alias ?? id;
+    const ejecutadoPor = operadorAlias; // quien está en pantalla es quien solicita el cambio
+
+    if (!pinValido) {
+      setPcAuthCode("");
+      setPcError("Código de autorización incorrecto");
+      pcAuthCodeRef.current?.focus();
+      // Registrar intento fallido en auditoría
+      void auditoriaService.registrar({
+        rubro:         "SISTEMA",
+        dominio:       "IDENTIDAD",
+        tipoOperacion: "CAMBIO_PIN_OPERADOR",
+        operadorId:    id,
+        operadorAlias: operadorAlias,
+        ejecutadoPor:  ejecutadoPor,
+        detalle:       { motivo: pcMotivo },
+        resultado:     "FALLIDO",
+      });
+      return;
+    }
+
     resetOperatorPin(id, pcPinNuevo).then(ok => {
       if (!ok) { setPcError("Operador inválido"); aliasSelectRef.current?.focus(); return; }
+      // Registrar éxito en auditoría
+      void auditoriaService.registrar({
+        rubro:         "SISTEMA",
+        dominio:       "IDENTIDAD",
+        tipoOperacion: "CAMBIO_PIN_OPERADOR",
+        operadorId:    id,
+        operadorAlias: operadorAlias,
+        ejecutadoPor:  ejecutadoPor,
+        detalle:       { motivo: pcMotivo },
+        resultado:     "EXITOSO",
+      });
       setPcSuccess(true);
     }).catch(() => setPcError("Error al actualizar PIN."));
   }
@@ -265,7 +303,7 @@ export function LoginScreen() {
           const id = selectedIdRef.current; const p = pinStateRef.current;
           if (!id || p.length < 4) return;
           loginRef.current(id, p).then(ok => {
-            if (!ok) { setError("PIN incorrecto. Intente nuevamente."); setPin(""); }
+            if (!ok) { setError("PIN incorrecto"); setPin(""); }
           }).catch(() => { setError("Error al verificar PIN."); setPin(""); });
         }
       }
@@ -291,7 +329,7 @@ export function LoginScreen() {
         <div className="[flex-grow:5]" />
         <div className="mb-5 text-right">
           <h2 className="text-[18px] font-black uppercase tracking-[0.16em] text-[#1a2d4e] leading-none mb-1.5 whitespace-nowrap">Acceso Operativo</h2>
-          <p className="text-[11px] text-[#6b7a99] leading-snug">Ingrese su usuario y PIN<br />para acceder al sistema.</p>
+          <p className="text-[11px] text-[#6b7a99] leading-snug">Ingrese su alias y PIN para continuar.</p>
         </div>
         <div className="[flex-grow:2]" />
         <div className="mb-5 flex items-center justify-end gap-3">
@@ -317,7 +355,7 @@ export function LoginScreen() {
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#c8d3e0]" />
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#6b7a99]">Sin turno activo</p>
               </div>
-              <p className="text-[11px] text-[#a0aec0] pl-4 leading-snug">Abrir caja en Gestión Turno</p>
+              <p className="text-[11px] text-[#a0aec0] pl-4 leading-snug">Se requiere apertura de turno al ingresar</p>
             </div>
           )}
         </div>
@@ -348,8 +386,8 @@ export function LoginScreen() {
             {view === "acceso-tecnico" && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <Settings size={12} className="text-[#4a5265] shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#4a5265]">Acceso Técnico</span>
+                  <Settings size={12} className="text-[#6b7a99] shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7a99]">Acceso Técnico</span>
                 </div>
 
                 <div className="mb-3">
@@ -358,7 +396,7 @@ export function LoginScreen() {
                       ref={sistemaSelectRef}
                       value={selectedSistemaId}
                       onChange={e => { setSelectedSistemaId(e.target.value); setErrorSistema(null); }}
-                      className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#4a5265] focus:ring-2 focus:ring-[#4a5265]/10 transition cursor-pointer"
+                      className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
                     >
                       <option value="" disabled hidden>Seleccione usuario técnico</option>
                       {operadoresSistema.map(op => (
@@ -386,8 +424,8 @@ export function LoginScreen() {
                         if (e.key === "Enter")  { e.preventDefault(); void attemptLoginSistema(); }
                         if (e.key === "Escape") { e.preventDefault(); switchToKeypad(); }
                       }}
-                      placeholder="Contraseña de acceso técnico"
-                      className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[15px] font-bold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#4a5265] focus:ring-2 focus:ring-[#4a5265]/10 transition"
+                      placeholder="Contraseña"
+                      className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] pl-10 pr-4 py-2.5 text-[15px] font-bold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:tracking-normal placeholder:font-normal placeholder:text-[11px] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition"
                     />
                   </div>
                   {errorSistema && (
@@ -400,7 +438,7 @@ export function LoginScreen() {
                   disabled={!selectedSistemaId || pinSistema.length < 1}
                   className={`w-full h-10 rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] ${
                     selectedSistemaId && pinSistema.length >= 1
-                      ? "bg-[#4a5265] text-white hover:bg-[#3a4255] shadow-[0_2px_12px_rgba(74,82,101,0.35)]"
+                      ? "bg-[#45b356] text-white hover:bg-[#3ca34a] shadow-[0_4px_20px_rgba(69,179,86,0.45)]"
                       : "bg-[#f5f8fc] border border-[#e4edf6] text-[#b8c4d4] cursor-not-allowed"
                   }`}>
                   <LogIn size={14} strokeWidth={2.5} />Entrar
@@ -427,10 +465,10 @@ export function LoginScreen() {
                       }}
                       className="w-full appearance-none rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] outline-none focus:border-[#45b356] focus:ring-2 focus:ring-[#45b356]/10 transition cursor-pointer"
                     >
-                      <option value="" disabled hidden>Seleccione OPERADOR</option>
+                      <option value="" disabled hidden>Seleccione operador</option>
                       {activeOps.map(op => (
                         <option key={op.id} value={op.id}>
-                          {`${op.codigoOperador} - ${op.codigoRol} - ${op.alias}`}
+                          {op.alias}
                         </option>
                       ))}
                     </select>
@@ -442,7 +480,7 @@ export function LoginScreen() {
                   </div>
                   {activeOps.length === 0 && (
                     <p className="mt-1.5 text-[10px] font-semibold text-amber-600">
-                      Sin operadores activos — configure operadores en GESTIÓN TURNO
+                      No hay operadores activos. Contacte al administrador.
                     </p>
                   )}
                 </div>
@@ -481,7 +519,7 @@ export function LoginScreen() {
 
                     <p className="mb-5 text-[9px] text-[#4b5563] text-right leading-snug">
                       ¿Olvidó su PIN?{" "}
-                      <button type="button" onClick={switchToPinChange} className="font-bold underline text-[#2154d8] hover:text-[#1a44b8] transition">Para regenerarlo CLIC AQUÍ</button>
+                      <button type="button" onClick={switchToPinChange} className="font-bold underline text-[#2154d8] hover:text-[#1a44b8] transition">Cambiar PIN</button>
                     </p>
 
                     <div className="grid grid-cols-3 gap-1.5 mb-1 w-full">
@@ -525,8 +563,8 @@ export function LoginScreen() {
                     ) : (
                       <>
                         <div className="flex items-center gap-2 mb-3">
-                          <Lock size={12} className="text-[var(--dv-color-edit)] shrink-0" />
-                          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--dv-color-edit)]">Cambio de PIN</span>
+                          <Lock size={12} className="text-[#6b7a99] shrink-0" />
+                          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6b7a99]">Cambio de PIN</span>
                         </div>
 
                         <div className="mb-2">
@@ -554,11 +592,11 @@ export function LoginScreen() {
                           <label className="block text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#a0aec0] mb-2">Código de Autorización</label>
                           <input
                             ref={pcAuthCodeRef}
-                            type="text" inputMode="text" autoComplete="off"
+                            type="password" inputMode="numeric" autoComplete="off" maxLength={6}
                             value={pcAuthCode}
                             onChange={e => { setPcAuthCode(e.target.value); setPcError(null); }}
                             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); pcPinNuevoRef.current?.focus(); } }}
-                            placeholder="Letras y números"
+                            placeholder="6 dígitos"
                             className="w-full rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-4 py-2.5 text-[13px] font-semibold text-[#1a2d4e] placeholder:text-[#cdd5e0] placeholder:font-normal outline-none focus:border-[var(--dv-color-edit)] focus:ring-2 focus:ring-[var(--dv-color-edit)]/10 transition"
                           />
                         </div>
@@ -604,13 +642,13 @@ export function LoginScreen() {
                           <button
                             onClick={handlePinChange}
                             disabled={!pcCanSave}
-                            className={`w-full h-12 rounded-xl flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
+                            className={`w-full h-10 rounded-xl flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] transition active:scale-95 ${
                               pcCanSave
                                 ? "bg-[#45b356] border border-[#3ca34a] text-white hover:bg-[#3ca34a] shadow-[0_2px_14px_rgba(69,179,86,0.35)]"
-                                : "bg-[#45b356]/[0.15] border border-[#45b356]/20 text-[#45b356]/50 cursor-not-allowed"
+                                : "bg-[#f5f8fc] border border-[#e4edf6] text-[#b8c4d4] cursor-not-allowed"
                             }`}>
                             <Check size={14} strokeWidth={2.5} />
-                            Guardar
+                            Confirmar cambio
                           </button>
                         </div>
                       </>
@@ -627,15 +665,16 @@ export function LoginScreen() {
             {view === "keypad" ? (
               <button
                 onClick={() => void invoke("app_exit")}
-                className="flex items-center gap-1.5 rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[#b8c4d4] hover:border-red-200 hover:bg-red-50 hover:text-[#dc2626] transition active:scale-95">
+                className="flex items-center gap-1.5 rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[#b8c4d4] hover:border-[#e8b98a] hover:bg-[#fdf0e6] hover:text-[#b85c10] transition active:scale-95">
                 <X size={12} strokeWidth={2.5} />
-                Cancelar
+                Salir
               </button>
             ) : (
               <button
                 onClick={switchToKeypad}
-                className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-[#2154d8] hover:text-[#1a44b8] transition">
-                <span className="text-[12px] leading-none">&#8592;</span> Volver al LOGIN
+                className="flex items-center gap-1.5 rounded-xl border border-[#e0e8f2] bg-[#f8fafc] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-[#b8c4d4] hover:border-[#e8b98a] hover:bg-[#fdf0e6] hover:text-[#b85c10] transition active:scale-95">
+                <span className="text-[13px] leading-none">←</span>
+                Volver
               </button>
             )}
             {view === "keypad" && (

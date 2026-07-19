@@ -180,7 +180,11 @@ pub fn run() {
       commands::bloques::actualizar_auxiliares_bloque,
       commands::bloques::activar_bloque_operacional,
       commands::bloques::desactivar_bloque_operacional,
-      commands::operadores::verificar_pin_sistema])
+      commands::operadores::verificar_pin_sistema,
+      commands::operadores::configurar_pin_autorizacion,
+      commands::operadores::obtener_pin_autorizacion_meta,
+      commands::operadores::verificar_pin_autorizacion,
+      commands::operadores::registrar_auditoria_operacion])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
