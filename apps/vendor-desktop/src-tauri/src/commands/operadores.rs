@@ -391,14 +391,29 @@ pub async fn actualizar_capacidades_rol(
 
 #[tauri::command]
 pub async fn configurar_pin_autorizacion(
-    db: tauri::State<'_, sqlx::SqlitePool>,
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     hash: String,
     configurado_por: String,
 ) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
     let ahora = sqlx::query_scalar::<_, String>(
         "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
     )
-    .fetch_one(db.inner())
+    .fetch_one(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "INSERT OR IGNORE INTO config_establecimiento (id, rubro_activo, margen_defecto, creado_en)
+         SELECT lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))), 'FARMACIA', 0.30, strftime('%Y-%m-%dT%H:%M:%fZ','now')
+         WHERE NOT EXISTS (SELECT 1 FROM config_establecimiento)",
+    )
+    .execute(pool)
     .await
     .map_err(|e| e.to_string())?;
 
@@ -411,7 +426,7 @@ pub async fn configurar_pin_autorizacion(
     .bind(&hash)
     .bind(&ahora)
     .bind(&configurado_por)
-    .execute(db.inner())
+    .execute(pool)
     .await
     .map_err(|e| e.to_string())?;
 
@@ -420,13 +435,19 @@ pub async fn configurar_pin_autorizacion(
 
 #[tauri::command]
 pub async fn obtener_pin_autorizacion_meta(
-    db: tauri::State<'_, sqlx::SqlitePool>,
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Option<serde_json::Value>, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
     let row = sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
         "SELECT pin_autorizacion_hash, pin_autorizacion_configurado_en, pin_autorizacion_configurado_por
          FROM config_establecimiento LIMIT 1",
     )
-    .fetch_optional(db.inner())
+    .fetch_optional(pool)
     .await
     .map_err(|e| e.to_string())?;
 
@@ -444,13 +465,19 @@ pub async fn obtener_pin_autorizacion_meta(
 
 #[tauri::command]
 pub async fn verificar_pin_autorizacion(
-    db: tauri::State<'_, sqlx::SqlitePool>,
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     hash: String,
 ) -> Result<bool, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
     let row = sqlx::query_scalar::<_, Option<String>>(
         "SELECT pin_autorizacion_hash FROM config_establecimiento LIMIT 1",
     )
-    .fetch_optional(db.inner())
+    .fetch_optional(pool)
     .await
     .map_err(|e| e.to_string())?
     .flatten();
@@ -463,7 +490,7 @@ pub async fn verificar_pin_autorizacion(
 
 #[tauri::command]
 pub async fn registrar_auditoria_operacion(
-    db: tauri::State<'_, sqlx::SqlitePool>,
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
     rubro: String,
     dominio: String,
     tipo_operacion: String,
@@ -473,10 +500,16 @@ pub async fn registrar_auditoria_operacion(
     detalle: Option<String>,
     resultado: String,
 ) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
     let ahora = sqlx::query_scalar::<_, String>(
         "SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')",
     )
-    .fetch_one(db.inner())
+    .fetch_one(pool)
     .await
     .map_err(|e| e.to_string())?;
 
@@ -498,7 +531,7 @@ pub async fn registrar_auditoria_operacion(
     .bind(&detalle)
     .bind(&resultado)
     .bind(&ahora)
-    .execute(db.inner())
+    .execute(pool)
     .await
     .map_err(|e| e.to_string())?;
 
