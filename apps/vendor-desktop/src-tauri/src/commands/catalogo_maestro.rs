@@ -8,7 +8,9 @@ pub async fn buscar_en_catalogo_maestro(
     termino: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let patron = format!("%{}%", termino);
 
@@ -50,7 +52,9 @@ pub async fn obtener_detalle_catalogo_maestro(
     cod_prod: i64,
 ) -> Result<Option<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     let resultado = sqlx::query(

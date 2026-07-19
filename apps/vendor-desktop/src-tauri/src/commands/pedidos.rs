@@ -38,7 +38,9 @@ pub async fn crear_pedido_proveedor(
     lineas: Vec<LineaPedidoInput>,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let ts = obtener_timestamp(pool).await?;
@@ -88,7 +90,9 @@ pub async fn obtener_pedidos_proveedor(
     estado: Option<String>,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     let rows = match &estado {
@@ -131,16 +135,17 @@ pub async fn obtener_lineas_pedido(
     pedido_id: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    let rows = sqlx::query(
-        "SELECT * FROM linea_pedido_proveedor WHERE pedido_id = ? ORDER BY creado_en",
-    )
-    .bind(&pedido_id)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    let rows =
+        sqlx::query("SELECT * FROM linea_pedido_proveedor WHERE pedido_id = ? ORDER BY creado_en")
+            .bind(&pedido_id)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     rows.into_iter()
         .map(|row| {
@@ -166,21 +171,24 @@ pub async fn confirmar_pedido_proveedor(
     id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    let estado = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT estado FROM pedido_proveedor WHERE id = ?",
-    )
-    .bind(&id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| e.to_string())?
-    .flatten()
-    .ok_or_else(|| String::from("Pedido no encontrado"))?;
+    let estado =
+        sqlx::query_scalar::<_, Option<String>>("SELECT estado FROM pedido_proveedor WHERE id = ?")
+            .bind(&id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?
+            .flatten()
+            .ok_or_else(|| String::from("Pedido no encontrado"))?;
 
     if estado != "BORRADOR" {
-        return Err(String::from("Solo se puede confirmar un pedido en estado BORRADOR"));
+        return Err(String::from(
+            "Solo se puede confirmar un pedido en estado BORRADOR",
+        ));
     }
 
     let ts = obtener_timestamp(pool).await?;
@@ -202,21 +210,24 @@ pub async fn marcar_en_transito(
     id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    let estado = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT estado FROM pedido_proveedor WHERE id = ?",
-    )
-    .bind(&id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| e.to_string())?
-    .flatten()
-    .ok_or_else(|| String::from("Pedido no encontrado"))?;
+    let estado =
+        sqlx::query_scalar::<_, Option<String>>("SELECT estado FROM pedido_proveedor WHERE id = ?")
+            .bind(&id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?
+            .flatten()
+            .ok_or_else(|| String::from("Pedido no encontrado"))?;
 
     if estado != "CONFIRMADO" {
-        return Err(String::from("Solo se puede marcar en tránsito un pedido CONFIRMADO"));
+        return Err(String::from(
+            "Solo se puede marcar en tránsito un pedido CONFIRMADO",
+        ));
     }
 
     let ts = obtener_timestamp(pool).await?;
@@ -238,32 +249,33 @@ pub async fn cancelar_pedido_proveedor(
     id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    let estado = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT estado FROM pedido_proveedor WHERE id = ?",
-    )
-    .bind(&id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| e.to_string())?
-    .flatten()
-    .ok_or_else(|| String::from("Pedido no encontrado"))?;
+    let estado =
+        sqlx::query_scalar::<_, Option<String>>("SELECT estado FROM pedido_proveedor WHERE id = ?")
+            .bind(&id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?
+            .flatten()
+            .ok_or_else(|| String::from("Pedido no encontrado"))?;
 
     if estado == "RECIBIDO" || estado == "CANCELADO" {
-        return Err(String::from("No se puede cancelar un pedido ya recibido o cancelado"));
+        return Err(String::from(
+            "No se puede cancelar un pedido ya recibido o cancelado",
+        ));
     }
 
     let ts = obtener_timestamp(pool).await?;
-    sqlx::query(
-        "UPDATE pedido_proveedor SET estado = 'CANCELADO', modificado_en = ? WHERE id = ?",
-    )
-    .bind(&ts)
-    .bind(&id)
-    .execute(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    sqlx::query("UPDATE pedido_proveedor SET estado = 'CANCELADO', modificado_en = ? WHERE id = ?")
+        .bind(&ts)
+        .bind(&id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -275,18 +287,19 @@ pub async fn recibir_lineas_pedido(
     recepciones: Vec<RecepcionLineaInput>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    let estado = sqlx::query_scalar::<_, Option<String>>(
-        "SELECT estado FROM pedido_proveedor WHERE id = ?",
-    )
-    .bind(&pedido_id)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| e.to_string())?
-    .flatten()
-    .ok_or_else(|| String::from("Pedido no encontrado"))?;
+    let estado =
+        sqlx::query_scalar::<_, Option<String>>("SELECT estado FROM pedido_proveedor WHERE id = ?")
+            .bind(&pedido_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?
+            .flatten()
+            .ok_or_else(|| String::from("Pedido no encontrado"))?;
 
     if estado == "RECIBIDO" {
         return Err(String::from("El pedido ya fue recibido completamente"));
@@ -331,15 +344,13 @@ pub async fn recibir_lineas_pedido(
     };
 
     if let Some(nuevo) = nuevo_estado {
-        sqlx::query(
-            "UPDATE pedido_proveedor SET estado = ?, modificado_en = ? WHERE id = ?",
-        )
-        .bind(nuevo)
-        .bind(&ts)
-        .bind(&pedido_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+        sqlx::query("UPDATE pedido_proveedor SET estado = ?, modificado_en = ? WHERE id = ?")
+            .bind(nuevo)
+            .bind(&ts)
+            .bind(&pedido_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     tx.commit().await.map_err(|e| e.to_string())?;
@@ -351,7 +362,9 @@ pub async fn obtener_pedidos_activos_por_presentacion(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     let rows = sqlx::query(
@@ -383,7 +396,9 @@ pub async fn vincular_ingreso_a_pedido(
     }
 
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     // Buscar líneas con cantidad pendiente en pedidos activos,
@@ -411,12 +426,16 @@ pub async fn vincular_ingreso_a_pedido(
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     for row in &rows {
-        if restante <= 0.0 { break; }
+        if restante <= 0.0 {
+            break;
+        }
 
         let linea_id: String = row.try_get("linea_id").map_err(|e| e.to_string())?;
         let pedido_id: String = row.try_get("pedido_id").map_err(|e| e.to_string())?;
         let cantidad_pedida: f64 = row.try_get("cantidad_pedida").map_err(|e| e.to_string())?;
-        let cantidad_ya_recibida: f64 = row.try_get("cantidad_recibida").map_err(|e| e.to_string())?;
+        let cantidad_ya_recibida: f64 = row
+            .try_get("cantidad_recibida")
+            .map_err(|e| e.to_string())?;
 
         let pendiente = cantidad_pedida - cantidad_ya_recibida;
         let a_recibir = restante.min(pendiente);
@@ -447,15 +466,13 @@ pub async fn vincular_ingreso_a_pedido(
             "RECIBIDO_PARCIAL"
         };
 
-        sqlx::query(
-            "UPDATE pedido_proveedor SET estado = ?, modificado_en = ? WHERE id = ?",
-        )
-        .bind(nuevo_estado)
-        .bind(&ts)
-        .bind(&pedido_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+        sqlx::query("UPDATE pedido_proveedor SET estado = ?, modificado_en = ? WHERE id = ?")
+            .bind(nuevo_estado)
+            .bind(&ts)
+            .bind(&pedido_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
         restante -= a_recibir;
     }
@@ -463,4 +480,3 @@ pub async fn vincular_ingreso_a_pedido(
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(())
 }
-

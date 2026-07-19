@@ -11,28 +11,34 @@ async fn obtener_timestamp(pool: &sqlx::SqlitePool) -> Result<String, String> {
 }
 
 fn bool_a_i64(value: bool) -> i64 {
-    if value { 1 } else { 0 }
+    if value {
+        1
+    } else {
+        0
+    }
 }
 
 async fn verificar_historial_presentacion_en_tx(
     tx: &mut sqlx::SqliteConnection,
     presentacion_id: &str,
 ) -> Result<bool, String> {
-    let count_lote = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM lote WHERE presentacion_id = ?")
-        .bind(presentacion_id)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+    let count_lote =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM lote WHERE presentacion_id = ?")
+            .bind(presentacion_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
     if count_lote > 0 {
         return Ok(true);
     }
 
-    let count_movimiento = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE item_id = ?")
-        .bind(presentacion_id)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+    let count_movimiento =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE item_id = ?")
+            .bind(presentacion_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
     Ok(count_movimiento > 0)
 }
@@ -41,11 +47,12 @@ async fn verificar_historial_nodo_en_tx(
     tx: &mut sqlx::SqliteConnection,
     nodo_id: &str,
 ) -> Result<bool, String> {
-    let count_movimiento = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE nodo_id = ?")
-        .bind(nodo_id)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| e.to_string())?;
+    let count_movimiento =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE nodo_id = ?")
+            .bind(nodo_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
     Ok(count_movimiento > 0)
 }
@@ -91,7 +98,9 @@ pub async fn crear_presentacion(
     costo_compra: Option<f64>,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = obtener_timestamp(pool).await?;
@@ -122,13 +131,17 @@ pub async fn obtener_presentaciones(
     producto_comercial_id: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let rows = sqlx::query("SELECT * FROM presentacion_comercial WHERE producto_comercial_id = ? ORDER BY creado_en")
-        .bind(producto_comercial_id)
-        .fetch_all(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let rows = sqlx::query(
+        "SELECT * FROM presentacion_comercial WHERE producto_comercial_id = ? ORDER BY creado_en",
+    )
+    .bind(producto_comercial_id)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     rows.into_iter()
         .map(|row| {
@@ -163,7 +176,9 @@ pub async fn crear_nodo(
     descripcion_promo: Option<String>,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = obtener_timestamp(pool).await?;
@@ -196,7 +211,9 @@ pub async fn obtener_nodos_fraccionamiento(
     presentacion_id: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query("SELECT * FROM nodo_fraccionamiento WHERE presentacion_id = ? AND estado = 'ACTIVO' ORDER BY unidades_base DESC")
         .bind(presentacion_id)
@@ -231,7 +248,9 @@ pub async fn modificar_stock_minimo(
     stock_minimo: f64,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     sqlx::query("UPDATE presentacion_comercial SET stock_minimo = ? WHERE id = ?")
@@ -250,24 +269,28 @@ pub async fn verificar_historial_presentacion(
     presentacion_id: String,
 ) -> Result<bool, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    let count_lote = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM lote WHERE presentacion_id = ?")
-        .bind(&presentacion_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let count_lote =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM lote WHERE presentacion_id = ?")
+            .bind(&presentacion_id)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     if count_lote > 0 {
         return Ok(true);
     }
 
-    let count_movimiento = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE item_id = ?")
-        .bind(presentacion_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let count_movimiento =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE item_id = ?")
+            .bind(presentacion_id)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     Ok(count_movimiento > 0)
 }
@@ -278,14 +301,17 @@ pub async fn verificar_historial_nodo(
     nodo_id: String,
 ) -> Result<bool, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
-    let count_movimiento = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE nodo_id = ?")
-        .bind(nodo_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let count_movimiento =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM movimiento WHERE nodo_id = ?")
+            .bind(nodo_id)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     Ok(count_movimiento > 0)
 }
@@ -304,7 +330,9 @@ pub async fn modificar_presentacion(
     operador_id: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -314,12 +342,24 @@ pub async fn modificar_presentacion(
         .await
         .map_err(|e| e.to_string())?;
 
-    let descripcion_actual = row.try_get::<String, _>("descripcion").map_err(|e| e.to_string())?;
-    let codigo_barras_actual = row.try_get::<Option<String>, _>("codigo_barras").unwrap_or(None);
-    let costo_compra_actual = row.try_get::<Option<f64>, _>("costo_compra").unwrap_or(None);
-    let fraccion_digemid_actual = row.try_get::<f64, _>("fraccion_digemid").map_err(|e| e.to_string())?;
-    let unidad_conteo_actual = row.try_get::<String, _>("unidad_conteo").map_err(|e| e.to_string())?;
-    let factor_conversion_base_actual = row.try_get::<f64, _>("factor_conversion_base").map_err(|e| e.to_string())?;
+    let descripcion_actual = row
+        .try_get::<String, _>("descripcion")
+        .map_err(|e| e.to_string())?;
+    let codigo_barras_actual = row
+        .try_get::<Option<String>, _>("codigo_barras")
+        .unwrap_or(None);
+    let costo_compra_actual = row
+        .try_get::<Option<f64>, _>("costo_compra")
+        .unwrap_or(None);
+    let fraccion_digemid_actual = row
+        .try_get::<f64, _>("fraccion_digemid")
+        .map_err(|e| e.to_string())?;
+    let unidad_conteo_actual = row
+        .try_get::<String, _>("unidad_conteo")
+        .map_err(|e| e.to_string())?;
+    let factor_conversion_base_actual = row
+        .try_get::<f64, _>("factor_conversion_base")
+        .map_err(|e| e.to_string())?;
     let tiene_historial = verificar_historial_presentacion_en_tx(&mut *tx, &id).await?;
 
     if tiene_historial {
@@ -342,7 +382,8 @@ pub async fn modificar_presentacion(
 
     let fraccion_digemid_nueva = fraccion_digemid.unwrap_or(fraccion_digemid_actual);
     let unidad_conteo_nueva = unidad_conteo.unwrap_or_else(|| unidad_conteo_actual.clone());
-    let factor_conversion_base_nuevo = factor_conversion_base.unwrap_or(factor_conversion_base_actual);
+    let factor_conversion_base_nuevo =
+        factor_conversion_base.unwrap_or(factor_conversion_base_actual);
     let hay_cambios = descripcion_actual != descripcion
         || codigo_barras_actual != codigo_barras
         || costo_compra_actual != costo_compra
@@ -362,22 +403,92 @@ pub async fn modificar_presentacion(
         .map_err(|e| e.to_string())?;
 
     if descripcion_actual != descripcion {
-        registrar_correccion(&mut *tx, "presentacion_comercial", &id, "descripcion", descripcion_actual, descripcion.clone(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "presentacion_comercial",
+            &id,
+            "descripcion",
+            descripcion_actual,
+            descripcion.clone(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if codigo_barras_actual != codigo_barras {
-        registrar_correccion(&mut *tx, "presentacion_comercial", &id, "codigo_barras", codigo_barras_actual.unwrap_or_default(), codigo_barras.clone().unwrap_or_default(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "presentacion_comercial",
+            &id,
+            "codigo_barras",
+            codigo_barras_actual.unwrap_or_default(),
+            codigo_barras.clone().unwrap_or_default(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if costo_compra_actual != costo_compra {
-        registrar_correccion(&mut *tx, "presentacion_comercial", &id, "costo_compra", costo_compra_actual.map(|value| value.to_string()).unwrap_or_default(), costo_compra.map(|value| value.to_string()).unwrap_or_default(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "presentacion_comercial",
+            &id,
+            "costo_compra",
+            costo_compra_actual
+                .map(|value| value.to_string())
+                .unwrap_or_default(),
+            costo_compra
+                .map(|value| value.to_string())
+                .unwrap_or_default(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if fraccion_digemid_actual != fraccion_digemid_nueva {
-        registrar_correccion(&mut *tx, "presentacion_comercial", &id, "fraccion_digemid", fraccion_digemid_actual.to_string(), fraccion_digemid_nueva.to_string(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "presentacion_comercial",
+            &id,
+            "fraccion_digemid",
+            fraccion_digemid_actual.to_string(),
+            fraccion_digemid_nueva.to_string(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if unidad_conteo_actual != unidad_conteo_nueva {
-        registrar_correccion(&mut *tx, "presentacion_comercial", &id, "unidad_conteo", unidad_conteo_actual, unidad_conteo_nueva.clone(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "presentacion_comercial",
+            &id,
+            "unidad_conteo",
+            unidad_conteo_actual,
+            unidad_conteo_nueva.clone(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if factor_conversion_base_actual != factor_conversion_base_nuevo {
-        registrar_correccion(&mut *tx, "presentacion_comercial", &id, "factor_conversion_base", factor_conversion_base_actual.to_string(), factor_conversion_base_nuevo.to_string(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "presentacion_comercial",
+            &id,
+            "factor_conversion_base",
+            factor_conversion_base_actual.to_string(),
+            factor_conversion_base_nuevo.to_string(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
 
     sqlx::query("UPDATE presentacion_comercial SET descripcion = ?, codigo_barras = ?, costo_compra = ?, fraccion_digemid = ?, unidad_conteo = ?, factor_conversion_base = ? WHERE id = ?")
@@ -410,7 +521,9 @@ pub async fn modificar_nodo(
     operador_id: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -420,11 +533,21 @@ pub async fn modificar_nodo(
         .await
         .map_err(|e| e.to_string())?;
 
-    let nombre_forma_venta_actual = row.try_get::<String, _>("nombre_forma_venta").map_err(|e| e.to_string())?;
-    let descripcion_promo_actual = row.try_get::<Option<String>, _>("descripcion_promo").unwrap_or(None);
-    let es_vendible_actual = row.try_get::<i64, _>("es_vendible").map_err(|e| e.to_string())?;
-    let tipo_forma_venta_actual = row.try_get::<String, _>("tipo_forma_venta").map_err(|e| e.to_string())?;
-    let unidades_base_actual = row.try_get::<f64, _>("unidades_base").map_err(|e| e.to_string())?;
+    let nombre_forma_venta_actual = row
+        .try_get::<String, _>("nombre_forma_venta")
+        .map_err(|e| e.to_string())?;
+    let descripcion_promo_actual = row
+        .try_get::<Option<String>, _>("descripcion_promo")
+        .unwrap_or(None);
+    let es_vendible_actual = row
+        .try_get::<i64, _>("es_vendible")
+        .map_err(|e| e.to_string())?;
+    let tipo_forma_venta_actual = row
+        .try_get::<String, _>("tipo_forma_venta")
+        .map_err(|e| e.to_string())?;
+    let unidades_base_actual = row
+        .try_get::<f64, _>("unidades_base")
+        .map_err(|e| e.to_string())?;
     let tiene_historial = verificar_historial_nodo_en_tx(&mut *tx, &id).await?;
 
     if tiene_historial {
@@ -441,7 +564,8 @@ pub async fn modificar_nodo(
     }
 
     let es_vendible_nuevo = bool_a_i64(es_vendible);
-    let tipo_forma_venta_nuevo = tipo_forma_venta.unwrap_or_else(|| tipo_forma_venta_actual.clone());
+    let tipo_forma_venta_nuevo =
+        tipo_forma_venta.unwrap_or_else(|| tipo_forma_venta_actual.clone());
     let unidades_base_nuevo = unidades_base.unwrap_or(unidades_base_actual);
     let hay_cambios = nombre_forma_venta_actual != nombre_forma_venta
         || descripcion_promo_actual != descripcion_promo
@@ -461,19 +585,74 @@ pub async fn modificar_nodo(
         .map_err(|e| e.to_string())?;
 
     if nombre_forma_venta_actual != nombre_forma_venta {
-        registrar_correccion(&mut *tx, "nodo_fraccionamiento", &id, "nombre_forma_venta", nombre_forma_venta_actual, nombre_forma_venta.clone(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "nodo_fraccionamiento",
+            &id,
+            "nombre_forma_venta",
+            nombre_forma_venta_actual,
+            nombre_forma_venta.clone(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if descripcion_promo_actual != descripcion_promo {
-        registrar_correccion(&mut *tx, "nodo_fraccionamiento", &id, "descripcion_promo", descripcion_promo_actual.unwrap_or_default(), descripcion_promo.clone().unwrap_or_default(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "nodo_fraccionamiento",
+            &id,
+            "descripcion_promo",
+            descripcion_promo_actual.unwrap_or_default(),
+            descripcion_promo.clone().unwrap_or_default(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if es_vendible_actual != es_vendible_nuevo {
-        registrar_correccion(&mut *tx, "nodo_fraccionamiento", &id, "es_vendible", es_vendible_actual.to_string(), es_vendible_nuevo.to_string(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "nodo_fraccionamiento",
+            &id,
+            "es_vendible",
+            es_vendible_actual.to_string(),
+            es_vendible_nuevo.to_string(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if tipo_forma_venta_actual != tipo_forma_venta_nuevo {
-        registrar_correccion(&mut *tx, "nodo_fraccionamiento", &id, "tipo_forma_venta", tipo_forma_venta_actual, tipo_forma_venta_nuevo.clone(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "nodo_fraccionamiento",
+            &id,
+            "tipo_forma_venta",
+            tipo_forma_venta_actual,
+            tipo_forma_venta_nuevo.clone(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
     if unidades_base_actual != unidades_base_nuevo {
-        registrar_correccion(&mut *tx, "nodo_fraccionamiento", &id, "unidades_base", unidades_base_actual.to_string(), unidades_base_nuevo.to_string(), &motivo_auditoria, &operador_auditoria, &creado_en).await?;
+        registrar_correccion(
+            &mut *tx,
+            "nodo_fraccionamiento",
+            &id,
+            "unidades_base",
+            unidades_base_actual.to_string(),
+            unidades_base_nuevo.to_string(),
+            &motivo_auditoria,
+            &operador_auditoria,
+            &creado_en,
+        )
+        .await?;
     }
 
     sqlx::query("UPDATE nodo_fraccionamiento SET nombre_forma_venta = ?, descripcion_promo = ?, es_vendible = ?, tipo_forma_venta = ?, unidades_base = ? WHERE id = ?")

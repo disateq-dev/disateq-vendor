@@ -22,7 +22,9 @@ pub async fn registrar_lote(
     precio_compra: Option<f64>,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = obtener_timestamp(pool).await?;
@@ -55,7 +57,9 @@ pub async fn resolver_lote_fefo(
     unidades_requeridas: f64,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT id, numero_lote, fecha_vencimiento, cantidad_disponible FROM lote WHERE presentacion_id = ? AND estado IN ('VIGENTE', 'POR_VENCER') AND cantidad_disponible > 0 ORDER BY fecha_vencimiento ASC",
@@ -73,7 +77,9 @@ pub async fn resolver_lote_fefo(
         if restante <= 0.0 {
             break;
         }
-        let cantidad_disponible = row.try_get::<f64, _>("cantidad_disponible").map_err(|e| e.to_string())?;
+        let cantidad_disponible = row
+            .try_get::<f64, _>("cantidad_disponible")
+            .map_err(|e| e.to_string())?;
         let unidades_asignadas = cantidad_disponible.min(restante);
         restante -= unidades_asignadas;
         asignado += unidades_asignadas;
@@ -101,7 +107,9 @@ pub async fn obtener_lotes_vigentes(
     presentacion_id: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query("SELECT * FROM lote WHERE presentacion_id = ? AND estado IN ('VIGENTE', 'POR_VENCER') ORDER BY fecha_vencimiento ASC")
         .bind(presentacion_id)
@@ -133,7 +141,9 @@ pub async fn obtener_inventario_farmacia(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT pc.id AS producto_id, pc.nombre_comercial, pc.requiere_lote,

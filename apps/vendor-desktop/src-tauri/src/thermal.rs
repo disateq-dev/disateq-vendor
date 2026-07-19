@@ -2,9 +2,15 @@ use serde::Deserialize;
 
 // ── monetary helpers ────────────────────────────────────────────
 // Mirror of src/lib/money.ts — cent-based comparisons for f64 values
-fn cents(n: f64) -> i64 { (n * 100.0).round() as i64 }
-fn money_pos(n: f64) -> bool { cents(n) > 0 }
-fn money_zero(n: f64) -> bool { cents(n) == 0 }
+fn cents(n: f64) -> i64 {
+    (n * 100.0).round() as i64
+}
+fn money_pos(n: f64) -> bool {
+    cents(n) > 0
+}
+fn money_zero(n: f64) -> bool {
+    cents(n) == 0
+}
 // ───────────────────────────────────────────────────────────────
 
 const COLS: usize = 48;
@@ -12,16 +18,16 @@ const MONEY_NUM_WIDTH: usize = 8;
 
 // ESC/POS constants
 const ESC: u8 = 0x1B;
-const GS:  u8 = 0x1D;
+const GS: u8 = 0x1D;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PrintLine {
     pub description: String,
-    pub quantity:    u32,
-    pub unit_price:  f64,
-    pub subtotal:    f64,
-    pub note:        Option<String>,
+    pub quantity: u32,
+    pub unit_price: f64,
+    pub subtotal: f64,
+    pub note: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -29,7 +35,7 @@ pub struct PrintLine {
 pub struct PrintCustomer {
     pub tipo_documento: Option<String>,
     pub doc_number: String,
-    pub name:       String,
+    pub name: String,
 }
 
 #[derive(Deserialize)]
@@ -43,79 +49,91 @@ pub struct MixtoBreakdown {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TicketPrintData {
-    pub business_name:    String,
-    pub business_ruc:     String,
-    pub business_addr:    String,
-    pub business_phone:   Option<String>,
-    pub doc_type:         String,
-    pub doc_series:       String,
-    pub doc_correlative:  u32,
-    pub date_time:        String,
-    pub customer:         Option<PrintCustomer>,
+    pub business_name: String,
+    pub business_ruc: String,
+    pub business_addr: String,
+    pub business_phone: Option<String>,
+    pub doc_type: String,
+    pub doc_series: String,
+    pub doc_correlative: u32,
+    pub date_time: String,
+    pub customer: Option<PrintCustomer>,
     pub customer_address: Option<String>,
-    pub lines:            Vec<PrintLine>,
-    pub base_imponible:   f64,
-    pub igv:              f64,
-    pub discount_num:     f64,
-    pub total:            f64,
-    pub net_total:        f64,
-    pub pay_method:       String,
-    pub received_num:     f64,
-    pub change:           f64,
-    pub mixto_breakdown:  Option<MixtoBreakdown>,
+    pub lines: Vec<PrintLine>,
+    pub base_imponible: f64,
+    pub igv: f64,
+    pub discount_num: f64,
+    pub total: f64,
+    pub net_total: f64,
+    pub pay_method: String,
+    pub received_num: f64,
+    pub change: f64,
+    pub mixto_breakdown: Option<MixtoBreakdown>,
 }
 
 fn to_cp850(s: &str) -> Vec<u8> {
-    s.chars().map(|c| match c {
-        '\u{00E1}' => 0xA0, // á
-        '\u{00E9}' => 0x82, // é
-        '\u{00ED}' => 0xA1, // í
-        '\u{00F3}' => 0xA2, // ó
-        '\u{00FA}' => 0xA3, // ú
-        '\u{00C1}' => 0xB5, // Á
-        '\u{00C9}' => 0x90, // É
-        '\u{00CD}' => 0xD6, // Í
-        '\u{00D3}' => 0xE0, // Ó
-        '\u{00DA}' => 0xE9, // Ú
-        '\u{00F1}' => 0xA4, // ñ
-        '\u{00D1}' => 0xA5, // Ñ
-        '\u{00FC}' => 0x81, // ü
-        '\u{00DC}' => 0x9A, // Ü
-        '\u{00E0}' => 0x85, // à
-        '\u{00E2}' => 0x83, // â
-        '\u{00E4}' => 0x84, // ä
-        '\u{00E8}' => 0x8A, // è
-        '\u{00EA}' => 0x88, // ê
-        '\u{00EB}' => 0x89, // ë
-        '\u{00EE}' => 0x8C, // î
-        '\u{00EF}' => 0x8B, // ï
-        '\u{00F2}' => 0x95, // ò
-        '\u{00F4}' => 0x93, // ô
-        '\u{00F6}' => 0x94, // ö
-        '\u{00F9}' => 0x97, // ù
-        '\u{00FB}' => 0x96, // û
-        '\u{00BF}' => 0xA8, // ¿
-        '\u{00A1}' => 0xAD, // ¡
-        '\u{00B0}' => 0xF8, // °
-        '\u{00B7}' => 0xFA, // ·
-        '\u{00AA}' => 0xA6, // ª
-        '\u{00BA}' => 0xA7, // º
-        c if c.is_ascii() => c as u8,
-        _ => b'?',
-    }).collect()
+    s.chars()
+        .map(|c| match c {
+            '\u{00E1}' => 0xA0, // á
+            '\u{00E9}' => 0x82, // é
+            '\u{00ED}' => 0xA1, // í
+            '\u{00F3}' => 0xA2, // ó
+            '\u{00FA}' => 0xA3, // ú
+            '\u{00C1}' => 0xB5, // Á
+            '\u{00C9}' => 0x90, // É
+            '\u{00CD}' => 0xD6, // Í
+            '\u{00D3}' => 0xE0, // Ó
+            '\u{00DA}' => 0xE9, // Ú
+            '\u{00F1}' => 0xA4, // ñ
+            '\u{00D1}' => 0xA5, // Ñ
+            '\u{00FC}' => 0x81, // ü
+            '\u{00DC}' => 0x9A, // Ü
+            '\u{00E0}' => 0x85, // à
+            '\u{00E2}' => 0x83, // â
+            '\u{00E4}' => 0x84, // ä
+            '\u{00E8}' => 0x8A, // è
+            '\u{00EA}' => 0x88, // ê
+            '\u{00EB}' => 0x89, // ë
+            '\u{00EE}' => 0x8C, // î
+            '\u{00EF}' => 0x8B, // ï
+            '\u{00F2}' => 0x95, // ò
+            '\u{00F4}' => 0x93, // ô
+            '\u{00F6}' => 0x94, // ö
+            '\u{00F9}' => 0x97, // ù
+            '\u{00FB}' => 0x96, // û
+            '\u{00BF}' => 0xA8, // ¿
+            '\u{00A1}' => 0xAD, // ¡
+            '\u{00B0}' => 0xF8, // °
+            '\u{00B7}' => 0xFA, // ·
+            '\u{00AA}' => 0xA6, // ª
+            '\u{00BA}' => 0xA7, // º
+            c if c.is_ascii() => c as u8,
+            _ => b'?',
+        })
+        .collect()
 }
 
 fn normalize(s: &str) -> String {
     // Compatibilidad — usado solo donde se necesita String
-    s.chars().map(|c| match c {
-        '\u{00BF}' | '\u{00A1}' => ' ',
-        _ => c,
-    }).collect()
+    s.chars()
+        .map(|c| match c {
+            '\u{00BF}' | '\u{00A1}' => ' ',
+            _ => c,
+        })
+        .collect()
 }
 
 fn customer_print_line(c: &PrintCustomer) -> String {
-    let doc_number = if c.doc_number.is_empty() { "99999999" } else { &c.doc_number };
-    let name = if c.name.is_empty() { "CLIENTES VARIOS".to_string() } else { c.name.to_uppercase() };
+    let doc_number = if c.doc_number.is_empty() {
+        "99999999"
+    } else {
+        &c.doc_number
+    };
+    let name = if c.name.is_empty() {
+        "CLIENTES VARIOS".to_string()
+    } else {
+        c.name.to_uppercase()
+    };
     format!("{} · {}", doc_number, name)
 }
 
@@ -169,7 +187,11 @@ fn money_label(n: f64) -> String {
 }
 
 fn money_signed_label(sign: &str, n: f64) -> String {
-    format!("S/{:>width$}", format!("{sign}{:.2}", n), width = MONEY_NUM_WIDTH)
+    format!(
+        "S/{:>width$}",
+        format!("{sign}{:.2}", n),
+        width = MONEY_NUM_WIDTH
+    )
 }
 
 fn diff_str(sistema: f64, operador: f64) -> String {
@@ -181,25 +203,43 @@ fn diff_str(sistema: f64, operador: f64) -> String {
 struct Buf(Vec<u8>);
 
 impl Buf {
-    fn new() -> Self { Buf(Vec::with_capacity(1024)) }
-
-    fn raw(&mut self, bytes: &[u8]) { self.0.extend_from_slice(bytes); }
-
-    fn init(&mut self) {
-        self.raw(&[ESC, b'@']);           // Reset
-        self.raw(&[ESC, b't', 2]);        // Activar CP850 (OEM Multilingual)
+    fn new() -> Self {
+        Buf(Vec::with_capacity(1024))
     }
 
-    fn bold_on(&mut self)  { self.raw(&[ESC, b'E', 1]); }
-    fn bold_off(&mut self) { self.raw(&[ESC, b'E', 0]); }
+    fn raw(&mut self, bytes: &[u8]) {
+        self.0.extend_from_slice(bytes);
+    }
 
-    fn align_center(&mut self) { self.raw(&[ESC, b'a', 1]); }
-    fn align_left(&mut self)   { self.raw(&[ESC, b'a', 0]); }
+    fn init(&mut self) {
+        self.raw(&[ESC, b'@']); // Reset
+        self.raw(&[ESC, b't', 2]); // Activar CP850 (OEM Multilingual)
+    }
 
-    fn dbl_h_on(&mut self)  { self.raw(&[ESC, b'!', 0x10]); }
-    fn dbl_h_off(&mut self) { self.raw(&[ESC, b'!', 0x00]); }
+    fn bold_on(&mut self) {
+        self.raw(&[ESC, b'E', 1]);
+    }
+    fn bold_off(&mut self) {
+        self.raw(&[ESC, b'E', 0]);
+    }
 
-    fn lf(&mut self) { self.raw(&[b'\n']); }
+    fn align_center(&mut self) {
+        self.raw(&[ESC, b'a', 1]);
+    }
+    fn align_left(&mut self) {
+        self.raw(&[ESC, b'a', 0]);
+    }
+
+    fn dbl_h_on(&mut self) {
+        self.raw(&[ESC, b'!', 0x10]);
+    }
+    fn dbl_h_off(&mut self) {
+        self.raw(&[ESC, b'!', 0x00]);
+    }
+
+    fn lf(&mut self) {
+        self.raw(&[b'\n']);
+    }
 
     fn text(&mut self, s: &str) {
         self.raw(&to_cp850(s));
@@ -224,7 +264,7 @@ impl Buf {
         let rlen = r.chars().count();
         let max_left = COLS.saturating_sub(rlen + 1);
         let ltrunc: String = l.chars().take(max_left).collect();
-        let llen  = ltrunc.chars().count();
+        let llen = ltrunc.chars().count();
         let spaces = COLS.saturating_sub(llen + rlen);
         let mut out = ltrunc;
         out.push_str(&" ".repeat(spaces));
@@ -280,8 +320,7 @@ impl Buf {
         let first = &chunks[0];
         let used = qty_str.len() + 1 + first.chars().count() + amt_width;
         let spaces = if used < COLS { COLS - used } else { 1 };
-        let row = format!("{qty_str} {first}{}{amt_padded}",
-            " ".repeat(spaces));
+        let row = format!("{qty_str} {first}{}{amt_padded}", " ".repeat(spaces));
         self.line(&row);
 
         // Líneas de continuación indentadas
@@ -299,21 +338,21 @@ impl Buf {
 
 fn doc_label(doc_type: &str) -> &str {
     match doc_type {
-        "nota"       => "NOTA DE VENTA",
-        "boleta"     => "BOLETA DE VENTA",
-        "factura"    => "FACTURA ELECTRONICA",
+        "nota" => "NOTA DE VENTA",
+        "boleta" => "BOLETA DE VENTA",
+        "factura" => "FACTURA ELECTRONICA",
         "cotizacion" => "COTIZACION",
-        _            => doc_type,
+        _ => doc_type,
     }
 }
 
 fn pay_label(method: &str) -> &str {
     match method {
         "efectivo" => "Efectivo",
-        "yape"     => "Yape",
-        "tarjeta"  => "Tarjeta",
-        "mixto"    => "Pago Mixto",
-        _          => method,
+        "yape" => "Yape",
+        "tarjeta" => "Tarjeta",
+        "mixto" => "Pago Mixto",
+        _ => method,
     }
 }
 
@@ -344,11 +383,7 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     b.line(doc_label(&d.doc_type));
     b.bold_off();
 
-    let doc_num = format!(
-        "{}-{:0>8}",
-        d.doc_series,
-        d.doc_correlative
-    );
+    let doc_num = format!("{}-{:0>8}", d.doc_series, d.doc_correlative);
     b.line(&doc_num);
     b.line(&normalize(&d.date_time));
 
@@ -358,7 +393,8 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     if let Some(ref c) = d.customer {
         b.dashes();
         line_prefixed_wrapped(&mut b, "CLI.: ", &customer_print_line(c));
-        let customer_address = d.customer_address
+        let customer_address = d
+            .customer_address
             .as_deref()
             .map(str::trim)
             .filter(|value| !value.is_empty())
@@ -409,10 +445,20 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
     } else if d.pay_method == "mixto" {
         let label = if let Some(ref mb) = d.mixto_breakdown {
             let mut parts: Vec<String> = Vec::new();
-            if money_pos(mb.efe) { parts.push(format!("E({:.2})", mb.efe)); }
-            if money_pos(mb.yap) { parts.push(format!("Y({:.2})", mb.yap)); }
-            if money_pos(mb.tar) { parts.push(format!("T({:.2})", mb.tar)); }
-            if parts.is_empty() { "Pago Mixto".to_string() } else { format!("MIXTO {}", parts.join(" ")) }
+            if money_pos(mb.efe) {
+                parts.push(format!("E({:.2})", mb.efe));
+            }
+            if money_pos(mb.yap) {
+                parts.push(format!("Y({:.2})", mb.yap));
+            }
+            if money_pos(mb.tar) {
+                parts.push(format!("T({:.2})", mb.tar));
+            }
+            if parts.is_empty() {
+                "Pago Mixto".to_string()
+            } else {
+                format!("MIXTO {}", parts.join(" "))
+            }
         } else {
             "Pago Mixto".to_string()
         };
@@ -448,8 +494,8 @@ pub fn build_escpos(d: &TicketPrintData) -> Vec<u8> {
 pub fn print_raw(printer_name: &str, data: &[u8]) -> Result<(), String> {
     use windows_sys::Win32::Foundation::HANDLE;
     use windows_sys::Win32::Graphics::Printing::{
-        ClosePrinter, EndDocPrinter, EndPagePrinter, OpenPrinterW,
-        StartDocPrinterW, StartPagePrinter, WritePrinter, DOC_INFO_1W,
+        ClosePrinter, EndDocPrinter, EndPagePrinter, OpenPrinterW, StartDocPrinterW,
+        StartPagePrinter, WritePrinter, DOC_INFO_1W,
     };
 
     let name_wide: Vec<u16> = printer_name
@@ -459,17 +505,15 @@ pub fn print_raw(printer_name: &str, data: &[u8]) -> Result<(), String> {
     let raw_wide: Vec<u16> = "RAW\0".encode_utf16().collect();
 
     let mut handle: HANDLE = std::ptr::null_mut();
-    let ok = unsafe {
-        OpenPrinterW(name_wide.as_ptr(), &mut handle, std::ptr::null_mut())
-    };
+    let ok = unsafe { OpenPrinterW(name_wide.as_ptr(), &mut handle, std::ptr::null_mut()) };
     if ok == 0 {
         return Err(format!("OpenPrinterW failed for '{printer_name}'"));
     }
 
     let doc_info = DOC_INFO_1W {
-        pDocName:    std::ptr::null_mut(),
+        pDocName: std::ptr::null_mut(),
         pOutputFile: std::ptr::null_mut(),
-        pDatatype:   raw_wide.as_ptr() as *mut u16,
+        pDatatype: raw_wide.as_ptr() as *mut u16,
     };
 
     let job = unsafe { StartDocPrinterW(handle, 1, &doc_info as *const _ as *const _) };
@@ -480,7 +524,10 @@ pub fn print_raw(printer_name: &str, data: &[u8]) -> Result<(), String> {
 
     let ok = unsafe { StartPagePrinter(handle) };
     if ok == 0 {
-        unsafe { EndDocPrinter(handle); ClosePrinter(handle); }
+        unsafe {
+            EndDocPrinter(handle);
+            ClosePrinter(handle);
+        }
         return Err("StartPagePrinter failed".into());
     }
 
@@ -494,7 +541,11 @@ pub fn print_raw(printer_name: &str, data: &[u8]) -> Result<(), String> {
         )
     };
     if ok == 0 {
-        unsafe { EndPagePrinter(handle); EndDocPrinter(handle); ClosePrinter(handle); }
+        unsafe {
+            EndPagePrinter(handle);
+            EndDocPrinter(handle);
+            ClosePrinter(handle);
+        }
         return Err("WritePrinter failed".into());
     }
 
@@ -518,15 +569,15 @@ pub fn print_raw(_printer_name: &str, _data: &[u8]) -> Result<(), String> {
 #[serde(rename_all = "camelCase")]
 pub struct VoucherMovePrintData {
     pub business_name: String,
-    pub move_type:     String,
-    pub source_label:  Option<String>,
-    pub amount:        f64,
-    pub motivo:        String,
-    pub observacion:   Option<String>,
-    pub operator:      String,
+    pub move_type: String,
+    pub source_label: Option<String>,
+    pub amount: f64,
+    pub motivo: String,
+    pub observacion: Option<String>,
+    pub operator: String,
     pub cash_box_code: String,
-    pub terminal:      String,
-    pub date_time:     String,
+    pub terminal: String,
+    pub date_time: String,
 }
 
 pub fn build_cash_move_escpos(d: &VoucherMovePrintData) -> Vec<u8> {
@@ -534,8 +585,13 @@ pub fn build_cash_move_escpos(d: &VoucherMovePrintData) -> Vec<u8> {
     b.init();
 
     let type_label = normalize(
-        d.source_label.as_deref()
-            .unwrap_or(if d.move_type == "ingreso" { "INGRESO" } else { "EGRESO" })
+        d.source_label
+            .as_deref()
+            .unwrap_or(if d.move_type == "ingreso" {
+                "INGRESO"
+            } else {
+                "EGRESO"
+            }),
     );
 
     b.align_center();
@@ -626,34 +682,34 @@ pub fn build_cash_move_escpos(d: &VoucherMovePrintData) -> Vec<u8> {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SistemaEsperado {
-    pub efe:     f64,
-    pub yape:    f64,
+    pub efe: f64,
+    pub yape: f64,
     pub tarjeta: f64,
-    pub total:   f64,
+    pub total: f64,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArqueoPrintData {
-    pub business_name:     String,
-    pub cash_box_code:     String,
-    pub operator:          String,
-    pub terminal:          String,
-    pub date_time:         String,
-    pub apertura:          f64,
-    pub ingresos_total:    f64,
-    pub egresos_total:     f64,
-    pub total_ventas:      f64,
-    pub sales_count:       u32,
+    pub business_name: String,
+    pub cash_box_code: String,
+    pub operator: String,
+    pub terminal: String,
+    pub date_time: String,
+    pub apertura: f64,
+    pub ingresos_total: f64,
+    pub egresos_total: f64,
+    pub total_ventas: f64,
+    pub sales_count: u32,
     pub efectivo_esperado: f64,
-    pub contado_efe:       f64,
-    pub contado_yape:      f64,
-    pub contado_tar:       f64,
-    pub contado_total:     f64,
-    pub diferencia:        f64,
-    pub observations:      Option<String>,
-    pub zero_motive:       Option<String>,
-    pub sistema_esperado:  Option<SistemaEsperado>,
+    pub contado_efe: f64,
+    pub contado_yape: f64,
+    pub contado_tar: f64,
+    pub contado_total: f64,
+    pub diferencia: f64,
+    pub observations: Option<String>,
+    pub zero_motive: Option<String>,
+    pub sistema_esperado: Option<SistemaEsperado>,
 }
 
 pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
@@ -710,13 +766,33 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
 
     if let Some(ref se) = d.sistema_esperado {
         b.four_col("", "SISTEMA", "OPERADOR", "DIFER.");
-        b.four_col("Efectivo", &format!("{:.2}", se.efe), &format!("{:.2}", d.contado_efe), &diff_str(se.efe, d.contado_efe));
-        b.four_col("Yape", &format!("{:.2}", se.yape), &format!("{:.2}", d.contado_yape), &diff_str(se.yape, d.contado_yape));
-        b.four_col("Tarjetas", &format!("{:.2}", se.tarjeta), &format!("{:.2}", d.contado_tar), &diff_str(se.tarjeta, d.contado_tar));
+        b.four_col(
+            "Efectivo",
+            &format!("{:.2}", se.efe),
+            &format!("{:.2}", d.contado_efe),
+            &diff_str(se.efe, d.contado_efe),
+        );
+        b.four_col(
+            "Yape",
+            &format!("{:.2}", se.yape),
+            &format!("{:.2}", d.contado_yape),
+            &diff_str(se.yape, d.contado_yape),
+        );
+        b.four_col(
+            "Tarjetas",
+            &format!("{:.2}", se.tarjeta),
+            &format!("{:.2}", d.contado_tar),
+            &diff_str(se.tarjeta, d.contado_tar),
+        );
         b.equals();
         b.bold_on();
         b.dbl_h_on();
-        b.four_col("TOTAL", &format!("{:.2}", se.total), &format!("{:.2}", d.contado_total), &diff_str(se.total, d.contado_total));
+        b.four_col(
+            "TOTAL",
+            &format!("{:.2}", se.total),
+            &format!("{:.2}", d.contado_total),
+            &diff_str(se.total, d.contado_total),
+        );
         b.dbl_h_off();
         b.bold_off();
     } else {
@@ -736,8 +812,8 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
     b.dashes();
 
     // Diferencia
-    let cuadrado   = money_zero(d.diferencia);
-    let diff_abs   = d.diferencia.abs();
+    let cuadrado = money_zero(d.diferencia);
+    let diff_abs = d.diferencia.abs();
     let diff_label = if cuadrado {
         "ARQUEO CUADRADO"
     } else if money_pos(d.diferencia) {
@@ -773,7 +849,10 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
                 let mut i = 0;
                 while i < bytes.len() {
                     let end = (i + width).min(bytes.len());
-                    b.line(&format!("  {}", std::str::from_utf8(&bytes[i..end]).unwrap_or("")));
+                    b.line(&format!(
+                        "  {}",
+                        std::str::from_utf8(&bytes[i..end]).unwrap_or("")
+                    ));
                     i = end;
                 }
             }
@@ -802,21 +881,21 @@ pub fn build_arqueo_escpos(d: &ArqueoPrintData) -> Vec<u8> {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorreccionPrintData {
-    pub business_name:     String,
-    pub cash_box_code:     String,
+    pub business_name: String,
+    pub cash_box_code: String,
     pub session_date_time: String,
-    pub date_time:         String,
-    pub authorized_by:     String,
-    pub executed_by:       String,
-    pub motivo:            String,
-    pub prev_efe:          f64,
-    pub prev_yape:         f64,
-    pub prev_tar:          f64,
-    pub prev_total:        f64,
-    pub new_efe:           f64,
-    pub new_yape:          f64,
-    pub new_tar:           f64,
-    pub new_total:         f64,
+    pub date_time: String,
+    pub authorized_by: String,
+    pub executed_by: String,
+    pub motivo: String,
+    pub prev_efe: f64,
+    pub prev_yape: f64,
+    pub prev_tar: f64,
+    pub prev_total: f64,
+    pub new_efe: f64,
+    pub new_yape: f64,
+    pub new_tar: f64,
+    pub new_total: f64,
 }
 
 pub fn build_correccion_escpos(d: &CorreccionPrintData) -> Vec<u8> {
@@ -857,7 +936,10 @@ pub fn build_correccion_escpos(d: &CorreccionPrintData) -> Vec<u8> {
             let mut i = 0;
             while i < bytes.len() {
                 let end = (i + width).min(bytes.len());
-                b.line(&format!("  {}", std::str::from_utf8(&bytes[i..end]).unwrap_or("")));
+                b.line(&format!(
+                    "  {}",
+                    std::str::from_utf8(&bytes[i..end]).unwrap_or("")
+                ));
                 i = end;
             }
         }
@@ -866,13 +948,33 @@ pub fn build_correccion_escpos(d: &CorreccionPrintData) -> Vec<u8> {
     b.dashes();
 
     b.four_col("", "ORIGINAL", "CORREGIDO", "DIFER.");
-    b.four_col("Efectivo", &format!("{:.2}", d.prev_efe), &format!("{:.2}", d.new_efe), &diff_str(d.prev_efe, d.new_efe));
-    b.four_col("Yape", &format!("{:.2}", d.prev_yape), &format!("{:.2}", d.new_yape), &diff_str(d.prev_yape, d.new_yape));
-    b.four_col("Tarjetas", &format!("{:.2}", d.prev_tar), &format!("{:.2}", d.new_tar), &diff_str(d.prev_tar, d.new_tar));
+    b.four_col(
+        "Efectivo",
+        &format!("{:.2}", d.prev_efe),
+        &format!("{:.2}", d.new_efe),
+        &diff_str(d.prev_efe, d.new_efe),
+    );
+    b.four_col(
+        "Yape",
+        &format!("{:.2}", d.prev_yape),
+        &format!("{:.2}", d.new_yape),
+        &diff_str(d.prev_yape, d.new_yape),
+    );
+    b.four_col(
+        "Tarjetas",
+        &format!("{:.2}", d.prev_tar),
+        &format!("{:.2}", d.new_tar),
+        &diff_str(d.prev_tar, d.new_tar),
+    );
     b.equals();
     b.bold_on();
     b.dbl_h_on();
-    b.four_col("TOTAL", &format!("{:.2}", d.prev_total), &format!("{:.2}", d.new_total), &diff_str(d.prev_total, d.new_total));
+    b.four_col(
+        "TOTAL",
+        &format!("{:.2}", d.prev_total),
+        &format!("{:.2}", d.new_total),
+        &diff_str(d.prev_total, d.new_total),
+    );
     b.dbl_h_off();
     b.bold_off();
 
@@ -898,17 +1000,17 @@ pub fn build_correccion_escpos(d: &CorreccionPrintData) -> Vec<u8> {
 #[serde(rename_all = "camelCase")]
 pub struct DispatchLine {
     pub description: String,
-    pub quantity:    u32,
-    pub note:        Option<String>,
+    pub quantity: u32,
+    pub note: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DispatchPrintData {
     pub correlative: u32,
-    pub date_time:   String,
-    pub lines:       Vec<DispatchLine>,
-    pub op_number:   String,
+    pub date_time: String,
+    pub lines: Vec<DispatchLine>,
+    pub op_number: String,
 }
 
 pub fn build_dispatch_escpos(d: &DispatchPrintData) -> Vec<u8> {
@@ -931,10 +1033,14 @@ pub fn build_dispatch_escpos(d: &DispatchPrintData) -> Vec<u8> {
     b.dashes();
 
     for line in &d.lines {
-        let qty_str  = format!("{}x", line.quantity);
-        let desc_up  = normalize(&line.description.to_uppercase());
+        let qty_str = format!("{}x", line.quantity);
+        let desc_up = normalize(&line.description.to_uppercase());
         let max_desc = COLS.saturating_sub(qty_str.len() + 1);
-        let desc_out = if desc_up.len() <= max_desc { desc_up } else { desc_up[..max_desc].to_string() };
+        let desc_out = if desc_up.len() <= max_desc {
+            desc_up
+        } else {
+            desc_up[..max_desc].to_string()
+        };
         b.line(&format!("{} {}", qty_str, desc_out));
         if let Some(ref note) = line.note {
             b.line(&format!("  > {}", normalize(note)));

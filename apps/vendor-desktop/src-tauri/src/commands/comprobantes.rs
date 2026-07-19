@@ -54,7 +54,9 @@ pub async fn registrar_comprobante(
     lineas: Vec<LineaComprobanteInput>,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
     let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
@@ -146,13 +148,16 @@ pub async fn obtener_siguiente_correlativo(
     serie: String,
 ) -> Result<i64, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let siguiente = sqlx::query_scalar::<_, i64>("SELECT siguiente FROM correlativo WHERE serie = ?")
-        .bind(&serie)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let siguiente =
+        sqlx::query_scalar::<_, i64>("SELECT siguiente FROM correlativo WHERE serie = ?")
+            .bind(&serie)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     Ok(siguiente.unwrap_or(1))
 }
@@ -163,7 +168,9 @@ pub async fn obtener_comprobantes_sesion(
     sesion_id: String,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT id, venta_id, tipo, serie, correlativo, codigo_unico, es_formal, estado, estado_sunat, receptor_nombre, receptor_es_generico, subtotal, igv, total, metodo_pago, operador_id, emitido_en FROM comprobante WHERE sesion_id = ? ORDER BY emitido_en DESC",
@@ -206,7 +213,9 @@ pub async fn obtener_comprobantes_historial(
     limite: Option<i64>,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut query_string = String::from(
         "SELECT id, venta_id, tipo, serie, correlativo, codigo_unico, es_formal, estado, estado_sunat, receptor_nombre, receptor_es_generico, subtotal, igv, total, metodo_pago, operador_id, emitido_en FROM comprobante WHERE 1=1",
@@ -257,7 +266,9 @@ pub async fn obtener_comprobante_detalle(
     comprobante_id: String,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let comprobante = sqlx::query("SELECT * FROM comprobante WHERE id = ?")
         .bind(&comprobante_id)
@@ -265,11 +276,12 @@ pub async fn obtener_comprobante_detalle(
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| String::from("Comprobante no encontrado"))?;
-    let rows = sqlx::query("SELECT * FROM linea_comprobante WHERE comprobante_id = ? ORDER BY creado_en")
-        .bind(&comprobante_id)
-        .fetch_all(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let rows =
+        sqlx::query("SELECT * FROM linea_comprobante WHERE comprobante_id = ? ORDER BY creado_en")
+            .bind(&comprobante_id)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| e.to_string())?;
     let lineas: Result<Vec<Value>, String> = rows.into_iter().map(|row| {
         Ok(json!({
             "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
@@ -337,7 +349,9 @@ pub async fn anular_comprobante_sqlite(
     motivo: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let estado = sqlx::query_scalar::<_, String>("SELECT estado FROM comprobante WHERE id = ?")
         .bind(&comprobante_id)
@@ -369,7 +383,9 @@ pub async fn actualizar_estado_sunat(
     cdr: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let ahora = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
         .fetch_one(pool)

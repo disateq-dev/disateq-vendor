@@ -1,153 +1,215 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
-**Última actualización:** 2026-07-17
-**Último commit:** `e087322`
+**Ultima actualizacion:** 2026-07-19
+**Ultimo commit:** pendiente (ver abajo)
 **Rama:** `main`
-**Working tree:** limpio
+**Working tree:** SUCIO — 2 archivos modificados sin commitear
 
 ---
 
-## ⚠️ DIRECTIVA ESTRATÉGICA ACTIVA — Fase de integración real
+## COMMITS DE ESTA SESION
 
-**Decisión de Fernando (12 Jul 2026):** abandonar mocks y datos ficticios. Todo flujo nuevo opera contra SQLite. Los flujos existentes en localStorage migran progresivamente.
+| Commit | Descripcion |
+|---|---|
+| `2ef9f5e` | feat(login+auditoria): faenas 42-43 — LoginScreen corregido + PIN autorizacion SQLite + dominio auditoria multi-rubro |
+| pendiente | fix(config+login): placeholder PIN legible, contador digitos, confirmacion persistente post-guardado |
 
-**Directiva adicional (16 Jul 2026):** cero soluciones temporales. Cada decisión se toma como si fuera la que llega a producción.
+---
+
+## ARCHIVOS CON CAMBIOS SIN COMMITEAR
+
+Estos dos archivos tienen cambios aplicados directamente por el arquitecto, pendientes de commit:
+
+**1. `apps/vendor-desktop/src/modules/config/ConfigWorkspace.tsx`**
+- Placeholder "Ingresar 6 digitos" / "Confirmar 6 digitos" (reemplaza puntos)
+- Contador N/6 en label mientras se escribe
+- Estado `adminJustSaved` — banner verde persistente "PIN guardado correctamente" tras guardar
+- El banner no desaparece hasta que el operador cambia de pantalla
+
+**2. `apps/vendor-desktop/src/modules/login/LoginScreen.tsx`**
+- Placeholders "4-6 digitos" en campos Nuevo PIN y Confirmar PIN de vista pin-change
+
+**Accion pendiente al abrir nueva sesion:**
+1. Ejecutar `npx tsc -p tsconfig.app.json --noEmit` desde `apps/vendor-desktop`
+2. Si pasa: commit con mensaje `fix(config+login): placeholder PIN legible, contador digitos, confirmacion persistente post-guardado`
+3. Continuar investigando el problema del PIN de autorizacion
+
+---
+
+## PROBLEMA ACTIVO SIN RESOLVER — PIN DE AUTORIZACION
+
+**Sintoma:** En AJUSTES -> Operacion, el boton "CONFIGURAR PIN DE AUTORIZACION" permanece gris aunque visualmente se ven 6 puntos en ambos campos.
+
+**Causa confirmada:** Los 6 puntos visibles son el placeholder `••••••` (ya corregido a texto), no digitos reales. El campo esta vacio. El boton gris es correcto.
+
+**Estado tras los fixes de esta sesion:**
+- Placeholder corregido a texto legible — el operador ya puede distinguir campo vacio de campo con datos
+- Contador N/6 visible mientras escribe
+- Banner de confirmacion persistente tras guardar exitosamente
+
+**Pendiente verificar en nueva sesion:**
+- Confirmar que tras los fixes el flujo completo funciona: escribir PIN -> boton se activa -> guardar -> banner verde aparece -> panel superior cambia a verde con fecha y operador
+- Si el problema persiste despues de los fixes de placeholder, investigar si el comando Rust `configurar_pin_autorizacion` llega a ejecutarse (el UPDATE sin WHERE puede afectar 0 filas si config_establecimiento esta vacia)
+
+**Sospecha adicional de arquitecto:** El `UPDATE config_establecimiento SET ...` sin clausula `WHERE id = ?` es correcto en SQLite cuando hay exactamente 1 fila, pero si `config_establecimiento` esta vacia (DB nueva, migracion v13 no corrio), el UPDATE afecta 0 filas y el hash nunca se guarda. Verificar que v13 corre antes que v24 en DB nueva.
+
+---
+
+## DIRECTIVA ESTRATEGICA ACTIVA
+
+**SQLite como unica fuente de verdad** — localStorage eliminado de todos los flujos de negocio criticos.
+**Cero soluciones temporales** — cada decision se toma como si fuera la que llega a produccion.
+**Sistema de diseno canonico activo** — paleta de modulos aprobada y congelada al 18-jul-2026.
+**Multi-rubro por defecto** — antes de disenar o modificar cualquier componente, servicio, tabla o flujo, contrastar explicitamente si el cambio es universal (todos los rubros) o especifico de rubro. Lo universal va en dominios/componentes transversales. Lo especifico va bajo su rubro. Nunca mezclar.
 
 ---
 
 ## Estado de migraciones SQLite
 
-| Versión | Contenido | Estado |
+| Version | Contenido | Estado |
 |---|---|---|
-| v1–v15 | Schema core, catálogo farmacia, correcciones, IFA, servicios, config, pedidos, error_log | ✅ |
-| v16 | `venta`, `linea_venta` | ✅ |
-| v17 | `comprobante`, `linea_comprobante`, `correlativo` | ✅ |
-| v18 | `sesion_caja`, `movimiento_caja`, `evento_turno` | ✅ |
-| v19 | `operador`, `rol` + seed FTEJADA (reemplazado en v23) | ✅ |
-| v20 | `movimiento.unidades_facturadas`, `venta/comprobante.sincronizado_en` | ✅ |
-| v21 | `sesion_caja.arqueo_json`, `sesion_caja.correction_json` | ✅ |
-| v22 | `bloque_operacional` + seed base=900 | ✅ |
-| v23 | Elimina FTEJADA · Crea MAESTRO (SYS001/ADMIN) + SOPORTE (SYS002/SOP) con estado=SISTEMA · `asegurar_operador_sistema` en cada arranque | ✅ |
+| v1-v23 | Ver historial anterior | OK |
+| v24 | auditoria_operacion (multi-rubro) + 3 cols PIN autorizacion en config_establecimiento | OK |
 
 ---
 
-## Sesiones completadas
+## Faenas completadas (historial relevante)
 
-### Faenas 21–31: ver historial anterior ✅
+### Faena 40 OK — Sistema de diseno shell: paleta canonica · commit 964243f
 
-### Faena 32 ✅ — CajasWorkspace completo en SQLite + naming canónico TipoCaja
-Commits: `f4cef9f`, `8be18a0`, `831c52d`, `382be6e`
-- E-1→E-4: migración v22, `blocks.store.ts`, `bloque-operacional-sqlite.service.ts`, `useCaja.ts`, `cash-rules.service.ts`, `StatusBar`, `CobroPanel`, `CashWorkspace`
-- E-5→E-6: `useBloques.ts`, `CajasWorkspace.tsx` — MOCK_BLOCKS eliminado, SQLite conectado
-- Deuda §8 liquidada: `TipoCaja = PRINCIPAL|AUXILIAR|EXCEPCIONAL` irrevocable
+**Paleta canonica aprobada y congelada (18-jul-2026):**
 
-### Faena 33 ✅ — Operadores MAESTRO y SOPORTE permanentes
-Commit: `e087322`
+| Modulo | Accent | BG |
+|---|---|---|
+| TURNO | #B5741A | #FDF6EE |
+| VENTAS | #0D7A6E | #E8F5F3 |
+| ABASTECIMIENTO | #4A7C2F | #F0F7EC |
+| CLIENTES | #1A6BB5 | #EBF4FF |
+| REPORTES | #5A4DB8 | #F3F1FB |
+| COMPROBANTES | #9B3E7A | #F7F0F5 |
+| AJUSTES | #5C6478 | #F4F4F6 |
 
-**Arquitectura implementada — Fase 1 (sin VPS):**
-- `Cargo.toml`: dependencia `sha2 0.10`
-- `build.rs`: lee `DISATEQ_SYSTEM_PIN` del entorno, emite warning si no definida, no falla el build
-- `migrations v23`: elimina operador FTEJADA, crea MAESTRO y SOPORTE con `estado = 'SISTEMA'`
-- `asegurar_operador_sistema()`: función auxiliar que recrea los operadores SISTEMA en cada arranque si fueron eliminados — indestructibles
-- `verificar_pin_sistema`: comando Rust sin DB — compara SHA-256(pin_ingresado) vs SHA-256(DISATEQ_SYSTEM_PIN). Retorna `Err("SISTEMA_NO_CONFIGURADO")` si la variable no está definida
-- `package.json`: script `tauri` carga `.env.build` automáticamente antes de `tauri dev` — cero pasos manuales
-- `useOperadores.ts`: `ocultarOperadoresSistema()` filtra estado=SISTEMA de la UI de gestión; `loginOperator` tiene guard `if (!op) return false` y rama SISTEMA separada
-- `LoginScreen.tsx`: operadores SISTEMA visibles al final del selector como `"⚙ ACCESO TÉCNICO · {alias}"`
+**Decisiones de shell consolidadas:**
+- Topbar #0f1f3d — ancla oscura permanente · no tocar
+- StatusBar #0f1f3d — mismo marco que Topbar
+- ModulesBar y contenido sobre var(--dv-surface-base) #F7F5F1 calido
+- MODULE_BG eliminado de OperationalBar.tsx — los fondos viven solo en index.css
+- Topbar title: "Cerrar sesion"
 
-**Credenciales de producto:**
-- `MAESTRO` (SYS001) — rol ADMIN, `acceso_total`, bloque 900
-- `SOPORTE` (SYS002) — rol SOP, capacidades operativas estándar, bloque 900
-- PIN: variable `DISATEQ_SYSTEM_PIN` en `.env.build` (ignorado por git, patrón `.env.*`)
-- `.env.build` ubicación: `apps/vendor-desktop/src-tauri/.env.build` — NO commitear nunca
+### Faena 41 OK — Navbar dos filas · commit 728f91f
 
-**Fase 2 (con VPS — futuro):** reemplazar `verificar_pin_sistema` por verificación TOTP contra `machine_id`. El campo `pin` de MAESTRO/SOPORTE queda vacío con marcador `'TOTP'`. La UI no cambia.
+**Fila 1 (siempre visible, h-44px):** todos los modulos, icono size=17 + label completo, acento en modulo activo, separadores entre grupos.
+**Fila 2 (condicional, h-36px):** solo modulos en CON_SECUNDARIAS (cash, abastecimiento, config), fondo tintado ${accent}0D, pills de subopciones, HealthDot solo en config.
+**VENTAS, CLIENTES, REPORTES, COMPROBANTES:** nunca muestran fila 2.
+**Estado:** pendiente confirmacion visual de Fernando (P0 de proxima sesion).
+
+### Faenas 42-43 OK — LoginScreen + PIN Autorizacion + Auditoria · commit 2ef9f5e
+
+**Faena 42 — LoginScreen auditado y corregido:**
+- PC_MOTIVOS: 4 motivos canonicos operacionales
+- Selector operadores: solo alias visible
+- Textos: Salir, Cambiar PIN, Confirmar cambio, Volver
+- Hover boton Salir: --dv-color-exit naranja
+- Uniformizacion de colores de foco, altos de botones entre las 3 vistas
+- Campo Codigo de Autorizacion: type=password, inputMode=numeric, maxLength=6, validacion ^\d{6}$
+
+**Faena 43 — PIN Autorizacion SQLite + Dominio Auditoria:**
+- migrar_v24: tabla auditoria_operacion + cols PIN en config_establecimiento
+- 4 comandos Tauri: configurar/obtener/verificar pin + registrar auditoria
+- pin-autorizacion.store.ts: migrado de localStorage a SQLite
+- domains/auditoria/auditoria.service.ts: dominio transversal multi-rubro
+- LoginScreen y ConfigWorkspace conectados a verificacion real
+
+### Faena 44 (parcial, sin commit) — Fixes UX PIN configuracion
+
+- Placeholder campos PIN: puntos -> texto legible
+- Contador N/6 en labels
+- Banner confirmacion persistente post-guardado
+- **Pendiente: tsc + commit en proxima sesion**
 
 ---
 
-## Estado de deuda técnica vigente
+## Estado de deuda tecnica vigente
 
 ### Diferido aceptable
-- `accesosStore` → bitácora de accesos en localStorage — migración futura a `acceso_operador`
-- `changeOperatorPin` / `changeOperatorPinById` → sin escritura SQLite aún
-- `supervision-authorization.service.ts` → autorizaciones en localStorage — migración futura
-- F2 — doble movimiento `despacharConFefo` productos con lote — diferido hasta eliminar `inventoryService` legacy
-- `BOX_DEFS` estático en `useCaja.ts` — derivar desde SQLite en fase futura (no bloquea producción)
+- accesosStore — bitacora en localStorage — migracion futura
+- supervision-authorization.service.ts — autorizaciones en localStorage
+- F2 — doble movimiento despacharConFefo — diferido
+- BOX_DEFS estatico en useCaja.ts — diferido
+- D-PRECIOS-1 — precio por lote — diferido
+- Subopciones ABASTECIMIENTO en ModulesBar — hardcodeadas para farmacia, dinamizar antes del 2do rubro
+- AuditoriaWorkspace — UI de consulta pendiente (tabla existe, UI futura)
 
-### Deuda de PRECIOS
-- **D-PRECIOS-1 — Precio por lote:** complejidad alta. Diferido.
-
-### Deudas de naming — GLOSARIO §8 (baja prioridad, no bloquean)
-- `ActualizarProveedorInput` → `ModificarProveedorInput`
-- `TicketLineDTO` / `TicketLineBridge` → `LineaPreVenta`
-- `emitidoPor` → `operadorId`
-- `disponible/bajo_stock/agotado` → mayúsculas
-- `actualizar_proveedor` → `modificar_proveedor`
-- `desactivar_servicio_catalogo` → entidad canónica §11
+### Deudas de naming — GLOSARIO 8 (baja prioridad)
+- ActualizarProveedorInput -> ModificarProveedorInput
+- TicketLineDTO / TicketLineBridge -> LineaPreVenta
+- emitidoPor -> operadorId
+- disponible/bajo_stock/agotado -> mayusculas
 
 ---
 
-## Próxima ventana de trabajo — prioridad
+## Proxima ventana de trabajo
 
-1. **Auditoría UIX/funcional completa** — Login → Config → Turno → Ventas → Comprobantes → Clientes → Reportes → Abastecimiento
-2. **Arquitectura segundo rubro** — desbloqueada
-3. **`supervision-authorization.service.ts`** — migración a SQLite
-4. **Portal administrativo VPS** — paso natural tras completar rubros (habilitará Fase 2 de autenticación SISTEMA)
+1. [P0 INMEDIATO] tsc + commit de los fixes de placeholder y banner de confirmacion
+2. [P0] Verificar flujo completo de configuracion de PIN en app (escribir -> activar boton -> guardar -> ver banner verde)
+3. [P0] Si sigue fallando: diagnosticar si UPDATE en config_establecimiento afecta 0 filas (DB vacia)
+4. Confirmar o ajustar navbar dos filas (Faena 41)
+5. Auditoria UIX modulo por modulo
+6. supervision-authorization.service.ts — migracion a SQLite
 
 ---
 
-## Arquitectura de referencia rápida
+## Dominio Auditoria — referencia rapida
 
-**Monorepo:** `D:\DisateQ-DEV\Proyectos\disateq-vendor`
-**Rust:** `apps/vendor-desktop/src-tauri/src/`
-**TypeScript:** `apps/vendor-desktop/src/`
-**TS check:** `npx tsc -p tsconfig.app.json --noEmit` desde `apps/vendor-desktop`
-**Rust check:** `cargo check` desde `apps/vendor-desktop/src-tauri`
-**Dev:** `npm run tauri` desde `apps/vendor-desktop` (carga `.env.build` automáticamente)
-**Git:** `git -C "D:\DisateQ-DEV\Proyectos\disateq-vendor" [comando]`
+**Ubicacion:** src/domains/auditoria/auditoria.service.ts
+**Tabla SQLite:** auditoria_operacion
+**Convencion:** sin prefijo = universal, prefijo RUBRO_ = especifico de rubro
+**Campos:** rubro, dominio, tipo_operacion, operador_id, operador_alias, ejecutado_por, detalle (JSON), resultado
+**Primer uso:** cambio de PIN en LoginScreen + configuracion en ConfigWorkspace
 
-**Naming canónico — dominio bloques:**
-- `TipoCaja` = `"PRINCIPAL" | "AUXILIAR" | "EXCEPCIONAL"` — irrevocable
-- `DefinicionCaja.tipoCaja`, `CashBox.tipoCaja` (no `.type`)
-- Prereq `AUXILIAR` = `String(Number(code) - 1)` — geométrico
-- Prereq `EXCEPCIONAL` = `code[0] + "00"`
+---
 
-**Naming canónico — dominio operadores:**
-- `Operador.alias` (campo `codigo` eliminado)
-- `EstadoOperador` = `"ACTIVO" | "SUSPENDIDO" | "INACTIVO" | "BLOQUEADO" | "SISTEMA"`
-- Operadores SISTEMA: invisibles en UI gestión, visibles en login como acceso técnico
+## Reset total del sistema (para pruebas)
 
-**Invariante D-INGRESOS-4 (irrevocable):**
-- `lote.cantidad_disponible` = unidades físicas recibidas — FEFO opera sobre lo físico
-- `movimiento.unidades_facturadas` = trazabilidad fiscal
-- `linea_pedido_proveedor.cantidad_recibida` += `cantidad_facturada` — reconciliación fiscal
+```powershell
+Remove-Item "$env:APPDATA\com.disateq.vendor\disateq.db"
+```
 
-**sessionKey canónico:** `"{boxCode}-{openedAt.toISOString()}"` — PK de `sesion_caja`
+---
 
-**Tokens de color activos (`index.css`):**
-- `--dv-color-edit: #005BE3`
-- `--dv-color-new: #45b356`
-- `--dv-color-confirm: #3B6B34`
-- `--dv-color-danger: #DC2626`
-- `--dv-color-exit: #B85C10`
+## Arquitectura de referencia rapida
 
-**Comandos Rust registrados — bloques:**
-`crear_bloque_operacional`, `obtener_bloques_operacionales`, `actualizar_auxiliares_bloque`, `activar_bloque_operacional`, `desactivar_bloque_operacional`
+**Monorepo:** D:\DisateQ-DEV\Proyectos\disateq-vendor
+**TS check:** npx tsc -p tsconfig.app.json --noEmit desde apps/vendor-desktop
+**Cargo check:** desde apps/vendor-desktop/src-tauri
+**Git:** git -C "D:\DisateQ-DEV\Proyectos\disateq-vendor" [comando]
 
-**Comandos Rust registrados — operadores:**
-`obtener_operadores`, `obtener_roles`, `crear_operador`, `actualizar_operador`, `actualizar_estado_operador`, `actualizar_pin_operador`, `actualizar_capacidades_operador`, `crear_rol`, `actualizar_rol`, `actualizar_capacidades_rol`, `verificar_pin_sistema` ✅
+**Tauri 2 — regla critica:**
+Invoke params en camelCase desde JS -> Tauri convierte a snake_case para Rust.
 
-**Comandos Rust registrados — sesion_caja:**
-`abrir_sesion_caja`, `cerrar_sesion_caja`, `actualizar_sesion_caja_correction`, `registrar_movimiento_caja`, `actualizar_movimiento_caja`, `registrar_evento_turno`, `obtener_sesion_activa`, `obtener_historial_sesiones`, `obtener_movimientos_sesion`
+**Tokens de color de accion (inmutables):**
+- --dv-color-new: #45b356 — iniciar accion nueva
+- --dv-color-confirm: #3B6B34 — confirmar accion
+- --dv-color-danger: #DC2626 — destructivo
+- --dv-color-exit: #B85C10 — salir/cancelar reversible
 
-**Reglas de apertura de sesión (obligatorias):**
-1. Leer este archivo antes de cualquier acción.
-2. Auditar archivos relevantes desde filesystem — nunca asumir desde memoria.
-3. No avanzar sin confirmación explícita de Fernando.
-4. Entregar comandos git exactos — nunca `-am`, siempre `git add` explícito.
-5. Reescribir este archivo completo al cerrar sesión.
-6. Al cerrar módulo: ejecutar mapa de integridad de flujos (Rule #6).
+**Roles canonicos del sistema:**
+- ADMIN — Administrador (acceso total)
+- GES — Gestor (supervision e intervencion operacional)
+- SOP — Soporte (diagnostico tecnico)
+- VEN — Ventas (operacion de caja y venta)
+- MAESTRO / SOPORTE — operadores SISTEMA (estado SISTEMA, indestructibles)
+- No existe rol SUPERVISOR — concepto absorbido por GES
 
-**CRÍTICO — `.env.build`:**
-- Ruta: `apps/vendor-desktop/src-tauri/.env.build`
-- Contenido: `DISATEQ_SYSTEM_PIN=<valor>`
-- Nunca commitear — protegido por `.gitignore` patrón `.env.*`
-- Si se pierde: recrear con `Set-Content` en PowerShell antes de compilar
+**Reglas de apertura de sesion:**
+1. Leer este archivo antes de cualquier accion.
+2. Auditar archivos desde filesystem — nunca asumir desde memoria.
+3. No avanzar sin confirmacion explicita de Fernando.
+4. Git: siempre git add explicito, nunca -am.
+5. Reescribir este archivo completo al cerrar sesion.
+6. Al cerrar modulo: ejecutar mapa de integridad de flujos (Rule #6).
+7. Multi-rubro: antes de cualquier cambio, contrastar si es universal o especifico de rubro.
+
+**CRITICO — .env.build:**
+- apps/vendor-desktop/src-tauri/.env.build
+- Contenido: DISATEQ_SYSTEM_PIN=<valor alfanumerico>
+- Nunca commitear — protegido por .gitignore

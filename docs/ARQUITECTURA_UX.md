@@ -366,15 +366,15 @@ que uno de los dos está desactualizado; no asumir automáticamente que el
 documento manda ni que el código manda — verificar cuál es la decisión
 vigente antes de "corregir" nada.
 
-| Módulo | Accent | Nota |
-|---|---|---|
-| TURNO / CAJA | `#C59B6D` | Tostado/camel — refinado 01-jul-2026 (reemplaza `#B85C10`/`#2A7CA8`, ambos vistos en distintos archivos antes de la unificación) |
-| VENTAS | `#128C7E` | Verde azulado — refinado 01-jul-2026 (reemplaza `#45b356`, que colisionaba con el verde de acción) |
-| ABASTECIMIENTO | `#3B6B34` | Verde oliva — unificado 01-jul-2026 (reemplaza `#0284C7` y `#639922`, dos identidades divergentes encontradas en `abastecimiento/farmacia/`) |
-| COMPROBANTES | `#7B4F6E` | Ciruela — sin auditar en la sesión del 01-jul-2026, valor tomado de la paleta congelada en `index.css` |
-| AJUSTES / CONFIG | `#4A5265` | Slate oscuro — unificado 01-jul-2026 (reemplaza `#697387` y `#2A7CA8`, vistos en distintos archivos antes de la unificación) |
-| CLIENTES | `#1E7E4F` | Verde oscuro — confirmado 01-jul-2026 como vigente (coincide con el valor de este mapa desde 23-jun-2026; la paleta congelada de `index.css` tenía `#2E7D7A` sin aplicar nunca al código, corregida para converger aquí) |
-| REPORTES | `#5C5FA8` | Azul violeta — refinado 01-jul-2026 (reemplaza `#2154d8`, que colisionaba con el azul de "autorización supervisora" usado en TURNO/CAJA) |
+| Módulo | Accent | BG | Nota |
+|---|---|---|---|
+| TURNO / CAJA | `#B5741A` | `#FDF6EE` | Ámbar tostado vivo — refinado 18-jul-2026 (reemplaza `#C59B6D` que era demasiado pálido y se perdía en fondo claro) |
+| VENTAS | `#0D7A6E` | `#E8F5F3` | Verde azulado profundo — refinado 18-jul-2026 (reemplaza `#128C7E`; más sosegado para módulo permanente de trabajo continuo) |
+| ABASTECIMIENTO | `#4A7C2F` | `#F0F7EC` | Verde oliva vivo — refinado 18-jul-2026 (reemplaza `#3B6B34`; claramente distinto de VENTAS y CLIENTES) |
+| CLIENTES | `#1A6BB5` | `#EBF4FF` | Azul confianza — refinado 18-jul-2026 (reemplaza `#1E7E4F` verde oscuro que colisionaba con VENTAS y ABASTECIMIENTO; azul evoca personas y relaciones) |
+| REPORTES | `#5A4DB8` | `#F3F1FB` | Violeta azulado — refinado 18-jul-2026 (reemplaza `#5C5FA8`; más saturado, familia distinta del azul de CLIENTES) |
+| COMPROBANTES | `#9B3E7A` | `#F7F0F5` | Fucsia ciruela vivo — refinado 18-jul-2026 (reemplaza `#7B4F6E`; más legible y contrastante) |
+| AJUSTES / CONFIG | `#5C6478` | `#F4F4F6` | Slate medio — refinado 18-jul-2026 (reemplaza `#4A5265` que era demasiado oscuro; el slate medio comunica técnico/neutral sin competir con los demás módulos) |
 
 **Nota de auditoría (01-jul-2026):** al retomar la migración de tokens de
 diseño, se descubrió que este mapa (verificado 23-jun-2026) ya no coincidía

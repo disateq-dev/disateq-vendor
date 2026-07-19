@@ -33,10 +33,7 @@ fn timestamp_utc() -> String {
     let mo = if mp < 10 { mp + 3 } else { mp - 9 };
     let y = if mo <= 2 { y + 1 } else { y };
 
-    format!(
-        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-        y, mo, d, h, m, s
-    )
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", y, mo, d, h, m, s)
 }
 
 /// Devuelve true si el nivel debe persistirse en SQLite (WARN, ERROR, CRITICAL).
@@ -48,11 +45,11 @@ fn persiste_en_sqlite(nivel: &str) -> bool {
 /// Si no reconoce el valor, devuelve "WARN".
 fn normalizar_nivel(nivel: &str) -> &'static str {
     match nivel.to_uppercase().as_str() {
-        "INFO"     => "INFO",
-        "WARN"     => "WARN",
-        "ERROR"    => "ERROR",
+        "INFO" => "INFO",
+        "WARN" => "WARN",
+        "ERROR" => "ERROR",
         "CRITICAL" => "CRITICAL",
-        _          => "WARN",
+        _ => "WARN",
     }
 }
 
@@ -68,23 +65,23 @@ fn escribir_a_archivo(ruta: &PathBuf, linea: &str) {
 
 #[derive(Serialize)]
 pub struct EventoLog {
-    pub id:        i64,
-    pub nivel:     String,
-    pub modulo:    String,
-    pub mensaje:   String,
-    pub contexto:  Option<String>,
+    pub id: i64,
+    pub nivel: String,
+    pub modulo: String,
+    pub mensaje: String,
+    pub contexto: Option<String>,
     pub sesion_id: Option<String>,
     pub timestamp: String,
 }
 
 #[derive(Serialize)]
 pub struct ResumenSalud {
-    pub estado:               String,
-    pub criticos_total:       i64,
-    pub errores_total:        i64,
-    pub advertencias_total:   i64,
-    pub ultimo_critical:      Option<String>,
-    pub ultimo_error:         Option<String>,
+    pub estado: String,
+    pub criticos_total: i64,
+    pub errores_total: i64,
+    pub advertencias_total: i64,
+    pub ultimo_critical: Option<String>,
+    pub ultimo_error: Option<String>,
 }
 
 // ─── Comandos Tauri ──────────────────────────────────────────────────────────
@@ -93,21 +90,24 @@ pub struct ResumenSalud {
 /// Nunca retorna Err — absorbe todos sus propios fallos.
 #[tauri::command]
 pub async fn registrar_evento_log(
-    app:          tauri::AppHandle,
+    app: tauri::AppHandle,
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
-    nivel:        String,
-    modulo:       String,
-    mensaje:      String,
-    contexto:     Option<String>,
-    sesion_id:    Option<String>,
+    nivel: String,
+    modulo: String,
+    mensaje: String,
+    contexto: Option<String>,
+    sesion_id: Option<String>,
 ) -> Result<(), String> {
     let nivel_canon = normalizar_nivel(&nivel);
     let ts = timestamp_utc();
 
     // Construir línea para archivo
     let linea = match &contexto {
-        Some(ctx) => format!("[{}] [{}] [{}] {} | ctx={}", ts, nivel_canon, modulo, mensaje, ctx),
-        None      => format!("[{}] [{}] [{}] {}", ts, nivel_canon, modulo, mensaje),
+        Some(ctx) => format!(
+            "[{}] [{}] [{}] {} | ctx={}",
+            ts, nivel_canon, modulo, mensaje, ctx
+        ),
+        None => format!("[{}] [{}] [{}] {}", ts, nivel_canon, modulo, mensaje),
     };
 
     // CANAL A — Archivo (siempre, falla silenciosa)
@@ -169,9 +169,9 @@ pub async fn registrar_evento_log(
 #[tauri::command]
 pub async fn obtener_eventos_log(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
-    nivel:        Option<String>,
-    modulo:       Option<String>,
-    limite:       Option<i64>,
+    nivel: Option<String>,
+    modulo: Option<String>,
+    limite: Option<i64>,
 ) -> Result<Vec<EventoLog>, String> {
     let instances = db_instances.0.read().await;
     let db = instances
@@ -181,7 +181,18 @@ pub async fn obtener_eventos_log(
 
     let limite_real = limite.unwrap_or(100).min(500);
 
-    let rows = sqlx::query_as::<_, (i64, String, String, String, Option<String>, Option<String>, String)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            i64,
+            String,
+            String,
+            String,
+            Option<String>,
+            Option<String>,
+            String,
+        ),
+    >(
         "SELECT id, nivel, modulo, mensaje, contexto, sesion_id, timestamp
          FROM error_log
          WHERE (nivel  = ?1 OR ?1 IS NULL)
@@ -198,15 +209,17 @@ pub async fn obtener_eventos_log(
 
     let eventos = rows
         .into_iter()
-        .map(|(id, nivel, modulo, mensaje, contexto, sesion_id, timestamp)| EventoLog {
-            id,
-            nivel,
-            modulo,
-            mensaje,
-            contexto,
-            sesion_id,
-            timestamp,
-        })
+        .map(
+            |(id, nivel, modulo, mensaje, contexto, sesion_id, timestamp)| EventoLog {
+                id,
+                nivel,
+                modulo,
+                mensaje,
+                contexto,
+                sesion_id,
+                timestamp,
+            },
+        )
         .collect();
 
     Ok(eventos)
@@ -250,8 +263,8 @@ pub async fn obtener_resumen_salud(
 
     Ok(ResumenSalud {
         estado,
-        criticos_total:     criticos,
-        errores_total:      errores,
+        criticos_total: criticos,
+        errores_total: errores,
         advertencias_total: advertencias,
         ultimo_critical,
         ultimo_error,

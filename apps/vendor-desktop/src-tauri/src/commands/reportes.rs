@@ -9,7 +9,9 @@ pub async fn generar_reporte_digemid(
     codigo_estab: String,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query("SELECT * FROM reporte_digemid_privado")
         .fetch_all(pool)
@@ -20,11 +22,21 @@ pub async fn generar_reporte_digemid(
     let mut inconsistentes: Vec<Value> = Vec::new();
 
     for row in rows {
-        let cod_prod = row.try_get::<String, _>("CodProd").map_err(|e| e.to_string())?;
-        let precio_empaque = row.try_get::<Option<f64>, _>("Precio1_Empaque").unwrap_or(None);
-        let precio_unitario = row.try_get::<Option<f64>, _>("Precio2_Unitario").unwrap_or(None);
-        let validacion_digemid = row.try_get::<String, _>("validacion_digemid").map_err(|e| e.to_string())?;
-        let nombre_comercial = row.try_get::<String, _>("nombre_comercial").map_err(|e| e.to_string())?;
+        let cod_prod = row
+            .try_get::<String, _>("CodProd")
+            .map_err(|e| e.to_string())?;
+        let precio_empaque = row
+            .try_get::<Option<f64>, _>("Precio1_Empaque")
+            .unwrap_or(None);
+        let precio_unitario = row
+            .try_get::<Option<f64>, _>("Precio2_Unitario")
+            .unwrap_or(None);
+        let validacion_digemid = row
+            .try_get::<String, _>("validacion_digemid")
+            .map_err(|e| e.to_string())?;
+        let nombre_comercial = row
+            .try_get::<String, _>("nombre_comercial")
+            .map_err(|e| e.to_string())?;
         let registro = json!({
             "CodProd": cod_prod,
             "Precio1_Empaque": precio_empaque,

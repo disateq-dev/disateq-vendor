@@ -22,7 +22,9 @@ pub async fn registrar_movimiento(
     runtime_id: String,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let timestamp = obtener_timestamp(pool).await?;
@@ -47,18 +49,21 @@ pub async fn registrar_movimiento(
 
     if let Some(lote_id_value) = lote_id {
         if tipo == "salida" {
-            sqlx::query("UPDATE lote SET cantidad_disponible = cantidad_disponible - ? WHERE id = ?")
-                .bind(unidades_base)
-                .bind(&lote_id_value)
-                .execute(pool)
-                .await
-                .map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE lote SET cantidad_disponible = cantidad_disponible - ? WHERE id = ?",
+            )
+            .bind(unidades_base)
+            .bind(&lote_id_value)
+            .execute(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
-            let cantidad_disponible = sqlx::query_scalar::<_, f64>("SELECT cantidad_disponible FROM lote WHERE id = ?")
-                .bind(&lote_id_value)
-                .fetch_one(pool)
-                .await
-                .map_err(|e| e.to_string())?;
+            let cantidad_disponible =
+                sqlx::query_scalar::<_, f64>("SELECT cantidad_disponible FROM lote WHERE id = ?")
+                    .bind(&lote_id_value)
+                    .fetch_one(pool)
+                    .await
+                    .map_err(|e| e.to_string())?;
 
             if cantidad_disponible <= 0.0 {
                 sqlx::query("UPDATE lote SET estado = 'AGOTADO' WHERE id = ?")
@@ -70,12 +75,14 @@ pub async fn registrar_movimiento(
         }
 
         if tipo == "entrada" {
-            sqlx::query("UPDATE lote SET cantidad_disponible = cantidad_disponible + ? WHERE id = ?")
-                .bind(unidades_base)
-                .bind(lote_id_value)
-                .execute(pool)
-                .await
-                .map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE lote SET cantidad_disponible = cantidad_disponible + ? WHERE id = ?",
+            )
+            .bind(unidades_base)
+            .bind(lote_id_value)
+            .execute(pool)
+            .await
+            .map_err(|e| e.to_string())?;
         }
     }
 

@@ -37,7 +37,9 @@ pub async fn registrar_ingreso(
     lineas: Vec<LineaIngreso>,
 ) -> Result<Vec<String>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let fecha = obtener_fecha(pool).await?;
     let timestamp = obtener_timestamp(pool).await?;
@@ -50,7 +52,10 @@ pub async fn registrar_ingreso(
             let numero_lote = if linea.es_lote_generico {
                 format!("SIN-LOTE-{}", fecha)
             } else {
-                linea.numero_lote.clone().ok_or_else(|| String::from("Número de lote requerido"))?
+                linea
+                    .numero_lote
+                    .clone()
+                    .ok_or_else(|| String::from("Número de lote requerido"))?
             };
             sqlx::query(
                 "INSERT INTO lote (id, presentacion_id, numero_lote, fecha_vencimiento, fecha_fabricacion, cantidad_ingresada, cantidad_disponible, proveedor_id, precio_compra, estado, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

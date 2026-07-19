@@ -19,7 +19,9 @@ pub async fn abrir_sesion_caja(
     abierta_en: String,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
     let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
@@ -59,7 +61,9 @@ pub async fn cerrar_sesion_caja(
     arqueo_json: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     sqlx::query("UPDATE sesion_caja SET estado = 'CERRADA', cerrada_en = ?, close_signal = ?, arqueo_json = ? WHERE id = ?")
         .bind(&cerrada_en)
@@ -92,7 +96,9 @@ pub async fn registrar_movimiento_caja(
     timestamp: String,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
@@ -135,7 +141,9 @@ pub async fn actualizar_movimiento_caja(
     regularization_mode: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     sqlx::query("UPDATE movimiento_caja SET regularization_status = ?, regularization_mode = ? WHERE id = ?")
         .bind(&regularization_status)
@@ -156,22 +164,26 @@ pub async fn registrar_evento_turno(
     ts: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
         .fetch_one(pool)
         .await
         .map_err(|e| e.to_string())?;
 
-    sqlx::query("INSERT INTO evento_turno (sesion_id, tipo, texto, ts, creado_en) VALUES (?, ?, ?, ?, ?)")
-        .bind(&sesion_id)
-        .bind(&tipo)
-        .bind(&texto)
-        .bind(&ts)
-        .bind(&creado_en)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    sqlx::query(
+        "INSERT INTO evento_turno (sesion_id, tipo, texto, ts, creado_en) VALUES (?, ?, ?, ?, ?)",
+    )
+    .bind(&sesion_id)
+    .bind(&tipo)
+    .bind(&texto)
+    .bind(&ts)
+    .bind(&creado_en)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -180,7 +192,9 @@ pub async fn obtener_sesion_activa(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let sesion = sqlx::query(
         "SELECT id, caja_codigo, caja_tipo, operador_nombre, operador_id, terminal, apertura, motivo, observacion, ref_op, estado, close_signal, abierta_en, cerrada_en FROM sesion_caja WHERE estado = 'ABIERTA' ORDER BY abierta_en DESC LIMIT 1",
@@ -216,7 +230,9 @@ pub async fn obtener_historial_sesiones(
     limite: Option<i64>,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut query_string = String::from(
         "SELECT id, caja_codigo, caja_tipo, operador_nombre, operador_id, terminal, apertura, estado, close_signal, abierta_en, cerrada_en FROM sesion_caja ORDER BY abierta_en DESC",
@@ -253,7 +269,9 @@ pub async fn obtener_movimientos_sesion(
     sesion_id: String,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT id, sesion_id, tipo, monto, motivo, observacion, ref_id, operador_nombre, caja_codigo, terminal, source_type, from_apertura, from_vendido, regularization_status, regularization_mode, timestamp FROM movimiento_caja WHERE sesion_id = ? ORDER BY timestamp ASC",
@@ -295,7 +313,9 @@ pub async fn actualizar_sesion_caja_correction(
     arqueo_json: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     sqlx::query("UPDATE sesion_caja SET close_signal = ?, correction_json = ?, arqueo_json = ? WHERE id = ?")
         .bind(&close_signal)

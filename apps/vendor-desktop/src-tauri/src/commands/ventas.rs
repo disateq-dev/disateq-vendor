@@ -32,7 +32,9 @@ pub async fn registrar_venta(
     lineas: Vec<LineaVentaInput>,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
     let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
@@ -106,7 +108,9 @@ pub async fn obtener_ventas_sesion(
     sesion_id: String,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT id, codigo, total, metodo_pago, tipo_comprobante, operador_id, concretada_en FROM venta WHERE sesion_id = ? ORDER BY concretada_en DESC",
@@ -140,7 +144,9 @@ pub async fn obtener_venta_detalle(
     venta_id: String,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let venta = sqlx::query("SELECT * FROM venta WHERE id = ?")
         .bind(&venta_id)

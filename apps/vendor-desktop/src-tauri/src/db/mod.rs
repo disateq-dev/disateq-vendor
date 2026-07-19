@@ -1,3 +1,3 @@
-pub mod schema;
 pub mod migrations;
+pub mod schema;
 mod seed_principios;

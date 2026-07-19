@@ -11,7 +11,11 @@ async fn obtener_timestamp(pool: &sqlx::SqlitePool) -> Result<String, String> {
 }
 
 fn bool_a_i64(value: bool) -> i64 {
-    if value { 1 } else { 0 }
+    if value {
+        1
+    } else {
+        0
+    }
 }
 
 #[tauri::command]
@@ -24,7 +28,9 @@ pub async fn crear_producto_generico(
     permite_fraccion: bool,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = obtener_timestamp(pool).await?;
@@ -52,7 +58,9 @@ pub async fn obtener_productos_genericos(
     filtro_ifa: Option<String>,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = if let Some(filtro) = filtro_ifa {
         sqlx::query("SELECT * FROM producto_generico WHERE ifa LIKE ? ORDER BY ifa")
@@ -89,7 +97,9 @@ pub async fn desactivar_producto_comercial(
     id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     sqlx::query("UPDATE producto_comercial SET estado = 'INACTIVO', modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
@@ -119,7 +129,9 @@ pub async fn crear_producto_comercial(
     requiere_cadena_frio: bool,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = obtener_timestamp(pool).await?;
@@ -158,7 +170,9 @@ pub async fn obtener_productos_comerciales(
     solo_activos: Option<bool>,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut sql = String::from(
         "SELECT pc.*, pg.ifa, pg.concentracion, pg.forma_farmaceutica, pg.categoria_farmacia FROM producto_comercial pc JOIN producto_generico pg ON pg.id = pc.producto_generico_id",
@@ -179,7 +193,11 @@ pub async fn obtener_productos_comerciales(
     let mut query = sqlx::query(&sql);
     if let Some(filtro) = filtro_nombre {
         let patron = format!("%{}%", filtro);
-        query = query.bind(patron.clone()).bind(patron.clone()).bind(patron.clone()).bind(patron);
+        query = query
+            .bind(patron.clone())
+            .bind(patron.clone())
+            .bind(patron.clone())
+            .bind(patron);
     }
     let rows = query.fetch_all(pool).await.map_err(|e| e.to_string())?;
 
@@ -220,7 +238,9 @@ pub async fn reactivar_producto_comercial(
     id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     sqlx::query("UPDATE producto_comercial SET estado = 'ACTIVO', modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
@@ -246,7 +266,9 @@ pub async fn modificar_producto_comercial(
     codigo_interno: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     sqlx::query("UPDATE producto_comercial SET nombre_comercial = ?, nombre_fabricante = ?, nombre_titular = ?, pais_origen = ?, registro_sanitario = ?, estado_registro_sanitario = ?, codigo_digemid = ?, codigo_interno = ?, modificado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
@@ -277,7 +299,9 @@ pub async fn corregir_datos_operacionales(
     operador_id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -286,9 +310,15 @@ pub async fn corregir_datos_operacionales(
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
-    let condicion_venta_actual = row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?;
-    let requiere_lote_actual = row.try_get::<i64, _>("requiere_lote").map_err(|e| e.to_string())?;
-    let requiere_cadena_frio_actual = row.try_get::<i64, _>("requiere_cadena_frio").map_err(|e| e.to_string())?;
+    let condicion_venta_actual = row
+        .try_get::<String, _>("condicion_venta")
+        .map_err(|e| e.to_string())?;
+    let requiere_lote_actual = row
+        .try_get::<i64, _>("requiere_lote")
+        .map_err(|e| e.to_string())?;
+    let requiere_cadena_frio_actual = row
+        .try_get::<i64, _>("requiere_cadena_frio")
+        .map_err(|e| e.to_string())?;
     let requiere_lote_nuevo = bool_a_i64(requiere_lote);
     let requiere_cadena_frio_nuevo = bool_a_i64(requiere_cadena_frio);
     let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
@@ -364,7 +394,9 @@ pub async fn verificar_historial_producto(
     producto_comercial_id: String,
 ) -> Result<bool, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     let presentacion_ids = sqlx::query_scalar::<_, String>(
@@ -381,23 +413,35 @@ pub async fn verificar_historial_producto(
 
     let placeholders = vec!["?"; presentacion_ids.len()].join(", ");
 
-    let sql_movimiento = format!("SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})", placeholders);
+    let sql_movimiento = format!(
+        "SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})",
+        placeholders
+    );
     let mut query_movimiento = sqlx::query_scalar::<_, i64>(&sql_movimiento);
     for presentacion_id in &presentacion_ids {
         query_movimiento = query_movimiento.bind(presentacion_id);
     }
-    let count_movimiento = query_movimiento.fetch_one(pool).await.map_err(|e| e.to_string())?;
+    let count_movimiento = query_movimiento
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     if count_movimiento > 0 {
         return Ok(true);
     }
 
-    let sql_lote = format!("SELECT COUNT(*) FROM lote WHERE presentacion_id IN ({})", placeholders);
+    let sql_lote = format!(
+        "SELECT COUNT(*) FROM lote WHERE presentacion_id IN ({})",
+        placeholders
+    );
     let mut query_lote = sqlx::query_scalar::<_, i64>(&sql_lote);
     for presentacion_id in &presentacion_ids {
         query_lote = query_lote.bind(presentacion_id);
     }
-    let count_lote = query_lote.fetch_one(pool).await.map_err(|e| e.to_string())?;
+    let count_lote = query_lote
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(count_lote > 0)
 }
@@ -408,7 +452,9 @@ pub async fn eliminar_producto_comercial_fisico(
     id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -423,23 +469,35 @@ pub async fn eliminar_producto_comercial_fisico(
     if !presentacion_ids.is_empty() {
         let placeholders = vec!["?"; presentacion_ids.len()].join(", ");
 
-        let sql_movimiento = format!("SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})", placeholders);
+        let sql_movimiento = format!(
+            "SELECT COUNT(*) FROM movimiento WHERE item_id IN ({})",
+            placeholders
+        );
         let mut query_movimiento = sqlx::query_scalar::<_, i64>(&sql_movimiento);
         for presentacion_id in &presentacion_ids {
             query_movimiento = query_movimiento.bind(presentacion_id);
         }
-        let count_movimiento = query_movimiento.fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+        let count_movimiento = query_movimiento
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
         if count_movimiento > 0 {
             return Err(String::from("TIENE_HISTORIAL"));
         }
 
-        let sql_lote = format!("SELECT COUNT(*) FROM lote WHERE presentacion_id IN ({})", placeholders);
+        let sql_lote = format!(
+            "SELECT COUNT(*) FROM lote WHERE presentacion_id IN ({})",
+            placeholders
+        );
         let mut query_lote = sqlx::query_scalar::<_, i64>(&sql_lote);
         for presentacion_id in &presentacion_ids {
             query_lote = query_lote.bind(presentacion_id);
         }
-        let count_lote = query_lote.fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+        let count_lote = query_lote
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
         if count_lote > 0 {
             return Err(String::from("TIENE_HISTORIAL"));
@@ -456,29 +514,47 @@ pub async fn eliminar_producto_comercial_fisico(
 
     if !presentacion_ids.is_empty() {
         let placeholders = vec!["?"; presentacion_ids.len()].join(", ");
-        let sql_nodo_ids = format!("SELECT id FROM nodo_fraccionamiento WHERE presentacion_id IN ({})", placeholders);
+        let sql_nodo_ids = format!(
+            "SELECT id FROM nodo_fraccionamiento WHERE presentacion_id IN ({})",
+            placeholders
+        );
         let mut query_nodo_ids = sqlx::query_scalar::<_, String>(&sql_nodo_ids);
         for presentacion_id in &presentacion_ids {
             query_nodo_ids = query_nodo_ids.bind(presentacion_id);
         }
-        let nodo_ids = query_nodo_ids.fetch_all(&mut *tx).await.map_err(|e| e.to_string())?;
+        let nodo_ids = query_nodo_ids
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
 
         if !nodo_ids.is_empty() {
             let placeholders_nodo = vec!["?"; nodo_ids.len()].join(", ");
-            let sql_borrar_valores = format!("DELETE FROM valor_operacional WHERE nodo_id IN ({})", placeholders_nodo);
+            let sql_borrar_valores = format!(
+                "DELETE FROM valor_operacional WHERE nodo_id IN ({})",
+                placeholders_nodo
+            );
             let mut query_borrar_valores = sqlx::query(&sql_borrar_valores);
             for nodo_id in &nodo_ids {
                 query_borrar_valores = query_borrar_valores.bind(nodo_id);
             }
-            query_borrar_valores.execute(&mut *tx).await.map_err(|e| e.to_string())?;
+            query_borrar_valores
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
         }
 
-        let sql_borrar_nodos = format!("DELETE FROM nodo_fraccionamiento WHERE presentacion_id IN ({})", placeholders);
+        let sql_borrar_nodos = format!(
+            "DELETE FROM nodo_fraccionamiento WHERE presentacion_id IN ({})",
+            placeholders
+        );
         let mut query_borrar_nodos = sqlx::query(&sql_borrar_nodos);
         for presentacion_id in &presentacion_ids {
             query_borrar_nodos = query_borrar_nodos.bind(presentacion_id);
         }
-        query_borrar_nodos.execute(&mut *tx).await.map_err(|e| e.to_string())?;
+        query_borrar_nodos
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     sqlx::query("DELETE FROM presentacion_comercial WHERE producto_comercial_id = ?")
@@ -525,7 +601,9 @@ pub async fn listar_principios_activos(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query("SELECT id, nombre_dci, descripcion, descripcion_uso, grupo_terapeutico, condicion_venta, activo, es_esencial_minsa, es_psicotropico, es_combinacion FROM principio_activo WHERE activo = 1 ORDER BY nombre_dci")
         .fetch_all(pool)
@@ -558,7 +636,9 @@ pub async fn buscar_principios_activos(
     query: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let patron = format!("%{}%", query.to_uppercase());
     let rows = sqlx::query("SELECT id, nombre_dci, descripcion, descripcion_uso, grupo_terapeutico, condicion_venta, es_esencial_minsa, es_psicotropico, es_combinacion FROM principio_activo WHERE activo = 1 AND (nombre_dci LIKE ? OR grupo_terapeutico LIKE ?) ORDER BY nombre_dci LIMIT 20")
@@ -592,7 +672,9 @@ pub async fn obtener_principios_de_producto(
     producto_generico_id: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
         "SELECT pa.id, pa.nombre_dci, pa.descripcion, ppa.orden FROM principio_activo pa JOIN producto_principio_activo ppa ON ppa.principio_activo_id = pa.id WHERE ppa.producto_generico_id = ? ORDER BY ppa.orden",
@@ -623,7 +705,9 @@ pub async fn asignar_principios_a_producto(
     motivo: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -656,7 +740,10 @@ pub async fn asignar_principios_a_producto(
         String::new()
     } else {
         let placeholders = vec!["?"; principio_activo_ids.len()].join(", ");
-        let sql = format!("SELECT id, nombre_dci FROM principio_activo WHERE id IN ({})", placeholders);
+        let sql = format!(
+            "SELECT id, nombre_dci FROM principio_activo WHERE id IN ({})",
+            placeholders
+        );
         let mut query = sqlx::query(&sql);
         for principio_activo_id in &principio_activo_ids {
             query = query.bind(principio_activo_id);
@@ -666,7 +753,8 @@ pub async fn asignar_principios_a_producto(
         for row in rows {
             nombres_por_id.insert(
                 row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
-                row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?,
+                row.try_get::<String, _>("nombre_dci")
+                    .map_err(|e| e.to_string())?,
             );
         }
 
@@ -685,10 +773,11 @@ pub async fn asignar_principios_a_producto(
         .map_err(|e| e.to_string())?;
 
     if let Some(motivo_valor) = motivo.filter(|value| !value.trim().is_empty()) {
-        let creado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        let creado_en =
+            sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
 
         sqlx::query("INSERT INTO correccion_catalogo (id, tabla, entidad_id, campo, valor_anterior, valor_nuevo, motivo, operador_id, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
             .bind(Uuid::new_v4().to_string())
@@ -716,7 +805,9 @@ pub async fn obtener_principio_activo(
     id: String,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     let row = sqlx::query(
@@ -773,7 +864,9 @@ pub async fn crear_principio_activo(
     es_esencial_minsa: bool,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = obtener_timestamp(pool).await?;
@@ -821,7 +914,9 @@ pub async fn modificar_principio_activo(
     operador_id: String,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -834,13 +929,27 @@ pub async fn modificar_principio_activo(
     .map_err(|e| e.to_string())?
     .ok_or_else(|| String::from("PRINCIPIO_NO_ENCONTRADO"))?;
 
-    let nombre_dci_actual = row.try_get::<String, _>("nombre_dci").map_err(|e| e.to_string())?;
-    let descripcion_uso_actual = row.try_get::<String, _>("descripcion_uso").map_err(|e| e.to_string())?;
-    let grupo_terapeutico_actual = row.try_get::<String, _>("grupo_terapeutico").map_err(|e| e.to_string())?;
-    let condicion_venta_actual = row.try_get::<String, _>("condicion_venta").map_err(|e| e.to_string())?;
-    let es_combinacion_actual = row.try_get::<i64, _>("es_combinacion").map_err(|e| e.to_string())?;
-    let es_psicotropico_actual = row.try_get::<i64, _>("es_psicotropico").map_err(|e| e.to_string())?;
-    let es_esencial_minsa_actual = row.try_get::<i64, _>("es_esencial_minsa").map_err(|e| e.to_string())?;
+    let nombre_dci_actual = row
+        .try_get::<String, _>("nombre_dci")
+        .map_err(|e| e.to_string())?;
+    let descripcion_uso_actual = row
+        .try_get::<String, _>("descripcion_uso")
+        .map_err(|e| e.to_string())?;
+    let grupo_terapeutico_actual = row
+        .try_get::<String, _>("grupo_terapeutico")
+        .map_err(|e| e.to_string())?;
+    let condicion_venta_actual = row
+        .try_get::<String, _>("condicion_venta")
+        .map_err(|e| e.to_string())?;
+    let es_combinacion_actual = row
+        .try_get::<i64, _>("es_combinacion")
+        .map_err(|e| e.to_string())?;
+    let es_psicotropico_actual = row
+        .try_get::<i64, _>("es_psicotropico")
+        .map_err(|e| e.to_string())?;
+    let es_esencial_minsa_actual = row
+        .try_get::<i64, _>("es_esencial_minsa")
+        .map_err(|e| e.to_string())?;
     let es_combinacion_nuevo = bool_a_i64(es_combinacion);
     let es_psicotropico_nuevo = bool_a_i64(es_psicotropico);
     let es_esencial_minsa_nuevo = bool_a_i64(es_esencial_minsa);

@@ -22,7 +22,9 @@ pub async fn crear_valor_operacional(
     vigencia_hasta: Option<String>,
 ) -> Result<String, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let id = Uuid::new_v4().to_string();
     let creado_en = obtener_timestamp(pool).await?;
@@ -58,7 +60,9 @@ pub async fn modificar_valor_operacional(
     estado: Option<String>,
 ) -> Result<(), String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     sqlx::query(
@@ -82,13 +86,16 @@ pub async fn obtener_valores_nodo(
     nodo_id: String,
 ) -> Result<Vec<Value>, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let rows = sqlx::query("SELECT * FROM valor_operacional WHERE nodo_id = ? ORDER BY tipo, creado_en")
-        .bind(nodo_id)
-        .fetch_all(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let rows =
+        sqlx::query("SELECT * FROM valor_operacional WHERE nodo_id = ? ORDER BY tipo, creado_en")
+            .bind(nodo_id)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
     rows.into_iter()
         .map(|row| {
@@ -119,7 +126,9 @@ pub async fn resolver_precio_nodo(
     tipo_cliente: Option<String>,
 ) -> Result<Value, String> {
     let instances = db_instances.0.read().await;
-    let db = instances.get("sqlite:disateq.db").ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
 
     let promocion = sqlx::query(
