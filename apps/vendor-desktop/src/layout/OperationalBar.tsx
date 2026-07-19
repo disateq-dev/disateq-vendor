@@ -374,156 +374,151 @@ export function ContextBar({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // ── Vista expandida — opciones secundarias ───────────────
-  if (expandido) {
-    const accent = MODULE_ACCENT[expandido];
-    const opciones = getOpciones(expandido, puedeSupervisarCaja);
-    const opcionActiva = getOpcionActiva(expandido, cashSubView, abastecimientoSubModule, configSubView);
-    const opcionesActivas = opciones.filter(o => !o.placeholder);
-
-    return (
-      <section
-        className="flex h-[44px] shrink-0 items-center gap-2 px-3"
-        style={{ backgroundColor: "var(--dv-surface-base)", borderBottom: `1px solid ${accent}33` }}
-        onMouseLeave={() => onHover(null)}
-      >
-        {/* Anchor — módulo expandido */}
-        <button
-          onClick={() => { setExpandido(null); setFocusOpcion(0); setBarraActiva(false); }}
-          className="flex shrink-0 h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none"
-          style={{ borderBottom: `3px solid ${accent}` }}
-        >
-          {(() => { const Icon = MODULE_ICON[expandido]; return <span style={{ color: accent }}><Icon size={20} /></span>; })()}
-          <span style={{ color: "#2C2A26" }}>{MODULE_LABEL[expandido]}</span>
-        </button>
-
-        <div className="h-5 w-px shrink-0 bg-[#d1d5db]/60" />
-
-        {/* Opciones secundarias */}
-        <div className="flex items-center gap-1 flex-1 overflow-hidden">
-          {opciones.map((opcion) => {
-            const opcionIdx = opcionesActivas.findIndex(o => o.key === opcion.key);
-            const estaActiva = opcionActiva === opcion.key;
-            const tieneFoco = barraActiva && opcionIdx === focusOpcion && !opcion.placeholder;
-
-            if (opcion.separadorAntes) {
-              return (
-                <div key={`sep-${opcion.key}`} className="flex items-center gap-1">
-                  <Separador />
-                  {renderOpcion(opcion, estaActiva, tieneFoco, accent, expandido, opcionIdx)}
-                </div>
-              );
-            }
-            return renderOpcion(opcion, estaActiva, tieneFoco, accent, expandido, opcionIdx);
-          })}
-        </div>
-
-        {expandido === "config" && (
-          <HealthDot
-            onNavigate={() => {
-              setOpcionActiva("config", "diagnostico", onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
-            }}
-          />
-        )}
-      </section>
-    );
-
-    function renderOpcion(opcion: OpcionSecundaria, estaActiva: boolean, tieneFoco: boolean, accent: string, modulo: ActiveModule, idx: number) {
-      if (opcion.placeholder) {
-        return (
-          <span key={opcion.key} className="px-2.5 py-0.5 rounded-full text-[13px] font-semibold select-none cursor-default opacity-30" style={{ color: accent }}>
-            {opcion.label}
-          </span>
-        );
-      }
+  function renderOpcion(opcion: OpcionSecundaria, estaActiva: boolean, tieneFoco: boolean, accent: string, modulo: ActiveModule, idx: number) {
+    if (opcion.placeholder) {
       return (
-        <button
-          key={opcion.key}
-          onClick={() => {
-            setOpcionActiva(modulo, opcion.key, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
-          }}
-          onMouseEnter={() => {
-            if (idx >= 0) setFocusOpcion(idx);
-          }}
-          className="px-2.5 py-0.5 rounded-full text-[13px] font-semibold transition outline-none"
-          style={
-            tieneFoco || (!barraActiva && estaActiva)
-              ? { backgroundColor: accent, color: "white" }
-              : { color: "var(--dv-text-primary)", opacity: 0.8 }
-          }
-        >
+        <span key={opcion.key} className="px-2 py-0.5 rounded-full text-[12px] font-semibold select-none cursor-default opacity-30" style={{ color: accent }}>
           {opcion.label}
-        </button>
+        </span>
       );
     }
+    return (
+      <button
+        key={opcion.key}
+        onClick={() => {
+          setOpcionActiva(modulo, opcion.key, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
+        }}
+        onMouseEnter={() => {
+          if (idx >= 0) setFocusOpcion(idx);
+        }}
+        className="px-2 py-0.5 rounded-full text-[12px] font-semibold transition outline-none"
+        style={
+          tieneFoco || (!barraActiva && estaActiva)
+            ? { backgroundColor: accent, color: "white" }
+            : { color: "var(--dv-text-primary)", opacity: 0.8 }
+        }
+      >
+        {opcion.label}
+      </button>
+    );
   }
 
-  // ── Vista global — todos los módulos ─────────────────────
   return (
-    <section
-      className="flex h-[44px] shrink-0 items-center px-3 gap-1" style={{ backgroundColor: "var(--dv-surface-base)" }}
-      onMouseLeave={() => { setHoverModulo(null); onHover(null); }}
-    >
-      {MODULES_ORDER.map((modulo, idx) => {
-        const Icon = MODULE_ICON[modulo];
-        const acceso = tieneAcceso(modulo);
-        const tieneCursor = barraActiva && navIdx === idx;
-        const accent = MODULE_ACCENT[modulo];
+    <div className="flex flex-col">
+      {/* ── FILA 1 — módulos siempre visibles ── */}
+      <section
+        className="flex h-[44px] shrink-0 items-center px-3 gap-1"
+        style={{ backgroundColor: "var(--dv-surface-base)" }}
+        onMouseLeave={() => { setHoverModulo(null); onHover(null); }}
+      >
+        {MODULES_ORDER.map((modulo, idx) => {
+          const Icon = MODULE_ICON[modulo];
+          const acceso = tieneAcceso(modulo);
+          const accent = MODULE_ACCENT[modulo];
+          const esActivo = active === modulo || expandido === modulo;
+          const esUltimoAntesSep = modulo === "sales" || modulo === "abastecimiento" || modulo === "reportes";
+          const tieneCursor = barraActiva && navIdx === idx;
 
-        const esUltimoAntesSep = modulo === "sales" || modulo === "abastecimiento" || modulo === "reportes";
-
-        return (
-          <div key={modulo} className="flex items-center">
-            <button
-              onClick={() => {
-                if (!acceso) return;
-                cbRefs.current.onChange(modulo);
-                setModuloActivoVisual(modulo);
-                if (CON_SECUNDARIAS.has(modulo)) {
-                  setExpandido(modulo);
-                  setNavIdx(idx);
-                  setFocusOpcion(0);
-                  setBarraActiva(true);
-                } else {
-                  setBarraActiva(false);
-                  setExpandido(null);
-                }
-              }}
-              onMouseEnter={() => {
-                if (!acceso) return;
-                setHoverModulo(modulo);
-                onHover(modulo);
-              }}
-              title={!acceso ? "Sin acceso" : undefined}
-              className="flex h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none border-b-[3px]"
-              style={(() => {
-                if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };
-                if (!barraActiva) {
-                  if (hoverModulo === modulo) return {
+          return (
+            <div key={modulo} className="flex shrink-0 items-center">
+              <button
+                onClick={() => {
+                  if (!acceso) return;
+                  cbRefs.current.onChange(modulo);
+                  setModuloActivoVisual(modulo);
+                  if (CON_SECUNDARIAS.has(modulo)) {
+                    setExpandido(modulo);
+                    setNavIdx(idx);
+                    setFocusOpcion(0);
+                    setBarraActiva(true);
+                  } else {
+                    setBarraActiva(false);
+                    setExpandido(null);
+                  }
+                }}
+                onMouseEnter={() => {
+                  if (!acceso) return;
+                  setHoverModulo(modulo);
+                  onHover(modulo);
+                }}
+                title={!acceso ? "Sin acceso" : undefined}
+                className="flex h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none border-b-[3px]"
+                style={(() => {
+                  if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };
+                  if (esActivo) return {
                     borderColor: accent,
                     backgroundColor: `${accent}14`,
                     borderRadius: "8px 8px 0 0",
                     cursor: "pointer",
                   };
-                  return { borderColor: "transparent", color: "#2C2A26", cursor: "pointer" };
-                }
-                const esLengueta = tieneCursor || moduloActivoVisual === modulo || hoverModulo === modulo;
-                if (esLengueta) return {
-                  borderColor: accent,
-                  backgroundColor: `${accent}14`,
-                  borderRadius: "8px 8px 0 0",
-                  cursor: "pointer",
-                };
-                return { opacity: 0.65, borderColor: "transparent", cursor: "pointer" };
-              })()}
-            >
-              <span style={{ color: acceso ? accent : "#2C2A26" }}><Icon size={20} /></span>
-              <span style={{ color: "#2C2A26" }}>{MODULE_LABEL[modulo]}</span>
-            </button>
-            {esUltimoAntesSep && <Separador />}
-          </div>
+                  if (!barraActiva) {
+                    if (hoverModulo === modulo) return {
+                      borderColor: accent,
+                      backgroundColor: `${accent}14`,
+                      borderRadius: "8px 8px 0 0",
+                      cursor: "pointer",
+                    };
+                    return { borderColor: "transparent", color: "#2C2A26", cursor: "pointer" };
+                  }
+                  const esLengueta = tieneCursor || moduloActivoVisual === modulo || hoverModulo === modulo;
+                  if (esLengueta) return {
+                    borderColor: accent,
+                    backgroundColor: `${accent}14`,
+                    borderRadius: "8px 8px 0 0",
+                    cursor: "pointer",
+                  };
+                  return { opacity: 0.65, borderColor: "transparent", cursor: "pointer" };
+                })()}
+              >
+                <span style={{ color: acceso ? accent : "#2C2A26" }}><Icon size={17} /></span>
+                <span style={{ color: esActivo ? accent : "#2C2A26", opacity: esActivo ? 1 : 0.75 }}>
+                  {MODULE_LABEL[modulo]}
+                </span>
+              </button>
+              {esUltimoAntesSep && <Separador />}
+            </div>
+          );
+        })}
+      </section>
+
+      {/* ── FILA 2 — subopciones del módulo activo (solo si tiene) ── */}
+      {expandido && CON_SECUNDARIAS.has(expandido) && (() => {
+        const accent = MODULE_ACCENT[expandido];
+        const opciones = getOpciones(expandido, puedeSupervisarCaja);
+        const opcionActiva = getOpcionActiva(expandido, cashSubView, abastecimientoSubModule, configSubView);
+        const opcionesActivas = opciones.filter(o => !o.placeholder);
+
+        return (
+          <section
+            className="flex h-[36px] shrink-0 items-center px-4 gap-1"
+            style={{ backgroundColor: `${accent}0D`, borderTop: `1px solid ${accent}22`, borderBottom: `1px solid ${accent}22` }}
+          >
+            {opciones.map((opcion) => {
+              const opcionIdx = opcionesActivas.findIndex(o => o.key === opcion.key);
+              const estaActiva = opcionActiva === opcion.key;
+              const tieneFoco = barraActiva && opcionIdx === focusOpcion && !opcion.placeholder;
+              if (opcion.separadorAntes) {
+                return (
+                  <div key={`sep-${opcion.key}`} className="flex items-center gap-1">
+                    <Separador />
+                    {renderOpcion(opcion, estaActiva, tieneFoco, accent, expandido, opcionIdx)}
+                  </div>
+                );
+              }
+              return renderOpcion(opcion, estaActiva, tieneFoco, accent, expandido, opcionIdx);
+            })}
+            {expandido === "config" && (
+              <div className="ml-auto">
+                <HealthDot
+                  onNavigate={() => {
+                    setOpcionActiva("config", "diagnostico", onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange);
+                  }}
+                />
+              </div>
+            )}
+          </section>
         );
-      })}
-    </section>
+      })()}
+    </div>
   );
 }
