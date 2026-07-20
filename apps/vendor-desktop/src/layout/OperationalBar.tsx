@@ -4,7 +4,7 @@ import { type ActiveModule, type CashSubView, type AbastecimientoSubModule, type
 import { useCapacidad } from "../hooks/useCapacidad";
 import { useContextoOperacional } from "../hooks/useContextoOperacional";
 import { usePOS } from "../context/POSContext";
-import { getActiveAuthorizationsForBlock } from "../modules/cash/services/supervision-authorization.service";
+import { useAutorizacionesActivas } from "../hooks/useAutorizacionesActivas";
 import { HealthDot } from "../components/HealthDot";
 
 // ── Orden visual de módulos ───────────────────────────────────
@@ -154,7 +154,8 @@ export function ContextBar({
   const { activeOperator, cashSession, suggestedCashBox, acknowledgedAuthIds } = usePOS();
   const operatorBlockPrefix = cashSession.cashBox?.code[0]
     ?? (activeOperator?.baseBloque != null ? String(activeOperator.baseBloque)[0] : suggestedCashBox?.code[0] ?? "1");
-  const pendingAuth = getActiveAuthorizationsForBlock(operatorBlockPrefix)
+  const autorizacionesActivas = useAutorizacionesActivas(operatorBlockPrefix);
+  const pendingAuth = autorizacionesActivas
     .filter(a => a.type !== "cierre_activo")
     .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt))[0] ?? null;
   const esVEN = activeOperator?.codigoRol === "VEN";

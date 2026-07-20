@@ -91,13 +91,13 @@ export function AutorizacionEjecucionCard({
   const newDiferenciaCalc = Math.round((newTotalNum - esperadoTotal) * 100) / 100;
   const newSignalCalc: "ok" | "warn" = newDiferenciaCalc === 0 ? "ok" : "warn";
 
-  function handlePostpone() {
+  async function handlePostpone() {
     if (postponeMotivo.trim().length < MIN_MOTIVO_LEN) return;
-    markAuthorizationPostponed(activeAuth.id, postponeMotivo.trim(), operatorName);
+    await markAuthorizationPostponed(activeAuth.id, postponeMotivo.trim(), operatorName);
     onPostponed();
   }
 
-  function handleExec() {
+  async function handleExec() {
     if (!canExec) return;
     if (activeAuth.type === "cierre_extemporaneo") {
       const correction: CorrectionRecord = {
@@ -150,7 +150,7 @@ export function AutorizacionEjecucionCard({
       };
       recordAperturaCorrection(activeAuth.sessionId, correction);
     }
-    markAuthorizationExecuted(activeAuth.id, operatorName);
+    await markAuthorizationExecuted(activeAuth.id, operatorName);
     onExecuted();
     setExecDone(true);
   }

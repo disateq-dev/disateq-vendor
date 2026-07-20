@@ -22,9 +22,10 @@ import {
 } from "./services/session-history.service";
 import { AutorizacionEjecucionCard } from "./AutorizacionEjecucionCard";
 import {
-  loadAuthorizations, markAuthorizationExecuted, getActiveAuthorizationsForBlock,
+  loadAuthorizations, markAuthorizationExecuted,
   type CajaAuthorization,
 } from "./services/supervision-authorization.service";
+import { useAutorizacionesActivas } from "../../hooks/useAutorizacionesActivas";
 import { moneyAdd, moneySub, moneySum, moneyGt, moneyGte, moneyIsZero } from "../../lib/money";
 import { useAutorizacion } from "../../hooks/useAutorizacion";
 
@@ -468,19 +469,16 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const operatorFullName    = activeOperator?.nombreCompleto ?? operators.find(o => o.baseBloque !== null && String(o.baseBloque)[0] === operatorBlockPrefix && o.estado === "ACTIVO")?.nombreCompleto ?? "Operador";
 
   // ── autorización supervisora pendiente — solo bloque del operador ──
-  const [authRefresh, setAuthRefresh] = useState(0);
-  const pendingCorrectionAuth: CajaAuthorization | null = useMemo(() => {
-    const auths = getActiveAuthorizationsForBlock(operatorBlockPrefix)
+  const autorizacionesActivasCaja = useAutorizacionesActivas(operatorBlockPrefix);
+  const pendingCorrectionAuth: CajaAuthorization | null =
+    autorizacionesActivasCaja
       .filter(a => a.type !== "cierre_activo")
-      .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt));
-    return auths[0] ?? null;
-  }, [operatorBlockPrefix, authRefresh]);
+      .sort((a, b) => a.authorizedAt.localeCompare(b.authorizedAt))[0] ?? null;
   const targetSessionForAuth = pendingCorrectionAuth
     ? sessionHistory.find(e => e.id === pendingCorrectionAuth.sessionId) ?? null
     : null;
   function handleCorrectionExecuted() {
     loadSessionHistory().then(setSessionHistory);
-    setAuthRefresh(v => v + 1);
     if (pendingCorrectionAuth) acknowledgeAuthorization(pendingCorrectionAuth.id);
   }
   function handleCorrectionPostponed() {
@@ -743,10 +741,10 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     const closeSignal = moneyIsZero(diferencia) ? "ok" as const : "warn" as const;
     if (closeSid) {
       if (cierreAutorizado) {
-        const pendingAuth = loadAuthorizations().find(
+        const pendingAuth = (await loadAuthorizations()).find(
           a => a.sessionId === closeSid && a.type === "cierre_activo" && a.status === "emitida",
         );
-        if (pendingAuth) markAuthorizationExecuted(pendingAuth.id, operatorName);
+        if (pendingAuth) await markAuthorizationExecuted(pendingAuth.id, operatorName);
       }
     }
     closeCashSession();
@@ -830,7 +828,6 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   useEffect(() => {
     if (cashSubView === "turno") {
       loadSessionHistory().then(setSessionHistory);
-      setAuthRefresh(v => v + 1);
     }
   }, [cashSubView]);
 

@@ -151,7 +151,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const { activeOperator, operators, cashSession } = usePOS();
 
   const [history, setHistory]           = useState<SessionEntry[]>([]);
-  const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
+  const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>([]);
   const [selectedId,     setSelectedId]     = useState<string | null>(null);
   const [motivoPreset,   setMotivoPreset]   = useState("");
   const [motivoLibre,    setMotivoLibre]    = useState("");
@@ -173,6 +173,18 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const cajaOptions      = filterBlockPrefix ? uniqueCajas.filter(c => c[0] === filterBlockPrefix) : uniqueCajas;
 
   useEffect(() => { loadSessionHistory().then(setHistory); }, []);
+
+  useEffect(() => {
+    loadAuthorizations().then(setAuthorizations).catch(() => setAuthorizations([]));
+  }, []);
+
+  useEffect(() => {
+    function onChanged() {
+      loadAuthorizations().then(setAuthorizations).catch(() => setAuthorizations([]));
+    }
+    window.addEventListener("disateq:autorizaciones-changed", onChanged);
+    return () => window.removeEventListener("disateq:autorizaciones-changed", onChanged);
+  }, []);
   useEffect(() => { getCurrentSessionId().then(setCurrentSid); }, [cashSession.isOpen]);
 
   const filtered = history.slice(0, 60).filter(e => {
@@ -246,9 +258,9 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
     setObsExpanded(false); setObsAuthType("correccion_cierre");
   }
 
-  function handleAuthorize() {
+  async function handleAuthorize() {
     if (!selectedEntry || !canAuthorize || !authType) return;
-    recordAuthorization({
+    await recordAuthorization({
       cajaCode:     selectedEntry.boxCode,
       sessionId:    selectedEntry.id,
       type:         authType,
@@ -256,13 +268,11 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
       authorizedBy: supervisorName,
       authorizedAt: new Date().toISOString(),
     });
-    setAuthorizations(loadAuthorizations());
     if (authType === "cierre_activo") onAutorizarCierre?.();
   }
 
-  function handleValidate(authId: string) {
-    markAuthorizationValidated(authId, supervisorName);
-    setAuthorizations(loadAuthorizations());
+  async function handleValidate(authId: string) {
+    await markAuthorizationValidated(authId, supervisorName);
   }
 
   return (
