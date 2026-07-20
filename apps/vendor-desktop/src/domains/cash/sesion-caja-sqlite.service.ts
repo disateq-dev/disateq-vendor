@@ -54,17 +54,17 @@ export async function abrirSesionCajaEnSQLite(
 ): Promise<{ ok: boolean }> {
   try {
     await invoke('abrir_sesion_caja', {
-      sesion_id: sesionId,
-      caja_codigo: cajaCodigo,
-      caja_tipo: cajaTipo,
-      operador_nombre: operadorNombre,
-      operador_id: operadorId,
+      sesionId,
+      cajaCodigo,
+      cajaTipo,
+      operadorNombre,
+      operadorId,
       terminal,
       apertura,
       motivo,
       observacion,
-      ref_op: refOp,
-      abierta_en: abiertaEn,
+      refOp,
+      abiertaEn,
     })
     return { ok: true }
   } catch {
@@ -81,10 +81,10 @@ export async function cerrarSesionCajaEnSQLite(
 ): Promise<{ ok: boolean }> {
   try {
     await invoke('cerrar_sesion_caja', {
-      sesion_id: sesionId,
-      cerrada_en: cerradaEn,
-      close_signal: closeSignal,
-      arqueo_json: arqueoJson,
+      sesionId,
+      cerradaEn,
+      closeSignal,
+      arqueoJson,
     })
     return { ok: true }
   } catch {
@@ -112,20 +112,20 @@ export async function registrarMovimientoCajaEnSQLite(
 ): Promise<{ ok: boolean; id: string | null }> {
   try {
     const id = await invoke<string>('registrar_movimiento_caja', {
-      sesion_id: sesionId,
+      sesionId,
       tipo,
       monto,
       motivo,
       observacion,
-      ref_id: refId,
-      operador_nombre: operadorNombre,
-      caja_codigo: cajaCodigo,
+      refId,
+      operadorNombre,
+      cajaCodigo,
       terminal,
-      source_type: sourceType,
-      from_apertura: fromApertura,
-      from_vendido: fromVendido,
-      regularization_status: regularizationStatus,
-      regularization_mode: regularizationMode,
+      sourceType,
+      fromApertura,
+      fromVendido,
+      regularizationStatus,
+      regularizationMode,
       timestamp,
     })
     return { ok: true, id }
@@ -142,9 +142,9 @@ export async function actualizarMovimientoCajaEnSQLite(
 ): Promise<{ ok: boolean }> {
   try {
     await invoke('actualizar_movimiento_caja', {
-      movimiento_id: movimientoId,
-      regularization_status: regularizationStatus,
-      regularization_mode: regularizationMode,
+      movimientoId,
+      regularizationStatus,
+      regularizationMode,
     })
     return { ok: true }
   } catch {
@@ -161,7 +161,7 @@ export async function registrarEventoTurnoEnSQLite(
 ): Promise<void> {
   try {
     await invoke('registrar_evento_turno', {
-      sesion_id: sesionId,
+      sesionId,
       tipo,
       texto,
       ts,
@@ -198,7 +198,7 @@ export async function obtenerMovimientosSesionSQLite(
 ): Promise<MovimientoCajaRow[]> {
   try {
     return await invoke<MovimientoCajaRow[]>('obtener_movimientos_sesion', {
-      sesion_id: sesionId,
+      sesionId,
     })
   } catch {
     await logError('sesion-caja-sqlite', 'No se pudo obtener los movimientos de sesión desde SQLite')
@@ -214,10 +214,10 @@ export async function actualizarSesionCajaCorrection(
 ): Promise<{ ok: boolean }> {
   try {
     await invoke('actualizar_sesion_caja_correction', {
-      sesion_id: sesionId,
-      close_signal: closeSignal,
-      correction_json: correctionJson,
-      arqueo_json: arqueoJson,
+      sesionId,
+      closeSignal,
+      correctionJson,
+      arqueoJson,
     })
     return { ok: true }
   } catch {
