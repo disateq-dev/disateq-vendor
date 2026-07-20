@@ -263,10 +263,9 @@ export function ContextBar({
           setBarraActiva(true);
           setEsperandoAtajo(true);
         } else {
-          setBarraActiva(false);
-          setExpandido(null);
-          setFocusOpcion(0);
-          setEsperandoAtajo(false);
+          const idxActivo = s.active !== null ? MODULES_ORDER.indexOf(s.active) : 0;
+          setNavIdx(idxActivo >= 0 ? idxActivo : 0);
+          setEsperandoAtajo(true);
         }
         return;
       }
@@ -281,6 +280,10 @@ export function ContextBar({
           setModuloActivoVisual(destino);
           if (CON_SECUNDARIAS.has(destino)) {
             const idx = MODULES_ORDER.indexOf(destino);
+            const primerasOpciones = getOpciones(destino, accessRef.current.puedeSupervisarCaja).filter(o => !o.placeholder);
+            if (primerasOpciones.length > 0) {
+              setOpcionActiva(destino, primerasOpciones[0].key, cbRefs.current.onCashSubViewChange, cbRefs.current.onAbastecimientoSubModuleChange, cbRefs.current.onConfigSubViewChange);
+            }
             setNavIdx(idx);
             setExpandido(destino);
             setFocusOpcion(0);
@@ -333,19 +336,6 @@ export function ContextBar({
           setEsperandoAtajo(false);
           return;
         }
-        if (e.code === "ArrowDown") {
-          e.preventDefault();
-          const target = MODULES_ORDER[s.navIdx];
-          if (!tieneAcceso(target)) return;
-          if (CON_SECUNDARIAS.has(target)) {
-            cbRefs.current.onChange(target);
-            setModuloActivoVisual(target);
-            setExpandido(target);
-            setFocusOpcion(0);
-            setEsperandoAtajo(false);
-          }
-          return;
-        }
         if (e.code === "Enter") {
           e.preventDefault();
           const target = MODULES_ORDER[s.navIdx];
@@ -353,6 +343,10 @@ export function ContextBar({
           cbRefs.current.onChange(target);
           setModuloActivoVisual(target);
           if (CON_SECUNDARIAS.has(target)) {
+            const primerasOpciones = getOpciones(target, accessRef.current.puedeSupervisarCaja).filter(o => !o.placeholder);
+            if (primerasOpciones.length > 0) {
+              setOpcionActiva(target, primerasOpciones[0].key, cbRefs.current.onCashSubViewChange, cbRefs.current.onAbastecimientoSubModuleChange, cbRefs.current.onConfigSubViewChange);
+            }
             setExpandido(target);
             setFocusOpcion(0);
           } else {
@@ -369,20 +363,16 @@ export function ContextBar({
         const opciones = getOpciones(s.expandido, accessRef.current.puedeSupervisarCaja).filter(o => !o.placeholder);
         if (e.code === "ArrowRight") {
           e.preventDefault();
-          setFocusOpcion(i => (i + 1) % opciones.length);
+          const siguienteIdx = (s.focusOpcion + 1) % opciones.length;
+          setFocusOpcion(siguienteIdx);
+          setOpcionActiva(s.expandido, opciones[siguienteIdx].key, cbRefs.current.onCashSubViewChange, cbRefs.current.onAbastecimientoSubModuleChange, cbRefs.current.onConfigSubViewChange);
           return;
         }
         if (e.code === "ArrowLeft") {
           e.preventDefault();
-          setFocusOpcion(i => (i - 1 + opciones.length) % opciones.length);
-          return;
-        }
-        if (e.code === "ArrowUp") {
-          e.preventDefault();
-          setExpandido(null);
-          setFocusOpcion(0);
-          setNavIdx(s.active !== null ? MODULES_ORDER.indexOf(s.active) : 0);
-          setEsperandoAtajo(false);
+          const anteriorIdx = (s.focusOpcion - 1 + opciones.length) % opciones.length;
+          setFocusOpcion(anteriorIdx);
+          setOpcionActiva(s.expandido, opciones[anteriorIdx].key, cbRefs.current.onCashSubViewChange, cbRefs.current.onAbastecimientoSubModuleChange, cbRefs.current.onConfigSubViewChange);
           return;
         }
         if (e.code === "Enter") {
@@ -390,6 +380,9 @@ export function ContextBar({
           const opcion = opciones[s.focusOpcion];
           if (!opcion) return;
           setOpcionActiva(s.expandido, opcion.key, cbRefs.current.onCashSubViewChange, cbRefs.current.onAbastecimientoSubModuleChange, cbRefs.current.onConfigSubViewChange);
+          setBarraActiva(false);
+          setExpandido(null);
+          setFocusOpcion(0);
           return;
         }
       }
