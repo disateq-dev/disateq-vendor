@@ -148,7 +148,7 @@ interface SupervisionCajaProps {
 }
 
 export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaProps = {}) {
-  const { activeOperator, operators, cashSession } = usePOS();
+  const { activeOperator, operators } = usePOS();
 
   const [history, setHistory]           = useState<SessionEntry[]>([]);
   const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>([]);
@@ -185,11 +185,17 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
     window.addEventListener("disateq:autorizaciones-changed", onChanged);
     return () => window.removeEventListener("disateq:autorizaciones-changed", onChanged);
   }, []);
-  useEffect(() => { getCurrentSessionId().then(setCurrentSid); }, [cashSession.isOpen]);
+  useEffect(() => {
+    getCurrentSessionId().then(setCurrentSid);
+    const interval = setInterval(() => {
+      getCurrentSessionId().then(setCurrentSid);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filtered = history.slice(0, 60).filter(e => {
     if (filterEstado !== "todos") {
-      const isAbierto   = cashSession.isOpen && e.id === currentSid;
+      const isAbierto   = currentSid !== null && e.id === currentSid;
       const isSinCierre = e.closeSignal === null && !isAbierto;
       const isCerrado   = e.closeSignal !== null;
       if (filterEstado === "abierto"    && !isAbierto)   return false;
@@ -206,7 +212,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
 
   const sorted = [...filtered].sort((a, b) => {
     const p = (e: SessionEntry) => {
-      if (cashSession.isOpen && e.id === currentSid) return 0;
+      if (currentSid !== null && e.id === currentSid) return 0;
       if (e.closeSignal === null) return 1;
       if (e.closeSignal === "warn") return 2;
       return 3;
@@ -222,7 +228,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
   const isPending       = selectedEntry?.closeSignal === null;
   const isWarn          = selectedEntry?.closeSignal === "warn";
   const isOk            = selectedEntry?.closeSignal === "ok";
-  const isActiveSession = !!(selectedEntry && isPending && cashSession.isOpen && selectedEntry.id === currentSid);
+  const isActiveSession = !!(selectedEntry && isPending && currentSid !== null && selectedEntry.id === currentSid);
   const isExtemporaneo  = isPending && !isActiveSession;
 
   const authType: AuthorizationType | null =
@@ -243,7 +249,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
     !sessionAuthorizations.some(a => a.type === authType && a.status !== "validada");
 
   const pendingCount = sorted.filter(e => {
-    const isAct = cashSession.isOpen && e.id === currentSid;
+    const isAct = currentSid !== null && e.id === currentSid;
     const isSC  = e.closeSignal === null && !isAct;
     const isWrn = e.closeSignal === "warn";
     const auths = authorizations.filter(a => a.sessionId === e.id);
@@ -351,7 +357,7 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
           ) : (
             <div className="flex flex-col divide-y divide-[#f4f6f9]">
               {sorted.map(e => {
-                const isAct  = cashSession.isOpen && e.id === currentSid;
+                const isAct  = currentSid !== null && e.id === currentSid;
                 const isSC   = e.closeSignal === null && !isAct;
                 const isWrn  = e.closeSignal === "warn";
                 const isCorr = e.closeSignal === "ok";

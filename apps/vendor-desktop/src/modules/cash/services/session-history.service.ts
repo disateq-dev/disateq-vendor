@@ -66,7 +66,7 @@ function mapSesionCajaRow(row: SesionCajaRow): SessionEntry {
   const correction = parseCorrection(row);
   return {
     id: row.id,
-    boxCode: row.caja_codigo,
+    boxCode: row.caja_codigo.replace(/^'|'$/g, ""),
     boxLabel: `CAJA ${row.caja_tipo}`,
     operator: row.operador_nombre,
     openedAt: row.abierta_en,
@@ -94,27 +94,6 @@ export async function getCurrentSessionId(): Promise<string | null> {
   } catch {
     return null;
   }
-}
-
-export async function recordSessionOpen(
-  sid: string, boxCode: string, boxLabel: string,
-  operator: string, openedAt: string, apertura: number,
-): Promise<void> {
-  void sid;
-  void boxCode;
-  void boxLabel;
-  void operator;
-  void openedAt;
-  void apertura;
-}
-
-export async function recordSessionClose(
-  sid: string, closedAt: string, closeSignal: CloseSignal, arqueo: ArqueoData,
-): Promise<void> {
-  void sid;
-  void closedAt;
-  void closeSignal;
-  void arqueo;
 }
 
 export async function recordSessionCorrection(
