@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BarChart2, Boxes, Clock, FileText, Settings, ShoppingCart, Users } from "lucide-react";
+import { BarChart2, Boxes, Clock, FileText, Settings, Shield, ShoppingCart, Users } from "lucide-react";
 import { type ActiveModule, type CashSubView, type AbastecimientoSubModule, type ConfigSubView } from "../App";
 import { useCapacidad } from "../hooks/useCapacidad";
 import { useContextoOperacional } from "../hooks/useContextoOperacional";
@@ -9,7 +9,7 @@ import { HealthDot } from "../components/HealthDot";
 
 // ── Orden visual de módulos ───────────────────────────────────
 const MODULES_ORDER: ActiveModule[] = [
-  "cash", "sales", "abastecimiento", "clientes", "reportes", "comprobantes", "config",
+  "cash", "sales", "abastecimiento", "clientes", "comprobantes", "reportes", "auditoria", "config",
 ];
 
 // ── Atajos directos por módulo (Ctrl+Space luego letra) ──────
@@ -32,6 +32,7 @@ const MODULE_ACCENT: Record<ActiveModule, string> = {
   clientes:       "#1A6BB5",
   reportes:       "#5A4DB8",
   comprobantes:   "#9B3E7A",
+  auditoria:      "#7B6EA0",
   config:         "#5C6478",
 };
 
@@ -43,6 +44,7 @@ const MODULE_LABEL: Record<ActiveModule, string> = {
   clientes:       "CLIENTES",
   reportes:       "REPORTES",
   comprobantes:   "COMPROBANTES",
+  auditoria:      "AUDITORÍA",
   config:         "AJUSTES",
 };
 
@@ -55,6 +57,7 @@ const MODULE_ICON: Record<ActiveModule, LucideIcon> = {
   clientes:       Users,
   reportes:       BarChart2,
   comprobantes:   FileText,
+  auditoria:      Shield,
   config:         Settings,
 };
 
@@ -235,6 +238,7 @@ export function ContextBar({
 
   function tieneAcceso(m: ActiveModule): boolean {
     const acc = accessRef.current;
+    if (m === "auditoria")      return false;
     if (m === "abastecimiento") return acc.puedeVerAbastecimiento;
     if (m === "clientes")       return acc.puedeVerClientes;
     if (m === "reportes")       return acc.puedeVerReportes;
@@ -441,7 +445,7 @@ export function ContextBar({
           const acceso = tieneAcceso(modulo);
           const accent = MODULE_ACCENT[modulo];
           const esActivo = (active !== null && active === modulo) || expandido === modulo;
-          const esUltimoAntesSep = modulo === "sales" || modulo === "abastecimiento" || modulo === "reportes";
+          const esUltimoAntesSep = modulo === "sales" || modulo === "abastecimiento" || modulo === "auditoria";
           const tieneCursor = barraActiva && navIdx === idx;
 
           return (
@@ -467,7 +471,7 @@ export function ContextBar({
                   setHoverModulo(modulo);
                   onHover(modulo);
                 }}
-                title={!acceso ? "Sin acceso" : undefined}
+                title={!acceso ? (modulo === "auditoria" ? "Próximamente" : "Sin acceso — contacte al administrador") : undefined}
                 className="flex h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none border-b-[3px]"
                 style={(() => {
                   if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };
