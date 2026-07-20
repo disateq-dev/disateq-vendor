@@ -326,7 +326,7 @@ function PanelGestionCajas({
     (activeAuth?.type !== "correccion_apertura" || (execNewApertura.length > 0 && newAperturaNum >= 0)) &&
     !execDone;
 
-  function handleExec() {
+  async function handleExec() {
     if (!activeAuth || !canExec) return;
     if (activeAuth.type === "cierre_extemporaneo" || activeAuth.type === "correccion_cierre") {
       const correction: CorrectionRecord = {
@@ -353,7 +353,7 @@ function PanelGestionCajas({
       };
       void recordAperturaCorrection(activeAuth.sessionId, correction);
     }
-    markAuthorizationExecuted(activeAuth.id, operatorName);
+    await markAuthorizationExecuted(activeAuth.id, operatorName);
     onAuthExecuted();
     setExecDone(true);
   }
@@ -860,11 +860,23 @@ export function CajasWorkspace() {
   const pos: POSRef = { operators, isOpen: cashSession.isOpen, cashBox: cashSession.cashBox };
   const operatorName = activeOperator?.nombreCompleto ?? "Operador";
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>(() => loadAuthorizations());
+  const [authorizations, setAuthorizations] = useState<CajaAuthorization[]>([]);
   const [sessionHistory, setSessionHistory] = useState<SessionEntry[]>([]);
 
   useEffect(() => {
     loadSessionHistory().then(setSessionHistory);
+  }, []);
+
+  useEffect(() => {
+    loadAuthorizations().then(setAuthorizations).catch(() => setAuthorizations([]));
+  }, []);
+
+  useEffect(() => {
+    function onChanged() {
+      loadAuthorizations().then(setAuthorizations).catch(() => setAuthorizations([]));
+    }
+    window.addEventListener("disateq:autorizaciones-changed", onChanged);
+    return () => window.removeEventListener("disateq:autorizaciones-changed", onChanged);
   }, []);
 
   useEffect(() => {
@@ -904,8 +916,8 @@ export function CajasWorkspace() {
 
   const codigos = useMemo(() => codigosConHistorial(sessionHistory), [sessionHistory]);
 
-  function handleAuthExecuted() {
-    setAuthorizations(loadAuthorizations());
+  async function handleAuthExecuted() {
+    setAuthorizations(await loadAuthorizations());
     loadSessionHistory().then(setSessionHistory);
   }
 
