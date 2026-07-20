@@ -1,56 +1,81 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
-**Ultima actualizacion:** 2026-07-19
-**Ultimo commit:** pendiente (ver abajo)
+**Ultima actualizacion:** 2026-07-20
+**Ultimo commit:** `7120017` — feat(navbar): reorganizar grupos separadores + AUDITORIA como proximamente
 **Rama:** `main`
-**Working tree:** SUCIO — 2 archivos modificados sin commitear
+**Working tree:** LIMPIO
 
 ---
 
-## COMMITS DE ESTA SESION
+## HISTORIAL DE COMMITS (sesion 2026-07-19/20)
 
 | Commit | Descripcion |
 |---|---|
-| `2ef9f5e` | feat(login+auditoria): faenas 42-43 — LoginScreen corregido + PIN autorizacion SQLite + dominio auditoria multi-rubro |
-| pendiente | fix(config+login): placeholder PIN legible, contador digitos, confirmacion persistente post-guardado |
+| `7b74df0` | fix(config+login): placeholder PIN legible, contador digitos, confirmacion persistente |
+| `086f3d0` | chore(rust): consolidar estado commands y db de sesiones anteriores |
+| `3f29a1b` | fix(rust/pin): migrar comandos PIN a DbInstances + UPSERT seguro en config_establecimiento |
+| `a015941` | chore(login): eliminar comentarios de seccion y ambiente de desarrollo |
+| `7edc8d8` | feat(navbar): preview fila2 en hover, toggle colapso, ArrowDown/Up, eliminar ModulesBar |
+| `a398345` | feat(shell): estado inicial null, HomeWorkspace, estilos fila1 reposo/hover/activo |
+| `7120017` | feat(navbar): reorganizar grupos separadores + AUDITORIA como proximamente |
 
 ---
 
-## ARCHIVOS CON CAMBIOS SIN COMMITEAR
+## ACCION INMEDIATA AL RETOMAR
 
-Estos dos archivos tienen cambios aplicados directamente por el arquitecto, pendientes de commit:
+Working tree limpio. No hay archivos pendientes de commit.
 
-**1. `apps/vendor-desktop/src/modules/config/ConfigWorkspace.tsx`**
-- Placeholder "Ingresar 6 digitos" / "Confirmar 6 digitos" (reemplaza puntos)
-- Contador N/6 en label mientras se escribe
-- Estado `adminJustSaved` — banner verde persistente "PIN guardado correctamente" tras guardar
-- El banner no desaparece hasta que el operador cambia de pantalla
-
-**2. `apps/vendor-desktop/src/modules/login/LoginScreen.tsx`**
-- Placeholders "4-6 digitos" en campos Nuevo PIN y Confirmar PIN de vista pin-change
-
-**Accion pendiente al abrir nueva sesion:**
-1. Ejecutar `npx tsc -p tsconfig.app.json --noEmit` desde `apps/vendor-desktop`
-2. Si pasa: commit con mensaje `fix(config+login): placeholder PIN legible, contador digitos, confirmacion persistente post-guardado`
-3. Continuar investigando el problema del PIN de autorizacion
+**Pendientes operacionales:**
+- Detalles menores de la barra de opciones — Fernando los anotara al cierre de pruebas
+- P3: Auditoria UX modulo por modulo — objetivo produccion
+- P4: supervision-authorization.service.ts — migracion a SQLite
 
 ---
 
-## PROBLEMA ACTIVO SIN RESOLVER — PIN DE AUTORIZACION
+## PENDIENTES EN ORDEN
 
-**Sintoma:** En AJUSTES -> Operacion, el boton "CONFIGURAR PIN DE AUTORIZACION" permanece gris aunque visualmente se ven 6 puntos en ambos campos.
+| Prioridad | Item | Estado |
+|---|---|---|
+| P1 | Detalles menores navbar — barra de opciones | Detectados en prueba, pendiente lista de Fernando |
+| P2 | Auditoria UX modulo por modulo — objetivo produccion | Pendiente |
+| P3 | supervision-authorization.service.ts — migracion a SQLite | Pendiente |
 
-**Causa confirmada:** Los 6 puntos visibles son el placeholder `••••••` (ya corregido a texto), no digitos reales. El campo esta vacio. El boton gris es correcto.
+---
 
-**Estado tras los fixes de esta sesion:**
-- Placeholder corregido a texto legible — el operador ya puede distinguir campo vacio de campo con datos
-- Contador N/6 visible mientras escribe
-- Banner de confirmacion persistente tras guardar exitosamente
+## ESTADO DE LA NAVBAR (Faena 45 — cerrada)
 
-**Pendiente verificar en nueva sesion:**
-- Confirmar que tras los fixes el flujo completo funciona: escribir PIN -> boton se activa -> guardar -> banner verde aparece -> panel superior cambia a verde con fecha y operador
-- Si el problema persiste despues de los fixes de placeholder, investigar si el comando Rust `configurar_pin_autorizacion` llega a ejecutarse (el UPDATE sin WHERE puede afectar 0 filas si config_establecimiento esta vacia)
+**Comportamiento mouse confirmado OK:**
+- Estado inicial null: app carga sin modulo activo, area de trabajo en blanco (HomeWorkspace)
+- Fila 1 reposo: icono color canonico, texto #201E1E opacidad 70%, fondo transparente
+- Fila 1 hover: fondo ${accent}0D (5%), borde inferior accent, texto #201E1E
+- Fila 1 activo: fondo ${accent}1A (10%), borde inferior accent, texto #201E1E
+- Preview fila 2 en hover: hover sobre modulo con secundarias muestra SUS subopciones temporalmente
+- Toggle fila 2: click en modulo activo colapsa/expande fila 2 sin cambiar workspace
+- AUDITORIA: placeholder "Proximamente", opacidad 0.3, tieneAcceso=false siempre
 
-**Sospecha adicional de arquitecto:** El `UPDATE config_establecimiento SET ...` sin clausula `WHERE id = ?` es correcto en SQLite cuando hay exactamente 1 fila, pero si `config_establecimiento` esta vacia (DB nueva, migracion v13 no corrio), el UPDATE afecta 0 filas y el hash nunca se guarda. Verificar que v13 corre antes que v24 en DB nueva.
+**Comportamiento teclado:**
+- Ctrl+Space: activa modo navegacion
+- ArrowLeft/Right: navega entre modulos
+- ArrowDown: expande fila 2 si el modulo tiene secundarias
+- ArrowUp: colapsa fila 2 y vuelve a fila 1
+- Enter: activa modulo / confirma subopcion
+- Escape: colapsa fila 2 o desactiva modo navegacion
+
+**Grupos y separadores (orden canonico):**
+- Grupo 1: TURNO + VENTAS (separador despues de VENTAS)
+- Grupo 2: ABASTECIMIENTO (separador despues de ABASTECIMIENTO)
+- Grupo 3: CLIENTES + COMPROBANTES + REPORTES + AUDITORIA (separador despues de AUDITORIA)
+- Grupo 4: AJUSTES
+
+**MODULES_ORDER canonico:**
+  cash, sales, abastecimiento, clientes, comprobantes, reportes, auditoria, config
+
+**AUDITORIA:**
+- Color: #7B6EA0
+- Icono: Shield (lucide-react)
+- Label: AUDITORIA
+- Acceso: false (siempre — placeholder hasta implementacion UI)
+- Tooltip: "Proximamente"
+- Workspace: pendiente (AuditoriaWorkspace — tabla auditoria_operacion ya existe en SQLite)
 
 ---
 
@@ -58,8 +83,10 @@ Estos dos archivos tienen cambios aplicados directamente por el arquitecto, pend
 
 **SQLite como unica fuente de verdad** — localStorage eliminado de todos los flujos de negocio criticos.
 **Cero soluciones temporales** — cada decision se toma como si fuera la que llega a produccion.
-**Sistema de diseno canonico activo** — paleta de modulos aprobada y congelada al 18-jul-2026.
-**Multi-rubro por defecto** — antes de disenar o modificar cualquier componente, servicio, tabla o flujo, contrastar explicitamente si el cambio es universal (todos los rubros) o especifico de rubro. Lo universal va en dominios/componentes transversales. Lo especifico va bajo su rubro. Nunca mezclar.
+**Sistema de diseno canonico activo** — paleta de modulos aprobada y congelada.
+**Multi-rubro por defecto** — antes de disenar o modificar cualquier componente, servicio, tabla o
+flujo, contrastar explicitamente si el cambio es universal (todos los rubros) o especifico de rubro.
+Lo universal va en dominios/componentes transversales. Lo especifico va bajo su rubro. Nunca mezclar.
 
 ---
 
@@ -76,31 +103,31 @@ Estos dos archivos tienen cambios aplicados directamente por el arquitecto, pend
 
 ### Faena 40 OK — Sistema de diseno shell: paleta canonica · commit 964243f
 
-**Paleta canonica aprobada y congelada (18-jul-2026):**
+**Paleta canonica aprobada y congelada:**
 
-| Modulo | Accent | BG |
-|---|---|---|
-| TURNO | #B5741A | #FDF6EE |
-| VENTAS | #0D7A6E | #E8F5F3 |
-| ABASTECIMIENTO | #4A7C2F | #F0F7EC |
-| CLIENTES | #1A6BB5 | #EBF4FF |
-| REPORTES | #5A4DB8 | #F3F1FB |
-| COMPROBANTES | #9B3E7A | #F7F0F5 |
-| AJUSTES | #5C6478 | #F4F4F6 |
+| Modulo | Token accent | Token bg | Accent | BG |
+|---|---|---|---|---|
+| TURNO | --dv-mod-turno | --dv-mod-turno-bg | #B5741A | #FDF6EE |
+| VENTAS | --dv-mod-ventas | --dv-mod-ventas-bg | #0D7A6E | #E8F5F3 |
+| ABASTECIMIENTO | --dv-mod-abastecimiento | --dv-mod-abastecimiento-bg | #4A7C2F | #F0F7EC |
+| CLIENTES | --dv-mod-clientes | --dv-mod-clientes-bg | #1A6BB5 | #EBF4FF |
+| REPORTES | --dv-mod-reportes | --dv-mod-reportes-bg | #5A4DB8 | #F3F1FB |
+| COMPROBANTES | --dv-mod-comprobantes | --dv-mod-comprobantes-bg | #9B3E7A | #F7F0F5 |
+| CONFIG | --dv-mod-config | --dv-mod-config-bg | #5C6478 | #F4F4F6 |
+| AUDITORIA | (nuevo) | (nuevo) | #7B6EA0 | pendiente token |
 
 **Decisiones de shell consolidadas:**
-- Topbar #0f1f3d — ancla oscura permanente · no tocar
+- Topbar #0f1f3d — ancla oscura permanente, no tocar
 - StatusBar #0f1f3d — mismo marco que Topbar
-- ModulesBar y contenido sobre var(--dv-surface-base) #F7F5F1 calido
+- Contenido sobre var(--dv-surface-base) #F7F5F1 calido
 - MODULE_BG eliminado de OperationalBar.tsx — los fondos viven solo en index.css
 - Topbar title: "Cerrar sesion"
 
-### Faena 41 OK — Navbar dos filas · commit 728f91f
+### Faena 41 OK — Navbar dos filas · commits 728f91f + 7edc8d8 + a398345 + 7120017
 
-**Fila 1 (siempre visible, h-44px):** todos los modulos, icono size=17 + label completo, acento en modulo activo, separadores entre grupos.
-**Fila 2 (condicional, h-36px):** solo modulos en CON_SECUNDARIAS (cash, abastecimiento, config), fondo tintado ${accent}0D, pills de subopciones, HealthDot solo en config.
-**VENTAS, CLIENTES, REPORTES, COMPROBANTES:** nunca muestran fila 2.
-**Estado:** pendiente confirmacion visual de Fernando (P0 de proxima sesion).
+**Estado final verificado en prueba por Fernando.**
+Ver seccion ESTADO DE LA NAVBAR arriba para detalle completo.
+Detalles menores pendientes de lista al cierre de pruebas.
 
 ### Faenas 42-43 OK — LoginScreen + PIN Autorizacion + Auditoria · commit 2ef9f5e
 
@@ -109,7 +136,6 @@ Estos dos archivos tienen cambios aplicados directamente por el arquitecto, pend
 - Selector operadores: solo alias visible
 - Textos: Salir, Cambiar PIN, Confirmar cambio, Volver
 - Hover boton Salir: --dv-color-exit naranja
-- Uniformizacion de colores de foco, altos de botones entre las 3 vistas
 - Campo Codigo de Autorizacion: type=password, inputMode=numeric, maxLength=6, validacion ^\d{6}$
 
 **Faena 43 — PIN Autorizacion SQLite + Dominio Auditoria:**
@@ -119,12 +145,26 @@ Estos dos archivos tienen cambios aplicados directamente por el arquitecto, pend
 - domains/auditoria/auditoria.service.ts: dominio transversal multi-rubro
 - LoginScreen y ConfigWorkspace conectados a verificacion real
 
-### Faena 44 (parcial, sin commit) — Fixes UX PIN configuracion
+### Faena 44 OK — Fixes UX PIN + limpieza LoginScreen · commits 7b74df0 + a015941 + 3f29a1b
 
-- Placeholder campos PIN: puntos -> texto legible
-- Contador N/6 en labels
-- Banner confirmacion persistente post-guardado
-- **Pendiente: tsc + commit en proxima sesion**
+- Placeholder campos PIN: texto legible
+- Contador N/6 en labels de ConfigWorkspace
+- Banner confirmacion persistente post-guardado en ConfigWorkspace
+- 4 comandos Rust PIN migrados a DbInstances + UPSERT seguro
+- LoginScreen.tsx: 18 comentarios de seccion eliminados
+- PIN probado en runtime: OK
+
+### Faena 45 OK — Navbar comportamiento operacional · commits 7edc8d8 + a398345 + 7120017
+
+- Preview fila 2 en hover (variable derivada expandidoVisible, sin nuevo estado)
+- Toggle fila 2 al click en modulo activo
+- ArrowDown/ArrowUp teclado para expandir/colapsar fila 2
+- Eliminacion de ModulesBar.tsx (huerfano)
+- Estado inicial null + HomeWorkspace (area de trabajo en blanco)
+- Estilos fila 1: reposo/hover/activo con densidades de fondo diferenciadas
+- Reorganizacion de grupos y separadores
+- AUDITORIA como placeholder "Proximamente"
+- Prueba en runtime: OK (detalles menores pendientes)
 
 ---
 
@@ -132,47 +172,19 @@ Estos dos archivos tienen cambios aplicados directamente por el arquitecto, pend
 
 ### Diferido aceptable
 - accesosStore — bitacora en localStorage — migracion futura
-- supervision-authorization.service.ts — autorizaciones en localStorage
+- supervision-authorization.service.ts — autorizaciones en localStorage (P3)
 - F2 — doble movimiento despacharConFefo — diferido
 - BOX_DEFS estatico en useCaja.ts — diferido
 - D-PRECIOS-1 — precio por lote — diferido
-- Subopciones ABASTECIMIENTO en ModulesBar — hardcodeadas para farmacia, dinamizar antes del 2do rubro
+- Subopciones ABASTECIMIENTO — hardcodeadas para farmacia, dinamizar antes del 2do rubro
 - AuditoriaWorkspace — UI de consulta pendiente (tabla existe, UI futura)
+- Token CSS --dv-mod-auditoria pendiente en index.css
 
 ### Deudas de naming — GLOSARIO 8 (baja prioridad)
 - ActualizarProveedorInput -> ModificarProveedorInput
 - TicketLineDTO / TicketLineBridge -> LineaPreVenta
 - emitidoPor -> operadorId
 - disponible/bajo_stock/agotado -> mayusculas
-
----
-
-## Proxima ventana de trabajo
-
-1. [P0 INMEDIATO] tsc + commit de los fixes de placeholder y banner de confirmacion
-2. [P0] Verificar flujo completo de configuracion de PIN en app (escribir -> activar boton -> guardar -> ver banner verde)
-3. [P0] Si sigue fallando: diagnosticar si UPDATE en config_establecimiento afecta 0 filas (DB vacia)
-4. Confirmar o ajustar navbar dos filas (Faena 41)
-5. Auditoria UIX modulo por modulo
-6. supervision-authorization.service.ts — migracion a SQLite
-
----
-
-## Dominio Auditoria — referencia rapida
-
-**Ubicacion:** src/domains/auditoria/auditoria.service.ts
-**Tabla SQLite:** auditoria_operacion
-**Convencion:** sin prefijo = universal, prefijo RUBRO_ = especifico de rubro
-**Campos:** rubro, dominio, tipo_operacion, operador_id, operador_alias, ejecutado_por, detalle (JSON), resultado
-**Primer uso:** cambio de PIN en LoginScreen + configuracion en ConfigWorkspace
-
----
-
-## Reset total del sistema (para pruebas)
-
-```powershell
-Remove-Item "$env:APPDATA\com.disateq.vendor\disateq.db"
-```
 
 ---
 
@@ -213,3 +225,21 @@ Invoke params en camelCase desde JS -> Tauri convierte a snake_case para Rust.
 - apps/vendor-desktop/src-tauri/.env.build
 - Contenido: DISATEQ_SYSTEM_PIN=<valor alfanumerico>
 - Nunca commitear — protegido por .gitignore
+
+---
+
+## Dominio Auditoria — referencia rapida
+
+**Ubicacion:** src/domains/auditoria/auditoria.service.ts
+**Tabla SQLite:** auditoria_operacion
+**Convencion:** sin prefijo = universal, prefijo RUBRO_ = especifico de rubro
+**Campos:** rubro, dominio, tipo_operacion, operador_id, operador_alias, ejecutado_por, detalle (JSON), resultado
+**Primer uso:** cambio de PIN en LoginScreen + configuracion en ConfigWorkspace
+
+---
+
+## Reset total del sistema (para pruebas)
+
+```powershell
+Remove-Item "$env:APPDATA\com.disateq.vendor\disateq.db"
+```
