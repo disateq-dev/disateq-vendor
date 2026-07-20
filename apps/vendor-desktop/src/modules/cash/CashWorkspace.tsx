@@ -348,6 +348,26 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [cierreAutorizado, setCierreAutorizado] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) { setCierreAutorizado(false); return; }
+    let cancelled = false;
+    async function verificar() {
+      try {
+        const sid = await getCurrentSessionId();
+        if (cancelled || !sid) return;
+        const auths = await loadAuthorizations();
+        if (cancelled) return;
+        const tiene = auths.some(
+          a => a.sessionId === sid && a.type === "cierre_activo" && a.status === "emitida",
+        );
+        setCierreAutorizado(tiene);
+      } catch { /* SQLite no disponible — no cambiar estado */ }
+    }
+    void verificar();
+    const id = setInterval(() => { void verificar(); }, 10_000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (closingPhase !== "none") {
       localStorage.setItem("disateq:cash:ui:closingPhase", closingPhase);
       localStorage.setItem("disateq:cash:ui:cajaStage", cajaStage);
