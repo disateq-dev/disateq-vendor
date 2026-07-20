@@ -44,6 +44,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v22_bloque_operacional(db).await?;
     migrar_v23_operadores_sistema(db).await?;
     migrar_v24_pin_autorizacion_auditoria(db).await?;
+    migrar_v25_autorizacion_supervision(db).await?;
 
     Ok(())
 }
@@ -2215,6 +2216,77 @@ async fn migrar_v24_pin_autorizacion_auditoria(db: &sqlx::SqlitePool) -> Result<
     .map_err(|e| e.to_string())?;
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (24)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v25_autorizacion_supervision(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 25 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS autorizacion_supervision (
+          id               TEXT PRIMARY KEY,
+          caja_code        TEXT NOT NULL,
+          session_id       TEXT NOT NULL,
+          type             TEXT NOT NULL,
+          motivo           TEXT NOT NULL,
+          authorized_by    TEXT NOT NULL,
+          authorized_at    TEXT NOT NULL,
+          status           TEXT NOT NULL DEFAULT 'emitida',
+          executed_by      TEXT,
+          executed_at      TEXT,
+          validated_by     TEXT,
+          validated_at     TEXT,
+          postponed_motivo TEXT,
+          postponed_at     TEXT,
+          postponed_by     TEXT
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auth_sup_session ON autorizacion_supervision(session_id)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auth_sup_caja ON autorizacion_supervision(caja_code, status)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_auth_sup_status ON autorizacion_supervision(status, authorized_at)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (25)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

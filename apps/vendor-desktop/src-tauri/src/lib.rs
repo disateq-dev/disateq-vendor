@@ -184,7 +184,13 @@ pub fn run() {
       commands::operadores::configurar_pin_autorizacion,
       commands::operadores::obtener_pin_autorizacion_meta,
       commands::operadores::verificar_pin_autorizacion,
-      commands::operadores::registrar_auditoria_operacion])
+      commands::operadores::registrar_auditoria_operacion,
+      commands::autorizaciones::cargar_autorizaciones_supervision,
+      commands::autorizaciones::obtener_autorizaciones_activas_bloque,
+      commands::autorizaciones::registrar_autorizacion_supervision,
+      commands::autorizaciones::ejecutar_autorizacion_supervision,
+      commands::autorizaciones::validar_autorizacion_supervision,
+      commands::autorizaciones::postergar_autorizacion_supervision])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
