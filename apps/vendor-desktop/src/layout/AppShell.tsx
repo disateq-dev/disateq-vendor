@@ -7,7 +7,7 @@ import { type ActiveModule, type CashSubView, type AbastecimientoSubModule, type
 
 interface AppShellProps {
   children: ReactNode;
-  activeModule: ActiveModule;
+  activeModule: ActiveModule | null;
   onModuleChange: (m: ActiveModule) => void;
   cashSubView: CashSubView;
   onCashSubViewChange: (sv: CashSubView) => void;

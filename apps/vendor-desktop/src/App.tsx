@@ -20,6 +20,7 @@ import { POSProvider, usePOS } from "./context/POSContext";
 import { useFarmaciaStore } from "./domains/farmacia/farmacia.store";
 import { verificarIntegridadCacheFarmacia } from "./domains/catalog/startup-integrity.service";
 import { LoginScreen } from "./modules/login/LoginScreen";
+import { HomeWorkspace } from "./modules/home/HomeWorkspace";
 
 export type ActiveModule            = "sales" | "cash" | "config" | "comprobantes" | "abastecimiento" | "clientes" | "reportes";
 export type CashSubView             = "turno" | "supervision-caja";
@@ -28,7 +29,7 @@ export type ConfigSubView           = "negocio" | "operacion" | "rubro" | "exper
 
 function AppRoot() {
   const { activeOperator, cashSession, rubro } = usePOS();
-  const [activeModule,            setActiveModule]            = useState<ActiveModule>("cash");
+  const [activeModule,            setActiveModule]            = useState<ActiveModule | null>(null);
   const [cashSubView,             setCashSubView]             = useState<CashSubView>("turno");
   const [abastecimientoSubModule, setAbastecimientoSubModule] = useState<AbastecimientoSubModule>("productos");
   const [configSubView,           setConfigSubView]           = useState<ConfigSubView>("negocio");
@@ -71,8 +72,7 @@ function AppRoot() {
       if (cashSession.isOpen) {
         setActiveModule("sales");
       } else {
-        setActiveModule("cash");
-        setCashSubView("turno");
+        setActiveModule(null);
       }
     }
     prevOpId.current = activeOperator?.id ?? null;
@@ -91,6 +91,7 @@ function AppRoot() {
       configSubView={configSubView}
       onConfigSubViewChange={setConfigSubView}
     >
+      {activeModule === null && <HomeWorkspace />}
       {activeModule === "sales" && (
         <>
           <SalesWorkspace />

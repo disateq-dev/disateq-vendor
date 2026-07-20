@@ -125,7 +125,7 @@ function setOpcionActiva(
 
 // ── Props ─────────────────────────────────────────────────────
 interface BarraModulosProps {
-  active: ActiveModule;
+  active: ActiveModule | null;
   onChange: (m: ActiveModule) => void;
   onHover: (m: ActiveModule | null) => void;
   cashSubView: CashSubView;
@@ -297,7 +297,7 @@ export function ContextBar({
         if (s.expandido) {
           setExpandido(null);
           setFocusOpcion(0);
-          setNavIdx(MODULES_ORDER.indexOf(s.active));
+          setNavIdx(s.active !== null ? MODULES_ORDER.indexOf(s.active) : 0);
           setEsperandoAtajo(false);
         } else {
           setBarraActiva(false);
@@ -377,7 +377,7 @@ export function ContextBar({
           e.preventDefault();
           setExpandido(null);
           setFocusOpcion(0);
-          setNavIdx(MODULES_ORDER.indexOf(s.active));
+          setNavIdx(s.active !== null ? MODULES_ORDER.indexOf(s.active) : 0);
           setEsperandoAtajo(false);
           return;
         }
@@ -440,7 +440,7 @@ export function ContextBar({
           const Icon = MODULE_ICON[modulo];
           const acceso = tieneAcceso(modulo);
           const accent = MODULE_ACCENT[modulo];
-          const esActivo = active === modulo || expandido === modulo;
+          const esActivo = (active !== null && active === modulo) || expandido === modulo;
           const esUltimoAntesSep = modulo === "sales" || modulo === "abastecimiento" || modulo === "reportes";
           const tieneCursor = barraActiva && navIdx === idx;
 
@@ -471,33 +471,49 @@ export function ContextBar({
                 className="flex h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none border-b-[3px]"
                 style={(() => {
                   if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };
+
                   if (esActivo) return {
                     borderColor: accent,
-                    backgroundColor: `${accent}14`,
+                    backgroundColor: `${accent}1A`,
                     borderRadius: "8px 8px 0 0",
                     cursor: "pointer",
+                    color: "#201E1E",
                   };
+
                   if (!barraActiva) {
                     if (hoverModulo === modulo) return {
                       borderColor: accent,
-                      backgroundColor: `${accent}14`,
+                      backgroundColor: `${accent}0D`,
                       borderRadius: "8px 8px 0 0",
                       cursor: "pointer",
+                      color: "#201E1E",
                     };
-                    return { borderColor: "transparent", color: "#2C2A26", cursor: "pointer" };
+                    return {
+                      borderColor: "transparent",
+                      color: "#201E1E",
+                      opacity: 0.70,
+                      cursor: "pointer",
+                    };
                   }
+
                   const esLengueta = tieneCursor || moduloActivoVisual === modulo || hoverModulo === modulo;
                   if (esLengueta) return {
                     borderColor: accent,
-                    backgroundColor: `${accent}14`,
+                    backgroundColor: `${accent}1A`,
                     borderRadius: "8px 8px 0 0",
                     cursor: "pointer",
+                    color: "#201E1E",
                   };
-                  return { opacity: 0.65, borderColor: "transparent", cursor: "pointer" };
+                  return {
+                    opacity: 0.55,
+                    borderColor: "transparent",
+                    cursor: "pointer",
+                    color: "#201E1E",
+                  };
                 })()}
               >
-                <span style={{ color: acceso ? accent : "#2C2A26" }}><Icon size={17} /></span>
-                <span style={{ color: esActivo ? accent : "#2C2A26", opacity: esActivo ? 1 : 0.75 }}>
+                <span style={{ color: acceso ? accent : "#201E1E" }}><Icon size={17} /></span>
+                <span style={{ color: "#201E1E" }}>
                   {MODULE_LABEL[modulo]}
                 </span>
               </button>
