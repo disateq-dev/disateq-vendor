@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Power } from "lucide-react";
 import { loadBusinessConfig } from "../config/business";
 import { usePOS } from "../context/POSContext";
@@ -22,6 +22,33 @@ export function Topbar() {
   function handleCancelarLogout() {
     setConfirmando(false);
   }
+
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === "End") {
+        e.preventDefault();
+        setConfirmando(true);
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!confirmando) return;
+    function handler(e: KeyboardEvent) {
+      if (e.code === "Enter" && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        handleConfirmarLogout();
+      }
+      if (e.code === "Escape" && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        handleCancelarLogout();
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [confirmando]);
 
   return (
     <>

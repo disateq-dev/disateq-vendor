@@ -31,7 +31,7 @@ function OperationalNotice() {
 }
 
 export function AppShell({ children, activeModule, onModuleChange, cashSubView, onCashSubViewChange, abastecimientoSubModule, onAbastecimientoSubModuleChange, configSubView, onConfigSubViewChange }: AppShellProps) {
-  const { closeCobro, logoutOperator, cobroOpen } = usePOS();
+  const { closeCobro, cobroOpen } = usePOS();
   const [, setHoveredModule] = useState<ActiveModule | null>(null);
   const navModeRef = useRef(false);
 
@@ -42,14 +42,6 @@ export function AppShell({ children, activeModule, onModuleChange, cashSubView, 
     document.addEventListener("pos:navMode", handler);
     return () => document.removeEventListener("pos:navMode", handler);
   }, []);
-
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if (e.ctrlKey && e.shiftKey && e.key === "L") { e.preventDefault(); logoutOperator(); }
-    }
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [logoutOperator]);
 
   // Escape global — scanner focus recovery en VENTAS
   // Bloqueado cuando navMode de ContextBar está activo
