@@ -45,7 +45,7 @@ type RawAutorizacion = {
 function mapRaw(r: RawAutorizacion): CajaAuthorization {
   return {
     id:              r.id,
-    cajaCode:        r.caja_code,
+    cajaCode:        r.caja_code.replace(/^'|'$/g, ""),
     sessionId:       r.session_id,
     type:            r.type as AuthorizationType,
     motivo:          r.motivo,
