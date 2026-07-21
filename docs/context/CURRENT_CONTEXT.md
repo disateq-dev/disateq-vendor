@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
-**Ultima actualizacion:** 2026-07-21 — Sesion de manana
-**Commit activo:** `2daee30`
+**Ultima actualizacion:** 2026-07-21 — Sesion completa (manana + tarde)
+**Commit activo:** `4b0938f`
 **Rama:** `main`
 **Migracion SQLite:** v25
 **Estado working tree:** LIMPIO
@@ -9,7 +9,7 @@
 
 ## ESTADO GENERAL
 
-Sesion enfocada en completar el modulo AUDITORIA de extremo a extremo. Se cerraron las cuatro brechas pendientes de la sesion anterior (token CSS, comando Rust de lectura, workspace UI, integracion en navegacion) y se actualizo la documentacion de gobierno. El modulo queda operativo en produccion.
+Sesion de cierre del sistema de AUDITORIA. Se completaron dos bloques: (1) implementacion del modulo completo de extremo a extremo (Faenas 56-58), y (2) conexion de todas las llamadas a auditoriaService.registrar() en los flujos operacionales existentes (Faenas 59-61). El sistema de trazabilidad queda 100% operativo.
 
 ---
 
@@ -21,6 +21,7 @@ Sesion enfocada en completar el modulo AUDITORIA de extremo a extremo. Se cerrar
 | `f848c43` | 57-RUST | feat(rust): commands/auditoria.rs — registrar (movido desde operadores.rs), obtener_registros, obtener_resumen |
 | `2d79ffc` | 58-UI | feat(ui): AuditoriaWorkspace + service layer + integracion App + OperationalBar |
 | `2daee30` | DOCS | docs(ux): AUDITORIA registrado en mapa de color canonico de ARQUITECTURA_UX.md |
+| `4b0938f` | 59-61 | feat(auditoria): conectar llamadas a auditoriaService en operadores, supervision y comprobantes |
 
 ---
 
@@ -80,9 +81,19 @@ auditoria_operacion (SQLite, v24)
 - El path en `lib.rs invoke_handler` fue actualizado: `commands::auditoria::registrar_auditoria_operacion`
 - `commands/mod.rs` tiene `pub mod auditoria;`
 
-### Operaciones auditables registradas hoy en el codigo
-- `CONFIGURACION_PIN_AUTORIZACION` — en ConfigWorkspace al guardar PIN de autorizacion
-- Resto de TipoOperacion declarados en auditoria.service.ts listos para conectarse cuando los flujos correspondientes se implementen
+### Operaciones auditables — 100% conectadas
+
+| TipoOperacion | Archivo | Punto de registro |
+|---|---|---|
+| `CONFIGURACION_PIN_AUTORIZACION` | ConfigWorkspace.tsx | handleSavePinAdmin() |
+| `CREACION_OPERADOR` | OperadoresWorkspace.tsx | handleSave() rama create |
+| `BAJA_OPERADOR` | OperadoresWorkspace.tsx | handleConfirmBaja() |
+| `CAMBIO_PIN_OPERADOR` | OperadoresWorkspace.tsx | savePinViewMode() |
+| `CAMBIO_ROL_OPERADOR` | OperadoresWorkspace.tsx | handleSave() rama edit (guard: rol cambiado) |
+| `CORRECCION_ARQUEO` | SupervisionCajaWorkspace.tsx | handleAuthorize() cuando authType=correccion_cierre |
+| `CORRECCION_APERTURA` | SupervisionCajaWorkspace.tsx | handleAuthorize() cuando authType=correccion_apertura |
+| `CIERRE_EXTEMPORANEO` | SupervisionCajaWorkspace.tsx | handleAuthorize() cuando authType=cierre_extemporaneo |
+| `ANULACION_COMPROBANTE` | ComprobantesWorkspace.tsx | handleVoid() callback post-autorizacion |
 
 ---
 
@@ -120,7 +131,7 @@ auditoria_operacion (SQLite, v24)
 6. **`accesosStore` bitacora localStorage** — migracion futura a SQLite.
 7. **D-PRECIOS-1, F2 doble movimiento FEFO**.
 8. **`desactivar_proveedor` / `desactivar_producto_comercial`** en Rust.
-9. **Conectar puntos de auditoria faltantes** — ANULACION_COMPROBANTE, CORRECCION_ARQUEO, CORRECCION_APERTURA, CREACION_OPERADOR, BAJA_OPERADOR ya estan declarados como TipoOperacion pero sus flujos no llaman a auditoriaService.registrar() todavia.
+9. **Sistema de auditoria completo** — todos los TipoOperacion declarados estan conectados. No hay pendientes en este dominio.
 
 ---
 
@@ -152,8 +163,8 @@ auditoria_operacion (SQLite, v24)
 
 1. Leer `CURRENT_CONTEXT.md` (este archivo).
 2. `git status` — verificar working tree limpio.
-3. Evaluar prioridad: pendiente #1 (useBitacora localStorage) o pendiente #2 (comando Rust supervision) o pendiente #9 (conectar puntos de auditoria faltantes).
-4. Si se trabaja en auditoria: verificar en runtime que AuditoriaWorkspace carga registros reales desde SQLite al navegar al modulo.
+3. Evaluar prioridad: pendiente #1 (useBitacora localStorage) o pendiente #2 (comando Rust supervision) o deudas naming GLOSARIO seccion 8.
+4. Si se trabaja en auditoria: verificar en runtime que AuditoriaWorkspace carga registros reales al navegar al modulo (debe mostrar al menos CONFIGURACION_PIN_AUTORIZACION si el PIN fue configurado).
 
 ---
 
