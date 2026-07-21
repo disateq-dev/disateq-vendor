@@ -97,8 +97,26 @@ function reconstruirStats(ventas: RawVenta[]): SessionStats {
   };
 }
 
+const LS_KEYS_OBSOLETAS = [
+  "disateq.pos.cashSession",
+  "disateq.pos.usedCodes",
+  "disateq.pos.usedDate",
+  "disateq.pos.cashMoves",
+  "disateq.pos.sessionStats",
+  "disateq.pos.correlatives",
+];
+
+function limpiarKeysObsoletas(): void {
+  try {
+    for (const key of LS_KEYS_OBSOLETAS) {
+      localStorage.removeItem(key);
+    }
+  } catch { /* quota o acceso denegado — ignorar */ }
+}
+
 export async function obtenerEstadoArranque(): Promise<EstadoArranque> {
   try {
+    limpiarKeysObsoletas();
     const raw = await invoke<RawEstadoArranque>("obtener_estado_arranque");
 
     if (!raw.sesion) {
