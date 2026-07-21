@@ -327,3 +327,123 @@ pub async fn actualizar_sesion_caja_correction(
         .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn obtener_estado_arranque(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+) -> Result<Value, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    let sesion = sqlx::query(
+        "SELECT id, caja_codigo, caja_tipo, operador_nombre, operador_id, terminal,
+                apertura, motivo, observacion, ref_op, abierta_en
+         FROM sesion_caja WHERE estado = 'ABIERTA' ORDER BY abierta_en DESC LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let sesion_id: Option<String> = sesion
+        .as_ref()
+        .map(|r| r.try_get::<String, _>("id").unwrap_or_default());
+
+    let movimientos: Vec<Value> = if let Some(sid) = &sesion_id {
+        sqlx::query(
+            "SELECT id, tipo, monto, motivo, observacion, ref_id, operador_nombre,
+                    caja_codigo, terminal, source_type, from_apertura, from_vendido,
+                    regularization_status, regularization_mode, timestamp
+             FROM movimiento_caja WHERE sesion_id = ? ORDER BY timestamp ASC",
+        )
+        .bind(sid)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .map(|r| json!({
+            "id":                    r.try_get::<String, _>("id").unwrap_or_default(),
+            "tipo":                  r.try_get::<String, _>("tipo").unwrap_or_default(),
+            "monto":                 r.try_get::<f64, _>("monto").unwrap_or(0.0),
+            "motivo":                r.try_get::<String, _>("motivo").unwrap_or_default(),
+            "observacion":           r.try_get::<Option<String>, _>("observacion").unwrap_or(None),
+            "ref_id":                r.try_get::<Option<String>, _>("ref_id").unwrap_or(None),
+            "operador_nombre":       r.try_get::<String, _>("operador_nombre").unwrap_or_default(),
+            "caja_codigo":           r.try_get::<String, _>("caja_codigo").unwrap_or_default(),
+            "terminal":              r.try_get::<String, _>("terminal").unwrap_or_default(),
+            "source_type":           r.try_get::<String, _>("source_type").unwrap_or_default(),
+            "from_apertura":         r.try_get::<f64, _>("from_apertura").unwrap_or(0.0),
+            "from_vendido":          r.try_get::<f64, _>("from_vendido").unwrap_or(0.0),
+            "regularization_status": r.try_get::<Option<String>, _>("regularization_status").unwrap_or(None),
+            "regularization_mode":   r.try_get::<Option<String>, _>("regularization_mode").unwrap_or(None),
+            "timestamp":             r.try_get::<String, _>("timestamp").unwrap_or_default(),
+        }))
+        .collect()
+    } else {
+        vec![]
+    };
+
+    let fecha_hoy = sqlx::query_scalar::<_, String>(
+        "SELECT strftime('%Y-%m-%d', 'now', 'localtime')",
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let cajas_usadas_hoy: Vec<String> = sqlx::query(
+        "SELECT DISTINCT caja_codigo FROM sesion_caja
+         WHERE estado = 'CERRADA'
+           AND strftime('%Y-%m-%d', abierta_en) = ?",
+    )
+    .bind(&fecha_hoy)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?
+    .into_iter()
+    .map(|r| r.try_get::<String, _>("caja_codigo").unwrap_or_default())
+    .collect();
+
+    let ventas: Vec<Value> = if let Some(sid) = &sesion_id {
+        sqlx::query(
+            "SELECT total, metodo_pago, tipo_comprobante
+             FROM venta WHERE sesion_id = ? AND estado != 'ANULADA'
+             ORDER BY concretada_en ASC",
+        )
+        .bind(sid)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .map(|r| json!({
+            "total":            r.try_get::<f64, _>("total").unwrap_or(0.0),
+            "metodo_pago":      r.try_get::<String, _>("metodo_pago").unwrap_or_default(),
+            "tipo_comprobante": r.try_get::<String, _>("tipo_comprobante").unwrap_or_default(),
+        }))
+        .collect()
+    } else {
+        vec![]
+    };
+
+    let sesion_json = sesion.map(|r| json!({
+        "id":               r.try_get::<String, _>("id").unwrap_or_default(),
+        "caja_codigo":      r.try_get::<String, _>("caja_codigo").unwrap_or_default(),
+        "caja_tipo":        r.try_get::<String, _>("caja_tipo").unwrap_or_default(),
+        "operador_nombre":  r.try_get::<String, _>("operador_nombre").unwrap_or_default(),
+        "operador_id":      r.try_get::<Option<String>, _>("operador_id").unwrap_or(None),
+        "terminal":         r.try_get::<String, _>("terminal").unwrap_or_default(),
+        "apertura":         r.try_get::<f64, _>("apertura").unwrap_or(0.0),
+        "motivo":           r.try_get::<Option<String>, _>("motivo").unwrap_or(None),
+        "observacion":      r.try_get::<Option<String>, _>("observacion").unwrap_or(None),
+        "ref_op":           r.try_get::<Option<String>, _>("ref_op").unwrap_or(None),
+        "abierta_en":       r.try_get::<String, _>("abierta_en").unwrap_or_default(),
+    }));
+
+    Ok(json!({
+        "sesion":           sesion_json,
+        "movimientos":      movimientos,
+        "cajasUsadasHoy":   cajas_usadas_hoy,
+        "ventas":           ventas,
+    }))
+}

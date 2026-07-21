@@ -165,6 +165,7 @@ pub fn run() {
       commands::sesion_caja::obtener_sesion_activa,
       commands::sesion_caja::obtener_historial_sesiones,
       commands::sesion_caja::obtener_movimientos_sesion,
+      commands::sesion_caja::obtener_estado_arranque,
       commands::operadores::obtener_operadores,
       commands::operadores::obtener_roles,
       commands::operadores::crear_operador,
