@@ -42,6 +42,8 @@ button, a, [role="button"], select, label {
   --dv-mod-abastecimiento-border: #B8D4A8;
   --dv-mod-turno: #B5741A;
   --dv-mod-turno-bg: #FDF6EE;
+  --dv-mod-auditoria: #7B6EA0;
+  --dv-mod-auditoria-bg: #F5F3FB;
   --dv-mod-config: #5C6478;
   --dv-mod-config-bg: #F4F4F6;
   --dv-mod-clientes: #1A6BB5;
