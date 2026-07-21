@@ -1,9 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { moneySub } from "../lib/money";
 import type { Comprobante } from "../domains/documents/comprobante.types";
-
-const LS_SESSION_STATS = "disateq.pos.sessionStats";
-const LS_CORRELATIVES  = "disateq.pos.correlatives";
 
 export type DocRange  = { series: string; first: number; last: number; count: number };
 export type ByMethod  = { efe: number; yap: number; tar: number; mix: number };
@@ -19,67 +16,16 @@ export const NULL_STATS: SessionStats = {
   byMethod: { efe: 0, yap: 0, tar: 0, mix: 0 },
 };
 
-function loadSessionStats(): SessionStats {
-  try {
-    const raw = localStorage.getItem(LS_SESSION_STATS);
-    if (!raw) return NULL_STATS;
-    const p = JSON.parse(raw) as Partial<SessionStats>;
-    const ranges: Partial<Record<string, DocRange>> = {};
-    if (p.docRanges && typeof p.docRanges === "object") {
-      for (const [k, v] of Object.entries(p.docRanges)) {
-        if (v && typeof v.series === "string" && typeof v.first === "number"
-            && typeof v.last === "number" && typeof v.count === "number") {
-          ranges[k] = v as DocRange;
-        }
-      }
-    }
-    const bm = (p.byMethod && typeof p.byMethod === "object") ? p.byMethod as Partial<ByMethod> : {};
-    return {
-      count:     typeof p.count   === "number" ? p.count   : 0,
-      total:     typeof p.total   === "number" ? p.total   : 0,
-      cash:      typeof p.cash    === "number" ? p.cash    : 0,
-      yape:      typeof p.yape    === "number" ? p.yape    : 0,
-      tarjeta:   typeof p.tarjeta === "number" ? p.tarjeta : 0,
-      docRanges: ranges,
-      byMethod: {
-        efe: typeof bm.efe === "number" ? bm.efe : 0,
-        yap: typeof bm.yap === "number" ? bm.yap : 0,
-        tar: typeof bm.tar === "number" ? bm.tar : 0,
-        mix: typeof bm.mix === "number" ? bm.mix : 0,
-      },
-    };
-  } catch { return NULL_STATS; }
-}
-
-function saveSessionStats(s: SessionStats): void {
-  try { localStorage.setItem(LS_SESSION_STATS, JSON.stringify(s)); } catch { /* quota */ }
-}
-
-function loadCorrelatives(): DocCorrelatives {
-  try {
-    const raw = localStorage.getItem(LS_CORRELATIVES);
-    if (!raw) return {};
-    const p = JSON.parse(raw);
-    return (p && typeof p === "object" && !Array.isArray(p)) ? p as DocCorrelatives : {};
-  } catch { return {}; }
-}
-
-function saveCorrelatives(c: DocCorrelatives): void {
-  try { localStorage.setItem(LS_CORRELATIVES, JSON.stringify(c)); } catch { /* quota */ }
-}
-
 interface UseSessionStatsDeps {
   initialStats?: SessionStats;
 }
 
 export function useSessionStats({ initialStats }: UseSessionStatsDeps = {}) {
   const [sessionStats, setSessionStats] = useState<SessionStats>(
-    () => initialStats ?? loadSessionStats()
+    initialStats ?? NULL_STATS
   );
-  useEffect(() => { saveSessionStats(sessionStats); }, [sessionStats]);
 
-  const [docCorrelatives, setDocCorrelatives] = useState<DocCorrelatives>(loadCorrelatives);
-  useEffect(() => { saveCorrelatives(docCorrelatives); }, [docCorrelatives]);
+  const [docCorrelatives, setDocCorrelatives] = useState<DocCorrelatives>({});
 
   const sessionStatsRef = useRef(sessionStats);
   sessionStatsRef.current = sessionStats;
