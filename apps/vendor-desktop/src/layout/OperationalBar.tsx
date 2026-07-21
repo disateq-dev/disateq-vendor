@@ -168,6 +168,7 @@ export function ContextBar({
   const puedeVerComprobantes   = contexto !== null                     && !isBlocking;
   const puedeVerAbastecimiento = useCapacidad("gestionar_inventarios") && !isBlocking;
   const puedeVerAjustes        = useCapacidad("gestionar_operadores")  && !isBlocking;
+  const puedeVerAuditoria      = (useCapacidad("acceso_total") || useCapacidad("gestionar_operadores")) && !isBlocking;
   const puedeSupervisarCaja    = useCapacidad("reaperturar_cierres")   && !isBlocking;
 
   // ── Estado ────────────────────────────────────────────────
@@ -196,9 +197,9 @@ export function ContextBar({
     stateRef.current = { barraActiva, navIdx, expandido, focusOpcion, detalleActivo, esperandoAtajo, active };
   });
 
-  const accessRef = useRef({ puedeVerSales, puedeVerReportes, puedeVerClientes, puedeVerComprobantes, puedeVerAbastecimiento, puedeVerAjustes, puedeSupervisarCaja });
+  const accessRef = useRef({ puedeVerSales, puedeVerReportes, puedeVerClientes, puedeVerComprobantes, puedeVerAbastecimiento, puedeVerAjustes, puedeVerAuditoria, puedeSupervisarCaja });
   useEffect(() => {
-    accessRef.current = { puedeVerSales, puedeVerReportes, puedeVerClientes, puedeVerComprobantes, puedeVerAbastecimiento, puedeVerAjustes, puedeSupervisarCaja };
+    accessRef.current = { puedeVerSales, puedeVerReportes, puedeVerClientes, puedeVerComprobantes, puedeVerAbastecimiento, puedeVerAjustes, puedeVerAuditoria, puedeSupervisarCaja };
   });
 
   const cbRefs = useRef({ onChange, onCashSubViewChange, onAbastecimientoSubModuleChange, onConfigSubViewChange });
@@ -239,7 +240,7 @@ export function ContextBar({
 
   function tieneAcceso(m: ActiveModule): boolean {
     const acc = accessRef.current;
-    if (m === "auditoria")      return false;
+    if (m === "auditoria")      return accessRef.current.puedeVerAuditoria ?? false;
     if (m === "abastecimiento") return acc.puedeVerAbastecimiento;
     if (m === "clientes")       return acc.puedeVerClientes;
     if (m === "reportes")       return acc.puedeVerReportes;
@@ -465,7 +466,7 @@ export function ContextBar({
                   setHoverModulo(modulo);
                   onHover(modulo);
                 }}
-                title={!acceso ? (modulo === "auditoria" ? "Próximamente" : "Sin acceso — contacte al administrador") : undefined}
+                title={!acceso ? (modulo === "auditoria" ? "Sin acceso" : "Sin acceso — contacte al administrador") : undefined}
                 className="flex h-9 items-center gap-1.5 px-3 text-[13.5px] font-bold transition select-none border-b-[3px]"
                 style={(() => {
                   if (!acceso) return { opacity: 0.3, borderColor: "transparent", cursor: "default" };

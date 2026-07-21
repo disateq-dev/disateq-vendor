@@ -9,6 +9,7 @@ import { ConfigWorkspace } from "./modules/config/ConfigWorkspace";
 import { ComprobantesWorkspace } from "./modules/comprobantes/ComprobantesWorkspace";
 import { ClientesWorkspace } from "./modules/sales/ClientesWorkspace";
 import { ReportesWorkspace } from "./modules/sales/ReportesWorkspace";
+import { AuditoriaWorkspace } from "./modules/config/AuditoriaWorkspace";
 import { InventoryWorkspace } from "./modules/inventory/InventoryWorkspace";
 import { CatalogoFarmaciaWorkspace } from './modules/abastecimiento/farmacia/CatalogoFarmaciaWorkspace'
 import { ProveedoresWorkspace } from './modules/abastecimiento/farmacia/ProveedoresWorkspace'
@@ -103,6 +104,7 @@ function AppRoot() {
       {activeModule === "clientes"  && <ClientesWorkspace />}
       {activeModule === "reportes"  && <ReportesWorkspace />}
       {activeModule === "config"       && <ConfigWorkspace configSubView={configSubView} />}
+      {activeModule === "auditoria" && <AuditoriaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "productos"    && <CatalogoFarmaciaWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "ifa"          && <PrincipiosActivosWorkspace />}
       {activeModule === "abastecimiento" && abastecimientoSubModule === "proveedores"  && <ProveedoresWorkspace />}
