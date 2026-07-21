@@ -9,6 +9,7 @@ import {
   loadAuthorizations, recordAuthorization, markAuthorizationValidated,
   type CajaAuthorization, type AuthorizationType,
 } from "./services/supervision-authorization.service";
+import { auditoriaService } from "../../domains/auditoria/auditoria.service";
 
 const MOTIVOS_AUTH: Record<string, string[]> = {
   cierre_activo: [
@@ -275,6 +276,30 @@ export function SupervisionCajaWorkspace({ onAutorizarCierre }: SupervisionCajaP
       authorizedAt: new Date().toISOString(),
     });
     if (authType === "cierre_activo") onAutorizarCierre?.();
+
+    const tipoAuditoria =
+      authType === "correccion_cierre"   ? "CORRECCION_ARQUEO"   as const :
+      authType === "correccion_apertura" ? "CORRECCION_APERTURA" as const :
+      authType === "cierre_extemporaneo" ? "CIERRE_EXTEMPORANEO" as const :
+      null;
+
+    if (tipoAuditoria !== null) {
+      void auditoriaService.registrar({
+        rubro:         "SISTEMA",
+        dominio:       "CAJA",
+        tipoOperacion: tipoAuditoria,
+        operadorId:    activeOperator?.id ?? "DESCONOCIDO",
+        operadorAlias: supervisorName,
+        ejecutadoPor:  supervisorName,
+        detalle: {
+          cajaCode:  selectedEntry.boxCode,
+          sessionId: selectedEntry.id,
+          motivo:    motivoFinal,
+          authType,
+        },
+        resultado: "EXITOSO",
+      });
+    }
   }
 
   async function handleValidate(authId: string) {

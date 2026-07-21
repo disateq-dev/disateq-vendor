@@ -8,6 +8,7 @@ import { usePOS } from "../../context/POSContext";
 import type { Operador } from "../../domains/operator/operator.store";
 import { generarAlias, resolverAlias } from "../../domains/operator/operator.store";
 import { BLOCK_BASES } from "../../domains/operator/blocks.store";
+import { auditoriaService } from "../../domains/auditoria/auditoria.service";
 
 const BAJA_REASONS = [
   "Renuncia voluntaria",
@@ -210,7 +211,7 @@ function PanelGestion({ selectedId, onSelect }: {
   onSelect: (id: string | null) => void;
 }) {
   const {
-    operators, cashSession, resetOperatorPin,
+    operators, cashSession, activeOperator, resetOperatorPin,
     createOperator, updateOperatorData, setOperatorStatus, releaseOperatorBlock,
     roles,
   } = usePOS();
@@ -306,6 +307,16 @@ function PanelGestion({ selectedId, onSelect }: {
           blockBase: editBlock,
         });
         onSelect(op.id); setPanel("view");
+        void auditoriaService.registrar({
+          rubro: "SISTEMA",
+          dominio: "IDENTIDAD",
+          tipoOperacion: "CREACION_OPERADOR",
+          operadorId: activeOperator?.id ?? "DESCONOCIDO",
+          operadorAlias: activeOperator?.alias ?? "DESCONOCIDO",
+          ejecutadoPor: activeOperator?.alias ?? "DESCONOCIDO",
+          detalle: { alias: op.alias, codigoOperador: op.codigoOperador, rol: editRole },
+          resultado: "EXITOSO",
+        });
       } catch (e) {
         setBlockError(e instanceof Error ? e.message : "Error al crear operador");
       }
@@ -319,6 +330,18 @@ function PanelGestion({ selectedId, onSelect }: {
       });
       if (!ok) { setBlockError(`Bloque ${editBlock} ya asignado a otro operador activo`); return; }
       setPanel("view");
+      if (editRole !== selected?.codigoRol) {
+        void auditoriaService.registrar({
+          rubro: "SISTEMA",
+          dominio: "IDENTIDAD",
+          tipoOperacion: "CAMBIO_ROL_OPERADOR",
+          operadorId: activeOperator?.id ?? "DESCONOCIDO",
+          operadorAlias: activeOperator?.alias ?? "DESCONOCIDO",
+          ejecutadoPor: activeOperator?.alias ?? "DESCONOCIDO",
+          detalle: { alias: editAlias.trim().toUpperCase(), rolAnterior: selected?.codigoRol, rolNuevo: editRole },
+          resultado: "EXITOSO",
+        });
+      }
     }
   }
 
@@ -335,6 +358,16 @@ function PanelGestion({ selectedId, onSelect }: {
     setOperatorStatus(selected.id, "INACTIVO", reason.trim());
     const next = operators.filter(o => o.estado !== "INACTIVO" && o.id !== selected.id);
     onSelect(next[0]?.id ?? null);
+    void auditoriaService.registrar({
+      rubro: "SISTEMA",
+      dominio: "IDENTIDAD",
+      tipoOperacion: "BAJA_OPERADOR",
+      operadorId: activeOperator?.id ?? "DESCONOCIDO",
+      operadorAlias: activeOperator?.alias ?? "DESCONOCIDO",
+      ejecutadoPor: activeOperator?.alias ?? "DESCONOCIDO",
+      detalle: { alias: selected.alias, codigoOperador: selected.codigoOperador, motivo: reason.trim() },
+      resultado: "EXITOSO",
+    });
     resetForm();
   }
 
@@ -351,6 +384,16 @@ function PanelGestion({ selectedId, onSelect }: {
     const ok = await resetOperatorPin(selected.id, pinInput);
     if (!ok) { setPinError("Operador inválido"); return; }
     setPinOpen(false); setPinInput(""); setPinConfirm(""); setPinError("");
+    void auditoriaService.registrar({
+      rubro: "SISTEMA",
+      dominio: "IDENTIDAD",
+      tipoOperacion: "CAMBIO_PIN_OPERADOR",
+      operadorId: activeOperator?.id ?? "DESCONOCIDO",
+      operadorAlias: activeOperator?.alias ?? "DESCONOCIDO",
+      ejecutadoPor: activeOperator?.alias ?? "DESCONOCIDO",
+      detalle: { alias: selected.alias, codigoOperador: selected.codigoOperador },
+      resultado: "EXITOSO",
+    });
   }
 
   const showView           = panel === "view" && selected !== null;

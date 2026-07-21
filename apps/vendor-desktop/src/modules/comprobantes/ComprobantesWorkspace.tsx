@@ -6,6 +6,7 @@ import { convertirAFormal } from "../../domains/documents/comprobante.service";
 import { comprobanteStore } from "../../domains/documents/comprobante.store";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
 import { useAutorizacion } from "../../hooks/useAutorizacion";
+import { auditoriaService } from "../../domains/auditoria/auditoria.service";
 
 type FiltroTipo = "TODOS" | TipoComprobante;
 type FiltroEstado = "TODOS" | "EMITIDO" | "ANULADO" | "REFERENCIADO";
@@ -480,6 +481,23 @@ export function ComprobantesWorkspace() {
       () => {
         anularComprobante(selectedId, motivo.trim());
         setSelectedId(null);
+        void auditoriaService.registrar({
+          rubro:         "SISTEMA",
+          dominio:       "COMPROBANTE",
+          tipoOperacion: "ANULACION_COMPROBANTE",
+          operadorId:    cashSession.operatorId ?? "DESCONOCIDO",
+          operadorAlias: cashSession.operator   ?? "DESCONOCIDO",
+          ejecutadoPor:  cashSession.operator   ?? "DESCONOCIDO",
+          detalle: {
+            comprobanteId: selectedId,
+            motivo:        motivo.trim(),
+            serie:         selected?.serie,
+            correlativo:   selected?.correlativo,
+            tipo:          selected?.tipo,
+            total:         selected?.total,
+          },
+          resultado: "EXITOSO",
+        });
       }
     );
   }, [selectedId, selected, solicitarAutorizacion, anularComprobante]);
