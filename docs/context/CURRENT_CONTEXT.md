@@ -1,6 +1,6 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
-**Ultima actualizacion:** 2026-07-20 — Sesion de tarde/noche
-**Commit activo:** `62e8889`
+**Ultima actualizacion:** 2026-07-21 — Sesion de manana
+**Commit activo:** `2daee30`
 **Rama:** `main`
 **Migracion SQLite:** v25
 **Estado working tree:** LIMPIO
@@ -9,7 +9,7 @@
 
 ## ESTADO GENERAL
 
-Sesion de alta intensidad arquitectonica. Se resolvieron tres pendientes criticos del ciclo anterior y se ejecuto la Faena 55 completa — la migracion definitiva de localStorage a SQLite como unica fuente de verdad para el estado operacional de caja.
+Sesion enfocada en completar el modulo AUDITORIA de extremo a extremo. Se cerraron las cuatro brechas pendientes de la sesion anterior (token CSS, comando Rust de lectura, workspace UI, integracion en navegacion) y se actualizo la documentacion de gobierno. El modulo queda operativo en produccion.
 
 ---
 
@@ -17,24 +17,16 @@ Sesion de alta intensidad arquitectonica. Se resolvieron tres pendientes critico
 
 | Commit | Faena | Descripcion |
 |---|---|---|
-| `89a6771` | 53 | Fix cash: detectar cierre_activo desde SQLite por polling — cierreAutorizado reactivo a sesion VEN independiente de instancia MAESTRO |
-| `431b4fd` | 54a | Fix cash: blindaje defensivo en getCurrentSessionId — normalizar sesion.id contra comillas fisicas residuales |
-| `13cc93d` | 55-Rust | feat(rust): comando obtener_estado_arranque — sesion activa, movimientos, cajas usadas hoy y ventas en una sola transaccion SQLite |
-| `c3b7cca` | 55-SVC | feat(cash): arranque-caja.service.ts — mapeo de estado inicial desde SQLite, elimina dependencia de localStorage en arranque |
-| `5caaddf` | 55-CAJA+CTX | refactor(cash): migrar arranque de localStorage a SQLite — useCaja y POSContext leen estado inicial desde obtenerEstadoArranque, eliminan recoverOperationalState |
-| `6c33bcb` | 55-STATS | refactor(stats): eliminar localStorage de useSessionStats — stats y correlativos arrancan desde SQLite via initialStats, sin persistencia local |
-| `62e8889` | 55-CLEAN | chore(cash): limpiar keys localStorage obsoletas en arranque |
+| `7d6a1a3` | 56-TOKEN | chore(css): tokens --dv-mod-auditoria y --dv-mod-auditoria-bg en index.css |
+| `f848c43` | 57-RUST | feat(rust): commands/auditoria.rs — registrar (movido desde operadores.rs), obtener_registros, obtener_resumen |
+| `2d79ffc` | 58-UI | feat(ui): AuditoriaWorkspace + service layer + integracion App + OperationalBar |
+| `2daee30` | DOCS | docs(ux): AUDITORIA registrado en mapa de color canonico de ARQUITECTURA_UX.md |
 
 ---
 
-## ARQUITECTURA DE ARRANQUE — NUEVO PATRON (definitivo)
+## ARQUITECTURA DE ARRANQUE — PATRON DEFINITIVO
 
-### Flujo anterior (eliminado)
-```
-App inicia -> recoverOperationalState() sincrono -> lee localStorage -> monta POSContext
-```
-
-### Flujo nuevo (produccion)
+### Flujo (produccion)
 ```
 App inicia
   -> POSProvider monta con inicializando=true -> pantalla "DISATEQ" (fondo #0f1117)
@@ -45,133 +37,132 @@ App inicia
 ```
 
 ### Keys localStorage ELIMINADAS (ya no existen en el codigo)
-- `disateq.pos.cashSession`
-- `disateq.pos.usedCodes`
-- `disateq.pos.usedDate`
-- `disateq.pos.cashMoves`
-- `disateq.pos.sessionStats`
-- `disateq.pos.correlatives`
+- `disateq.pos.cashSession`, `disateq.pos.usedCodes`, `disateq.pos.usedDate`
+- `disateq.pos.cashMoves`, `disateq.pos.sessionStats`, `disateq.pos.correlatives`
 
-Estas keys se limpian automaticamente en cada arranque via `limpiarKeysObsoletas()` en `arranque-caja.service.ts`.
+Limpieza automatica en cada arranque via `limpiarKeysObsoletas()` en `arranque-caja.service.ts`.
 
 ### Keys localStorage LEGITIMAS (permanecen)
-- `disateq:cash:ui:closingPhase` — estado UI proceso de cierre (efimero)
-- `disateq:cash:ui:cajaStage` — estado UI proceso de cierre (efimero)
-- `disateq:cash:ui:contado` — conteos del arqueo en progreso (efimero)
-- `disateq.pos.lastArqueo` — snapshot para reimprimir arqueo
-- `disateq.pos.visualMode` — preferencia UI
-- `disateq.pos.opLogs` — bitacora operacional efimera
-- `disateq.pos.rubro` — configuracion rubro
-- `disateq.pos.printFlow` — configuracion impresion
+- `disateq:cash:ui:closingPhase` / `cajaStage` / `contado` — estado UI cierre (efimero)
+- `disateq.pos.lastArqueo` — snapshot reimprimir arqueo
+- `disateq.pos.visualMode` / `rubro` / `printFlow` — preferencias UI
 - `disateq.config.business` — configuracion negocio
 - `disateq:operator:accesos` — bitacora accesos (diferido a SQLite)
 
 ---
 
-## ARCHIVOS CLAVE MODIFICADOS HOY
+## MODULO AUDITORIA — ESTADO COMPLETO (implementado hoy)
 
-### Nuevo archivo
-- `apps/vendor-desktop/src/domains/cash/arranque-caja.service.ts` — wrapper TS del comando Rust, mapeo de tipos, reconstruccion de SessionStats desde ventas, limpieza de keys obsoletas
+### Arquitectura de la cadena completa
 
-### Reescritos completamente
-- `apps/vendor-desktop/src/hooks/useCaja.ts` — 407 lineas -> 245 lineas; recoverOperationalState eliminado; sin useEffect de persistencia LS; recibe initialState: EstadoArranque
-- `apps/vendor-desktop/src/hooks/useSessionStats.ts` — 132 lineas -> 83 lineas; loadSessionStats/saveSessionStats/loadCorrelatives/saveCorrelatives eliminados; arranca con initialStats o NULL_STATS
-- `apps/vendor-desktop/src/context/POSContext.tsx` — arranque async; pantalla de carga; recoverOperationalState eliminado; useCaja recibe initialState
+```
+auditoria_operacion (SQLite, v24)
+  WRITE: commands/auditoria.rs::registrar_auditoria_operacion
+         <- auditoriaService.registrar() <- ConfigWorkspace (PIN), otros puntos
+  READ:  commands/auditoria.rs::obtener_registros_auditoria  (filtros opcionales)
+         commands/auditoria.rs::obtener_resumen_auditoria    (ultimos 30 dias, por dominio)
+         <- auditoriaService.obtenerRegistros() / obtenerResumen()
+         <- AuditoriaWorkspace.tsx
+```
 
-### Modificados
-- `apps/vendor-desktop/src-tauri/src/commands/sesion_caja.rs` — nuevo comando obtener_estado_arranque al final
-- `apps/vendor-desktop/src-tauri/src/lib.rs` — registro de obtener_estado_arranque en invoke_handler
-- `apps/vendor-desktop/src/modules/cash/CashWorkspace.tsx` — useEffect polling cierreAutorizado desde SQLite cada 10s
-- `apps/vendor-desktop/src/modules/cash/services/session-history.service.ts` — blindaje replace en getCurrentSessionId
+### Archivos del dominio
+- `src-tauri/src/commands/auditoria.rs` — modulo Rust propio; structs RegistroAuditoria + ResumenAuditoriaDominio; tres comandos
+- `src/domains/auditoria/auditoria.service.ts` — interfaces RegistroAuditoria, ResumenAuditoriaDominio, FiltrosAuditoria; metodos obtenerRegistros() y obtenerResumen() con mapeo snake->camelCase
+- `src/modules/config/AuditoriaWorkspace.tsx` — dos paneles (lista+filtros / detalle); carga async con Promise.all; sin props, sin localStorage
+
+### Integracion en navegacion
+- `App.tsx`: rama `activeModule === "auditoria"` renderiza AuditoriaWorkspace
+- `OperationalBar.tsx`: `puedeVerAuditoria = (acceso_total || gestionar_operadores) && !isBlocking`; `tieneAcceso("auditoria")` lee del ref correctamente
+- Accent: `#7B6EA0` | BG: `#F5F3FB` | Token CSS: `--dv-mod-auditoria` / `--dv-mod-auditoria-bg`
+
+### Nota de migracion (Rust)
+- `registrar_auditoria_operacion` fue movido de `commands/operadores.rs` a `commands/auditoria.rs`
+- El path en `lib.rs invoke_handler` fue actualizado: `commands::auditoria::registrar_auditoria_operacion`
+- `commands/mod.rs` tiene `pub mod auditoria;`
+
+### Operaciones auditables registradas hoy en el codigo
+- `CONFIGURACION_PIN_AUTORIZACION` — en ConfigWorkspace al guardar PIN de autorizacion
+- Resto de TipoOperacion declarados en auditoria.service.ts listos para conectarse cuando los flujos correspondientes se implementen
 
 ---
 
-## APRENDIZAJES CRITICOS DE LA SESION
+## ESTADO DE MODULOS CLAVE
 
-### 1. cierreAutorizado requiere polling cross-instancia
-- MAESTRO y VEN son instancias separadas de la app (sesiones distintas)
-- `window.dispatchEvent` es local a la ventana — no cruza instancias
-- Solucion: useEffect con setInterval de 10s en CashWorkspace consultando SQLite directamente
-- El callback `onAutorizarCierre` del `SupervisionCajaWorkspace` se mantiene como backup sincrono para el caso de misma instancia
+### Arranque de caja (definitivo desde sesion anterior)
+- `obtener_estado_arranque` (Rust, sesion_caja.rs): una transaccion, devuelve sesion + movimientos + cajas usadas hoy + ventas
+- `arranque-caja.service.ts`: mapeo de tipos, reconstruccion de stats, limpieza de keys obsoletas
+- `POSContext.tsx`: arranque async con pantalla de carga
+- `useCaja.ts`: recibe `initialState: EstadoArranque`, sin localStorage
+- `useSessionStats.ts`: recibe `initialStats?: SessionStats`, sin localStorage
 
-### 2. `obtener_estado_arranque` — columnas de venta
-- La tabla `venta` NO tiene columnas `cash_component`, `mixto_yap_component`, `serie_comprobante`, `correlativo_comprobante`
-- La query de ventas usa solo: `total`, `metodo_pago`, `tipo_comprobante`
-- Los componentes mixtos no estan persistidos en `venta` — se acumulan el total en `cash` como aproximacion conservadora
+### `autorizacion_supervision` (v25)
+- `cierreAutorizado` en `CashWorkspace.tsx`: polling cada 10s via SQLite
+- `getCurrentSessionId()`: normaliza `sesion.id` con `.replace(/^'|'$/g, "")`
+- `mapSesionCajaRow()`: normaliza `boxCode` con `.replace(/^'|'$/g, "")`
 
-### 3. Arranque async en React — patron correcto
-- `useState(recoverOperationalState)` sincrono es el anti-patron que se elimino
-- El patron correcto: `useState(true)` para `inicializando` + `useEffect` que resuelve y llama `setInicializando(false)`
-- Mientras `inicializando === true`: retornar pantalla minima (no `null`, no fragmento vacio — un div real para que Tauri renderice algo)
-
-### 4. `docCorrelatives` en useSessionStats
-- Solo es estado informativo de UI (rangos del turno)
-- El motor real de numeracion vive en `correlativoStore` — independiente
-- Arranca siempre vacio sin riesgo de duplicar correlativos
+### AUDITORIA (nuevo — completo desde hoy)
+- Ver seccion MODULO AUDITORIA arriba.
 
 ---
 
 ## PENDIENTES ACTIVOS (priorizados)
 
 ### CRITICO
-1. **`useBitacora.ts` aun usa localStorage** para `opLogs` (`disateq.pos.opLogs`) y `turnEvents`. No es una deuda de integridad critica (son logs efimeros) pero es inconsistente con la arquitectura definitiva. Diferido aceptable por ahora.
+1. **`useBitacora.ts` aun usa localStorage** para `opLogs` (`disateq.pos.opLogs`) y `turnEvents`. Logs efimeros — inconsistente con arquitectura definitiva. Diferido aceptable.
 
 ### IMPORTANTE
-2. **Token CSS `--dv-mod-auditoria-bg`** — `index.css` no tiene token canonico para AUDITORIA. Accent `#7B6EA0` hardcodeado.
-3. **`AuditoriaWorkspace`** — tabla `auditoria_operacion` existe (v24), UI de consulta pendiente.
-4. **`supervision-authorization.service.ts`** — `getAuthorizationForSession` carga todas las autorizaciones para filtrar. Ineficiente. Pendiente comando Rust dedicado.
+2. **`supervision-authorization.service.ts`** — `getAuthorizationForSession` carga todas las autorizaciones para filtrar en memoria. Ineficiente. Pendiente comando Rust dedicado.
 
 ### DIFERIDO ACEPTABLE
-5. **BOX_DEFS estatico en `useCaja.ts`** — no se recarga desde SQLite.
-6. **Deudas naming GLOSARIO seccion 8** — `ActualizarProveedorInput`, `TicketLineDTO`, etc.
-7. **Subopciones ABASTECIMIENTO hardcodeadas** (farmacia unica).
-8. **`accesosStore` bitacora localStorage** — migracion futura a SQLite.
-9. **D-PRECIOS-1, F2 doble movimiento FEFO**.
-10. **`desactivar_proveedor` / `desactivar_producto_comercial`** en Rust.
+3. **BOX_DEFS estatico en `useCaja.ts`** — no se recarga desde SQLite.
+4. **Deudas naming GLOSARIO seccion 8** — `ActualizarProveedorInput`, `TicketLineDTO`, `BoxSlotType`, `OperatorRecord`, etc.
+5. **Subopciones ABASTECIMIENTO hardcodeadas** (farmacia unica).
+6. **`accesosStore` bitacora localStorage** — migracion futura a SQLite.
+7. **D-PRECIOS-1, F2 doble movimiento FEFO**.
+8. **`desactivar_proveedor` / `desactivar_producto_comercial`** en Rust.
+9. **Conectar puntos de auditoria faltantes** — ANULACION_COMPROBANTE, CORRECCION_ARQUEO, CORRECCION_APERTURA, CREACION_OPERADOR, BAJA_OPERADOR ya estan declarados como TipoOperacion pero sus flujos no llaman a auditoriaService.registrar() todavia.
 
 ---
 
-## ESTADO DE MODULOS CLAVE
+## APRENDIZAJES CRITICOS ACUMULADOS
 
-### Arranque de caja (NUEVO — definitivo)
-- `obtener_estado_arranque` (Rust, sesion_caja.rs): una transaccion, devuelve sesion + movimientos + cajas usadas hoy + ventas
-- `arranque-caja.service.ts`: mapeo de tipos, reconstruccion de stats, limpieza de keys obsoletas
-- `POSContext.tsx`: arranque async con pantalla de carga, `inicializando` state
-- `useCaja.ts`: recibe `initialState: EstadoArranque`, sin localStorage
-- `useSessionStats.ts`: recibe `initialStats?: SessionStats`, sin localStorage
+### Tauri 2 camelCase
+- JS invoke envia parametros en camelCase; Tauri convierte a snake_case antes de Rust
+- La respuesta Rust llega en snake_case; el mapeo a camelCase se hace en el service layer TS
+- Nunca enviar snake_case desde el service layer — causa silent parameter mismatch
 
-### `autorizacion_supervision` (v25)
-- `cierreAutorizado` en `CashWorkspace.tsx`: polling cada 10s via `loadAuthorizations()` + `getCurrentSessionId()`
-- `getCurrentSessionId()`: normaliza `sesion.id` con `.replace(/^'|'$/g, "")`
-- `mapSesionCajaRow()`: normaliza `boxCode` con `.replace(/^'|'$/g, "")`
-- Bug de comillas fisicas en datos historicos: resuelto (DB actual estaba limpia)
+### SQLite single source of truth
+- localStorage eliminado de todos los flujos de negocio criticos
+- Patron: optimistic UI + SQLite-confirmed + rollback on failure
+- `limpiarKeysObsoletas()` corre en cada arranque para limpiar instancias antiguas
 
-### `useCaja.ts` (reescrito)
-- Sin `recoverOperationalState`, sin `loadSession`, sin `saveSession`, sin `loadMoves`, sin `saveMoves`
-- Sin `useEffect` de persistencia localStorage
-- Recibe `initialState: EstadoArranque` — unico punto de inicializacion
-- `openCashSession`, `closeCashSession`, `correctAperturaData`, `addCashMove`, `updateCashMove`, `editCashMove` — sin cambios en logica interna
+### Separacion de dominios Rust
+- Cada dominio de negocio tiene su propio archivo en `commands/`
+- `registrar_auditoria_operacion` vivia en `operadores.rs` — incorrecto; movido a `auditoria.rs`
+- La cohesion de dominio en Rust es tan importante como en TS
 
-### `session-history.service.ts`
-- `getCurrentSessionId()` — normaliza `sesion.id` con replace
-- `mapSesionCajaRow()` — normaliza `boxCode` con replace
-- `loadSessionHistory()` — `obtenerHistorialSesionesSQLite(60)`
+### Cargo check warnings preexistentes (no son de esta sesion)
+- `unit_price` en `thermal.rs` — campo no leido
+- `tipo_documento` en `thermal.rs` — campo no leido
+- Ambos son deuda preexistente, no tocar sin tarea especifica
 
 ---
 
 ## PROTOCOLO PARA PROXIMA SESION
 
 1. Leer `CURRENT_CONTEXT.md` (este archivo).
-2. Verificar estado del working tree con `git status`.
-3. Evaluar si ejecutar prueba de arranque en runtime (abrir la app y verificar que la pantalla de carga aparece y desaparece correctamente).
-4. Si hay sesion activa en SQLite al arrancar: verificar que `CashWorkspace` muestra el turno abierto correctamente con movimientos reconstituidos.
-5. Continuar con pendiente #2 (token CSS AUDITORIA) o pendiente #3 (AuditoriaWorkspace UI) segun prioridad operacional.
+2. `git status` — verificar working tree limpio.
+3. Evaluar prioridad: pendiente #1 (useBitacora localStorage) o pendiente #2 (comando Rust supervision) o pendiente #9 (conectar puntos de auditoria faltantes).
+4. Si se trabaja en auditoria: verificar en runtime que AuditoriaWorkspace carga registros reales desde SQLite al navegar al modulo.
 
 ---
 
 ## COMANDOS UTILES
 
 ```powershell
+# Ver registros de auditoria
+sqlite3 "$env:APPDATA\com.disateq.vendor\disateq.db" "SELECT tipo_operacion, operador_alias, resultado, registrado_en FROM auditoria_operacion ORDER BY registrado_en DESC LIMIT 20;"
+
 # Ver sesiones activas
 sqlite3 "$env:APPDATA\com.disateq.vendor\disateq.db" "SELECT id, caja_codigo, operador_nombre, estado FROM sesion_caja WHERE estado = 'ABIERTA';"
 
@@ -181,7 +172,7 @@ sqlite3 "$env:APPDATA\com.disateq.vendor\disateq.db" "SELECT id, caja_code, sess
 # Version de migraciones
 sqlite3 "$env:APPDATA\com.disateq.vendor\disateq.db" "SELECT MAX(version) FROM schema_migrations;"
 
-# Limpiar DB para pruebas (localStorage ya no necesita limpiarse manualmente)
+# Limpiar DB para pruebas
 Remove-Item "$env:APPDATA\com.disateq.vendor\disateq.db"
 
 # TypeScript check
