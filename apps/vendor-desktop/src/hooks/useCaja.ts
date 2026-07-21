@@ -1,14 +1,15 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { usePreVentaStore } from "../domains/preventa/state/preventa.store";
 import { definirCajasDeBloque, type TipoCaja } from "../domains/operator/blocks.store";
 import type { Operador } from "../domains/operator/operator.store";
-import { NULL_STATS, type SessionStats, type DocRange, type ByMethod } from "../hooks/useSessionStats";
+import type { SessionStats } from "../hooks/useSessionStats";
 import {
   abrirSesionCajaEnSQLite,
   cerrarSesionCajaEnSQLite,
   registrarMovimientoCajaEnSQLite,
   actualizarMovimientoCajaEnSQLite,
-} from '../domains/cash/sesion-caja-sqlite.service'
+} from '../domains/cash/sesion-caja-sqlite.service';
+import type { EstadoArranque } from '../domains/cash/arranque-caja.service';
 
 export type CashBoxType = TipoCaja;
 export type MoveType             = "ingreso" | "egreso";
@@ -42,11 +43,6 @@ const BOX_DEFS: { code: string; tipoCaja: CashBoxType }[] = definirCajasDeBloque
 }));
 const TERMINAL = "PC-VENTAS01";
 
-const LS_SESSION   = "disateq.pos.cashSession";
-const LS_USED      = "disateq.pos.usedCodes";
-const LS_USED_DATE = "disateq.pos.usedDate";
-const LS_MOVES     = "disateq.pos.cashMoves";
-
 export const NULL_SESSION: CashSession = {
   isOpen: false, cashBox: null, operator: "", terminal: TERMINAL, openedAt: null, apertura: 0,
 };
@@ -55,74 +51,6 @@ function blockOperatorFallback(ops: Operador[], boxCode: string): string {
   const prefix = boxCode[0];
   const op = ops.find(o => o.baseBloque !== null && String(o.baseBloque)[0] === prefix && o.estado === "ACTIVO");
   return op?.nombreCompleto ?? "Operador";
-}
-
-function safeDate(val: unknown): Date | null {
-  if (!val) return null;
-  const d = new Date(val as string);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function loadSession(): CashSession {
-  try {
-    const raw = localStorage.getItem(LS_SESSION);
-    if (!raw) return NULL_SESSION;
-    const p = JSON.parse(raw) as Partial<CashSession> & { openedAt?: unknown; cashBox?: unknown };
-    return {
-      isOpen:      typeof p.isOpen      === "boolean" ? p.isOpen      : false,
-      cashBox:     (p.cashBox && typeof (p.cashBox as CashBox).code === "string") ? p.cashBox as CashBox : null,
-      operator:    typeof p.operator    === "string"  ? p.operator    : "",
-      operatorId:  typeof p.operatorId  === "string"  ? p.operatorId  : undefined,
-      terminal:    typeof p.terminal    === "string"  ? p.terminal    : TERMINAL,
-      openedAt:    safeDate(p.openedAt),
-      apertura:    typeof p.apertura    === "number"  ? p.apertura    : 0,
-      motivo:      typeof p.motivo      === "string"  ? p.motivo      : undefined,
-      observacion: typeof p.observacion === "string"  ? p.observacion : undefined,
-      refOp:       typeof p.refOp       === "string"  ? p.refOp       : undefined,
-    };
-  } catch { return NULL_SESSION; }
-}
-
-function loadUsedCodes(): Set<string> {
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    if (localStorage.getItem(LS_USED_DATE) !== today) {
-      localStorage.removeItem(LS_USED);
-      localStorage.setItem(LS_USED_DATE, today);
-      return new Set();
-    }
-    const raw = localStorage.getItem(LS_USED);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? new Set(arr.filter((v: unknown) => typeof v === "string")) : new Set();
-  } catch { return new Set(); }
-}
-
-function saveSession(s: CashSession): void {
-  try { localStorage.setItem(LS_SESSION, JSON.stringify(s)); } catch { /* quota */ }
-}
-
-function saveUsedCodes(codes: Set<string>): void {
-  try { localStorage.setItem(LS_USED, JSON.stringify([...codes])); } catch { /* quota */ }
-}
-
-function loadMoves(): CashMove[] {
-  try {
-    const raw = localStorage.getItem(LS_MOVES);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return [];
-    return arr.filter((m: unknown): m is CashMove => {
-      if (!m || typeof m !== "object") return false;
-      const o = m as Record<string, unknown>;
-      return typeof o.id === "string" && typeof o.type === "string"
-          && typeof o.amount === "number" && typeof o.motivo === "string";
-    });
-  } catch { return []; }
-}
-
-function saveMoves(moves: CashMove[]): void {
-  try { localStorage.setItem(LS_MOVES, JSON.stringify(moves)); } catch { /* quota */ }
 }
 
 function deriveBoxes(usedCodes: Set<string>): CashBox[] {
@@ -142,87 +70,6 @@ function deriveBoxes(usedCodes: Set<string>): CashBox[] {
   });
 }
 
-type RecoveredState = {
-  session: CashSession; usedCodes: Set<string>;
-  stats: SessionStats; moves: CashMove[]; recoveryLog: string | null;
-};
-
-export function recoverOperationalState(): RecoveredState {
-  const session = loadSession();
-  const codes   = loadUsedCodes();
-  const moves   = loadMoves();
-
-  const stats = (() => {
-    try {
-      const raw = localStorage.getItem("disateq.pos.sessionStats");
-      if (!raw) return NULL_STATS;
-      const p = JSON.parse(raw) as Partial<SessionStats>;
-      const ranges: Partial<Record<string, DocRange>> = {};
-      if (p.docRanges && typeof p.docRanges === "object") {
-        for (const [k, v] of Object.entries(p.docRanges)) {
-          if (v && typeof v.series === "string" && typeof v.first === "number"
-              && typeof v.last === "number" && typeof v.count === "number") {
-            ranges[k] = v as DocRange;
-          }
-        }
-      }
-      const bm = (p.byMethod && typeof p.byMethod === "object") ? p.byMethod as Partial<ByMethod> : {};
-      return {
-        count:   typeof p.count   === "number" ? p.count   : 0,
-        total:   typeof p.total   === "number" ? p.total   : 0,
-        cash:    typeof p.cash    === "number" ? p.cash    : 0,
-        yape:    typeof p.yape    === "number" ? p.yape    : 0,
-        tarjeta: typeof p.tarjeta === "number" ? p.tarjeta : 0,
-        docRanges: ranges,
-        byMethod: {
-          efe: typeof bm.efe === "number" ? bm.efe : 0,
-          yap: typeof bm.yap === "number" ? bm.yap : 0,
-          tar: typeof bm.tar === "number" ? bm.tar : 0,
-          mix: typeof bm.mix === "number" ? bm.mix : 0,
-        },
-      };
-    } catch { return NULL_STATS; }
-  })();
-
-  if (session.isOpen && (!session.cashBox || !BOX_DEFS.some(d => d.code === session.cashBox!.code) || !session.openedAt)) {
-    try {
-      localStorage.setItem(LS_SESSION, JSON.stringify(NULL_SESSION));
-      localStorage.removeItem("disateq.pos.sessionStats");
-      localStorage.removeItem(LS_MOVES);
-    } catch { /* ignore */ }
-    return { session: NULL_SESSION, usedCodes: codes, stats: NULL_STATS, moves: [], recoveryLog: "Sesión inválida detectada — se cerró automáticamente" };
-  }
-
-  let resolvedStats = stats;
-  if (!session.isOpen && stats.count > 0) {
-    resolvedStats = NULL_STATS;
-    try { localStorage.removeItem("disateq.pos.sessionStats"); } catch { /* ignore */ }
-  }
-
-  let resolvedMoves = moves;
-  if (!session.isOpen && moves.length > 0) {
-    resolvedMoves = [];
-    try { localStorage.removeItem(LS_MOVES); } catch { /* ignore */ }
-  }
-
-  let resolvedCodes = codes;
-  let recoveryLog: string | null = null;
-  if (session.isOpen && session.cashBox && session.cashBox.tipoCaja !== "PRINCIPAL") {
-    const box    = session.cashBox;
-    const prereq = box.tipoCaja === "AUXILIAR" ? String(Number(box.code) - 1)
-                 : box.code[0] + "00";
-    if (!codes.has(prereq)) {
-      const next = new Set(codes);
-      next.add(prereq);
-      resolvedCodes = next;
-      try { localStorage.setItem(LS_USED, JSON.stringify([...next])); } catch { /* ignore */ }
-      recoveryLog = `Prereq CAJA ${prereq} restaurado para contingencia activa CAJA ${box.code}`;
-    }
-  }
-
-  return { session, usedCodes: resolvedCodes, stats: resolvedStats, moves: resolvedMoves, recoveryLog };
-}
-
 interface UseCajaDeps {
   addOpLog: (text: string) => void;
   addTurnEvent: (sk: string, type: import("../domains/cash/turn-events.store").TurnEventType, text: string) => void;
@@ -233,9 +80,7 @@ interface UseCajaDeps {
   operatorsRef: React.RefObject<Operador[]>;
   setCobroOpen: (v: boolean) => void;
   setZone: (z: "search" | "ticket" | "cobro") => void;
-  initialMoves: CashMove[];
-  initialSession: CashSession;
-  initialUsedCodes: Set<string>;
+  initialState: EstadoArranque;
 }
 
 export function useCaja({
@@ -244,22 +89,16 @@ export function useCaja({
   sessionStatsRef,
   activeOperatorRef, operatorsRef,
   setCobroOpen, setZone,
-  initialMoves, initialSession, initialUsedCodes,
+  initialState,
 }: UseCajaDeps) {
-  const [cashSession, setCashSession] = useState<CashSession>(initialSession);
-  useEffect(() => { saveSession(cashSession); }, [cashSession]);
-
+  const [cashSession, setCashSession] = useState<CashSession>(initialState.session);
   const cashSessionRef = useRef(cashSession);
   cashSessionRef.current = cashSession;
 
-  const [usedCodes, setUsedCodes] = useState<Set<string>>(initialUsedCodes);
-  useEffect(() => { saveUsedCodes(usedCodes); }, [usedCodes]);
-
+  const [usedCodes, setUsedCodes] = useState<Set<string>>(initialState.usedCodes);
   const cashBoxes = useMemo(() => deriveBoxes(usedCodes), [usedCodes]);
 
-  const [cashMoves, setCashMoves] = useState<CashMove[]>(initialMoves);
-  useEffect(() => { saveMoves(cashMoves); }, [cashMoves]);
-
+  const [cashMoves, setCashMoves] = useState<CashMove[]>(initialState.moves);
   const cashMovesRef = useRef(cashMoves);
   cashMovesRef.current = cashMoves;
 
@@ -286,20 +125,11 @@ export function useCaja({
     const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : '';
     if (sk) {
       void registrarMovimientoCajaEnSQLite(
-        sk,
-        type,
-        amount,
-        motivo,
-        observacion ?? null,
-        refId ?? null,
-        s.operator,
-        s.cashBox?.code ?? '',
-        s.terminal,
-        sourceType,
-        fromApertura,
-        fromVendido,
-        regularizationStatus ?? null,
-        regularizationMode ?? null,
+        sk, type, amount, motivo,
+        observacion ?? null, refId ?? null,
+        s.operator, s.cashBox?.code ?? '', s.terminal,
+        sourceType, fromApertura, fromVendido,
+        regularizationStatus ?? null, regularizationMode ?? null,
         move.timestamp,
       );
     }
@@ -379,15 +209,8 @@ export function useCaja({
     setCashSession({ isOpen: true, cashBox: box, operator, operatorId, terminal: TERMINAL, openedAt: now, apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
     void abrirSesionCajaEnSQLite(
       `${boxCode}-${now.toISOString()}`,
-      boxCode,
-      box.tipoCaja,
-      operator,
-      operatorId ?? null,
-      TERMINAL,
-      apertura,
-      trimmedMotivo ?? null,
-      null,
-      trimmedRefOp ?? null,
+      boxCode, box.tipoCaja, operator, operatorId ?? null, TERMINAL,
+      apertura, trimmedMotivo ?? null, null, trimmedRefOp ?? null,
       now.toISOString(),
     );
     const base  = `${operator} abrió CAJA ${boxCode}${tag} · fondo S/ ${apertura.toFixed(2)}`;
@@ -426,11 +249,7 @@ export function useCaja({
     const sk = s.openedAt ? `${code}-${s.openedAt.toISOString()}` : "";
     addTurnEvent(sk, "cierre", `Cierre de turno · Caja ${code}`);
     setUsedCodes(prev => { const next = new Set(prev); next.add(code); return next; });
-    void cerrarSesionCajaEnSQLite(
-      sk,
-      new Date().toISOString(),
-      'ok',
-    );
+    void cerrarSesionCajaEnSQLite(sk, new Date().toISOString(), 'ok');
     setCashSession({ isOpen: false, cashBox: null, operator: "", operatorId: undefined, terminal: TERMINAL, openedAt: null, apertura: 0 });
     addOpLog(`${op} cerró CAJA ${code}`);
   }, [addOpLog, addTurnEvent, resetStats, setCobroOpen, setZone]);

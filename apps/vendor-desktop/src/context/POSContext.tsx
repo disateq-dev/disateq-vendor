@@ -13,7 +13,10 @@ import { useNotice } from "../hooks/useNotice";
 import { useBitacora, type OpLog } from "../hooks/useBitacora";
 import { useSessionStats, type SessionStats, type DocCorrelatives, type DocRange, type ByMethod } from "../hooks/useSessionStats";
 import { useComprobantes } from "../hooks/useComprobantes";
-import { useCaja, recoverOperationalState, type CashSession, type CashBox, type CashBoxType, type CashMove, type MoveType, type MoveSource, type RegularizationStatus, type RegularizationMode } from "../hooks/useCaja";
+import { useCaja, type CashSession, type CashBox, type CashBoxType, type CashMove, type MoveType, type MoveSource, type RegularizationStatus, type RegularizationMode } from "../hooks/useCaja";
+import { obtenerEstadoArranque, type EstadoArranque } from "../domains/cash/arranque-caja.service";
+import { NULL_SESSION } from "../hooks/useCaja";
+import { NULL_STATS } from "../hooks/useSessionStats";
 export type { OpLog };
 export type { SessionStats, DocCorrelatives, DocRange, ByMethod };
 export type { CashSession, CashBox, CashBoxType, CashMove, MoveType, MoveSource, RegularizationStatus, RegularizationMode };
@@ -77,9 +80,26 @@ interface POSContextValue {
   acknowledgeAuthorization: (id: string) => void;
 }
 
+const ESTADO_ARRANQUE_VACIO: EstadoArranque = {
+  session:   NULL_SESSION,
+  moves:     [],
+  usedCodes: new Set(),
+  stats:     NULL_STATS,
+};
+
 const POSContext = createContext<POSContextValue | null>(null);
 
 export function POSProvider({ children }: { children: ReactNode }) {
+  const [inicializando, setInicializando] = useState(true);
+  const [initState, setInitState] = useState<EstadoArranque>(ESTADO_ARRANQUE_VACIO);
+
+  useEffect(() => {
+    obtenerEstadoArranque().then(estado => {
+      setInitState(estado);
+      setInicializando(false);
+    });
+  }, []);
+
   const { sessionNotice, showNotice } = useNotice();
   const { rubro, setRubro, setVisualMode: persistVisualMode, printFlow, setPrintFlow } = useConfigNegocio();
   const [visualMode, setVisualModeState] = useState<VisualMode>(() => {
@@ -95,9 +115,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     persistVisualMode(m);
   }, [persistVisualMode]);
 
-  const [initState] = useState(recoverOperationalState);
-  const recoveryLogRef = useRef(initState.recoveryLog);
-  const cashSessionRef = useRef<CashSession>(initState.session);
+  const cashSessionRef = useRef<CashSession>(NULL_SESSION);
   const setCobroOpenRef = useRef<(v: boolean) => void>(() => {});
   const setZoneRef      = useRef<(z: "search" | "ticket" | "cobro") => void>(() => {});
 
@@ -114,12 +132,8 @@ export function POSProvider({ children }: { children: ReactNode }) {
   } = useBitacora({ cashSessionRef });
 
   useEffect(() => {
-    migrarCategoryHOVs()
-    if (recoveryLogRef.current) {
-      addOpLog(`[RECOVERY] ${recoveryLogRef.current}`);
-      recoveryLogRef.current = null;
-    }
-  }, [addOpLog]);
+    migrarCategoryHOVs();
+  }, []);
 
   const {
     operators, activeOperator,
@@ -148,13 +162,10 @@ export function POSProvider({ children }: { children: ReactNode }) {
     activeOperatorRef, operatorsRef,
     setCobroOpen: (v: boolean) => setCobroOpenRef.current(v),
     setZone:      (z: "search" | "ticket" | "cobro") => setZoneRef.current(z),
-    initialMoves:     initState.moves,
-    initialSession:   initState.session,
-    initialUsedCodes: initState.usedCodes,
+    initialState: initState,
   });
   cashSessionRef.current = cajaCashSessionRef.current;
 
-  // ── Autorizaciones supervisoras pospuestas — en memoria, se limpia al abrir nuevo turno ──
   const [acknowledgedAuthIds, setAcknowledgedAuthIds] = useState<Set<string>>(new Set());
   const acknowledgeAuthorization = useCallback((id: string) => {
     setAcknowledgedAuthIds(prev => new Set(prev).add(id));
@@ -184,6 +195,19 @@ export function POSProvider({ children }: { children: ReactNode }) {
     addTurnEvent,
     onAnulacion: revertirVenta,
   });
+
+  if (inicializando) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        height: "100vh", background: "#0f1117",
+        color: "#C59B6D", fontFamily: "system-ui, sans-serif",
+        fontSize: "13px", letterSpacing: "0.15em", textTransform: "uppercase",
+      }}>
+        DISATEQ
+      </div>
+    );
+  }
 
   return (
     <POSContext.Provider value={{
