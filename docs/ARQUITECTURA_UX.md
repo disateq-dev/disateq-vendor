@@ -2,7 +2,7 @@
 
 ## Estado del documento
 
-Documento autoridad. Creado 21-jun-2026. Última actualización 01-jul-2026.
+Documento autoridad. Creado 21-jun-2026. Última actualización 21-jul-2026.
 
 Reemplaza tres documentos que describían una jerarquía conceptual nunca
 implementada: `03-arquitectura/arquitectura.md`,
@@ -374,6 +374,7 @@ vigente antes de "corregir" nada.
 | CLIENTES | `#1A6BB5` | `#EBF4FF` | Azul confianza — refinado 18-jul-2026 (reemplaza `#1E7E4F` verde oscuro que colisionaba con VENTAS y ABASTECIMIENTO; azul evoca personas y relaciones) |
 | REPORTES | `#5A4DB8` | `#F3F1FB` | Violeta azulado — refinado 18-jul-2026 (reemplaza `#5C5FA8`; más saturado, familia distinta del azul de CLIENTES) |
 | COMPROBANTES | `#9B3E7A` | `#F7F0F5` | Fucsia ciruela vivo — refinado 18-jul-2026 (reemplaza `#7B4F6E`; más legible y contrastante) |
+| AUDITORÍA | `#7B6EA0` | `#F5F3FB` | Violeta grisáceo — implementado 21-jul-2026; trazabilidad de operaciones sensibles; no colisiona con REPORTES (`#5A4DB8`) ni COMPROBANTES (`#9B3E7A`) |
 | AJUSTES / CONFIG | `#5C6478` | `#F4F4F6` | Slate medio — refinado 18-jul-2026 (reemplaza `#4A5265` que era demasiado oscuro; el slate medio comunica técnico/neutral sin competir con los demás módulos) |
 
 **Nota de auditoría (01-jul-2026):** al retomar la migración de tokens de
