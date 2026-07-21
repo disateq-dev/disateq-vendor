@@ -90,7 +90,7 @@ export async function loadSessionHistory(): Promise<SessionEntry[]> {
 export async function getCurrentSessionId(): Promise<string | null> {
   try {
     const sesion = await obtenerSesionActivaSQLite();
-    return sesion !== null ? sesion.id : null;
+    return sesion !== null ? sesion.id.replace(/^'|'$/g, "") : null;
   } catch {
     return null;
   }
