@@ -18,3 +18,4 @@ pub mod sesion_caja;
 pub mod operadores;
 pub mod bloques;
 pub mod autorizaciones;
+pub mod auditoria;
