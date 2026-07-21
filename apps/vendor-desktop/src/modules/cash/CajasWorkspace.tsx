@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { usePOS, type CashSession } from "../../context/POSContext";
 import { definirCajasDeBloque, type BloqueOperacional, type TipoCaja } from "../../domains/operator/blocks.store";
-import { loadTurnEvents } from "../../domains/cash/turn-events.store";
 import useBloques, { type DefinicionSlot } from "./hooks/useBloques";
 import {
   loadSessionHistory,
@@ -887,23 +886,11 @@ export function CajasWorkspace() {
 
   const lastActivity = useMemo(() => {
     const map = new Map<string, LastActivity>();
-    const turnEvs = loadTurnEvents();
-    const opByKey = new Map(sessionHistory.map(entry => [`${entry.boxCode}-${entry.openedAt}`, entry.operator]));
-
     for (const entry of sessionHistory) {
       const prefix = entry.boxCode[0];
       const at = entry.closedAt ?? entry.openedAt;
       const cur = map.get(prefix);
       if (!cur || at > cur.at) map.set(prefix, { at, operator: entry.operator });
-    }
-    for (const event of turnEvs) {
-      const boxCode = event.sessionKey.split("-")[0];
-      if (!boxCode) continue;
-      const prefix = boxCode[0];
-      const cur = map.get(prefix);
-      if (!cur || event.ts > cur.at) {
-        map.set(prefix, { at: event.ts, operator: opByKey.get(event.sessionKey) ?? "" });
-      }
     }
     return map;
   }, [sessionHistory]);

@@ -1,41 +1,22 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   type TurnEvent,
   type TurnEventType,
-  loadTurnEvents,
-  saveTurnEvents,
 } from "../domains/cash/turn-events.store";
 import type { CashSession } from "../context/POSContext";
 import { registrarEventoTurnoEnSQLite } from '../domains/cash/sesion-caja-sqlite.service'
 
-const LS_OPLOGS = "disateq.pos.opLogs";
-
 export type OpLog = { id: string; ts: string; text: string };
-
-function loadOpLogs(): OpLog[] {
-  try {
-    const raw = localStorage.getItem(LS_OPLOGS);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-
-function saveOpLogs(logs: OpLog[]): void {
-  try { localStorage.setItem(LS_OPLOGS, JSON.stringify(logs)); } catch { /* quota */ }
-}
 
 interface UseBitacoraDeps {
   cashSessionRef: React.RefObject<CashSession>;
   initialOpLogs?: OpLog[];
 }
 
-export function useBitacora({ cashSessionRef, initialOpLogs }: UseBitacoraDeps) {
-  const [opLogs, setOpLogs] = useState<OpLog[]>(() => initialOpLogs ?? loadOpLogs());
-  useEffect(() => { saveOpLogs(opLogs); }, [opLogs]);
+export function useBitacora({ cashSessionRef, initialOpLogs: _initialOpLogs }: UseBitacoraDeps) {
+  const [opLogs, setOpLogs] = useState<OpLog[]>([]);
 
-  const [turnEvents, setTurnEvents] = useState<TurnEvent[]>(loadTurnEvents);
-  useEffect(() => { saveTurnEvents(turnEvents); }, [turnEvents]);
+  const [turnEvents, setTurnEvents] = useState<TurnEvent[]>([]);
 
   const addOpLog = useCallback((text: string) => {
     const entry: OpLog = {
