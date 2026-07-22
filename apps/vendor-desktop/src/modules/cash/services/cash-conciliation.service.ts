@@ -11,7 +11,7 @@ export interface ConciliationBreakdown {
   fondoApertEsp:     number;
   fondoVendidoEsp:   number;
   efectivoEsperado:  number;
-  // Arqueo operacional puro: ventas cash + ingresos − egresos (excluye fondo fijo/apertura)
+  // Arqueo operacional puro: total de ventas en efectivo, sin ajuste de ningún tipo por movimientos.
   arqueoOperacional: number;
 }
 
@@ -33,9 +33,8 @@ export function calcConciliation(
   const fondoApertEsp    = moneySub(moneyAdd(apertura, ingApertura), egApertura);
   const fondoVendidoEsp  = moneySub(moneyAdd(cashVendido, ingVendido), egVendido);
   const efectivoEsperado = moneyAdd(fondoApertEsp, fondoVendidoEsp);
-  // Arqueo operacional = ventas efectivo ± movimientos Caja del Día.
-  // Los egresos reducen lo esperado; los ingresos lo aumentan.
-  const arqueoOperacional = fondoVendidoEsp;
+  // Arqueo operacional = total puro de ventas en efectivo, sin ajuste por movimientos de caja, para que cualquier diferencia en el cierre sea visible en vez de compensarse en silencio.
+  const arqueoOperacional = cashVendido;
 
   return {
     ingApertura, egApertura, ingVendido, egVendido,
