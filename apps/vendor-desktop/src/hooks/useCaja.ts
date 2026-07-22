@@ -8,6 +8,7 @@ import {
   cerrarSesionCajaEnSQLite,
   registrarMovimientoCajaEnSQLite,
   actualizarMovimientoCajaEnSQLite,
+  corregirAperturaSesionEnSQLite,
 } from '../domains/cash/sesion-caja-sqlite.service';
 import type { EstadoArranque } from '../domains/cash/arranque-caja.service';
 
@@ -222,21 +223,28 @@ export function useCaja({
     return { ok: true };
   }, [cashBoxes, addOpLog, addTurnEvent, resetStats, resetOpLogs]);
 
-  const correctAperturaData = useCallback((
+  const correctAperturaData = useCallback(async (
     newApertura: number, newMotivo?: string, newObservacion?: string, newRefOp?: string,
-  ) => {
+  ): Promise<{ ok: boolean }> => {
     const s = cashSessionRef.current;
-    if (!s.isOpen) return;
-    if (sessionStatsRef.current!.count > 0 || cashMovesRef.current.length > 0) return;
+    if (!s.isOpen) return { ok: false };
+    if (sessionStatsRef.current!.count > 0 || cashMovesRef.current.length > 0) return { ok: false };
+    if (!s.cashBox || !s.openedAt) return { ok: false };
     const trimMotivo      = newMotivo?.trim()      || undefined;
     const trimObservacion = newObservacion?.trim() || undefined;
     const trimRefOp       = newRefOp?.trim()       || undefined;
+    const sessionId = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
+    const result = await corregirAperturaSesionEnSQLite(
+      sessionId, newApertura, trimMotivo ?? null, trimObservacion ?? null, trimRefOp ?? null,
+    );
+    if (!result.ok) return { ok: false };
     setCashSession(prev => ({ ...prev, apertura: newApertura, motivo: trimMotivo, observacion: trimObservacion, refOp: trimRefOp }));
     const parts = [`fondo S/ ${newApertura.toFixed(2)}`];
     if (trimMotivo)      parts.push(`motivo: ${trimMotivo}`);
     if (trimObservacion) parts.push(`obs: ${trimObservacion}`);
     if (trimRefOp)       parts.push(`ref: ${trimRefOp}`);
     addOpLog(`[CORRECCIÓN APERTURA] ${parts.join(' · ')}`);
+    return { ok: true };
   }, [addOpLog, sessionStatsRef]);
 
   const closeCashSession = useCallback(async (): Promise<{ ok: boolean }> => {

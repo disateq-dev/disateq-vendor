@@ -332,6 +332,35 @@ pub async fn actualizar_sesion_caja_correction(
 }
 
 #[tauri::command]
+pub async fn corregir_apertura_sesion(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    sesion_id: String,
+    apertura: f64,
+    motivo: Option<String>,
+    observacion: Option<String>,
+    ref_op: Option<String>,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let result = sqlx::query("UPDATE sesion_caja SET apertura = ?, motivo = ?, observacion = ?, ref_op = ? WHERE id = ?")
+        .bind(apertura)
+        .bind(&motivo)
+        .bind(&observacion)
+        .bind(&ref_op)
+        .bind(&sesion_id)
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    if result.rows_affected() == 0 {
+        return Err(format!("No se encontró la sesión de caja a corregir: {}", sesion_id));
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn obtener_estado_arranque(
     db_instances: State<'_, tauri_plugin_sql::DbInstances>,
 ) -> Result<Value, String> {

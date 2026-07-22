@@ -629,15 +629,19 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     setEditingApertura(true);
   }
 
-  function handleSaveCorrection() {
+  async function handleSaveCorrection(): Promise<void> {
     if (!canCorrectApertura) return;
     const amt = parseFloat(editAperturaInput) || 0;
-    correctAperturaData(
+    const result = await correctAperturaData(
       amt,
       editMotivo.trim() || undefined,
       editObservacion.trim() || undefined,
       editRefOp.trim() || undefined,
     );
+    if (!result.ok) {
+      showNotice("No se pudo guardar la corrección de apertura. Intente nuevamente.");
+      return;
+    }
     setEditingApertura(false);
     showNotice("Datos de apertura corregidos");
   }
@@ -937,7 +941,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   type="number"
                   value={editAperturaInput}
                   onChange={e => setEditAperturaInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
+                  onKeyDown={e => { if (e.key === "Enter") void handleSaveCorrection(); if (e.key === "Escape") cancelEditApertura(); }}
                   placeholder="0.00"
                   min="0" step="0.50"
                   className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[18px] font-bold text-[#2F3E46] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
@@ -946,7 +950,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             </div>
             <div className="shrink-0 border-t border-[#e4e9f0] px-4 py-3">
               <button
-                onClick={handleSaveCorrection}
+                onClick={() => void handleSaveCorrection()}
                 title="Tecla [Enter]"
                 className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-[#45b356] px-4 text-[13px] font-semibold uppercase tracking-wider text-white transition hover:bg-[#35994a] active:scale-[0.98] focus:outline focus:outline-1 focus:outline-[#45b356]/60"
               >

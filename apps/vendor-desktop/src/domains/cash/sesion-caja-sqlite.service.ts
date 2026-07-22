@@ -225,3 +225,25 @@ export async function actualizarSesionCajaCorrection(
     return { ok: false }
   }
 }
+
+export async function corregirAperturaSesionEnSQLite(
+  sesionId: string,
+  apertura: number,
+  motivo: string | null,
+  observacion: string | null,
+  refOp: string | null,
+): Promise<{ ok: boolean }> {
+  try {
+    await invoke('corregir_apertura_sesion', {
+      sesionId,
+      apertura,
+      motivo,
+      observacion,
+      refOp,
+    })
+    return { ok: true }
+  } catch {
+    await logError('sesion-caja-sqlite', 'No se pudo persistir la corrección de apertura en SQLite')
+    return { ok: false }
+  }
+}

@@ -35,7 +35,7 @@ interface POSContextValue {
   suggestedCashBox: CashBox | null;
   openCashSession: (boxCode: string, apertura: number, motivo?: string, refOp?: string, exceptionalSkipCodes?: string[]) => Promise<{ ok: boolean }>;
   closeCashSession: () => Promise<{ ok: boolean }>;
-  correctAperturaData: (apertura: number, motivo?: string, observacion?: string, refOp?: string) => void;
+  correctAperturaData: (apertura: number, motivo?: string, observacion?: string, refOp?: string) => Promise<{ ok: boolean }>;
   sessionStats: SessionStats;
   docCorrelatives: DocCorrelatives;
   recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number, mixtoYapComponent?: number, mixtoTarComponent?: number) => void;
