@@ -1,25 +1,33 @@
-# CURRENT_CONTEXT — DISATEQ Vendor™
-**Ultima actualizacion:** 2026-07-22 manana — gobernanza documental clarificada
-**Commit activo:** `c60ec29` · **Rama:** `main` · **Migracion SQLite:** v25 · **Working tree:** LIMPIO
+# CURRENT_CONTEXT — DISATEQ Vendor(tm)
+**Ultima actualizacion:** 2026-07-22 tarde -- Bloque 1 auditoria cerrado
+**Commit activo:** b6e413f . **Rama:** main . **Migracion SQLite:** v25 . **Working tree:** LIMPIO
 
 ## ESTADO GENERAL
-Auditoria Integral iniciada (8 bloques). Bloque 1 (cash/) EN CURSO: resuelto el hallazgo critico — fire-and-forget SQLite sin rollback + mismatch de id cliente/servidor en movimientos de caja (apertura, cierre, movimientos, regularizacion y correccion de apertura ya persisten con confirmacion). Resueltos tambien 2 conflictos doctrinales previos: arqueoOperacional puro (sin ajuste por movimientos) y docs de persistencia cash actualizados a SQLite como fuente unica.
+Auditoria Integral en curso (8 bloques). Bloque 1 (cash/) CERRADO -- 3 bugs resueltos
+(P3 camelCase supervision-authorization, P4 bitacora vacia tras reinicio, P1 GLOSARIO S8
+actualizado). Dos deudas diferidas con decision consciente documentada en GLOSARIO S8
+(P2 hooks fuera de domains/cash/, P5 sin comando Rust dedicado para
+getAuthorizationForSession).
 
-## GOBERNANZA (nuevo, 2026-07-22)
-`CLAUDE.md` clarificado: Codex CLI exclusivamente codigo de aplicacion, nunca documentacion. Claude es guardian de documentacion (`docs/`, `CURRENT_CONTEXT.md`, `CLAUDE.md`, bitacoras) — la escribe directo, siempre mostrandola en el chat para aprobacion antes de escribir.
+## GOBERNANZA
+CLAUDE.md: Codex CLI exclusivamente codigo de aplicacion, nunca documentacion.
+Claude es guardian de documentacion -- la escribe directo, siempre mostrando en chat
+para aprobacion antes de escribir.
 
 ## COMMITS DE LA SESION (mas reciente primero)
-`c60ec29` docs(governance): Codex solo codigo, Claude guardian de documentacion · `4231711` corregir_apertura_sesion persiste correccion temprana · `67ff04a` actualizar_movimiento_caja verifica rows_affected · `099a63e` movimientos usan id real SQLite y confirman antes de regularizar · `d2b6733` abrir/cerrar caja persisten antes de mutar estado · `1ebb28f` arqueoOperacional puro · `0315d42` docs persistencia cash corregidos
+b6e413f docs(governance): GLOSARIO S8 -- terminos cash/ exentos y deudas diferidas
+669c923 fix(cash): reconstruir eventos de turno en arranque -- bitacora no queda vacia
+f8c0df9 fix(cash): supervision-authorization usa camelCase en invoke
+a1f527e chore(context): actualizar CURRENT_CONTEXT -- gobernanza documental clarificada
 
-## AUDITORIA INTEGRAL — ESTADO
-Bloque 1 (cash/) EN CURSO. Bloques 2-8 (sales/preventa, comprobantes/documents, operator, abastecimiento/farmacia, config/auditoria, inventory/reports, residuos cross-cutting) Pendiente.
+## AUDITORIA INTEGRAL -- ESTADO
+Bloque 1 (cash/): CERRADO.
+Bloques 2-8: Pendiente.
 
-## PENDIENTES BLOQUE 1 (diagnostico hecho, sin resolver)
-- Naming en ingles en dominio cash (CashSession/CashMove/TurnEvent) — no registrado en GLOSARIO §8
-- Hooks nucleo (useCaja/useSessionStats/useBitacora) fuera de domains/cash/, viven en src/hooks/
-- supervision-authorization.service.ts envia snake_case manual — inconsistente con el resto del dominio
-- obtener_estado_arranque no reconstruye evento_turno — bitacora de turno vacia tras reinicio
-- Falta comando Rust dedicado para getAuthorizationForSession (carga todas y filtra en memoria)
+## PROXIMO PASO
+Iniciar Bloque 2: dominios sales/ y preventa/.
+Leer: domains/sales/pedido.types.ts . domains/sales/pedido.service.ts .
+domains/sales/venta.service.ts . domains/preventa/state/preventa.store.ts
 
 ## PROTOCOLO PROXIMA SESION
-1. Leer este archivo. 2. git status. 3. Continuar Bloque 1 con los pendientes de arriba, o avanzar a Bloque 2.
+1. Leer este archivo. 2. git log --oneline -5. 3. Iniciar Bloque 2.
