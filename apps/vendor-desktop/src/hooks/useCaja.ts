@@ -102,65 +102,64 @@ export function useCaja({
   const cashMovesRef = useRef(cashMoves);
   cashMovesRef.current = cashMoves;
 
-  const addCashMove = useCallback((
+  const addCashMove = useCallback(async (
     type: MoveType, amount: number, motivo: string,
     sourceType: MoveSource, fromApertura: number, fromVendido: number,
     observacion?: string, refId?: string,
     regularizationStatus?: RegularizationStatus,
     regularizationMode?: RegularizationMode,
-  ): CashMove => {
+  ): Promise<CashMove | null> => {
+    const timestamp = new Date().toISOString();
     const s = cashSessionRef.current;
+    const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : '';
+    if (!sk) return null;
+    const result = await registrarMovimientoCajaEnSQLite(
+      sk, type, amount, motivo,
+      observacion ?? null, refId ?? null,
+      s.operator, s.cashBox?.code ?? '', s.terminal,
+      sourceType, fromApertura, fromVendido,
+      regularizationStatus ?? null, regularizationMode ?? null,
+      timestamp,
+    );
+    if (!result.ok || !result.id) return null;
     const move: CashMove = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: result.id,
       type, amount, motivo,
       ...(observacion ? { observacion } : {}),
       ...(refId ? { refId } : {}),
       operator: s.operator, cashBoxCode: s.cashBox?.code ?? "",
-      terminal: s.terminal, timestamp: new Date().toISOString(),
+      terminal: s.terminal, timestamp,
       sourceType, fromApertura, fromVendido,
       ...(regularizationStatus ? { regularizationStatus } : {}),
       ...(regularizationMode   ? { regularizationMode   } : {}),
     };
     setCashMoves(prev => [...prev, move]);
-    const sk = s.cashBox && s.openedAt ? `${s.cashBox.code}-${s.openedAt.toISOString()}` : '';
-    if (sk) {
-      void registrarMovimientoCajaEnSQLite(
-        sk, type, amount, motivo,
-        observacion ?? null, refId ?? null,
-        s.operator, s.cashBox?.code ?? '', s.terminal,
-        sourceType, fromApertura, fromVendido,
-        regularizationStatus ?? null, regularizationMode ?? null,
-        move.timestamp,
-      );
-    }
     const verb   = refId ? "registró reposición" : type === "ingreso" ? "registró ingreso" : "registró egreso";
     const srcLbl = sourceType === "apertura" ? "fondo de cambio" : sourceType === "vendido" ? "caja del día" : "dinero prestado";
     const obs = observacion ? ` · ${observacion}` : "";
     const ref = refId ? ` [comp.${refId.slice(0, 8)}]` : "";
     addOpLog(`${s.operator} ${verb} S/ ${amount.toFixed(2)} [${srcLbl}] — ${motivo}${obs}${ref}`);
-    if (s.cashBox && s.openedAt) {
-      const sk      = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
-      const isFondo = sourceType === "apertura" || sourceType === "externo";
-      const evType  = isFondo
-        ? (type === "ingreso" ? "fondo_ingreso"     : "fondo_egreso")
-        : (type === "ingreso" ? "movimiento_ingreso" : "movimiento_egreso");
-      const srcLabel = sourceType === "apertura" ? "Fondo de cambio" : sourceType === "externo" ? "Préstamo al fondo" : "Caja del día";
-      addTurnEvent(sk, evType, `${srcLabel} · ${motivo}`);
-    }
+    const isFondo = sourceType === "apertura" || sourceType === "externo";
+    const evType  = isFondo
+      ? (type === "ingreso" ? "fondo_ingreso"     : "fondo_egreso")
+      : (type === "ingreso" ? "movimiento_ingreso" : "movimiento_egreso");
+    const srcLabel = sourceType === "apertura" ? "Fondo de cambio" : sourceType === "externo" ? "Préstamo al fondo" : "Caja del día";
+    addTurnEvent(sk, evType, `${srcLabel} · ${motivo}`);
     return move;
   }, [addOpLog, addTurnEvent]);
 
-  const updateCashMove = useCallback((id: string, status: RegularizationStatus, mode?: RegularizationMode) => {
+  const updateCashMove = useCallback(async (id: string, status: RegularizationStatus, mode?: RegularizationMode): Promise<{ ok: boolean }> => {
     const target = cashMovesRef.current.find(m => m.id === id);
-    if (!target) return;
+    if (!target) return { ok: false };
     const modeLabel = mode === "integracion_fondo" ? "integrado al fondo"
       : status === "anulado" ? "anulado" : "regularizado por reposición";
     const s = cashSessionRef.current;
+    const result = await actualizarMovimientoCajaEnSQLite(id, status, mode ?? null);
+    if (!result.ok) return { ok: false };
     setCashMoves(prev => prev.map(m => m.id === id
       ? { ...m, regularizationStatus: status, ...(mode ? { regularizationMode: mode } : {}) }
       : m
     ));
-    void actualizarMovimientoCajaEnSQLite(id, status, mode ?? null);
     addOpLog(`[REGULARIZACIÓN] ${s.operator} — CAJA ${s.cashBox?.code ?? "?"} — S/${target.amount.toFixed(2)} ${modeLabel}: ${target.motivo}`);
     if (s.cashBox && s.openedAt && (target.sourceType === "apertura" || target.sourceType === "externo")) {
       const sk     = `${s.cashBox.code}-${s.openedAt.toISOString()}`;
@@ -168,6 +167,7 @@ export function useCaja({
       const label  = mode === "integracion_fondo" ? "Préstamo integrado al fondo" : "Préstamo devuelto";
       addTurnEvent(sk, evType, `Fondo de cambio · ${label} · ${target.motivo}`);
     }
+    return { ok: true };
   }, [addOpLog, addTurnEvent]);
 
   const editCashMove = useCallback((id: string, motivo: string, observacion?: string) => {

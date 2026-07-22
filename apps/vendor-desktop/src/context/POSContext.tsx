@@ -40,8 +40,8 @@ interface POSContextValue {
   docCorrelatives: DocCorrelatives;
   recordSale: (netTotal: number, payMethod: string, docType?: string, docSeries?: string, docCorrelative?: number, cashComponent?: number, mixtoYapComponent?: number, mixtoTarComponent?: number) => void;
   cashMoves: CashMove[];
-  addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string, regularizationStatus?: RegularizationStatus, regularizationMode?: RegularizationMode) => CashMove;
-  updateCashMove: (id: string, status: RegularizationStatus, mode?: RegularizationMode) => void;
+  addCashMove: (type: MoveType, amount: number, motivo: string, sourceType: MoveSource, fromApertura: number, fromVendido: number, observacion?: string, refId?: string, regularizationStatus?: RegularizationStatus, regularizationMode?: RegularizationMode) => Promise<CashMove | null>;
+  updateCashMove: (id: string, status: RegularizationStatus, mode?: RegularizationMode) => Promise<{ ok: boolean }>;
   editCashMove: (id: string, motivo: string, observacion?: string) => void;
   opLogs: OpLog[];
   addOpLog: (text: string) => void;

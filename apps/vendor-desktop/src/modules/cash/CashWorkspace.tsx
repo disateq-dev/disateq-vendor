@@ -659,54 +659,78 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     setClosingStage(2);
   }
 
-  function handleAddVendido() {
+  async function handleAddVendido(): Promise<void> {
     if (!canSubmitVendido) return;
     const amt = vendidoTotalAmt;
-    const move = addCashMove(vendidoMoveType, amt, vendidoMotivo.trim(), "vendido", 0, amt, undefined);
+    const move = await addCashMove(vendidoMoveType, amt, vendidoMotivo.trim(), "vendido", 0, amt, undefined);
+    if (!move) {
+      showNotice("No se pudo guardar el movimiento. Intente nuevamente.");
+      return;
+    }
     setLastVendidoMove(move);
     setVendidoAmount(""); setVendidoMotivo("");
     showNotice(`${vendidoMoveType === "ingreso" ? "Ingreso" : "Egreso"} registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => vendidoAmountRef.current?.focus(), 10);
   }
 
-  function handleAddFondo() {
+  async function handleAddFondo(): Promise<void> {
     if (!canAddFondo || fondoSubTab !== "retiro") return;
     const amt = fondoTotalAmt;
-    const move = addCashMove("egreso", amt, fondoMotivo.trim(), "apertura", amt, 0, undefined, undefined, "por_regularizar");
+    const move = await addCashMove("egreso", amt, fondoMotivo.trim(), "apertura", amt, 0, undefined, undefined, "por_regularizar");
+    if (!move) {
+      showNotice("No se pudo guardar el movimiento. Intente nuevamente.");
+      return;
+    }
     setLastFondoMove(move);
     setFondoAmount(""); setFondoMotivo(""); setShowFondoMotivoSugerencias(false);
     showNotice(`Retiro del fondo registrado · S/ ${amt.toFixed(2)}`);
     setTimeout(() => fondoAmountRef.current?.focus(), 10);
   }
 
-  function handleReintegro() {
+  async function handleReintegro(): Promise<void> {
     const original = cashMoves.find(m => m.id === reintegroTargetId);
     if (!original) return;
     const amt = parseFloat(reintegroAmount) || 0;
     if (amt <= 0 || reintegroMotivo.trim().length < MIN_MOTIVO_LEN) return;
-    const move = addCashMove("ingreso", amt, reintegroMotivo.trim(), "apertura", amt, 0, undefined, original.id);
-    if (moneyGte(amt, original.amount)) updateCashMove(original.id, "regularizado", "reposicion");
+    const move = await addCashMove("ingreso", amt, reintegroMotivo.trim(), "apertura", amt, 0, undefined, original.id);
+    if (!move) {
+      showNotice("No se pudo guardar el movimiento. Intente nuevamente.");
+      return;
+    }
+    if (moneyGte(amt, original.amount)) {
+      const updateResult = await updateCashMove(original.id, "regularizado", "reposicion");
+      if (!updateResult.ok) showNotice("El movimiento se registró, pero el estado del movimiento original no pudo actualizarse. Requiere revisión manual.");
+    }
     setLastFondoMove(move);
     setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo("");
     showNotice(`Reintegro registrado · S/ ${amt.toFixed(2)}`);
   }
 
-  function handleAddPrestado() {
+  async function handleAddPrestado(): Promise<void> {
     if (!canAddPrestado) return;
-    const move = addCashMove("ingreso", prestadoTotalAmt, prestadoMotivo.trim(), "externo", 0, 0, undefined, undefined, "por_regularizar");
+    const move = await addCashMove("ingreso", prestadoTotalAmt, prestadoMotivo.trim(), "externo", 0, 0, undefined, undefined, "por_regularizar");
+    if (!move) {
+      showNotice("No se pudo guardar el movimiento. Intente nuevamente.");
+      return;
+    }
     setLastFondoMove(move);
     setPrestadoAmount(""); setPrestadoMotivo(""); setShowPrestadoMotivoSugerencias(false);
     showNotice(`Préstamo recibido registrado · S/ ${prestadoTotalAmt.toFixed(2)}`);
     setTimeout(() => prestadoAmountRef.current?.focus(), 10);
   }
 
-  function handleDevolver() {
+  async function handleDevolver(): Promise<void> {
     const original = cashMoves.find(m => m.id === devolverTargetId);
     if (!original) return;
     if (devolverMotivo.trim().length < MIN_MOTIVO_LEN) return;
     // Egreso de auditoría — fromApertura/fromVendido=0 para no afectar fondoApertEsp
-    const move = addCashMove("egreso", original.amount, devolverMotivo.trim(), "externo", 0, 0, undefined, original.id);
-    updateCashMove(original.id, "regularizado", "reposicion");
+    const move = await addCashMove("egreso", original.amount, devolverMotivo.trim(), "externo", 0, 0, undefined, original.id);
+    if (!move) {
+      showNotice("No se pudo guardar el movimiento. Intente nuevamente.");
+      return;
+    }
+    const updateResult = await updateCashMove(original.id, "regularizado", "reposicion");
+    if (!updateResult.ok) showNotice("La devolución se registró, pero el estado del movimiento original no pudo actualizarse. Requiere revisión manual.");
     setLastFondoMove(move);
     setDevolverTargetId(null); setDevolverMotivo("");
     showNotice(`Devolución registrada · S/ ${original.amount.toFixed(2)}`);
@@ -1465,7 +1489,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                                 <div className="flex gap-2">
                                   <button onClick={() => { setReintegroTargetId(null); setReintegroAmount(""); setReintegroMotivo(""); }}
                                     className="flex-1 rounded-lg border border-amber-200 bg-white py-1 text-[9px] font-bold uppercase text-amber-600 hover:bg-amber-50 transition">Cancelar</button>
-                                  <button onClick={handleReintegro} disabled={!(parseFloat(reintegroAmount) > 0 && reintegroMotivo.trim().length > 0)}
+                                  <button onClick={() => void handleReintegro()} disabled={!(parseFloat(reintegroAmount) > 0 && reintegroMotivo.trim().length > 0)}
                                     className="flex-1 rounded-lg bg-amber-500 py-1 text-[9px] font-bold uppercase text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition">Confirmar</button>
                                 </div>
                               </div>
@@ -2171,14 +2195,14 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                     type="text"
                     value={vendidoMotivo}
                     onChange={e => setVendidoMotivo(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && canSubmitVendido) handleAddVendido(); }}
+                    onKeyDown={e => { if (e.key === "Enter" && canSubmitVendido) void handleAddVendido(); }}
                     placeholder={vendidoMoveType === "egreso" ? "Ej: Pago mototaxi, pago proveedor..." : "Ej: Depósito, ajuste de caja..."}
                     maxLength={120}
                     className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                   />
 
                   <button
-                    onClick={handleAddVendido}
+                    onClick={() => void handleAddVendido()}
                     disabled={!canSubmitVendido}
                     className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                       canSubmitVendido
@@ -2297,7 +2321,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         onChange={e => setFondoMotivo(e.target.value)}
                         onFocus={() => { if (!fondoMotivo.trim()) setShowFondoMotivoSugerencias(true); }}
                         onBlur={() => { setTimeout(() => setShowFondoMotivoSugerencias(false), 150); }}
-                        onKeyDown={e => { if (e.key === "Enter" && canAddFondo) handleAddFondo(); }}
+                        onKeyDown={e => { if (e.key === "Enter" && canAddFondo) void handleAddFondo(); }}
                         placeholder="Ej: Préstamo temporal, sencillo para cambio..."
                         maxLength={120}
                         className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
@@ -2322,7 +2346,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         </div>
                       )}
 
-                      <button onClick={handleAddFondo} disabled={!canAddFondo}
+                      <button onClick={() => void handleAddFondo()} disabled={!canAddFondo}
                         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                           canAddFondo
                             ? "bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-[0.98]"
@@ -2402,13 +2426,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
                             <input type="text" value={reintegroMotivo}
                               onChange={e => setReintegroMotivo(e.target.value)}
-                              onKeyDown={e => { if (e.key === "Enter" && canConfirm) handleReintegro(); }}
+                              onKeyDown={e => { if (e.key === "Enter" && canConfirm) void handleReintegro(); }}
                               placeholder="Motivo del reintegro"
                               maxLength={120}
                               className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                             />
 
-                            <button onClick={handleReintegro} disabled={!canConfirm}
+                            <button onClick={() => void handleReintegro()} disabled={!canConfirm}
                               className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                                 canConfirm
                                   ? "bg-[#2154d8] text-white shadow-sm hover:bg-[#1a44be] active:scale-[0.98]"
@@ -2444,7 +2468,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         onChange={e => setPrestadoMotivo(e.target.value)}
                         onFocus={() => { if (!prestadoMotivo.trim()) setShowPrestadoMotivoSugerencias(true); }}
                         onBlur={() => { setTimeout(() => setShowPrestadoMotivoSugerencias(false), 150); }}
-                        onKeyDown={e => { if (e.key === "Enter" && canAddPrestado) handleAddPrestado(); }}
+                        onKeyDown={e => { if (e.key === "Enter" && canAddPrestado) void handleAddPrestado(); }}
                         placeholder="Ej: Monedas prestadas para dar vuelto..."
                         maxLength={120}
                         className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
@@ -2469,7 +2493,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                         </div>
                       )}
 
-                      <button onClick={handleAddPrestado} disabled={!canAddPrestado}
+                      <button onClick={() => void handleAddPrestado()} disabled={!canAddPrestado}
                         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                           canAddPrestado
                             ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
@@ -2537,13 +2561,13 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
                             <input type="text" value={devolverMotivo}
                               onChange={e => setDevolverMotivo(e.target.value)}
-                              onKeyDown={e => { if (e.key === "Enter" && canConfirm) handleDevolver(); }}
+                              onKeyDown={e => { if (e.key === "Enter" && canConfirm) void handleDevolver(); }}
                               placeholder="Motivo de la devolución"
                               maxLength={120}
                               className="w-full rounded-xl border border-[#e4e9f0] bg-white px-3 py-1.5 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
                             />
 
-                            <button onClick={handleDevolver} disabled={!canConfirm}
+                            <button onClick={() => void handleDevolver()} disabled={!canConfirm}
                               className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-bold uppercase tracking-wide transition ${
                                 canConfirm
                                   ? "bg-rose-500 text-white shadow-sm hover:bg-rose-600 active:scale-[0.98]"
