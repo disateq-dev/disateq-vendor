@@ -145,13 +145,16 @@ pub async fn actualizar_movimiento_caja(
         .get("sqlite:disateq.db")
         .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    sqlx::query("UPDATE movimiento_caja SET regularization_status = ?, regularization_mode = ? WHERE id = ?")
+    let result = sqlx::query("UPDATE movimiento_caja SET regularization_status = ?, regularization_mode = ? WHERE id = ?")
         .bind(&regularization_status)
         .bind(&regularization_mode)
         .bind(&movimiento_id)
         .execute(pool)
         .await
         .map_err(|e| e.to_string())?;
+    if result.rows_affected() == 0 {
+        return Err(format!("No se encontró el movimiento de caja a actualizar: {}", movimiento_id));
+    }
     Ok(())
 }
 
