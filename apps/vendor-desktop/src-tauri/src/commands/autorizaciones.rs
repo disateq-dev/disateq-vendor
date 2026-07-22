@@ -80,6 +80,7 @@ pub async fn obtener_autorizaciones_activas_bloque(
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RegistrarAutorizacionInput {
     pub id:            String,
     pub caja_code:     String,

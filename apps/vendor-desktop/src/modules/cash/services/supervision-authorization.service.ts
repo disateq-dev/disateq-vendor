@@ -78,12 +78,12 @@ export async function recordAuthorization(
   await invoke("registrar_autorizacion_supervision", {
     input: {
       id,
-      caja_code:     data.cajaCode,
-      session_id:    data.sessionId,
+      cajaCode:     data.cajaCode,
+      sessionId:    data.sessionId,
       type:          data.type,
       motivo:        data.motivo,
-      authorized_by: data.authorizedBy,
-      authorized_at: data.authorizedAt,
+      authorizedBy: data.authorizedBy,
+      authorizedAt: data.authorizedAt,
     },
   });
   emitChanged();
