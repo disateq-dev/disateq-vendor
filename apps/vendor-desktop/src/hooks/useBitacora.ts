@@ -9,14 +9,15 @@ import { registrarEventoTurnoEnSQLite } from '../domains/cash/sesion-caja-sqlite
 export type OpLog = { id: string; ts: string; text: string };
 
 interface UseBitacoraDeps {
-  cashSessionRef: React.RefObject<CashSession>;
-  initialOpLogs?: OpLog[];
+  cashSessionRef:  React.RefObject<CashSession>;
+  initialOpLogs?:  OpLog[];
+  initialEvents?:  TurnEvent[];
 }
 
-export function useBitacora({ cashSessionRef, initialOpLogs: _initialOpLogs }: UseBitacoraDeps) {
+export function useBitacora({ cashSessionRef, initialOpLogs: _initialOpLogs, initialEvents }: UseBitacoraDeps) {
   const [opLogs, setOpLogs] = useState<OpLog[]>([]);
 
-  const [turnEvents, setTurnEvents] = useState<TurnEvent[]>([]);
+  const [turnEvents, setTurnEvents] = useState<TurnEvent[]>(initialEvents ?? []);
 
   const addOpLog = useCallback((text: string) => {
     const entry: OpLog = {

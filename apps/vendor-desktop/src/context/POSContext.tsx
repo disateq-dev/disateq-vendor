@@ -85,6 +85,7 @@ const ESTADO_ARRANQUE_VACIO: EstadoArranque = {
   moves:     [],
   usedCodes: new Set(),
   stats:     NULL_STATS,
+  events:    [],
 };
 
 const POSContext = createContext<POSContextValue | null>(null);
@@ -129,7 +130,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     opLogs, addOpLog, resetOpLogs,
     turnEvents, addTurnEvent,
     currentSessionEvents,
-  } = useBitacora({ cashSessionRef });
+  } = useBitacora({ cashSessionRef, initialEvents: initState.events });
 
   useEffect(() => {
     migrarCategoryHOVs();

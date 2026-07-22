@@ -3,6 +3,7 @@ import type { CashSession, CashMove, CashBoxType } from "../../hooks/useCaja";
 import { NULL_SESSION } from "../../hooks/useCaja";
 import { NULL_STATS, type SessionStats } from "../../hooks/useSessionStats";
 import { logError } from "../logging/error-logger";
+import type { TurnEvent } from "../cash/turn-events.store";
 
 type RawSesion = {
   id: string;
@@ -36,6 +37,13 @@ type RawMovimiento = {
   timestamp: string;
 };
 
+type RawEventoTurno = {
+  sesion_id: string;
+  tipo:      string;
+  texto:     string;
+  ts:        string;
+};
+
 type RawVenta = {
   total: number;
   metodo_pago: string;
@@ -47,6 +55,7 @@ type RawEstadoArranque = {
   movimientos: RawMovimiento[];
   cajasUsadasHoy: string[];
   ventas: RawVenta[];
+  eventos: RawEventoTurno[];
 };
 
 export type EstadoArranque = {
@@ -54,7 +63,18 @@ export type EstadoArranque = {
   moves: CashMove[];
   usedCodes: Set<string>;
   stats: SessionStats;
+  events: TurnEvent[];
 };
+
+function mapEventoTurno(r: RawEventoTurno, sessionKey: string): TurnEvent {
+  return {
+    id:         `arranque-${r.ts}-${Math.random().toString(36).slice(2, 6)}`,
+    sessionKey,
+    ts:         r.ts,
+    type:       r.tipo as TurnEvent["type"],
+    text:       r.texto,
+  };
+}
 
 function mapMovimiento(r: RawMovimiento): CashMove {
   return {
@@ -125,6 +145,7 @@ export async function obtenerEstadoArranque(): Promise<EstadoArranque> {
         moves:     [],
         usedCodes: new Set(raw.cajasUsadasHoy.map(c => c.replace(/^'|'$/g, ""))),
         stats:     NULL_STATS,
+        events:    [],
       };
     }
 
@@ -158,9 +179,10 @@ export async function obtenerEstadoArranque(): Promise<EstadoArranque> {
 
     return {
       session,
-      moves:  raw.movimientos.map(mapMovimiento),
+      moves:     raw.movimientos.map(mapMovimiento),
       usedCodes,
-      stats:  reconstruirStats(raw.ventas),
+      stats:     reconstruirStats(raw.ventas),
+      events:    raw.eventos.map(e => mapEventoTurno(e, `${cajaCode}-${s.abierta_en}`)),
     };
   } catch (err) {
     await logError("arranque-caja", "No se pudo obtener el estado de arranque desde SQLite");
@@ -169,6 +191,7 @@ export async function obtenerEstadoArranque(): Promise<EstadoArranque> {
       moves:     [],
       usedCodes: new Set(),
       stats:     NULL_STATS,
+      events:    [],
     };
   }
 }

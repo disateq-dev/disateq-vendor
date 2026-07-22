@@ -458,6 +458,27 @@ pub async fn obtener_estado_arranque(
         vec![]
     };
 
+    let eventos: Vec<serde_json::Value> = if let Some(sid) = &sesion_id {
+        sqlx::query(
+            "SELECT tipo, texto, ts
+             FROM evento_turno WHERE sesion_id = ? ORDER BY ts ASC",
+        )
+        .bind(sid)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .map(|r| json!({
+            "sesion_id": sid,
+            "tipo":  r.try_get::<String, _>("tipo").unwrap_or_default(),
+            "texto": r.try_get::<String, _>("texto").unwrap_or_default(),
+            "ts":    r.try_get::<String, _>("ts").unwrap_or_default(),
+        }))
+        .collect()
+    } else {
+        vec![]
+    };
+
     let sesion_json = sesion.map(|r| json!({
         "id":               r.try_get::<String, _>("id").unwrap_or_default(),
         "caja_codigo":      r.try_get::<String, _>("caja_codigo").unwrap_or_default(),
@@ -477,5 +498,6 @@ pub async fn obtener_estado_arranque(
         "movimientos":      movimientos,
         "cajasUsadasHoy":   cajas_usadas_hoy,
         "ventas":           ventas,
+        "eventos":          eventos,
     }))
 }
