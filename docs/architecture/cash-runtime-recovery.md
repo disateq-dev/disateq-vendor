@@ -23,17 +23,19 @@ Debe resistir:
 
 # Persistencia
 
-Persisten:
+Persisten en SQLite:
 
 - correlativos
 - comprobantes
 - usedCodes
-
-Persistencia temporal runtime:
-
 - cashMoves
-- sessionStats
 - sesión activa
+
+sessionStats se reconstruye desde las ventas ya persistidas en cada arranque. No se guarda como entidad separada ni se pierde.
+
+No persisten:
+
+- opLogs: bitácora textual de la sesión; vive solo en memoria mientras la aplicación está abierta y nunca se persiste.
 
 ---
 

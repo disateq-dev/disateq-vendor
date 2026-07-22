@@ -166,16 +166,15 @@ El sistema NO debe inducir “acomodo” previo del conteo.
 
 # Persistencia
 
-Persisten entre sesiones:
+SQLite es hoy la fuente única de verdad para:
 
 - correlativos
 - comprobantes
 - usedCodes
+- la sesión activa
+- todos los movimientos de caja
+- los datos de arqueo del cierre, incluidas sus correcciones
 
 No persisten:
 
-- cashMoves
-- arqueos
-- opLogs
-
-Actualmente el arqueo impreso es el registro permanente principal del cierre.
+- opLogs: bitácora textual de la sesión; vive solo en memoria mientras la aplicación está abierta y nunca se persiste.
