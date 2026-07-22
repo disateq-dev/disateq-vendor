@@ -257,6 +257,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [ctgPin,          setCtgPin]          = useState("");
   const [ctgJustif,       setCtgJustif]       = useState("");
   const [ctgPinError,     setCtgPinError]     = useState(false);
+  const [isOpeningSession, setIsOpeningSession] = useState(false);
   const aperturaRef = useRef<HTMLInputElement>(null);
 
   // ── corrección datos apertura state ──────────────────────────
@@ -586,11 +587,12 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
 
   // ── handlers ──────────────────────────────────────────────────
 
-  function handleOpen() {
+  async function handleOpen(): Promise<void> {
     if (!selectedBox) return;
     const amt = parseFloat(aperturaInput);
     if (isNaN(amt) || amt < 0) return;
 
+    let result: { ok: boolean };
     if (openingMode === "exceptional") {
       if (ctgPin !== configuredCtgPin) { setCtgPinError(true); return; }
       if (!ctgJustif.trim()) return;
@@ -598,14 +600,22 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
       const primaryCode = selectedBox.tipoCaja === "EXCEPCIONAL"
         ? selectedBox.code[0] + "00"          // 150 → "100"
         : selectedBox.code.slice(0, 2) + "0"; // 101 → "100"
-      openCashSession(selectedBox.code, amt, ctgJustif.trim(), aperturaRefOp.trim() || undefined, [primaryCode]);
+      setIsOpeningSession(true);
+      result = await openCashSession(selectedBox.code, amt, ctgJustif.trim(), aperturaRefOp.trim() || undefined, [primaryCode]);
     } else if (openingMode === "contingency") {
       if (!ctgJustif.trim() || ctgJustif.trim().length < MIN_MOTIVO_LEN) return;
-      openCashSession(selectedBox.code, amt, ctgJustif.trim(), aperturaRefOp.trim() || undefined);
+      setIsOpeningSession(true);
+      result = await openCashSession(selectedBox.code, amt, ctgJustif.trim(), aperturaRefOp.trim() || undefined);
     } else {
       // normal — sin autorización adicional
       if (!selectedBox.available) return;
-      openCashSession(selectedBox.code, amt, aperturaMotivo.trim() || undefined, aperturaRefOp.trim() || undefined);
+      setIsOpeningSession(true);
+      result = await openCashSession(selectedBox.code, amt, aperturaMotivo.trim() || undefined, aperturaRefOp.trim() || undefined);
+    }
+    setIsOpeningSession(false);
+    if (!result.ok) {
+      showNotice("No se pudo abrir la caja. Intente nuevamente.");
+      return;
     }
     loadSessionHistory().then(setSessionHistory);
     onOpened?.();
@@ -724,7 +734,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
     }
   }
 
-  async function handleConfirmClose() {
+  async function handleConfirmClose(): Promise<void> {
     const now = new Date();
     const p   = (n: number) => String(n).padStart(2, "0");
     const arqueo: ArqueoData = {
@@ -767,7 +777,11 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
         if (pendingAuth) await markAuthorizationExecuted(pendingAuth.id, operatorName);
       }
     }
-    closeCashSession();
+    const closeResult = await closeCashSession();
+    if (!closeResult.ok) {
+      showNotice("No se pudo completar el cierre de caja. Intente nuevamente.");
+      return;
+    }
     if (closeSid) {
       await actualizarSesionCajaCorrection(closeSid, closeSignal, null, JSON.stringify(arqueo));
       loadSessionHistory().then(setSessionHistory);
@@ -1106,7 +1120,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                 value={aperturaInput}
                 onChange={e => setAperturaInput(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === "Enter" && canOpen) { e.preventDefault(); handleOpen(); }
+                  if (e.key === "Enter" && canOpen && !isOpeningSession) { e.preventDefault(); void handleOpen(); }
                 }}
                 placeholder="0.00"
                 min="0"
@@ -1136,7 +1150,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   type="text"
                   value={ctgJustif}
                   onChange={e => setCtgJustif(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && canOpen) handleOpen(); }}
+                  onKeyDown={e => { if (e.key === "Enter" && canOpen && !isOpeningSession) void handleOpen(); }}
                   placeholder="Motivo para usar esta caja..."
                   maxLength={200}
                   className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-[#d97706] focus:ring-2 focus:ring-amber-300/20"
@@ -1173,7 +1187,7 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
                   type="text"
                   value={ctgJustif}
                   onChange={e => setCtgJustif(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && canOpen) handleOpen(); }}
+                  onKeyDown={e => { if (e.key === "Enter" && canOpen && !isOpeningSession) void handleOpen(); }}
                   placeholder="Motivo obligatorio para apertura especial..."
                   maxLength={200}
                   className="w-full rounded-xl border border-[#e4e9f0] px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#d1d9e1] focus:border-red-300 focus:ring-2 focus:ring-red-200/30"
@@ -1186,8 +1200,8 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             </div>
             <div className="shrink-0 px-4 py-3">
               <button
-                onClick={handleOpen}
-                disabled={!canOpen}
+                onClick={() => void handleOpen()}
+                disabled={!canOpen || isOpeningSession}
                 title="Tecla [Enter]"
                 className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold uppercase tracking-wider transition focus:outline focus:outline-1 ${
                   openingMode === "exceptional"

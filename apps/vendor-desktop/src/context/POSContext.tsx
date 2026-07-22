@@ -33,8 +33,8 @@ interface POSContextValue {
   cashSession: CashSession;
   cashBoxes: CashBox[];
   suggestedCashBox: CashBox | null;
-  openCashSession: (boxCode: string, apertura: number, motivo?: string, refOp?: string, exceptionalSkipCodes?: string[]) => void;
-  closeCashSession: () => void;
+  openCashSession: (boxCode: string, apertura: number, motivo?: string, refOp?: string, exceptionalSkipCodes?: string[]) => Promise<{ ok: boolean }>;
+  closeCashSession: () => Promise<{ ok: boolean }>;
   correctAperturaData: (apertura: number, motivo?: string, observacion?: string, refOp?: string) => void;
   sessionStats: SessionStats;
   docCorrelatives: DocCorrelatives;

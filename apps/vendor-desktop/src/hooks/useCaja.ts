@@ -181,17 +181,29 @@ export function useCaja({
     addOpLog(`[EDICIÓN] ${s.operator} — S/${target.amount.toFixed(2)}: ${motivo}`);
   }, [addOpLog]);
 
-  const openCashSession = useCallback((
+  const openCashSession = useCallback(async (
     boxCode: string, apertura: number, motivo?: string, refOp?: string,
     exceptionalSkipCodes?: string[],
-  ) => {
+  ): Promise<{ ok: boolean }> => {
     const box = cashBoxes.find(b => b.code === boxCode);
-    if (!box) return;
+    if (!box) return { ok: false };
     const isExceptional = !!(exceptionalSkipCodes && exceptionalSkipCodes.length > 0);
-    if (isExceptional ? box.used : !box.available) return;
+    if (isExceptional ? box.used : !box.available) return { ok: false };
     const activeOp   = activeOperatorRef.current;
     const operator   = activeOp?.nombreCompleto ?? blockOperatorFallback(operatorsRef.current!, boxCode);
     const operatorId = activeOp?.id;
+    const trimmedMotivo = motivo?.trim() || undefined;
+    const trimmedRefOp  = refOp?.trim()  || undefined;
+    const tag = isExceptional ? " [EXCEPCIONAL]" : "";
+    const now = new Date();
+    const sessionId = `${boxCode}-${now.toISOString()}`;
+    const result = await abrirSesionCajaEnSQLite(
+      sessionId,
+      boxCode, box.tipoCaja, operator, operatorId ?? null, TERMINAL,
+      apertura, trimmedMotivo ?? null, null, trimmedRefOp ?? null,
+      now.toISOString(),
+    );
+    if (!result.ok) return { ok: false };
     resetStats();
     setCashMoves([]);
     resetOpLogs();
@@ -202,21 +214,12 @@ export function useCaja({
         return next;
       });
     }
-    const trimmedMotivo = motivo?.trim() || undefined;
-    const trimmedRefOp  = refOp?.trim()  || undefined;
-    const tag = isExceptional ? " [EXCEPCIONAL]" : "";
-    const now = new Date();
     setCashSession({ isOpen: true, cashBox: box, operator, operatorId, terminal: TERMINAL, openedAt: now, apertura, motivo: trimmedMotivo, refOp: trimmedRefOp });
-    void abrirSesionCajaEnSQLite(
-      `${boxCode}-${now.toISOString()}`,
-      boxCode, box.tipoCaja, operator, operatorId ?? null, TERMINAL,
-      apertura, trimmedMotivo ?? null, null, trimmedRefOp ?? null,
-      now.toISOString(),
-    );
     const base  = `${operator} abrió CAJA ${boxCode}${tag} · fondo S/ ${apertura.toFixed(2)}`;
     const extra = [trimmedMotivo && `Motivo: ${trimmedMotivo}`, trimmedRefOp && `Ref: ${trimmedRefOp}`].filter(Boolean).join(" · ");
     addOpLog(extra ? `${base} — ${extra}` : base);
-    addTurnEvent(`${boxCode}-${now.toISOString()}`, "apertura", `Apertura de turno · Caja ${boxCode}${tag}`);
+    addTurnEvent(sessionId, "apertura", `Apertura de turno · Caja ${boxCode}${tag}`);
+    return { ok: true };
   }, [cashBoxes, addOpLog, addTurnEvent, resetStats, resetOpLogs]);
 
   const correctAperturaData = useCallback((
@@ -236,22 +239,24 @@ export function useCaja({
     addOpLog(`[CORRECCIÓN APERTURA] ${parts.join(' · ')}`);
   }, [addOpLog, sessionStatsRef]);
 
-  const closeCashSession = useCallback(() => {
+  const closeCashSession = useCallback(async (): Promise<{ ok: boolean }> => {
     const s = cashSessionRef.current;
-    if (!s.isOpen || !s.cashBox) return;
+    if (!s.isOpen || !s.cashBox) return { ok: false };
     const code = s.cashBox.code;
+    const sk = s.openedAt ? `${code}-${s.openedAt.toISOString()}` : "";
+    const result = await cerrarSesionCajaEnSQLite(sk, new Date().toISOString(), 'ok');
+    if (!result.ok) return { ok: false };
     setCobroOpen(false);
     setZone("search");
     usePreVentaStore.getState().limpiarPreVenta();
     resetStats();
     setCashMoves([]);
     const op = s.operator;
-    const sk = s.openedAt ? `${code}-${s.openedAt.toISOString()}` : "";
     addTurnEvent(sk, "cierre", `Cierre de turno · Caja ${code}`);
     setUsedCodes(prev => { const next = new Set(prev); next.add(code); return next; });
-    void cerrarSesionCajaEnSQLite(sk, new Date().toISOString(), 'ok');
     setCashSession({ isOpen: false, cashBox: null, operator: "", operatorId: undefined, terminal: TERMINAL, openedAt: null, apertura: 0 });
     addOpLog(`${op} cerró CAJA ${code}`);
+    return { ok: true };
   }, [addOpLog, addTurnEvent, resetStats, setCobroOpen, setZone]);
 
   return {
