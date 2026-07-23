@@ -3,11 +3,14 @@ import { Search, X, AlertTriangle, ChevronRight, FileText, ReceiptText } from "l
 import { usePOS } from "../../context/POSContext";
 import { useCapacidad } from "../../hooks/useCapacidad";
 import { convertirAFormal } from "../../domains/documents/comprobante.service";
-import { comprobanteStore } from "../../domains/documents/comprobante.store";
 import {
   marcarComprobanteReferenciadoEnSQLite,
+  obtenerComprobanteDetalleSQLite,
+  obtenerComprobantesSesionSQLite,
+  obtenerHistorialComprobantesSQLite,
   obtenerSiguienteCorrelativoSQLite,
   registrarComprobanteEnSQLite,
+  type ComprobanteResumen,
 } from "../../domains/documents/comprobante-sqlite.service";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
 import { useAutorizacion } from "../../hooks/useAutorizacion";
@@ -69,17 +72,6 @@ function formatDateTime(dt: string): string {
   return dt.length > 16 ? dt.slice(0, 16) : dt;
 }
 
-function loadAllComprobantes(): Comprobante[] {
-  return [
-    ...comprobanteStore.getComprobantesPorTipo("TIQUE_VENTA"),
-    ...comprobanteStore.getComprobantesPorTipo("BOLETA"),
-    ...comprobanteStore.getComprobantesPorTipo("FACTURA"),
-    ...comprobanteStore.getComprobantesPorTipo("COTIZACION"),
-    ...comprobanteStore.getComprobantesPorTipo("NOTA_CREDITO"),
-    ...comprobanteStore.getComprobantesPorTipo("NOTA_DEBITO"),
-  ].sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn));
-}
-
 function StatCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div className="rounded-2xl bg-white px-3 py-2.5">
@@ -89,14 +81,14 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
-function StatsBar({ docs }: { docs: Comprobante[] }) {
+function StatsBar({ docs }: { docs: ComprobanteResumen[] }) {
   const stats = useMemo(() => {
     const emitidos = docs.filter(doc => doc.estado === "EMITIDO");
     return {
       total: emitidos.reduce((sum, doc) => sum + doc.total, 0),
-      efe: emitidos.filter(doc => doc.metodoPago === "EFECTIVO").reduce((sum, doc) => sum + doc.total, 0),
-      yap: emitidos.filter(doc => doc.metodoPago === "YAPE").reduce((sum, doc) => sum + doc.total, 0),
-      tar: emitidos.filter(doc => doc.metodoPago === "TARJETA").reduce((sum, doc) => sum + doc.total, 0),
+      efe: emitidos.filter(doc => doc.metodo_pago === "EFECTIVO").reduce((sum, doc) => sum + doc.total, 0),
+      yap: emitidos.filter(doc => doc.metodo_pago === "YAPE").reduce((sum, doc) => sum + doc.total, 0),
+      tar: emitidos.filter(doc => doc.metodo_pago === "TARJETA").reduce((sum, doc) => sum + doc.total, 0),
       anulados: docs.filter(doc => doc.estado === "ANULADO").length,
     };
   }, [docs]);
@@ -394,7 +386,7 @@ function FilterChip({
 }
 
 export function ComprobantesWorkspace() {
-  const { comprobantes, anularComprobante, cashSession, showNotice } = usePOS();
+  const { anularComprobante, cashSession, showNotice } = usePOS();
 
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -405,23 +397,44 @@ export function ComprobantesWorkspace() {
   const puedeConvertir = useCapacidad("anular_comprobantes");
   const { solicitarAutorizacion, PinAutorizacionModal } = useAutorizacion();
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [docsBase, setDocsBase] = useState<ComprobanteResumen[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [detalleCompleto, setDetalleCompleto] = useState<Comprobante | null>(null);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const sessionKey = cashSession.isOpen && cashSession.cashBox && cashSession.openedAt
     ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
     : null;
 
-  const docsBase = useMemo(() => loadAllComprobantes(), [comprobantes, refreshNonce]);
-
-  const docsPorVista = useMemo(() => {
-    if (vista === "sesion") {
-      if (!sessionKey) return [];
-      return docsBase.filter(doc => doc.sessionKey === sessionKey);
+  useEffect(() => {
+    let cancelled = false;
+    async function cargar() {
+      setLoadingDocs(true);
+      try {
+        let resultado: ComprobanteResumen[] = [];
+        if (vista === "sesion") {
+          if (!sessionKey) {
+            setDocsBase([]);
+            setLoadingDocs(false);
+            return;
+          }
+          resultado = await obtenerComprobantesSesionSQLite(sessionKey);
+        } else {
+          resultado = await obtenerHistorialComprobantesSQLite();
+        }
+        if (!cancelled) {
+          setDocsBase(resultado.sort((a, b) => b.emitido_en.localeCompare(a.emitido_en)));
+        }
+      } finally {
+        if (!cancelled) setLoadingDocs(false);
+      }
     }
+    void cargar();
+    return () => { cancelled = true; };
+  }, [vista, sessionKey, refreshNonce]);
 
-    if (!sessionKey) return docsBase;
-    return docsBase.filter(doc => doc.sessionKey !== sessionKey);
-  }, [docsBase, sessionKey, vista]);
+  const docsPorVista = docsBase;
 
   const docsFiltrados = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -434,18 +447,107 @@ export function ComprobantesWorkspace() {
 
         return [
           `${doc.serie}-${pad8(doc.correlativo)}`,
-          doc.receptor.nombre,
-          doc.receptor.numeroDocumento ?? "",
-          doc.metodoPago,
+          doc.receptor_nombre,
+          doc.metodo_pago,
           doc.tipo,
           doc.total.toFixed(2),
-          formatDateTime(doc.emitidoEn),
+          formatDateTime(doc.emitido_en),
         ].some(value => value.toLowerCase().includes(query));
       })
-      .sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn));
+      .sort((a, b) => b.emitido_en.localeCompare(a.emitido_en));
   }, [docsPorVista, filtroEstado, filtroTipo, search]);
 
-  const selected = docsFiltrados.find(doc => doc.id === selectedId) ?? null;
+  const selectedResumen = docsFiltrados.find(doc => doc.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!selectedId) {
+      setDetalleCompleto(null);
+      return;
+    }
+    const comprobanteId = selectedId;
+    let cancelled = false;
+    async function cargarDetalle() {
+      setLoadingDetalle(true);
+      setDetalleCompleto(null);
+      try {
+        const raw = await obtenerComprobanteDetalleSQLite(comprobanteId);
+        if (!cancelled && raw) {
+          const c = raw.comprobante as Record<string, unknown>;
+          const lineasRaw = raw.lineas as Record<string, unknown>[];
+          const mapeado: Comprobante = {
+            id:             c["id"] as string,
+            pedidoId:       (c["venta_id"] as string | null) ?? null,
+            comprobanteReferenciadoId: null,
+            comprobanteOrigenId: null,
+            tipo:           c["tipo"] as Comprobante["tipo"],
+            serie:          c["serie"] as string,
+            correlativo:    c["correlativo"] as number,
+            codigoUnico:    c["codigo_unico"] as string,
+            esFormal:       Boolean(c["es_formal"]),
+            requiereEnvioSUNAT: Boolean(c["requiere_envio_sunat"]),
+            leyendaNoFormal: (c["leyenda_no_formal"] as string | null) ?? null,
+            estado:         c["estado"] as Comprobante["estado"],
+            estadoSUNAT:    (c["estado_sunat"] as Comprobante["estadoSUNAT"]) ?? "PENDIENTE",
+            motivoAnulacion:(c["motivo_anulacion"] as string | null) ?? null,
+            cdr:            (c["cdr"] as string | null) ?? null,
+            fechaEnvioSUNAT:(c["fecha_envio_sunat"] as string | null) ?? null,
+            emisor: {
+              ruc:          c["emisor_ruc"] as string,
+              razonSocial:  c["emisor_razon_social"] as string,
+              direccion:    c["emisor_direccion"] as string,
+            },
+            receptor: {
+              tipoDocumento:   c["receptor_tipo_doc"] as Comprobante["receptor"]["tipoDocumento"],
+              numeroDocumento: (c["receptor_num_doc"] as string | null) ?? null,
+              nombre:          c["receptor_nombre"] as string,
+              direccion:       null,
+              esGenerico:      Boolean(c["receptor_es_generico"]),
+              fuente:          Boolean(c["receptor_es_generico"])
+                ? "SIN_RECEPTOR"
+                : c["receptor_cliente_id"] ? "CLIENTE_REGISTRADO" : "INGRESO_MANUAL",
+              clienteId:       (c["receptor_cliente_id"] as string | null) ?? null,
+              validadoSunat:   false,
+              email:           null,
+              whatsapp:        null,
+              consentimientoContacto: false,
+            },
+            subtotal:       c["subtotal"] as number,
+            igv:            c["igv"] as number,
+            isc:            (c["isc"] as number) ?? 0,
+            total:          c["total"] as number,
+            moneda:         (c["moneda"] as string) ?? "PEN",
+            metodoPago:     c["metodo_pago"] as Comprobante["metodoPago"],
+            tributario: {
+              regimen:            (c["regimen"] as Comprobante["tributario"]["regimen"]) ?? "NRUS",
+              incluyeDetraccion:  Boolean(c["incluye_detraccion"]),
+              porcentajeDetraccion: null,
+            },
+            operadorId:     c["operador_id"] as string,
+            sessionKey:     (c["sesion_id"] as string | null) ?? null,
+            enviadoPorCanal:c["enviado_por_canal"] as Comprobante["enviadoPorCanal"],
+            emitidoEn:      c["emitido_en"] as string,
+            lineas: lineasRaw.map((l, idx) => ({
+              id:                   (l["id"] as string | null) ?? `linea-${idx}`,
+              descripcion:          l["descripcion"] as string,
+              cantidad:             l["cantidad"] as number,
+              valorUnitario:        l["valor_unitario"] as number,
+              subtotal:             l["subtotal"] as number,
+              tipoAfectacionIGV:    l["tipo_afectacion_igv"] as Comprobante["lineas"][number]["tipoAfectacionIGV"],
+              tasaIGV:              l["tasa_igv"] as number,
+              montoISC:             (l["monto_isc"] as number | null) ?? null,
+              notaLinea:            (l["nota_linea"] as string | null) ?? null,
+              codigoProductoSUNAT:  (l["codigo_producto_sunat"] as string | null) ?? null,
+            })),
+          };
+          setDetalleCompleto(mapeado);
+        }
+      } finally {
+        if (!cancelled) setLoadingDetalle(false);
+      }
+    }
+    void cargarDetalle();
+    return () => { cancelled = true; };
+  }, [selectedId]);
 
   useEffect(() => {
     if (selectedId && !docsFiltrados.some(doc => doc.id === selectedId)) {
@@ -479,7 +581,7 @@ export function ComprobantesWorkspace() {
 
   const handleVoid = useCallback((motivo: string) => {
     if (!selectedId || !motivo.trim()) return;
-    const alias = selected?.operadorId ?? "Operador";
+    const alias = detalleCompleto?.operadorId ?? selectedResumen?.operador_id ?? "Operador";
     solicitarAutorizacion(
       "Anular comprobante",
       alias,
@@ -496,19 +598,19 @@ export function ComprobantesWorkspace() {
           detalle: {
             comprobanteId: selectedId,
             motivo:        motivo.trim(),
-            serie:         selected?.serie,
-            correlativo:   selected?.correlativo,
-            tipo:          selected?.tipo,
-            total:         selected?.total,
+            serie:         detalleCompleto?.serie,
+            correlativo:   detalleCompleto?.correlativo,
+            tipo:          detalleCompleto?.tipo,
+            total:         detalleCompleto?.total,
           },
           resultado: "EXITOSO",
         });
       }
     );
-  }, [selectedId, selected, solicitarAutorizacion, anularComprobante]);
+  }, [selectedId, detalleCompleto, selectedResumen, solicitarAutorizacion, anularComprobante]);
 
   const handleConvertir = useCallback((tipo: "BOLETA" | "FACTURA") => {
-    if (!selected) return;
+    if (!detalleCompleto) return;
     const alias = cashSession.operator ?? "Operador";
     solicitarAutorizacion(
       `Convertir a ${tipo}`,
@@ -526,9 +628,9 @@ export function ComprobantesWorkspace() {
 
           try {
             const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(serie);
-            const nuevo = convertirAFormal(selected.id, tipo, serie, selected.receptor, correlativoSQLite, operador);
+            const nuevo = convertirAFormal(detalleCompleto.id, tipo, serie, detalleCompleto.receptor, correlativoSQLite, operador);
             await registrarComprobanteEnSQLite(nuevo, sesionId, cajaCodigo, null);
-            await marcarComprobanteReferenciadoEnSQLite(selected.id);
+            await marcarComprobanteReferenciadoEnSQLite(detalleCompleto.id);
             setRefreshNonce(prev => prev + 1);
             setSelectedId(null);
             showNotice(`${nuevo.serie}-${pad8(nuevo.correlativo)} generado correctamente`);
@@ -538,7 +640,7 @@ export function ComprobantesWorkspace() {
         })();
       }
     );
-  }, [cashSession, selected, solicitarAutorizacion, showNotice]);
+  }, [cashSession, detalleCompleto, solicitarAutorizacion, showNotice]);
 
   const emptyTitle = vista === "sesion"
     ? (cashSession.isOpen ? "Sin comprobantes en esta sesion" : "Sin sesion activa")
@@ -642,7 +744,12 @@ export function ComprobantesWorkspace() {
         {vista === "sesion" && cashSession.isOpen && <StatsBar docs={docsPorVista} />}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-3">
-          {docsFiltrados.length === 0 ? (
+          {loadingDocs ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#7B4F6E] border-t-transparent" />
+              <p className="text-[11px] text-[#c0cad4]">Cargando comprobantes...</p>
+            </div>
+          ) : docsFiltrados.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-1.5 py-16 text-center">
               <p className="text-[13px] font-semibold text-[#c0cad4]">{emptyTitle}</p>
               <p className="text-[11px] text-[#d1d9e1]">{emptyText}</p>
@@ -652,7 +759,9 @@ export function ComprobantesWorkspace() {
               {docsFiltrados.map(doc => {
                 const isSelected = doc.id === selectedId;
                 const isCancelled = doc.estado === "ANULADO";
-                const secondary = doc.receptor.esGenerico ? formatDateTime(doc.emitidoEn) : doc.receptor.nombre;
+                const secondary = doc.receptor_es_generico
+                  ? formatDateTime(doc.emitido_en)
+                  : doc.receptor_nombre;
 
                 return (
                   <article
@@ -665,7 +774,7 @@ export function ComprobantesWorkspace() {
                     <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest ${
                       STATUS_COLORS[doc.estado] ?? "bg-slate-100 text-slate-700"
                     }`}>
-                      {doc.estado === "EMITIDO" ? (DOC_LABELS[doc.tipo] ?? doc.tipo) : doc.estado.slice(0, 4)}
+                      {doc.estado === "EMITIDO" ? (DOC_LABELS[doc.tipo as TipoComprobante] ?? doc.tipo) : doc.estado.slice(0, 4)}
                     </span>
 
                     <div className="min-w-0 flex-1">
@@ -674,9 +783,9 @@ export function ComprobantesWorkspace() {
                           {doc.serie}-{pad8(doc.correlativo)}
                         </span>
                         <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${
-                          METHOD_COLORS[doc.metodoPago] ?? "bg-[#f1f5f9] text-[#374151]"
+                          METHOD_COLORS[doc.metodo_pago] ?? "bg-[#f1f5f9] text-[#374151]"
                         }`}>
-                          {METHOD_LABELS[doc.metodoPago] ?? doc.metodoPago.toUpperCase()}
+                          {METHOD_LABELS[doc.metodo_pago] ?? doc.metodo_pago.toUpperCase()}
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-[11px] text-[#9ca3af]">{secondary}</p>
@@ -704,7 +813,20 @@ export function ComprobantesWorkspace() {
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 pt-3 pb-3">
-          <PanelDetalle selected={selected} onVoid={handleVoid} onConvertir={handleConvertir} puedeAnular={puedeAnular} puedeConvertir={puedeConvertir} />
+          {loadingDetalle ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#7B4F6E] border-t-transparent" />
+              <p className="text-[11px] text-[#c0cad4]">Cargando detalle...</p>
+            </div>
+          ) : (
+            <PanelDetalle
+              selected={detalleCompleto}
+              onVoid={handleVoid}
+              onConvertir={handleConvertir}
+              puedeAnular={puedeAnular}
+              puedeConvertir={puedeConvertir}
+            />
+          )}
         </div>
       </div>
     </section>
