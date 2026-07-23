@@ -214,7 +214,7 @@ export function CobroPanel() {
       leyendaNoFormal: tipo === "TIQUE_VENTA"
         ? "ESTE DOCUMENTO NO ES UN COMPROBANTE DE PAGO CON VALOR TRIBUTARIO"
         : null,
-      pedidoId: preVentaService.obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null,
+      pedidoId: preVentaService.obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null,
       comprobanteReferenciadoId: null,
       comprobanteOrigenId: null,
       emisor: {
@@ -342,7 +342,38 @@ export function CobroPanel() {
     });
   }
 
-  function confirmEmit(confirmacion?: { accion: 'guardar' | 'enviar'; canal?: string }) {
+  async function _ejecutarSideEffects(comprobante: Comprobante, docNumberLocal: string): Promise<void> {
+    const sesionId = cashSession.cashBox && cashSession.openedAt
+      ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
+      : null;
+    const cajaCodigo = cashSession.cashBox?.code ?? null;
+    await registrarComprobanteEnSQLite(
+      comprobante,
+      sesionId,
+      cajaCodigo,
+      comprobante.pedidoId,
+    );
+    if (docType !== "cotizacion") {
+      await despacharConFefo(lines, docNumberLocal, activeOperator?.id ?? 'default');
+    }
+
+    const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
+      "default",
+      "default",
+      cashSession.cashBox?.code ?? "default"
+    );
+    if (pedidoActivo) {
+      preVentaService.concretarVenta(
+        pedidoActivo,
+        mapearMetodoPago(payMethod),
+        mapearTipoComprobante(docType),
+        sesionId,
+        cajaCodigo,
+      );
+    }
+  }
+
+  async function confirmEmit(confirmacion?: { accion: 'guardar' | 'enviar'; canal?: string }) {
     if (!cashSession.isOpen) { showNotice("Abre el turno antes de cobrar"); return; }
     if (!canConfirm) return;
     const now = new Date();
@@ -363,7 +394,7 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoTarNum : undefined);
     try {
       const pedidoId = preVentaService
-        .obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null;
+        .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
       const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
@@ -403,33 +434,19 @@ export function CobroPanel() {
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);
-      void registrarComprobanteEnSQLite(
-        comprobante,
-        cashSession.cashBox && cashSession.openedAt
-          ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
-          : null,
-        cashSession.cashBox?.code ?? null,
-        comprobante.pedidoId,
-      );
+      await _ejecutarSideEffects(comprobante, docNumber);
     } catch {
-      addComprobante(buildComprobanteData(dt));
-    }
-    if (docType !== "cotizacion") {
-      void despacharConFefo(lines, docNumber, activeOperator?.id ?? 'default');
-    }
-
-    const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
-      "default",
-      "default",
-      "default"
-    );
-    if (pedidoActivo) {
-      preVentaService.concretarVenta(
-        pedidoActivo,
-        mapearMetodoPago(payMethod),
-        mapearTipoComprobante(docType),
-        cashSession.cashBox && cashSession.openedAt ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}` : null,
-        cashSession.cashBox?.code ?? null,
+      const fallbackComprobante = buildComprobanteData(dt);
+      addComprobante(fallbackComprobante);
+      const sesionId = cashSession.cashBox && cashSession.openedAt
+        ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
+        : null;
+      const cajaCodigo = cashSession.cashBox?.code ?? null;
+      await registrarComprobanteEnSQLite(
+        fallbackComprobante,
+        sesionId,
+        cajaCodigo,
+        null
       );
     }
 
@@ -451,7 +468,7 @@ export function CobroPanel() {
     let receiptData: Parameters<typeof printTicket>[0];
     try {
       const pedidoId = preVentaService
-        .obtenerPedidoActivoOCrear?.("default", "default", "default") ?? null;
+        .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
       const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
@@ -491,14 +508,7 @@ export function CobroPanel() {
         pedidoId:    pedidoId,
       });
       addComprobante(comprobante);
-      void registrarComprobanteEnSQLite(
-        comprobante,
-        cashSession.cashBox && cashSession.openedAt
-          ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
-          : null,
-        cashSession.cashBox?.code ?? null,
-        comprobante.pedidoId,
-      );
+      await _ejecutarSideEffects(comprobante, docNumber);
       receiptData = construirReceiptData(
         comprobante,
         dateTime,
@@ -512,7 +522,18 @@ export function CobroPanel() {
           : undefined
       ) as Parameters<typeof printTicket>[0];
     } catch {
-      addComprobante(buildComprobanteData(dateTime));
+      const fallbackComprobante = buildComprobanteData(dateTime);
+      addComprobante(fallbackComprobante);
+      const sesionId = cashSession.cashBox && cashSession.openedAt
+        ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
+        : null;
+      const cajaCodigo = cashSession.cashBox?.code ?? null;
+      await registrarComprobanteEnSQLite(
+        fallbackComprobante,
+        sesionId,
+        cajaCodigo,
+        null
+      );
       const biz = loadBusinessConfig();
       receiptData = {
         businessName:   biz.nombreComercial,
@@ -570,24 +591,6 @@ export function CobroPanel() {
       payMethod === "mixto" ? mixtoEfeNum : undefined,
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
-    if (docType !== "cotizacion") {
-      void despacharConFefo(lines, docNumber, activeOperator?.id ?? 'default');
-    }
-
-    const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
-      "default",
-      "default",
-      "default"
-    );
-    if (pedidoActivo) {
-      preVentaService.concretarVenta(
-        pedidoActivo,
-        mapearMetodoPago(payMethod),
-        mapearTipoComprobante(docType),
-        cashSession.cashBox && cashSession.openedAt ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}` : null,
-        cashSession.cashBox?.code ?? null,
-      );
-    }
 
     setConfirmSheet({
       accion: 'imprimir',

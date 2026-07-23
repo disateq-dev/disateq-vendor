@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
 import { getHOVById } from '../catalog/hov.store'
-import { useFarmaciaStore } from '../farmacia/farmacia.store'
 import { logError, logInfo } from '../logging/error-logger'
 import type { Pedido } from './pedido.types'
 
@@ -45,7 +44,6 @@ export async function registrarVentaEnSQLite(input: RegistrarVentaInput): Promis
       concretadaEn: input.pedido.momentoConcrecion ?? new Date().toISOString(),
       lineas,
     })
-    void useFarmaciaStore.getState().cargarResumenInventario()
     void logInfo('venta-service', `Venta ${input.pedido.codigo} registrada en SQLite`)
     return { ok: true, ventaId: input.pedido.id }
   } catch (error) {
