@@ -78,9 +78,10 @@ export const preVentaService = {
     return _pedidoActivoId;
   },
 
-  concretarVenta(pedidoId: string, metodoPago: string, tipoComprobante: string, sesionId: string | null, cajaCodigo: string | null): void {
-    sincronizarConcrecion(pedidoId, metodoPago, tipoComprobante, sesionId, cajaCodigo);
-    _pedidoActivoId = null;
+  async concretarVenta(pedidoId: string, metodoPago: string, tipoComprobante: string, sesionId: string | null, cajaCodigo: string | null): Promise<{ ok: boolean }> {
+    const resultado = await sincronizarConcrecion(pedidoId, metodoPago, tipoComprobante, sesionId, cajaCodigo)
+    _pedidoActivoId = null
+    return resultado
   },
 
   incrementarLinea(lineaId: string) {

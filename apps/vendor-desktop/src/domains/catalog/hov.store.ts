@@ -1,4 +1,5 @@
 import type { HOV, HOVStore } from './hov.types'
+import { logError } from '../logging/error-logger'
 
 const LS_KEY = 'disateq:catalog:hovs'
 
@@ -18,7 +19,8 @@ function loadStore(): HOVStore {
       hovs: Array.isArray(parsed.hovs) ? parsed.hovs as HOV[] : [],
       ultimaSincronizacion: typeof parsed.ultimaSincronizacion === 'string' ? parsed.ultimaSincronizacion : null,
     }
-  } catch {
+  } catch (error) {
+    void logError('hov-store', 'localStorage corrupto al cargar catalogo HOV — store reiniciado vacio', { error: String(error) })
     return createEmptyStore()
   }
 }

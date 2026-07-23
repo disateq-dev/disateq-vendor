@@ -3,6 +3,7 @@ import { crearPedido, confirmarPedido, iniciarCobro } from './pedido.service'
 import { pedidoOperations } from './pedido.operations'
 import { registrarVentaEnSQLite } from './venta.service'
 import type { LineaPreVenta } from '../preventa/dto/LineaPreVenta'
+import { logError } from '../logging/error-logger'
 
 export interface AddProductBridgeInput {
   hovId: string
@@ -39,10 +40,10 @@ export function traducirALineaPreVenta(
   }
 }
 
-export function sincronizarConcrecion(pedidoId: string, metodoPago: string, tipoComprobante: string, sesionId: string | null, cajaCodigo: string | null): void {
+export async function sincronizarConcrecion(pedidoId: string, metodoPago: string, tipoComprobante: string, sesionId: string | null, cajaCodigo: string | null): Promise<{ ok: boolean }> {
   try {
     const pedido = pedidoStore.getPedidoById(pedidoId)
-    if (!pedido) return
+    if (!pedido) return { ok: false }
 
     try {
       if (pedido.estado === 'ABIERTO') {
@@ -59,10 +60,14 @@ export function sincronizarConcrecion(pedidoId: string, metodoPago: string, tipo
       // estado no permite concreción · continúa sin error
     }
 
-    void registrarVentaEnSQLite({ pedido: pedidoStore.getPedidoById(pedidoId)!, metodoPago, tipoComprobante, sesionId, cajaCodigo })
+    const pedidoConcretado = pedidoStore.getPedidoById(pedidoId)
+    if (!pedidoConcretado) return { ok: false }
+    const resultado = await registrarVentaEnSQLite({ pedido: pedidoConcretado, metodoPago, tipoComprobante, sesionId, cajaCodigo })
+    return resultado
 
-  } catch {
-    return
+  } catch (error) {
+    void logError('bridge-pedido', 'Error inesperado en sincronizarConcrecion', { error: String(error) })
+    return { ok: false }
   }
 }
 
