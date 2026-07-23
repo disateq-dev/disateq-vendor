@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { logError } from '../logging/error-logger'
 import type { Comprobante } from './comprobante.types'
+import type { RegistroCorrelativo } from './correlativo.types'
 
 interface LineaComprobanteRust {
   descripcion: string
@@ -180,5 +181,29 @@ export async function actualizarEstadoSUNAT(
   } catch {
     await logError('comprobante-sqlite', 'No se pudo actualizar el estado SUNAT')
     return { ok: false }
+  }
+}
+
+export async function obtenerTodosCorrelativosSQLite(): Promise<RegistroCorrelativo[]> {
+  try {
+    const registros = await invoke<Array<{
+      serie: string
+      tipo: string
+      siguiente: number
+      ultimo_emitido: number
+      creado_en: string
+      actualizado_en: string
+    }>>('obtener_todos_correlativos')
+    return registros.map(registro => ({
+      serie: registro.serie,
+      tipo: registro.tipo as RegistroCorrelativo['tipo'],
+      siguiente: registro.siguiente,
+      ultimoEmitido: registro.ultimo_emitido,
+      creadoEn: registro.creado_en,
+      actualizadoEn: registro.actualizado_en,
+    }))
+  } catch {
+    await logError('comprobante-sqlite', 'No se pudieron obtener los correlativos')
+    return []
   }
 }

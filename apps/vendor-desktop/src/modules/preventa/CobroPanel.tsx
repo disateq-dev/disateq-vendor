@@ -17,7 +17,7 @@ import {
 } from "../../domains/documents/bridge-comprobante";
 import { validarComprobante } from "../../domains/documents/comprobante.validator";
 import { correlativoStore } from "../../domains/documents/correlativo.store";
-import { registrarComprobanteEnSQLite } from "../../domains/documents/comprobante-sqlite.service";
+import { obtenerSiguienteCorrelativoSQLite, registrarComprobanteEnSQLite } from "../../domains/documents/comprobante-sqlite.service";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
 import ClienteBuscador, { type ReceptorComprobante } from "../sales/ClienteBuscador";
 import { SheetBody, SheetFooter, SheetHeader, SheetWork } from "../../components/sheet";
@@ -395,9 +395,11 @@ export function CobroPanel() {
     try {
       const pedidoId = preVentaService
         .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
+      const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(cfg.series)
       const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
+        correlativoExterno: correlativoSQLite,
         tipoAfectacionIGV: affectation === "exonerado-onerosa"
           ? "EXONERADO"
           : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
@@ -469,9 +471,11 @@ export function CobroPanel() {
     try {
       const pedidoId = preVentaService
         .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
+      const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(cfg.series)
       const comprobante = emitirComprobante({
         tipo: mapearTipoComprobante(docType),
         serie: cfg.series,
+        correlativoExterno: correlativoSQLite,
         tipoAfectacionIGV: affectation === "exonerado-onerosa"
           ? "EXONERADO"
           : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"

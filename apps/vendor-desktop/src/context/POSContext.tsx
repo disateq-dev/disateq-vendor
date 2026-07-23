@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useState, useEffect, useMemo, u
 import { loadBusinessConfig } from "../config/business";
 import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
 import type { Comprobante } from "../domains/documents/comprobante.types";
+import { obtenerTodosCorrelativosSQLite } from "../domains/documents/comprobante-sqlite.service";
+import { correlativoStore } from "../domains/documents/correlativo.store";
 import { migrarCategoryHOVs } from "../domains/catalog/hov.migration";
 import { type Operador, type EstadoOperador } from "../domains/operator/operator.store";
 import { type Rol } from "../domains/operator/roles.store";
@@ -95,10 +97,16 @@ export function POSProvider({ children }: { children: ReactNode }) {
   const [initState, setInitState] = useState<EstadoArranque>(ESTADO_ARRANQUE_VACIO);
 
   useEffect(() => {
-    obtenerEstadoArranque().then(estado => {
+    void (async () => {
+      const estado = await obtenerEstadoArranque();
       setInitState(estado);
       setInicializando(false);
-    });
+      try {
+        const registros = await obtenerTodosCorrelativosSQLite();
+        correlativoStore.hidratarDesdeDb(registros);
+      } catch {
+      }
+    })();
   }, []);
 
   const { sessionNotice, showNotice } = useNotice();

@@ -1,30 +1,11 @@
 import type { CorrelativoStore, RegistroCorrelativo } from './correlativo.types'
 import type { TipoComprobante } from './comprobante.types'
 
-const STORAGE_KEY = 'disateq:documents:correlativos'
-
 function createEmptyStore(): CorrelativoStore {
   return { registros: [] }
 }
 
-function loadStore(): CorrelativoStore {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return createEmptyStore()
-    const parsed = JSON.parse(raw) as Partial<CorrelativoStore>
-    return {
-      registros: Array.isArray(parsed.registros) ? parsed.registros as RegistroCorrelativo[] : [],
-    }
-  } catch {
-    return createEmptyStore()
-  }
-}
-
-function persistStore(store: CorrelativoStore): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
-}
-
-let store: CorrelativoStore = loadStore()
+let store: CorrelativoStore = createEmptyStore()
 
 export const correlativoStore = {
 
@@ -45,7 +26,6 @@ export const correlativoStore = {
           )
         : store.registros,
     }
-    persistStore(store)
   },
 
   inicializarSerie(serie: string, tipo: TipoComprobante, desde: number): RegistroCorrelativo {
@@ -58,7 +38,6 @@ export const correlativoStore = {
             r.serie === serie ? { ...r, siguiente: desde, actualizadoEn: now } : r
           ),
         }
-        persistStore(store)
         return store.registros.find(r => r.serie === serie)!
       }
       return existente
@@ -72,11 +51,14 @@ export const correlativoStore = {
       actualizadoEn: now,
     }
     store = { registros: [...store.registros, nuevo] }
-    persistStore(store)
     return nuevo
   },
 
   obtenerRegistros(): RegistroCorrelativo[] {
     return [...store.registros]
+  },
+
+  hidratarDesdeDb(registros: RegistroCorrelativo[]): void {
+    store = { registros: [...registros] }
   },
 }

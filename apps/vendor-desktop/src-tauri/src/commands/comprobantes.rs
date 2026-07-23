@@ -405,3 +405,33 @@ pub async fn actualizar_estado_sunat(
     .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn obtener_todos_correlativos(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+) -> Result<Value, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let rows = sqlx::query(
+        "SELECT serie, tipo, siguiente, ultimo_emitido, creado_en, actualizado_en FROM correlativo ORDER BY serie",
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let correlativos: Result<Vec<Value>, String> = rows.into_iter().map(|row| {
+        Ok(json!({
+            "serie": row.try_get::<String, _>("serie").map_err(|e| e.to_string())?,
+            "tipo": row.try_get::<String, _>("tipo").map_err(|e| e.to_string())?,
+            "siguiente": row.try_get::<i64, _>("siguiente").map_err(|e| e.to_string())?,
+            "ultimo_emitido": row.try_get::<i64, _>("ultimo_emitido").map_err(|e| e.to_string())?,
+            "creado_en": row.try_get::<String, _>("creado_en").map_err(|e| e.to_string())?,
+            "actualizado_en": row.try_get::<String, _>("actualizado_en").map_err(|e| e.to_string())?,
+        }))
+    }).collect();
+
+    Ok(json!(correlativos?))
+}

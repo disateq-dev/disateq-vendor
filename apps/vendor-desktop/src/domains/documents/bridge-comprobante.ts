@@ -14,6 +14,7 @@ import type {
 interface EmitirComprobanteInput {
   tipo: TipoComprobante
   serie: string
+  correlativoExterno?: number
   lineas: Array<{
     description: string
     quantity: number
@@ -121,10 +122,12 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
       comprobanteReferenciadoId: null,
     }
 
+    const correlativoAUsar = input.correlativoExterno ?? 1
     return crearComprobante(
       comprobanteInput,
       input.total,
-      input.serie
+      input.serie,
+      correlativoAUsar
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

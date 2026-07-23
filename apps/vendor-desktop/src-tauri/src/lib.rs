@@ -151,6 +151,7 @@ pub fn run() {
       commands::ventas::obtener_venta_detalle,
       commands::comprobantes::registrar_comprobante,
       commands::comprobantes::obtener_siguiente_correlativo,
+      commands::comprobantes::obtener_todos_correlativos,
       commands::comprobantes::obtener_comprobantes_sesion,
       commands::comprobantes::obtener_comprobantes_historial,
       commands::comprobantes::obtener_comprobante_detalle,
