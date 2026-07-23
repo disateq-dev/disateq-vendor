@@ -385,6 +385,7 @@ export function CobroPanel() {
         dateTime:    dt,
         lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
         opNumber:    docNumber,
+        comprobanteRef: loadBusinessConfig().imprimirRefComprobanteEnDespacho ? docNumber : undefined,
       } satisfies DispatchData);
       setDispatchCorrelative(prev => prev + 1);
     }
@@ -575,6 +576,7 @@ export function CobroPanel() {
       dateTime,
       lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
       opNumber:    docNumber,
+      comprobanteRef: loadBusinessConfig().imprimirRefComprobanteEnDespacho ? docNumber : undefined,
     };
     setDispatchCorrelative(prev => prev + 1);
     if (printFlow === "comprobante-despacho") {

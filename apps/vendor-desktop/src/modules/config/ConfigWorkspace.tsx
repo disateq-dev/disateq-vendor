@@ -64,6 +64,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
       alias:           alias.trim(),
       tasaIGV:         loadBusinessConfig().tasaIGV,
       rubro,
+      imprimirRefComprobanteEnDespacho: loadBusinessConfig().imprimirRefComprobanteEnDespacho,
     });
     setBizSaved(true);
     setTimeout(() => setBizSaved(false), 2000);
@@ -544,4 +545,3 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     </section>
   );
 }
-

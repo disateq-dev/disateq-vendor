@@ -11,6 +11,7 @@ export type BusinessConfig = {
   telefono:        string;
   tasaIGV:         number;
   rubro:           Rubro;
+  imprimirRefComprobanteEnDespacho: boolean;
 };
 
 const DEFAULTS: BusinessConfig = {
@@ -22,6 +23,7 @@ const DEFAULTS: BusinessConfig = {
   telefono:        "",
   tasaIGV:         0.18,
   rubro:           "abarrotes",
+  imprimirRefComprobanteEnDespacho: true,
 };
 
 export function loadBusinessConfig(): BusinessConfig {
@@ -38,6 +40,7 @@ export function loadBusinessConfig(): BusinessConfig {
       telefono:        typeof p.telefono        === "string" ? p.telefono        : DEFAULTS.telefono,
       tasaIGV:         typeof p.tasaIGV         === "number" ? p.tasaIGV         : DEFAULTS.tasaIGV,
       rubro:           (p.rubro === "abarrotes" || p.rubro === "food-fast" || p.rubro === "panaderia" || p.rubro === "farmacia" || p.rubro === "optica" || p.rubro === "zapateria" || p.rubro === "reparacion" || p.rubro === "celulares") ? p.rubro as Rubro : DEFAULTS.rubro,
+      imprimirRefComprobanteEnDespacho: typeof p.imprimirRefComprobanteEnDespacho === "boolean" ? p.imprimirRefComprobanteEnDespacho : true,
     };
   } catch { return DEFAULTS; }
 }

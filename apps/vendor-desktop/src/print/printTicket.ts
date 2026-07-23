@@ -304,6 +304,7 @@ export interface DispatchData {
     note?:       string;
   }>;
   opNumber: string;
+  comprobanteRef?: string;
 }
 
 function buildDispatchHTML(d: DispatchData): string {
@@ -340,6 +341,7 @@ function buildDispatchHTML(d: DispatchData): string {
   <div class="dt-label">★  DESPACHO  ★</div>
   <div class="dt-corr">#${corrStr}</div>
   <div class="dt-meta">${esc(d.dateTime)}</div>
+  ${d.comprobanteRef ? `<div class="dt-meta" style="font-weight:bold;">${esc(d.comprobanteRef)}</div>` : ''}
   <div class="dt-solid"></div>
   <div class="dt-items">${linesHTML}</div>
   <div class="dt-dash"></div>
@@ -397,6 +399,7 @@ function buildDispatchAppend(d: DispatchData): string {
     <div class="dt-title">TICKET DESPACHO</div>
     <div class="dt-num">#${corrStr}</div>
     <div class="dt-meta">${esc(d.dateTime)}</div>
+    ${d.comprobanteRef ? `<div class="dt-meta" style="font-weight:bold;">${esc(d.comprobanteRef)}</div>` : ''}
   </div>
   <div class="dt-solid"></div>
   ${linesHTML}
