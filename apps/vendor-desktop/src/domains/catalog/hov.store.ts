@@ -1,7 +1,4 @@
 import type { HOV, HOVStore } from './hov.types'
-import { logError } from '../logging/error-logger'
-
-const LS_KEY = 'disateq:catalog:hovs'
 
 function createEmptyStore(): HOVStore {
   return {
@@ -10,26 +7,7 @@ function createEmptyStore(): HOVStore {
   }
 }
 
-function loadStore(): HOVStore {
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    if (!raw) return createEmptyStore()
-    const parsed = JSON.parse(raw) as Partial<HOVStore>
-    return {
-      hovs: Array.isArray(parsed.hovs) ? parsed.hovs as HOV[] : [],
-      ultimaSincronizacion: typeof parsed.ultimaSincronizacion === 'string' ? parsed.ultimaSincronizacion : null,
-    }
-  } catch (error) {
-    void logError('hov-store', 'localStorage corrupto al cargar catalogo HOV — store reiniciado vacio', { error: String(error) })
-    return createEmptyStore()
-  }
-}
-
-let store: HOVStore = loadStore()
-
-function persistStore(): void {
-  localStorage.setItem(LS_KEY, JSON.stringify(store))
-}
+let store: HOVStore = createEmptyStore()
 
 function resolverRecursoId(hov: HOV): string | undefined {
   return hov.productoId ?? hov.servicioId ?? hov.productoGeneralId
@@ -79,6 +57,9 @@ export function guardarHOV(hov: HOV): HOV {
       ultimaSincronizacion: new Date().toISOString(),
     }
   }
-  persistStore()
   return hov
+}
+
+export function resetHovStore(): void {
+  store = createEmptyStore()
 }

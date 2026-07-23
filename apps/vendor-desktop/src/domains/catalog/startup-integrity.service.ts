@@ -1,5 +1,5 @@
-import { getAllHOVs } from './hov.store'
-import { getValoresActivos } from './valor-operacional.store'
+import { resetHovStore } from './hov.store'
+import { resetValorStore } from './valor-operacional.store'
 import { proyectarAHov, sincronizarValorHov } from '../farmacia/hov-projector.service'
 import {
   obtenerProductosComerciales,
@@ -26,13 +26,11 @@ import { logWarn, logCritical } from '../logging/error-logger'
  */
 export async function verificarIntegridadCacheFarmacia(): Promise<void> {
   try {
-    const hovsExistentes = getAllHOVs()
-    const valoresExistentes = getValoresActivos()
+    resetHovStore()
+    resetValorStore()
 
-    const necesitaHovs = hovsExistentes.length === 0
-    const necesitaValores = valoresExistentes.length === 0
-
-    if (!necesitaHovs && !necesitaValores) return
+    const necesitaHovs = true
+    const necesitaValores = true
 
     const productos = await obtenerProductosComerciales(undefined, true)
     if (productos.length === 0) return

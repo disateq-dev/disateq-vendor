@@ -1,7 +1,5 @@
 import type { EstadoValorOperacional, ValorOperacional, ValorOperacionalStore } from './valor-operacional.types'
 
-const LS_KEY = 'disateq:catalog:valores-operacionales'
-
 function createEmptyStore(): ValorOperacionalStore {
   return {
     valores: [],
@@ -9,25 +7,7 @@ function createEmptyStore(): ValorOperacionalStore {
   }
 }
 
-function loadStore(): ValorOperacionalStore {
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    if (!raw) return createEmptyStore()
-    const parsed = JSON.parse(raw) as Partial<ValorOperacionalStore>
-    return {
-      valores: Array.isArray(parsed.valores) ? parsed.valores as ValorOperacional[] : [],
-      ultimaSincronizacion: typeof parsed.ultimaSincronizacion === 'string' ? parsed.ultimaSincronizacion : null,
-    }
-  } catch {
-    return createEmptyStore()
-  }
-}
-
-let store: ValorOperacionalStore = loadStore()
-
-function persistStore(): void {
-  localStorage.setItem(LS_KEY, JSON.stringify(store))
-}
+let store: ValorOperacionalStore = createEmptyStore()
 
 export function getValoresPorHOV(hovId: string): ValorOperacional[] {
   return store.valores
@@ -65,7 +45,6 @@ export function guardarValor(valor: ValorOperacional): ValorOperacional {
       ultimaSincronizacion: new Date().toISOString(),
     }
   }
-  persistStore()
   return valor
 }
 
@@ -81,4 +60,8 @@ export function actualizarEstado(id: string, estado: EstadoValorOperacional): Va
 
   guardarValor(updated)
   return updated
+}
+
+export function resetValorStore(): void {
+  store = createEmptyStore()
 }
