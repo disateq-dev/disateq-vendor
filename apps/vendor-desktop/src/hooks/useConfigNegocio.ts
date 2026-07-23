@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
 import { type Rubro, type VisualMode, type PrintFlow } from "../data/catalogs";
-import { syncCatalogToInventory } from "../domains/inventory/catalog-bridge";
-import { seedCatalogoFromRubro } from "../domains/catalog/rubro-seed.service";
 
 const LS_RUBRO       = "disateq.pos.rubro";
 const LS_VISUAL_MODE = "disateq.pos.visualMode";
@@ -32,20 +30,13 @@ function loadPrintFlow(): PrintFlow {
 }
 
 export function useConfigNegocio() {
-  const [rubro, setRubroState] = useState<Rubro>(() => {
-    const r = loadRubro();
-    syncCatalogToInventory(r);
-    seedCatalogoFromRubro(r);
-    return r;
-  });
+  const [rubro, setRubroState] = useState<Rubro>(() => loadRubro());
 
   const [visualMode, setVisualModeState] = useState<VisualMode>(loadVisualMode);
   const [printFlow,  setPrintFlowState]  = useState<PrintFlow>(loadPrintFlow);
 
   const setRubro = useCallback((r: Rubro) => {
     setRubroState(r);
-    syncCatalogToInventory(r);
-    seedCatalogoFromRubro(r);
     try { localStorage.setItem(LS_RUBRO, r); } catch { /* quota */ }
   }, []);
 

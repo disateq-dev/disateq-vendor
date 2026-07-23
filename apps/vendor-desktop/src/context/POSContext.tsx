@@ -4,7 +4,6 @@ import { RUBROS, type Rubro, type VisualMode, type PrintFlow } from "../data/cat
 import type { Comprobante } from "../domains/documents/comprobante.types";
 import { obtenerTodosCorrelativosSQLite } from "../domains/documents/comprobante-sqlite.service";
 import { correlativoStore } from "../domains/documents/correlativo.store";
-import { migrarCategoryHOVs } from "../domains/catalog/hov.migration";
 import { type Operador, type EstadoOperador } from "../domains/operator/operator.store";
 import { type Rol } from "../domains/operator/roles.store";
 import { type TurnEvent } from "../domains/cash/turn-events.store";
@@ -139,10 +138,6 @@ export function POSProvider({ children }: { children: ReactNode }) {
     turnEvents, addTurnEvent,
     currentSessionEvents,
   } = useBitacora({ cashSessionRef, initialEvents: initState.events });
-
-  useEffect(() => {
-    migrarCategoryHOVs();
-  }, []);
 
   const {
     operators, activeOperator,
