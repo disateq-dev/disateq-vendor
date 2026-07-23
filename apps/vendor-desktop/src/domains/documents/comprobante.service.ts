@@ -1,5 +1,4 @@
 import { comprobanteStore } from './comprobante.store'
-import { correlativoStore } from './correlativo.store'
 import {
   type Comprobante,
   type CrearComprobanteInput,
@@ -157,6 +156,7 @@ export function convertirAFormal(
   tipo: 'FACTURA' | 'BOLETA',
   serie: string,
   receptor: ReceptorComprobante,
+  correlativo: number,
   operadorId: string
 ): Comprobante {
   const origen = comprobanteStore.getComprobanteById(id)
@@ -176,8 +176,6 @@ export function convertirAFormal(
     throw new Error('Este comprobante ya fue convertido')
   }
 
-  const correlativo = correlativoStore.obtenerSiguiente(serie)
-  correlativoStore.inicializarSerie(serie, tipo, correlativo)
   const clasificacion = clasificarTipo(tipo)
   const now = new Date().toISOString()
 
@@ -212,13 +210,6 @@ export function convertirAFormal(
     operadorId,
     enviadoPorCanal: 'NINGUNO',
   }
-
-  comprobanteStore.guardarComprobante(comprobanteFormal)
-  correlativoStore.confirmarEmision(serie, correlativo)
-  comprobanteStore.guardarComprobante({
-    ...origen,
-    estado: 'REFERENCIADO',
-  })
 
   return comprobanteFormal
 }

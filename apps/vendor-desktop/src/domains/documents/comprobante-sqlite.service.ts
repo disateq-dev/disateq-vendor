@@ -207,3 +207,15 @@ export async function obtenerTodosCorrelativosSQLite(): Promise<RegistroCorrelat
     return []
   }
 }
+
+export async function marcarComprobanteReferenciadoEnSQLite(
+  comprobanteId: string,
+): Promise<{ ok: boolean }> {
+  try {
+    await invoke('marcar_comprobante_referenciado', { comprobanteId })
+    return { ok: true }
+  } catch {
+    await logError('comprobante-sqlite', 'No se pudo marcar el comprobante como referenciado')
+    return { ok: false }
+  }
+}

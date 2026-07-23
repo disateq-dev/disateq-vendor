@@ -4,6 +4,11 @@ import { usePOS } from "../../context/POSContext";
 import { useCapacidad } from "../../hooks/useCapacidad";
 import { convertirAFormal } from "../../domains/documents/comprobante.service";
 import { comprobanteStore } from "../../domains/documents/comprobante.store";
+import {
+  marcarComprobanteReferenciadoEnSQLite,
+  obtenerSiguienteCorrelativoSQLite,
+  registrarComprobanteEnSQLite,
+} from "../../domains/documents/comprobante-sqlite.service";
 import type { Comprobante, TipoComprobante } from "../../domains/documents/comprobante.types";
 import { useAutorizacion } from "../../hooks/useAutorizacion";
 import { auditoriaService } from "../../domains/auditoria/auditoria.service";
@@ -509,19 +514,31 @@ export function ComprobantesWorkspace() {
       `Convertir a ${tipo}`,
       alias,
       () => {
-        try {
+        void (async () => {
           const serie = tipo === "BOLETA" ? "B001" : "F001";
           const operador = cashSession.operator || "default";
-          const nuevo = convertirAFormal(selected.id, tipo, serie, selected.receptor, operador);
-          setRefreshNonce(prev => prev + 1);
-          setSelectedId(null);
-          showNotice(`${nuevo.serie}-${pad8(nuevo.correlativo)} generado correctamente`);
-        } catch (error) {
-          showNotice(error instanceof Error ? error.message : "No se pudo convertir el comprobante");
-        }
+
+          // sesionId para registrar el comprobante en la sesión correcta
+          const sesionId = cashSession.isOpen && cashSession.cashBox && cashSession.openedAt
+            ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
+            : null;
+          const cajaCodigo = cashSession.cashBox?.code ?? null;
+
+          try {
+            const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(serie);
+            const nuevo = convertirAFormal(selected.id, tipo, serie, selected.receptor, correlativoSQLite, operador);
+            await registrarComprobanteEnSQLite(nuevo, sesionId, cajaCodigo, null);
+            await marcarComprobanteReferenciadoEnSQLite(selected.id);
+            setRefreshNonce(prev => prev + 1);
+            setSelectedId(null);
+            showNotice(`${nuevo.serie}-${pad8(nuevo.correlativo)} generado correctamente`);
+          } catch (error) {
+            showNotice(error instanceof Error ? error.message : "No se pudo convertir el comprobante");
+          }
+        })();
       }
     );
-  }, [cashSession.operator, selected, solicitarAutorizacion, showNotice]);
+  }, [cashSession, selected, solicitarAutorizacion, showNotice]);
 
   const emptyTitle = vista === "sesion"
     ? (cashSession.isOpen ? "Sin comprobantes en esta sesion" : "Sin sesion activa")

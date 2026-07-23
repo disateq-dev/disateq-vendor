@@ -435,3 +435,29 @@ pub async fn obtener_todos_correlativos(
 
     Ok(json!(correlativos?))
 }
+
+#[tauri::command]
+pub async fn marcar_comprobante_referenciado(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    comprobante_id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    let resultado = sqlx::query(
+        "UPDATE comprobante SET estado = 'REFERENCIADO' WHERE id = ? AND estado = 'EMITIDO'",
+    )
+    .bind(&comprobante_id)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if resultado.rows_affected() == 0 {
+        return Err(String::from("Comprobante no encontrado o ya en estado distinto de EMITIDO"));
+    }
+
+    Ok(())
+}
