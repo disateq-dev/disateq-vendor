@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 import type { ItemOperacional, MovimientoOperacional, TipoMovimiento, ContextoItem, EstadoDisponibilidad, Reserva } from './types';
-import {
-  loadItems, saveItems,
-  loadMovimientos, saveMovimientos,
-  loadOrCreateRuntimeId,
-  loadContexto, saveContexto,
-  loadReservas, saveReservas,
-} from './persistence';
+import { obtenerRuntimeId, cargarInventarioDesdeSQLite } from './persistence';
 
 interface InventoryState {
   runtimeId: string;
@@ -29,18 +23,16 @@ interface InventoryState {
 }
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
-  runtimeId:   loadOrCreateRuntimeId(),
-  items:       loadItems(),
-  movimientos: loadMovimientos(),
-  contexto:    loadContexto(),
-  reservas:    loadReservas(),
+  runtimeId:   obtenerRuntimeId(),
+  items:       [],
+  movimientos: [],
+  contexto:    [],
+  reservas:    [],
 
   registrarItem(item) {
     const { items } = get();
     if (items.some(i => i.itemId === item.itemId)) return;
-    const next = [...items, item];
-    saveItems(next);
-    set({ items: next });
+    set({ items: [...items, item] });
   },
 
   registrarMovimiento(itemId, tipo, cantidad, causa) {
@@ -54,9 +46,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       runtimeId,
       causa,
     };
-    const next = [...movimientos, mov];
-    saveMovimientos(next);
-    set({ movimientos: next });
+    set({ movimientos: [...movimientos, mov] });
   },
 
   setUmbral(itemId, umbral) {
@@ -65,48 +55,38 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     const next = exists
       ? contexto.map(c => c.itemId === itemId ? { ...c, umbralMinimo: umbral } : c)
       : [...contexto, { itemId, umbralMinimo: umbral }];
-    saveContexto(next);
     set({ contexto: next });
   },
 
   eliminarItem(itemId) {
     const { items } = get();
-    const next = items.map(i => i.itemId === itemId ? { ...i, eliminado: true } : i);
-    saveItems(next);
-    set({ items: next });
+    set({ items: items.map(i =>
+      i.itemId === itemId ? { ...i, eliminado: true } : i
+    )});
   },
 
   actualizarItem(itemId, cambios) {
     const { items } = get();
-    const next = items.map(i =>
+    set({ items: items.map(i =>
       i.itemId === itemId ? { ...i, ...cambios } : i
-    );
-    saveItems(next);
-    set({ items: next });
+    )});
   },
 
   retirarItem(itemId) {
     const { items } = get();
-    const next = items.map(i =>
+    set({ items: items.map(i =>
       i.itemId === itemId ? { ...i, estado: 'RETIRADO' as const } : i
-    );
-    saveItems(next);
-    set({ items: next });
+    )});
   },
 
   eliminarItemFisico(itemId) {
     const { items } = get();
-    const next = items.filter(i => i.itemId !== itemId);
-    saveItems(next);
-    set({ items: next });
+    set({ items: items.filter(i => i.itemId !== itemId) });
   },
 
   reconstruir() {
-    set({
-      items:       loadItems(),
-      movimientos: loadMovimientos(),
-      contexto:    loadContexto(),
-      reservas:    loadReservas(),
+    void cargarInventarioDesdeSQLite().then(({ items, movimientos }) => {
+      set({ items, movimientos, contexto: [], reservas: [] });
     });
   },
 
@@ -124,21 +104,17 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       expiracion,
       estado: 'activa',
     };
-    const next = [...reservas, nueva];
-    saveReservas(next);
-    set({ reservas: next });
+    set({ reservas: [...reservas, nueva] });
     return reservaId;
   },
 
   liberarReserva(reservaId, motivo) {
     const { reservas } = get();
-    const next = reservas.map(r =>
+    set({ reservas: reservas.map(r =>
       r.reservaId === reservaId && r.estado === 'activa'
         ? { ...r, estado: 'liberada' as const, liberadaEn: Date.now(), liberadaCausa: motivo }
         : r
-    );
-    saveReservas(next);
-    set({ reservas: next });
+    )});
   },
 
   // Materializar: crea movimiento de salida CAPA 0 y marca reserva como materializada
@@ -156,17 +132,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       runtimeId,
       causa:      `materializa-reserva:${reservaId.slice(0, 8)}`,
     };
-    const nextMov = [...movimientos, mov];
-    saveMovimientos(nextMov);
-
-    const nextRes = reservas.map(r =>
-      r.reservaId === reservaId
-        ? { ...r, estado: 'materializada' as const, liberadaEn: Date.now() }
-        : r
-    );
-    saveReservas(nextRes);
-
-    set({ movimientos: nextMov, reservas: nextRes });
+    set({
+      movimientos: [...movimientos, mov],
+      reservas: reservas.map(r =>
+        r.reservaId === reservaId
+          ? { ...r, estado: 'materializada' as const, liberadaEn: Date.now() }
+          : r
+      ),
+    });
   },
 }));
 
