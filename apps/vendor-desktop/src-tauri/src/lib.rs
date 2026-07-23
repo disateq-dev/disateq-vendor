@@ -194,7 +194,9 @@ pub fn run() {
       commands::autorizaciones::registrar_autorizacion_supervision,
       commands::autorizaciones::ejecutar_autorizacion_supervision,
       commands::autorizaciones::validar_autorizacion_supervision,
-      commands::autorizaciones::postergar_autorizacion_supervision])
+      commands::autorizaciones::postergar_autorizacion_supervision,
+      commands::pedidos_venta::guardar_pedido_venta,
+      commands::pedidos_venta::obtener_pedidos_activos_venta])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

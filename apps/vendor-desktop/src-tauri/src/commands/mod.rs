@@ -11,6 +11,7 @@ pub mod integraciones;
 pub mod ingresos;
 pub mod valores;
 pub mod pedidos;
+pub mod pedidos_venta;
 pub mod log;
 pub mod ventas;
 pub mod comprobantes;

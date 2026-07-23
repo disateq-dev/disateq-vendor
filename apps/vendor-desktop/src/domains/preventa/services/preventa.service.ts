@@ -6,6 +6,7 @@ import {
   traducirALineaPreVenta,
   type AddProductBridgeInput
 } from "../../sales/bridge-pedido";
+import { cargarPedidosActivosDesdeSQLite } from "../../sales/pedido.store";
 import { agregarLinea } from '../../sales/pedido.service'
 
 type AddProductInput = {
@@ -113,6 +114,10 @@ export const preVentaService = {
   limpiar() {
     usePreVentaStore.getState().limpiarPreVenta();
     _pedidoActivoId = null;
+  },
+
+  async inicializar(): Promise<void> {
+    await cargarPedidosActivosDesdeSQLite()
   },
 
 };
