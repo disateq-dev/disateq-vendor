@@ -184,22 +184,22 @@ pub async fn obtener_comprobantes_sesion(
     let comprobantes: Result<Vec<Value>, String> = rows.into_iter().map(|row| {
         Ok(json!({
             "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
-            "venta_id": row.try_get::<Option<String>, _>("venta_id").unwrap_or(None),
+            "ventaId": row.try_get::<Option<String>, _>("venta_id").unwrap_or(None),
             "tipo": row.try_get::<String, _>("tipo").map_err(|e| e.to_string())?,
             "serie": row.try_get::<String, _>("serie").map_err(|e| e.to_string())?,
             "correlativo": row.try_get::<i64, _>("correlativo").map_err(|e| e.to_string())?,
-            "codigo_unico": row.try_get::<String, _>("codigo_unico").map_err(|e| e.to_string())?,
-            "es_formal": row.try_get::<i64, _>("es_formal").unwrap_or(0) != 0,
+            "codigoUnico": row.try_get::<String, _>("codigo_unico").map_err(|e| e.to_string())?,
+            "esFormal": row.try_get::<i64, _>("es_formal").unwrap_or(0) != 0,
             "estado": row.try_get::<String, _>("estado").map_err(|e| e.to_string())?,
-            "estado_sunat": row.try_get::<String, _>("estado_sunat").map_err(|e| e.to_string())?,
-            "receptor_nombre": row.try_get::<String, _>("receptor_nombre").map_err(|e| e.to_string())?,
-            "receptor_es_generico": row.try_get::<i64, _>("receptor_es_generico").unwrap_or(0) != 0,
+            "estadoSunat": row.try_get::<String, _>("estado_sunat").map_err(|e| e.to_string())?,
+            "receptorNombre": row.try_get::<String, _>("receptor_nombre").map_err(|e| e.to_string())?,
+            "receptorEsGenerico": row.try_get::<i64, _>("receptor_es_generico").unwrap_or(0) != 0,
             "subtotal": row.try_get::<f64, _>("subtotal").map_err(|e| e.to_string())?,
             "igv": row.try_get::<f64, _>("igv").map_err(|e| e.to_string())?,
             "total": row.try_get::<f64, _>("total").map_err(|e| e.to_string())?,
-            "metodo_pago": row.try_get::<String, _>("metodo_pago").map_err(|e| e.to_string())?,
-            "operador_id": row.try_get::<String, _>("operador_id").map_err(|e| e.to_string())?,
-            "emitido_en": row.try_get::<String, _>("emitido_en").map_err(|e| e.to_string())?,
+            "metodoPago": row.try_get::<String, _>("metodo_pago").map_err(|e| e.to_string())?,
+            "operadorId": row.try_get::<String, _>("operador_id").map_err(|e| e.to_string())?,
+            "emitidoEn": row.try_get::<String, _>("emitido_en").map_err(|e| e.to_string())?,
         }))
     }).collect();
 
@@ -239,22 +239,22 @@ pub async fn obtener_comprobantes_historial(
     let comprobantes: Result<Vec<Value>, String> = rows.into_iter().map(|row| {
         Ok(json!({
             "id": row.try_get::<String, _>("id").map_err(|e| e.to_string())?,
-            "venta_id": row.try_get::<Option<String>, _>("venta_id").unwrap_or(None),
+            "ventaId": row.try_get::<Option<String>, _>("venta_id").unwrap_or(None),
             "tipo": row.try_get::<String, _>("tipo").map_err(|e| e.to_string())?,
             "serie": row.try_get::<String, _>("serie").map_err(|e| e.to_string())?,
             "correlativo": row.try_get::<i64, _>("correlativo").map_err(|e| e.to_string())?,
-            "codigo_unico": row.try_get::<String, _>("codigo_unico").map_err(|e| e.to_string())?,
-            "es_formal": row.try_get::<i64, _>("es_formal").unwrap_or(0) != 0,
+            "codigoUnico": row.try_get::<String, _>("codigo_unico").map_err(|e| e.to_string())?,
+            "esFormal": row.try_get::<i64, _>("es_formal").unwrap_or(0) != 0,
             "estado": row.try_get::<String, _>("estado").map_err(|e| e.to_string())?,
-            "estado_sunat": row.try_get::<String, _>("estado_sunat").map_err(|e| e.to_string())?,
-            "receptor_nombre": row.try_get::<String, _>("receptor_nombre").map_err(|e| e.to_string())?,
-            "receptor_es_generico": row.try_get::<i64, _>("receptor_es_generico").unwrap_or(0) != 0,
+            "estadoSunat": row.try_get::<String, _>("estado_sunat").map_err(|e| e.to_string())?,
+            "receptorNombre": row.try_get::<String, _>("receptor_nombre").map_err(|e| e.to_string())?,
+            "receptorEsGenerico": row.try_get::<i64, _>("receptor_es_generico").unwrap_or(0) != 0,
             "subtotal": row.try_get::<f64, _>("subtotal").map_err(|e| e.to_string())?,
             "igv": row.try_get::<f64, _>("igv").map_err(|e| e.to_string())?,
             "total": row.try_get::<f64, _>("total").map_err(|e| e.to_string())?,
-            "metodo_pago": row.try_get::<String, _>("metodo_pago").map_err(|e| e.to_string())?,
-            "operador_id": row.try_get::<String, _>("operador_id").map_err(|e| e.to_string())?,
-            "emitido_en": row.try_get::<String, _>("emitido_en").map_err(|e| e.to_string())?,
+            "metodoPago": row.try_get::<String, _>("metodo_pago").map_err(|e| e.to_string())?,
+            "operadorId": row.try_get::<String, _>("operador_id").map_err(|e| e.to_string())?,
+            "emitidoEn": row.try_get::<String, _>("emitido_en").map_err(|e| e.to_string())?,
         }))
     }).collect();
 
