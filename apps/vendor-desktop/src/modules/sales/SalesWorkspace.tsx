@@ -138,7 +138,7 @@ function TileBadge({ p }: { p: ProductoBuscable }) {
 
 export function SalesWorkspace() {
   const posContext = usePOS() as POSRuntimeContext;
-  const { enterSearch, cashSession, cobroOpen, closeCobro, openCobro, visualMode } = posContext;
+  const { enterSearch, cashSession, cobroOpen, closeCobro, openCobro, visualMode, showNotice } = posContext;
   const rubroConfig = useMemo(() => {
     const bc = loadBusinessConfig();
     return RUBROS[bc.rubro];
@@ -270,6 +270,10 @@ export function SalesWorkspace() {
   }, []);
 
   const addProductToTicket = useCallback((p: ProductoBuscable) => {
+    if (!cashSession.isOpen) {
+      showNotice("Abre el turno para poder vender");
+      return;
+    }
     if (p.stockStatus === "out" && p.tipoRecurso !== 'SERVICIO') return;
     if (p.condicionVenta === "CON_RECETA" || p.condicionVenta === "CONTROLADO") {
       setConfirmaReceta({ producto: p, condicion: p.condicionVenta });
@@ -300,6 +304,7 @@ export function SalesWorkspace() {
       operadorId: posContext.operadorActivo?.id ?? "default",
       margenMinimoConfigurable: 0.15,
       operadorTieneCapacidadLibre: false,
+      tipoValor: null,
     });
     if (lastAddedTimerRef.current) clearTimeout(lastAddedTimerRef.current);
     setLastAdded(p.hovId);
@@ -310,7 +315,6 @@ export function SalesWorkspace() {
   }, [catalogoActivo, cobroOpen, closeCobro, posContext]);
 
   const handleConfirmarForma = useCallback((hovId: string, valorFinal: number, tipoValor: TipoValorOperacional | null) => {
-    void tipoValor;
     const hov = getHOVById(hovId);
     const producto = catalogoActivo.find(p => p.hovId === hovId);
     if (!hov || !producto) return;
@@ -327,6 +331,7 @@ export function SalesWorkspace() {
       operadorId: posContext.operadorActivo?.id ?? "default",
       margenMinimoConfigurable: 0.15,
       operadorTieneCapacidadLibre: false,
+      tipoValor,
     });
     setGrupoActivo(null);
     setQuery("");
@@ -349,6 +354,7 @@ export function SalesWorkspace() {
       operadorId: posContext.operadorActivo?.id ?? "default",
       margenMinimoConfigurable: 0.15,
       operadorTieneCapacidadLibre: false,
+      tipoValor: null,
     });
     setLastAdded(confirmaReceta.producto.hovId);
     setTimeout(() => setLastAdded(null), 600);
@@ -378,6 +384,7 @@ export function SalesWorkspace() {
       operadorId: posContext.operadorActivo?.id ?? "default",
       margenMinimoConfigurable: 0.15,
       operadorTieneCapacidadLibre: false,
+      tipoValor: null,
     });
     setLastAdded(confirmaVencimiento.producto.hovId);
     setTimeout(() => setLastAdded(null), 600);
