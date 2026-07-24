@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import type { ReactElement } from 'react'
 import { FileText } from 'lucide-react'
 import { crearCliente } from '../../domains/clients/cliente.service'
@@ -31,30 +32,6 @@ type FuenteRUC = 'LOCAL' | 'SUNAT' | 'MANUAL'
 type FaseFormularioDNI = 'INGRESO' | 'RESULTADO'
 type FaseFormularioBoleta = 'INGRESO' | 'RESULTADO'
 
-interface DatosDNI {
-  numDoc:    string
-  apPaterno: string
-  apMaterno: string
-  nombres:   string
-  email:     string
-  whatsapp:  string
-  fuente:    'LOCAL' | 'RENIEC' | 'MANUAL'
-  clienteId: string | null
-}
-
-interface DatosRUC {
-  numDoc:         string
-  razonSocial:    string
-  nombreComercial:string
-  direccionFiscal:string
-  estadoRuc:      string
-  condicion:      string
-  email:          string
-  whatsapp:       string
-  fuente:         'LOCAL' | 'SUNAT' | 'MANUAL'
-  clienteId:      string | null
-}
-
 const inputBase = "w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2 text-[13px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10 transition"
 const inputDis  = "w-full rounded-xl border border-transparent bg-[#f4f7fb] px-3.5 py-2 text-[13px] text-[#374151] outline-none"
 
@@ -66,66 +43,6 @@ function resolverCanales(email: string, whatsapp: string): CanalesCliente {
     whatsapp: w,
     preferenciaEnvio: e && w ? 'AMBOS' : e ? 'EMAIL' : w ? 'WHATSAPP' : 'NINGUNO',
     consentimiento: !!(e || w),
-  }
-}
-
-function parsearHtmlSunat(
-  html: string,
-  tipo: 'DNI' | 'RUC',
-  doc: string
-): Partial<DatosDNI> | Partial<DatosRUC> | null {
-  try {
-    const parser = new DOMParser()
-    const dom    = parser.parseFromString(html, 'text/html')
-    const texto  = dom.body?.innerText ?? ''
-    if (!texto || texto.length < 30) return null
-    const lineas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-
-    if (tipo === 'RUC') {
-      const iRazon = lineas.findIndex(l =>
-        l.toLowerCase().includes('razón social') || l.toLowerCase().includes('razon social'))
-      const iNomCom = lineas.findIndex(l =>
-        l.toLowerCase().includes('nombre comercial'))
-      const iDir = lineas.findIndex(l =>
-        l.toLowerCase().includes('dirección') || l.toLowerCase().includes('direccion'))
-      const iEstado = lineas.findIndex(l =>
-        l.toLowerCase().includes('estado del contribuyente'))
-      const iCond = lineas.findIndex(l =>
-        l.toLowerCase().includes('condición del contribuyente') ||
-        l.toLowerCase().includes('condicion del contribuyente'))
-      const razonSocial     = iRazon  >= 0 ? (lineas[iRazon  + 1] ?? '').trim() : ''
-      if (!razonSocial) return null
-      return {
-        numDoc:          doc,
-        razonSocial,
-        nombreComercial: iNomCom >= 0 ? (lineas[iNomCom + 1] ?? '').trim() : '',
-        direccionFiscal: iDir    >= 0 ? (lineas[iDir    + 1] ?? '').trim() : '',
-        estadoRuc:       iEstado >= 0 ? (lineas[iEstado + 1] ?? '').trim() : '',
-        condicion:       iCond   >= 0 ? (lineas[iCond   + 1] ?? '').trim() : '',
-        fuente: 'SUNAT',
-        clienteId: null,
-      }
-    } else {
-      const iAp = lineas.findIndex(l =>
-        l.toLowerCase().includes('apellidos y nombres') ||
-        l.toLowerCase().includes('apellido paterno'))
-      const iNom = lineas.findIndex(l => l.toLowerCase().includes('nombres'))
-      // RENIEC clásico: "APELLIDO PATERNO / APELLIDO MATERNO / NOMBRES" en líneas sucesivas
-      const apPaterno = iAp  >= 0 ? (lineas[iAp  + 1] ?? '').trim() : ''
-      const apMaterno = iAp  >= 0 ? (lineas[iAp  + 2] ?? '').trim() : ''
-      const nombres   = iNom >= 0 ? (lineas[iNom + 1] ?? '').trim() : ''
-      if (!apPaterno && !nombres) return null
-      return {
-        numDoc: doc,
-        apPaterno,
-        apMaterno,
-        nombres,
-        fuente: 'RENIEC',
-        clienteId: null,
-      }
-    }
-  } catch {
-    return null
   }
 }
 
@@ -294,32 +211,29 @@ function FormularioBoleta({
 
   async function buscarOnlineDNI(): Promise<void> {
     if (!documentoValido) return
-
     setBuscando(true)
     setErrorMsg(null)
     try {
-      const documento = numDoc.trim()
-      const url = `https://ww1.sunat.gob.pe/ol-ti-itfisdenreg/itfisdenreg.htm?accion=obtenerDatosDni&numDocumento=${documento}`
-      const res = await fetch(url)
-      const html = await res.text()
-      const parsed = parsearHtmlSunat(html, 'DNI', documento) as Partial<DatosDNI> | null
-      if (!parsed || (!parsed.apPaterno && !parsed.nombres)) {
-        setErrorMsg('Sin conexión. Completa los campos manualmente.')
-        setFuente('MANUAL')
-        setEditando(true)
-        setFase('RESULTADO')
-        return
-      }
-
-      setApellidos(`${parsed.apPaterno ?? ''} ${parsed.apMaterno ?? ''}`.replace(/\s+/g, ' ').trim())
-      setNombres(parsed.nombres ?? '')
+      const resultado = await invoke<{
+        nombres: string
+        apellidoPaterno: string
+        apellidoMaterno: string
+        numDoc: string
+      }>("consultar_dni", { numDoc: numDoc.trim() })
+      setApellidos(`${resultado.apellidoPaterno} ${resultado.apellidoMaterno}`.replace(/\s+/g, ' ').trim())
+      setNombres(resultado.nombres)
       setNombreCompleto('')
       setFuente('RENIEC')
       setClienteId(null)
       setEditando(false)
       setFase('RESULTADO')
-    } catch {
-      setErrorMsg('Sin conexión. Completa los campos manualmente.')
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Sin respuesta')
+      if (msg.startsWith('INTEGRACION_NO_CONFIGURADA')) {
+        setErrorMsg('Integración no configurada — ve a AJUSTES → Integraciones')
+      } else {
+        setErrorMsg('No encontrado. Completa los campos manualmente.')
+      }
       setFuente('MANUAL')
       setEditando(true)
       setFase('RESULTADO')
@@ -691,29 +605,28 @@ function FormularioDNI({
   async function buscarOnline(): Promise<void> {
     const documento = numDoc.trim()
     if (documento.length !== 8) return
-
     setBuscando(true)
     setErrorMsg(null)
     try {
-      const url = `https://ww1.sunat.gob.pe/ol-ti-itfisdenreg/itfisdenreg.htm?accion=obtenerDatosDni&numDocumento=${documento}`
-      const res = await fetch(url)
-      const html = await res.text()
-      const parsed = parsearHtmlSunat(html, 'DNI', documento) as Partial<DatosDNI> | null
-      if (!parsed || (!parsed.apPaterno && !parsed.nombres)) {
-        setErrorMsg('Sin conexión. Completa los campos manualmente.')
-        setFuente('MANUAL')
-        setEditando(true)
-        setFase('RESULTADO')
-        return
-      }
-      setApellidos(`${parsed.apPaterno ?? ''} ${parsed.apMaterno ?? ''}`.replace(/\s+/g, ' ').trim())
-      setNombres(parsed.nombres ?? '')
+      const resultado = await invoke<{
+        nombres: string
+        apellidoPaterno: string
+        apellidoMaterno: string
+        numDoc: string
+      }>("consultar_dni", { numDoc: documento })
+      setApellidos(`${resultado.apellidoPaterno} ${resultado.apellidoMaterno}`.replace(/\s+/g, ' ').trim())
+      setNombres(resultado.nombres)
       setFuente('RENIEC')
       setClienteId(null)
       setEditando(false)
       setFase('RESULTADO')
-    } catch {
-      setErrorMsg('Sin conexión. Completa los campos manualmente.')
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Sin respuesta')
+      if (msg.startsWith('INTEGRACION_NO_CONFIGURADA')) {
+        setErrorMsg('Integración no configurada — ve a AJUSTES → Integraciones')
+      } else {
+        setErrorMsg('No encontrado. Completa los campos manualmente.')
+      }
       setFuente('MANUAL')
       setEditando(true)
       setFase('RESULTADO')
@@ -1015,30 +928,31 @@ function FormularioRUC({
     setBuscando(true)
     setErrorMsg(null)
     try {
-      const url = `https://ww1.sunat.gob.pe/ol-ti-itfisdenreg/itfisdenreg.htm?accion=obtenerDatosRuc&nroRuc=${numDoc.trim()}`
-      const res = await fetch(url)
-      const html = await res.text()
-      const parsed = parsearHtmlSunat(html, 'RUC', numDoc.trim()) as Partial<DatosRUC> | null
-      if (!parsed?.razonSocial) {
-        setErrorMsg('Sin conexión. Completa los campos manualmente.')
-        setFuente('MANUAL')
-        setEditando(true)
-        setFase('RESULTADO')
-        return
-      }
-      setRazonSocial(parsed.razonSocial ?? '')
-      setNombreComercial(parsed.nombreComercial ?? '')
-      setDireccionFiscal(parsed.direccionFiscal ?? '')
-      setEstadoRuc(parsed.estadoRuc ?? '')
-      setCondicion(parsed.condicion ?? '')
+      const resultado = await invoke<{
+        razonSocial: string
+        direccion: string
+        estado: string
+        condicion: string
+        numRuc: string
+      }>("consultar_ruc", { numRuc: numDoc.trim() })
+      setRazonSocial(resultado.razonSocial)
+      setNombreComercial('')
+      setDireccionFiscal(resultado.direccion)
+      setEstadoRuc(resultado.estado)
+      setCondicion(resultado.condicion)
       setEmail('')
       setWhatsapp('')
       setFuente('SUNAT')
       setClienteId(null)
       setEditando(false)
       setFase('RESULTADO')
-    } catch {
-      setErrorMsg('Sin conexión. Completa los campos manualmente.')
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Sin respuesta')
+      if (msg.startsWith('INTEGRACION_NO_CONFIGURADA')) {
+        setErrorMsg('Integración no configurada — ve a AJUSTES → Integraciones')
+      } else {
+        setErrorMsg('No encontrado. Completa los campos manualmente.')
+      }
       setFuente('MANUAL')
       setEditando(true)
       setFase('RESULTADO')
