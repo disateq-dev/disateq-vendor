@@ -165,7 +165,7 @@ export function ContextBar({
   const puedeVerReportes       = useCapacidad("ver_reportes")          && !isBlocking;
   const puedeVerClientes       = useCapacidad("gestionar_clientes")    && !isBlocking;
   const contexto               = useContextoOperacional();
-  const puedeVerComprobantes   = contexto !== null                     && !isBlocking;
+  const puedeVerComprobantes   = useCapacidad("observar_comprobantes_global") && contexto !== null && !isBlocking;
   const puedeVerAbastecimiento = useCapacidad("gestionar_inventarios") && !isBlocking;
   const puedeVerAjustes        = useCapacidad("gestionar_operadores")  && !isBlocking;
   const puedeVerAuditoria      = (useCapacidad("acceso_total") || useCapacidad("gestionar_operadores")) && !isBlocking;
