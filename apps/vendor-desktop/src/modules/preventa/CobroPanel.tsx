@@ -416,7 +416,7 @@ export function CobroPanel() {
         subtotal:    baseImponible,
         igv:         igv,
         isc:         0,
-        total:       total,
+        total:       netTotal,
         metodoPago:  mapearMetodoPago(payMethod),
         mixtoBreakdown: payMethod === 'mixto'
           ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
@@ -492,7 +492,7 @@ export function CobroPanel() {
         subtotal:    baseImponible,
         igv:         igv,
         isc:         0,
-        total:       total,
+        total:       netTotal,
         metodoPago:  mapearMetodoPago(payMethod),
         mixtoBreakdown: payMethod === 'mixto'
           ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }

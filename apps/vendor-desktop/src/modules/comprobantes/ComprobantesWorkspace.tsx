@@ -86,9 +86,9 @@ function StatsBar({ docs }: { docs: ComprobanteResumen[] }) {
     const emitidos = docs.filter(doc => doc.estado === "EMITIDO");
     return {
       total: emitidos.reduce((sum, doc) => sum + doc.total, 0),
-      efe: emitidos.filter(doc => doc.metodo_pago === "EFECTIVO").reduce((sum, doc) => sum + doc.total, 0),
-      yap: emitidos.filter(doc => doc.metodo_pago === "YAPE").reduce((sum, doc) => sum + doc.total, 0),
-      tar: emitidos.filter(doc => doc.metodo_pago === "TARJETA").reduce((sum, doc) => sum + doc.total, 0),
+      efe: emitidos.filter(doc => doc.metodoPago === "EFECTIVO").reduce((sum, doc) => sum + doc.total, 0),
+      yap: emitidos.filter(doc => doc.metodoPago === "YAPE").reduce((sum, doc) => sum + doc.total, 0),
+      tar: emitidos.filter(doc => doc.metodoPago === "TARJETA").reduce((sum, doc) => sum + doc.total, 0),
       anulados: docs.filter(doc => doc.estado === "ANULADO").length,
     };
   }, [docs]);
@@ -424,7 +424,7 @@ export function ComprobantesWorkspace() {
           resultado = await obtenerHistorialComprobantesSQLite();
         }
         if (!cancelled) {
-          setDocsBase(resultado.sort((a, b) => b.emitido_en.localeCompare(a.emitido_en)));
+          setDocsBase(resultado.sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn)));
         }
       } finally {
         if (!cancelled) setLoadingDocs(false);
@@ -447,14 +447,14 @@ export function ComprobantesWorkspace() {
 
         return [
           `${doc.serie}-${pad8(doc.correlativo)}`,
-          doc.receptor_nombre,
-          doc.metodo_pago,
+          doc.receptorNombre,
+          doc.metodoPago,
           doc.tipo,
           doc.total.toFixed(2),
-          formatDateTime(doc.emitido_en),
+          formatDateTime(doc.emitidoEn),
         ].some(value => value.toLowerCase().includes(query));
       })
-      .sort((a, b) => b.emitido_en.localeCompare(a.emitido_en));
+      .sort((a, b) => b.emitidoEn.localeCompare(a.emitidoEn));
   }, [docsPorVista, filtroEstado, filtroTipo, search]);
 
   const selectedResumen = docsFiltrados.find(doc => doc.id === selectedId) ?? null;
@@ -581,7 +581,7 @@ export function ComprobantesWorkspace() {
 
   const handleVoid = useCallback((motivo: string) => {
     if (!selectedId || !motivo.trim()) return;
-    const alias = detalleCompleto?.operadorId ?? selectedResumen?.operador_id ?? "Operador";
+    const alias = detalleCompleto?.operadorId ?? selectedResumen?.operadorId ?? "Operador";
     solicitarAutorizacion(
       "Anular comprobante",
       alias,
@@ -759,9 +759,9 @@ export function ComprobantesWorkspace() {
               {docsFiltrados.map(doc => {
                 const isSelected = doc.id === selectedId;
                 const isCancelled = doc.estado === "ANULADO";
-                const secondary = doc.receptor_es_generico
-                  ? formatDateTime(doc.emitido_en)
-                  : doc.receptor_nombre;
+                const secondary = doc.receptorEsGenerico
+                  ? formatDateTime(doc.emitidoEn)
+                  : doc.receptorNombre;
 
                 return (
                   <article
@@ -783,9 +783,9 @@ export function ComprobantesWorkspace() {
                           {doc.serie}-{pad8(doc.correlativo)}
                         </span>
                         <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${
-                          METHOD_COLORS[doc.metodo_pago] ?? "bg-[#f1f5f9] text-[#374151]"
+                          METHOD_COLORS[doc.metodoPago] ?? "bg-[#f1f5f9] text-[#374151]"
                         }`}>
-                          {METHOD_LABELS[doc.metodo_pago] ?? doc.metodo_pago.toUpperCase()}
+                          {METHOD_LABELS[doc.metodoPago] ?? doc.metodoPago.toUpperCase()}
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-[11px] text-[#9ca3af]">{secondary}</p>

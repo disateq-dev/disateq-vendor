@@ -6,33 +6,33 @@ import type { RegistroCorrelativo } from './correlativo.types'
 interface LineaComprobanteRust {
   descripcion: string
   cantidad: number
-  valor_unitario: number
+  valorUnitario: number
   subtotal: number
-  tipo_afectacion_igv: string
-  tasa_igv: number
-  monto_isc: number | null
-  nota_linea: string | null
-  codigo_producto_sunat: string | null
+  tipoAfectacionIgv: string
+  tasaIgv: number
+  montoIsc: number | null
+  notaLinea: string | null
+  codigoProductoSunat: string | null
 }
 
 export interface ComprobanteResumen {
   id: string
-  venta_id: string | null
+  ventaId: string | null
   tipo: string
   serie: string
   correlativo: number
-  codigo_unico: string
-  es_formal: boolean
+  codigoUnico: string
+  esFormal: boolean
   estado: string
-  estado_sunat: string
-  receptor_nombre: string
-  receptor_es_generico: boolean
+  estadoSunat: string
+  receptorNombre: string
+  receptorEsGenerico: boolean
   subtotal: number
   igv: number
   total: number
-  metodo_pago: string
-  operador_id: string
-  emitido_en: string
+  metodoPago: string
+  operadorId: string
+  emitidoEn: string
 }
 
 export async function registrarComprobanteEnSQLite(
@@ -44,48 +44,48 @@ export async function registrarComprobanteEnSQLite(
   const lineas: LineaComprobanteRust[] = comprobante.lineas.map(linea => ({
     descripcion: linea.descripcion,
     cantidad: linea.cantidad,
-    valor_unitario: linea.valorUnitario,
+    valorUnitario: linea.valorUnitario,
     subtotal: linea.subtotal,
-    tipo_afectacion_igv: linea.tipoAfectacionIGV,
-    tasa_igv: linea.tasaIGV,
-    monto_isc: linea.montoISC,
-    nota_linea: linea.notaLinea,
-    codigo_producto_sunat: linea.codigoProductoSUNAT,
+    tipoAfectacionIgv: linea.tipoAfectacionIGV,
+    tasaIgv: linea.tasaIGV,
+    montoIsc: linea.montoISC,
+    notaLinea: linea.notaLinea,
+    codigoProductoSunat: linea.codigoProductoSUNAT,
   }))
 
   try {
     await invoke('registrar_comprobante', {
-      comprobante_id: comprobante.id,
-      venta_id: ventaId,
+      comprobanteId: comprobante.id,
+      ventaId: ventaId,
       tipo: comprobante.tipo,
       serie: comprobante.serie,
       correlativo: comprobante.correlativo,
-      codigo_unico: comprobante.codigoUnico,
-      es_formal: comprobante.esFormal,
-      requiere_envio_sunat: comprobante.requiereEnvioSUNAT,
-      leyenda_no_formal: comprobante.leyendaNoFormal ?? null,
-      estado_sunat: comprobante.estadoSUNAT,
-      emisor_ruc: comprobante.emisor.ruc,
-      emisor_razon_social: comprobante.emisor.razonSocial,
-      emisor_direccion: comprobante.emisor.direccion,
-      receptor_tipo_doc: comprobante.receptor.tipoDocumento,
-      receptor_num_doc: comprobante.receptor.numeroDocumento ?? null,
-      receptor_nombre: comprobante.receptor.nombre,
-      receptor_es_generico: comprobante.receptor.esGenerico,
-      receptor_cliente_id: comprobante.receptor.clienteId ?? null,
+      codigoUnico: comprobante.codigoUnico,
+      esFormal: comprobante.esFormal,
+      requiereEnvioSunat: comprobante.requiereEnvioSUNAT,
+      leyendaNoFormal: comprobante.leyendaNoFormal ?? null,
+      estadoSunat: comprobante.estadoSUNAT,
+      emisorRuc: comprobante.emisor.ruc,
+      emisorRazonSocial: comprobante.emisor.razonSocial,
+      emisorDireccion: comprobante.emisor.direccion,
+      receptorTipoDoc: comprobante.receptor.tipoDocumento,
+      receptorNumDoc: comprobante.receptor.numeroDocumento ?? null,
+      receptorNombre: comprobante.receptor.nombre,
+      receptorEsGenerico: comprobante.receptor.esGenerico,
+      receptorClienteId: comprobante.receptor.clienteId ?? null,
       subtotal: comprobante.subtotal,
       igv: comprobante.igv,
       isc: comprobante.isc,
       total: comprobante.total,
       moneda: comprobante.moneda,
-      metodo_pago: comprobante.metodoPago,
+      metodoPago: comprobante.metodoPago,
       regimen: comprobante.tributario.regimen,
-      incluye_detraccion: comprobante.tributario.incluyeDetraccion,
-      operador_id: comprobante.operadorId,
-      sesion_id: sesionId,
-      caja_codigo: cajaCodigo,
-      enviado_por_canal: comprobante.enviadoPorCanal,
-      emitido_en: comprobante.emitidoEn,
+      incluyeDetraccion: comprobante.tributario.incluyeDetraccion,
+      operadorId: comprobante.operadorId,
+      sesionId: sesionId,
+      cajaCodigo: cajaCodigo,
+      enviadoPorCanal: comprobante.enviadoPorCanal,
+      emitidoEn: comprobante.emitidoEn,
       lineas,
     })
     return { ok: true }
@@ -111,7 +111,7 @@ export async function obtenerComprobantesSesionSQLite(
 ): Promise<ComprobanteResumen[]> {
   try {
     return await invoke<ComprobanteResumen[]>('obtener_comprobantes_sesion', {
-      sesion_id: sesionId,
+      sesionId: sesionId,
     })
   } catch {
     await logError('comprobante-sqlite', 'No se pudieron obtener los comprobantes de la sesión')
@@ -142,7 +142,7 @@ export async function obtenerComprobanteDetalleSQLite(
   try {
     return await invoke<{ comprobante: Record<string, unknown>; lineas: Record<string, unknown>[] }>(
       'obtener_comprobante_detalle',
-      { comprobante_id: comprobanteId },
+      { comprobanteId: comprobanteId },
     )
   } catch {
     await logError('comprobante-sqlite', 'No se pudo obtener el detalle del comprobante')
@@ -156,7 +156,7 @@ export async function anularComprobanteEnSQLite(
 ): Promise<{ ok: boolean }> {
   try {
     await invoke('anular_comprobante_sqlite', {
-      comprobante_id: comprobanteId,
+      comprobanteId: comprobanteId,
       motivo,
     })
     return { ok: true }
@@ -173,8 +173,8 @@ export async function actualizarEstadoSUNAT(
 ): Promise<{ ok: boolean }> {
   try {
     await invoke('actualizar_estado_sunat', {
-      comprobante_id: comprobanteId,
-      estado_sunat: estadoSunat,
+      comprobanteId: comprobanteId,
+      estadoSunat: estadoSunat,
       cdr,
     })
     return { ok: true }
