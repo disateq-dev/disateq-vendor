@@ -21,6 +21,7 @@ import {
   getCurrentSessionId, loadSessionHistory, actualizarSesionCajaCorrection, type SessionEntry,
 } from "./services/session-history.service";
 import { AutorizacionEjecucionCard } from "./AutorizacionEjecucionCard";
+import { DocumentosPanel } from "./DocumentosPanel";
 import {
   loadAuthorizations, markAuthorizationExecuted,
   type CajaAuthorization,
@@ -258,7 +259,18 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
   const [ctgJustif,       setCtgJustif]       = useState("");
   const [ctgPinError,     setCtgPinError]     = useState(false);
   const [isOpeningSession, setIsOpeningSession] = useState(false);
+  const [sucesosView, setSucesosView] = useState<'sucesos' | 'documentos'>('sucesos');
+  const [sesionId, setSesionId]       = useState<string | null>(null);
   const aperturaRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (cashSession.isOpen) {
+      void getCurrentSessionId().then(id => setSesionId(id));
+    } else {
+      setSesionId(null);
+      setSucesosView('sucesos');
+    }
+  }, [cashSession.isOpen]);
 
   // ── corrección datos apertura state ──────────────────────────
   const [editingApertura,    setEditingApertura]    = useState(false);
@@ -2655,13 +2667,45 @@ export function CashWorkspace({ onOpened, cashSubView, onCashSubViewChange }: Ca
             <div className="shrink-0 flex h-[42px] items-center gap-2 px-4 bg-[#FFF5E6] border-b border-[#C59B6D]/15">
               <ListChecks size={13} strokeWidth={2} className="shrink-0 text-[#C59B6D]" />
               <span className="text-[13px] font-semibold uppercase tracking-tight text-[#121416] leading-none">SUCESOS DEL TURNO</span>
-              {currentSessionEvents.length > 0 && (
-                <span className="ml-auto text-[10px] font-semibold text-[#9ca3af] tabular-nums">{currentSessionEvents.length}</span>
+              {cashSession.isOpen ? (
+                <div className="ml-auto flex items-center gap-px rounded-xl bg-[#f1f5f9] p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSucesosView('sucesos')}
+                    className={`rounded-[9px] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide transition ${
+                      sucesosView === 'sucesos'
+                        ? 'bg-[#C59B6D] text-white shadow-sm'
+                        : 'text-[#9ca3af] hover:text-[#374151]'
+                    }`}
+                  >
+                    SUCESOS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSucesosView('documentos')}
+                    className={`rounded-[9px] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide transition ${
+                      sucesosView === 'documentos'
+                        ? 'bg-[#C59B6D] text-white shadow-sm'
+                        : 'text-[#9ca3af] hover:text-[#374151]'
+                    }`}
+                  >
+                    DOCUMENTOS
+                  </button>
+                </div>
+              ) : (
+                currentSessionEvents.length > 0 && (
+                  <span className="ml-auto text-[10px] font-semibold text-[#9ca3af] tabular-nums">{currentSessionEvents.length}</span>
+                )
               )}
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-              {currentSessionEvents.length === 0 ? (
+              {sucesosView === 'documentos' && cashSession.isOpen && sesionId ? (
+                <DocumentosPanel
+                  sesionId={sesionId}
+                  operadorId={activeOperator?.id ?? cashSession.operatorId ?? ''}
+                />
+              ) : currentSessionEvents.length === 0 ? (
                 <p className="py-8 text-center text-[10.5px] text-[#c8d4e0]">Sin sucesos en este turno</p>
               ) : (() => {
                 const events = [...currentSessionEvents].reverse() as TurnEvent[];
