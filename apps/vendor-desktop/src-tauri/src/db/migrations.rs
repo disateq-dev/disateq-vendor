@@ -47,6 +47,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v25_autorizacion_supervision(db).await?;
     migrar_v26_pedido_venta(db).await?;
     migrar_v27_evento_comprobante(db).await?;
+    migrar_v28_config_integraciones(db).await?;
 
     Ok(())
 }
@@ -2411,6 +2412,40 @@ async fn migrar_v27_evento_comprobante(db: &sqlx::SqlitePool) -> Result<(), Stri
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v28_config_integraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db).await.map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db).await.map_err(|e| e.to_string())?;
+
+    if version >= 28 { return Ok(()); }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    for col in &[
+        "ALTER TABLE config_establecimiento ADD COLUMN consulta_doc_url TEXT",
+        "ALTER TABLE config_establecimiento ADD COLUMN consulta_doc_token TEXT",
+    ] {
+        let col_name = if col.contains("consulta_doc_url") { "consulta_doc_url" } else { "consulta_doc_token" };
+        let existe = sqlx::query_scalar::<_, i64>(
+            &format!("SELECT COUNT(*) FROM pragma_table_info('config_establecimiento') WHERE name = '{}'", col_name),
+        )
+        .fetch_one(&mut *tx).await.map_err(|e| e.to_string())?;
+
+        if existe == 0 {
+            sqlx::query(col).execute(&mut *tx).await.map_err(|e| e.to_string())?;
+        }
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (28)")
+        .execute(&mut *tx).await.map_err(|e| e.to_string())?;
 
     tx.commit().await.map_err(|e| e.to_string())
 }

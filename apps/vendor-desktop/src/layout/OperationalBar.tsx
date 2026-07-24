@@ -97,6 +97,7 @@ const CONFIG_OPCIONES: OpcionSecundaria[] = [
   { key: "capacidades",  label: "Capacidades"  },
   { key: "experiencia",  label: "Experiencia"  },
   { key: "rubro",        label: "Rubro"        },
+  { key: "integraciones", label: "Integraciones", separadorAntes: true },
   { key: "diagnostico",  label: "Diagnóstico", separadorAntes: true },
 ];
 

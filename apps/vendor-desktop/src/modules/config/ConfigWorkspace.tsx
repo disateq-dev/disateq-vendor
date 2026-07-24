@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users, UserCog, LayoutGrid, Activity } from "lucide-react";
+import { Settings2, Check, Store, ShieldCheck, Layers, Monitor, Sliders, Users, UserCog, LayoutGrid, Activity, Plug } from "lucide-react";
 import { CapacidadesWorkspace } from "./CapacidadesWorkspace";
 import { RolesOperacionalesWorkspace } from "./RolesOperacionalesWorkspace";
 import { OperadoresWorkspace } from "../cash/OperadoresWorkspace";
@@ -12,6 +12,7 @@ import { pinAutorizacionStore } from "../../config/pin-autorizacion.store";
 import { auditoriaService } from "../../domains/auditoria/auditoria.service";
 import { type ConfigSubView } from "../../App";
 import { DiagnósticoWorkspace } from "./DiagnósticoWorkspace";
+import { IntegracionesWorkspace } from "./IntegracionesWorkspace";
 
 const RUBRO_ORDER: Rubro[] = ["abarrotes", "food-fast", "panaderia", "farmacia", "optica", "zapateria", "reparacion", "celulares"];
 
@@ -124,6 +125,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     experiencia: <Monitor     size={13} strokeWidth={2} className="text-[#4A5265]" />,
     rubro:       <Layers      size={13} strokeWidth={2} className="text-[#4A5265]" />,
     diagnostico:  <Activity    size={13} strokeWidth={2} className="text-[#4A5265]" />,
+    integraciones: <Plug size={13} strokeWidth={2} className="text-[#4A5265]" />,
   };
   const SUB_LABELS: Record<ConfigSubView, string> = {
     negocio:     "Negocio",
@@ -135,6 +137,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
     experiencia: "Experiencia",
     rubro:       "Rubro",
     diagnostico: "Diagnóstico del sistema",
+    integraciones: "Integraciones",
   };
 
   if (configSubView === "operadores")  return <OperadoresWorkspace />;
@@ -142,6 +145,7 @@ export function ConfigWorkspace({ configSubView }: { configSubView: ConfigSubVie
   if (configSubView === "roles")       return <RolesOperacionalesWorkspace />;
   if (configSubView === "capacidades") return <CapacidadesWorkspace />;
   if (configSubView === "diagnostico") return <DiagnósticoWorkspace />;
+  if (configSubView === "integraciones") return <IntegracionesWorkspace />;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-[#4A5265]/50 bg-[#FDFCF9]">
