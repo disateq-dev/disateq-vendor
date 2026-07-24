@@ -5,8 +5,6 @@ import type {
   TipoComprobante,
 } from './comprobante.types'
 
-const STORAGE_KEY = 'disateq:documents:comprobantes'
-
 function createEmptyStore(): ComprobanteStore {
   return {
     comprobantes: [],
@@ -15,28 +13,10 @@ function createEmptyStore(): ComprobanteStore {
 }
 
 function loadStore(): ComprobanteStore {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return createEmptyStore()
-
-    const parsed = JSON.parse(raw) as Partial<ComprobanteStore>
-
-    return {
-      comprobantes: Array.isArray(parsed.comprobantes) ? parsed.comprobantes as Comprobante[] : [],
-      ultimaSincronizacion: typeof parsed.ultimaSincronizacion === 'string'
-        ? parsed.ultimaSincronizacion
-        : null,
-    }
-  } catch {
-    return createEmptyStore()
-  }
+  return createEmptyStore()
 }
 
 let store: ComprobanteStore = loadStore()
-
-function persistStore(): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
-}
 
 export const comprobanteStore = {
   getComprobanteById(id: string): Comprobante | null {
@@ -82,7 +62,6 @@ export const comprobanteStore = {
       ultimaSincronizacion: new Date().toISOString(),
     }
 
-    persistStore()
     return comprobante
   },
 
