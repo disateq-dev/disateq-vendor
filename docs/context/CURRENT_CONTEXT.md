@@ -152,5 +152,9 @@ Bloques 3-8: PENDIENTES.
 ## PROTOCOLO PROXIMA SESION
 1. Leer este archivo.
 2. git log --oneline -5.
-3. Confirmar orden de trabajo con Fernando.
-4. Esperar confirmacion antes de generar prompts.
+3. Presentar estado y prioridades — esperar confirmacion de Fernando.
+4. Ejecutar tareas paso a paso — nunca avanzar sin confirmacion explicita.
+5. Respuestas concisas, directo al punto, solo lo pertinente.
+6. Tras cada decision tecnica: parrafo final en lenguaje no tecnico (2-3 lineas).
+7. Ante cualquier duda arquitectonica: consultar ARQUITECTURA_UX.md o GLOSARIO.md
+   antes de proponer solucion.
