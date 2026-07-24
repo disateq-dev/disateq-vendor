@@ -33,6 +33,7 @@ export interface ComprobanteResumen {
   metodoPago: string
   operadorId: string
   emitidoEn: string
+  fueReimpreso: boolean
 }
 
 export async function registrarComprobanteEnSQLite(
@@ -216,6 +217,26 @@ export async function marcarComprobanteReferenciadoEnSQLite(
     return { ok: true }
   } catch {
     await logError('comprobante-sqlite', 'No se pudo marcar el comprobante como referenciado')
+    return { ok: false }
+  }
+}
+
+export async function registrarEventoComprobanteSQLite(
+  comprobanteId: string,
+  tipoEvento: 'REIMPRESION',
+  operadorId: string,
+  sesionId: string,
+): Promise<{ ok: boolean }> {
+  try {
+    await invoke('registrar_evento_comprobante', {
+      comprobanteId,
+      tipoEvento,
+      operadorId,
+      sesionId,
+    })
+    return { ok: true }
+  } catch {
+    await logError('comprobante-sqlite', 'No se pudo registrar el evento de comprobante')
     return { ok: false }
   }
 }

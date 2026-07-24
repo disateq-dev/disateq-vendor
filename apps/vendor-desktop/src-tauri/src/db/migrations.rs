@@ -46,6 +46,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v24_pin_autorizacion_auditoria(db).await?;
     migrar_v25_autorizacion_supervision(db).await?;
     migrar_v26_pedido_venta(db).await?;
+    migrar_v27_evento_comprobante(db).await?;
 
     Ok(())
 }
@@ -2352,6 +2353,61 @@ async fn migrar_v26_pedido_venta(db: &sqlx::SqlitePool) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (26)")
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v27_evento_comprobante(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if version >= 27 {
+        return Ok(());
+    }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS evento_comprobante (
+          id              TEXT PRIMARY KEY,
+          comprobante_id  TEXT NOT NULL,
+          tipo_evento     TEXT NOT NULL,
+          operador_id     TEXT NOT NULL,
+          sesion_id       TEXT NOT NULL,
+          registrado_en   TEXT NOT NULL
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_evento_comp_comprobante ON evento_comprobante(comprobante_id, tipo_evento)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "CREATE INDEX IF NOT EXISTS idx_evento_comp_sesion ON evento_comprobante(sesion_id)",
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (27)")
         .execute(&mut *tx)
         .await
         .map_err(|e| e.to_string())?;

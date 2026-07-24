@@ -174,7 +174,7 @@ pub async fn obtener_comprobantes_sesion(
         .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
     let rows = sqlx::query(
-        "SELECT id, venta_id, tipo, serie, correlativo, codigo_unico, es_formal, estado, estado_sunat, receptor_nombre, receptor_es_generico, subtotal, igv, total, metodo_pago, operador_id, emitido_en FROM comprobante WHERE sesion_id = ? ORDER BY emitido_en DESC",
+        "SELECT c.id, c.venta_id, c.tipo, c.serie, c.correlativo, c.codigo_unico, c.es_formal, c.estado, c.estado_sunat, c.receptor_nombre, c.receptor_es_generico, c.subtotal, c.igv, c.total, c.metodo_pago, c.operador_id, c.emitido_en, EXISTS(SELECT 1 FROM evento_comprobante ec WHERE ec.comprobante_id = c.id AND ec.tipo_evento = 'REIMPRESION') as fue_reimpreso FROM comprobante c WHERE c.sesion_id = ? ORDER BY c.emitido_en DESC",
     )
     .bind(&sesion_id)
     .fetch_all(pool)
@@ -200,6 +200,7 @@ pub async fn obtener_comprobantes_sesion(
             "metodoPago": row.try_get::<String, _>("metodo_pago").map_err(|e| e.to_string())?,
             "operadorId": row.try_get::<String, _>("operador_id").map_err(|e| e.to_string())?,
             "emitidoEn": row.try_get::<String, _>("emitido_en").map_err(|e| e.to_string())?,
+            "fueReimpreso": row.try_get::<i64, _>("fue_reimpreso").unwrap_or(0) != 0,
         }))
     }).collect();
 
@@ -460,6 +461,41 @@ pub async fn marcar_comprobante_referenciado(
     if resultado.rows_affected() == 0 {
         return Err(String::from("Comprobante no encontrado o ya en estado distinto de EMITIDO"));
     }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn registrar_evento_comprobante(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+    comprobante_id: String,
+    tipo_evento: String,
+    operador_id: String,
+    sesion_id: String,
+) -> Result<(), String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+    let id = Uuid::new_v4().to_string();
+    let registrado_en = sqlx::query_scalar::<_, String>("SELECT strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query(
+        "INSERT INTO evento_comprobante (id, comprobante_id, tipo_evento, operador_id, sesion_id, registrado_en) VALUES (?, ?, ?, ?, ?, ?)",
+    )
+    .bind(&id)
+    .bind(&comprobante_id)
+    .bind(&tipo_evento)
+    .bind(&operador_id)
+    .bind(&sesion_id)
+    .bind(&registrado_en)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }

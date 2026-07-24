@@ -158,6 +158,7 @@ pub fn run() {
       commands::comprobantes::anular_comprobante_sqlite,
       commands::comprobantes::actualizar_estado_sunat,
       commands::comprobantes::marcar_comprobante_referenciado,
+      commands::comprobantes::registrar_evento_comprobante,
       commands::sesion_caja::abrir_sesion_caja,
       commands::sesion_caja::cerrar_sesion_caja,
       commands::sesion_caja::actualizar_sesion_caja_correction,
