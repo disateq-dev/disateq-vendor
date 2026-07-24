@@ -50,6 +50,15 @@ const STATUS_COLORS: Record<string, string> = {
   REFERENCIADO: "bg-amber-50 text-amber-700",
 };
 
+const TIPO_LABELS: Record<string, string> = {
+  TIQUE_VENTA: 'TIQUE VENTA',
+  BOLETA: 'BOLETA',
+  FACTURA: 'FACTURA',
+  COTIZACION: 'COTIZACION',
+  NOTA_CREDITO: 'NOTA CREDITO',
+  NOTA_DEBITO: 'NOTA DEBITO',
+}
+
 function pad8(n: number) {
   return String(n).padStart(8, "0");
 }
@@ -112,9 +121,10 @@ type PanelDetalleProps = {
   onConvertir: (tipo: "BOLETA" | "FACTURA") => void;
   puedeAnular: boolean;
   puedeConvertir: boolean;
+  operadorAlias: string;
 };
 
-function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvertir }: PanelDetalleProps) {
+function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvertir, operadorAlias }: PanelDetalleProps) {
   const [accion, setAccion] = useState<AccionDetalle>("none");
   const [motivo, setMotivo] = useState("");
   const [tipoFormal, setTipoFormal] = useState<"BOLETA" | "FACTURA">("BOLETA");
@@ -160,115 +170,104 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
   const canConvertir = isEmitido && (selected.tipo === "TIQUE_VENTA" || selected.tipo === "COTIZACION");
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="rounded-2xl border border-[#eef2f7] bg-white px-3 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Comprobante</p>
-            <p className="mt-0.5 text-[15px] font-extrabold text-[#121416]">
-              {selected.serie}-{pad8(selected.correlativo)}
-            </p>
-            <p className="mt-1 text-[11px] text-[#6b7280]">
-              {selected.tipo} · {formatDateTime(selected.emitidoEn)}
-            </p>
-          </div>
-          <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-extrabold tracking-widest ${STATUS_COLORS[selected.estado] ?? "bg-slate-100 text-slate-700"}`}>
-            {selected.estado}
-          </span>
+    <div className="flex flex-col">
+      <div className="flex items-start justify-between gap-2 pb-2 border-b border-[#eef2f7]">
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[#9ca3af]">
+            {TIPO_LABELS[selected.tipo] ?? selected.tipo.replace(/_/g, ' ')}
+          </p>
+          <p className="text-[17px] font-extrabold text-[#121416] tabular-nums leading-tight">
+            {selected.serie}-{pad8(selected.correlativo)}
+          </p>
+          <p className="text-[10px] text-[#6b7280] mt-0.5">{formatDateTime(selected.emitidoEn)}</p>
         </div>
+        <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-extrabold tracking-widest ${STATUS_COLORS[selected.estado] ?? "bg-slate-100 text-slate-700"}`}>
+          {selected.estado}
+        </span>
       </div>
 
-      <div className="rounded-2xl border border-[#eef2f7] bg-white px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Emisor</p>
-        <div className="mt-2 space-y-1">
-          <p className="text-[12px] font-semibold text-[#374151]">{selected.emisor.razonSocial}</p>
-          <p className="text-[11px] text-[#6b7280]">RUC {selected.emisor.ruc}</p>
-          <p className="text-[11px] text-[#6b7280]">{selected.emisor.direccion}</p>
-          <p className="text-[11px] text-[#9ca3af]">Emitido por {selected.operadorId || "—"}</p>
-        </div>
+      <div className="py-2 border-b border-[#eef2f7]">
+        <p className="text-[11px] font-bold text-[#374151]">
+          {selected.emisor.razonSocial}
+          <span className="font-normal text-[#6b7280]"> · RUC {selected.emisor.ruc}</span>
+        </p>
+        <p className="text-[10px] text-[#6b7280]">{selected.emisor.direccion}</p>
+        <p className="text-[10px] text-[#9ca3af] mt-0.5">Emitido por: {operadorAlias || "—"}</p>
       </div>
 
       {!selected.receptor.esGenerico && (
-        <div className="rounded-2xl border border-[#eef2f7] bg-white px-3 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Receptor</p>
-          <div className="mt-2 space-y-1">
-            <p className="text-[12px] font-semibold text-[#374151]">{selected.receptor.nombre}</p>
-            <p className="text-[11px] text-[#6b7280]">
-              {selected.receptor.tipoDocumento}
-              {selected.receptor.numeroDocumento ? ` ${selected.receptor.numeroDocumento}` : ""}
+        <div className="py-2 border-b border-[#eef2f7]">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#9ca3af]">Cliente</p>
+          <p className="text-[11px] font-semibold text-[#374151] mt-0.5">{selected.receptor.nombre}</p>
+          {selected.receptor.numeroDocumento && (
+            <p className="text-[10px] text-[#6b7280]">
+              {selected.receptor.tipoDocumento !== "SIN_DOCUMENTO" ? `${selected.receptor.tipoDocumento} ` : ""}
+              {selected.receptor.numeroDocumento}
             </p>
-            {selected.receptor.direccion && (
-              <p className="text-[11px] text-[#6b7280]">{selected.receptor.direccion}</p>
-            )}
-          </div>
+          )}
         </div>
       )}
 
-      <div className="rounded-2xl border border-[#eef2f7] bg-white px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Lineas</p>
-        <div className="mt-2 flex flex-col gap-2">
-          {selected.lineas.map(linea => (
-            <div key={linea.id} className="rounded-xl bg-[#f8fafc] px-2.5 py-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-[11px] font-semibold text-[#374151]">
-                    {linea.cantidad}x {linea.descripcion}
-                  </p>
-                  {linea.notaLinea && (
-                    <p className="mt-1 text-[10px] text-[#9ca3af]">{linea.notaLinea}</p>
-                  )}
-                </div>
-                <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#111827]">
-                  {formatMoney(linea.subtotal)}
-                </span>
-              </div>
+      <div className="py-2 border-b border-[#eef2f7] flex flex-col gap-1.5">
+        {selected.lineas.map(linea => (
+          <div key={linea.id} className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] text-[#374151]">
+                <span className="font-bold">{linea.cantidad}x</span> {linea.descripcion}
+              </p>
+              {linea.notaLinea && (
+                <p className="text-[10px] text-[#9ca3af]">{linea.notaLinea}</p>
+              )}
             </div>
-          ))}
-        </div>
+            <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#111827]">
+              {formatMoney(linea.subtotal)}
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div className="rounded-2xl bg-[#f4f7fb] px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Totales tributarios</p>
-        <div className="mt-2 flex flex-col gap-1.5">
-          <div className="flex items-center justify-between text-[11px] text-[#6b7280]">
-            <span>Base imponible</span>
-            <span className="font-semibold tabular-nums text-[#374151]">{formatMoney(selected.subtotal)}</span>
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-[#6b7280]">
-            <span>IGV</span>
-            <span className="font-semibold tabular-nums text-[#374151]">{formatMoney(selected.igv)}</span>
-          </div>
-          <div className="flex items-center justify-between border-t border-[#dbe3ee] pt-2">
-            <span className="text-[12px] font-bold text-[#374151]">Total</span>
-            <span className="text-[15px] font-extrabold tabular-nums text-[#111827]">{formatMoney(selected.total)}</span>
+      <div className="py-2 border-b border-[#eef2f7]">
+        <div className="flex justify-between text-[10.5px] text-[#6b7280]">
+          <span>Base imponible</span>
+          <span className="tabular-nums">{formatMoney(selected.subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-[10.5px] text-[#6b7280] mt-0.5">
+          <span>IGV 18%</span>
+          <span className="tabular-nums">{formatMoney(selected.igv)}</span>
+        </div>
+        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[#dbe3ee]">
+          <span className="text-[12px] font-extrabold text-[#374151]">TOTAL</span>
+          <div className="flex items-center gap-2">
+            <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${METHOD_COLORS[selected.metodoPago] ?? "bg-[#f1f5f9] text-[#374151]"}`}>
+              {METHOD_LABELS[selected.metodoPago] ?? selected.metodoPago}
+            </span>
+            <span className="text-[16px] font-extrabold tabular-nums text-[#111827]">
+              {formatMoney(selected.total)}
+            </span>
           </div>
         </div>
       </div>
 
       {selected.estado === "ANULADO" && (
-        <div className="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#DC2626]">Anulado</p>
-          <p className="mt-1 text-[11px] text-[#DC2626]">{selected.motivoAnulacion || "Sin motivo registrado"}</p>
+        <div className="py-2 border-b border-[#eef2f7]">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-[#DC2626]">Motivo</p>
+          <p className="text-[10.5px] text-[#DC2626] mt-0.5">{selected.motivoAnulacion || "Sin motivo registrado"}</p>
         </div>
       )}
 
       {selected.estado === "REFERENCIADO" && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Referenciado</p>
-          <p className="mt-1 text-[11px] text-amber-700">Este comprobante ya fue convertido a un documento formal.</p>
+        <div className="py-2 border-b border-[#eef2f7]">
+          <p className="text-[10.5px] text-amber-700">Convertido a documento formal.</p>
         </div>
       )}
 
       {isEmitido && accion === "none" && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 pt-3">
           {canConvertir && (
             <button
               disabled={!puedeConvertir}
               onClick={() => setAccion("convertir")}
-              className={`rounded-xl border border-[#dbe6ff] bg-[#edf4ff] px-3 py-2 text-[12px] font-bold text-[#2154d8] transition ${
-                !puedeConvertir ? "cursor-not-allowed opacity-40" : "hover:bg-[#e3efff]"
-              }`}
-              title={!puedeConvertir ? "Sin capacidad para anular comprobantes" : undefined}
+              className={`rounded-xl border border-[#dbe6ff] bg-[#edf4ff] px-3 py-2 text-[12px] font-bold text-[#2154d8] transition ${!puedeConvertir ? "cursor-not-allowed opacity-40" : "hover:bg-[#e3efff]"}`}
             >
               CONVERTIR A FORMAL
             </button>
@@ -276,10 +275,7 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
           <button
             disabled={!puedeAnular}
             onClick={() => setAccion("anular")}
-            className={`flex items-center justify-center gap-2 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-bold text-[#DC2626] transition ${
-              !puedeAnular ? "cursor-not-allowed opacity-40" : "hover:bg-red-100"
-            }`}
-            title={!puedeAnular ? "Sin capacidad para anular comprobantes" : undefined}
+            className={`flex items-center justify-center gap-2 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-bold text-[#DC2626] transition ${!puedeAnular ? "cursor-not-allowed opacity-40" : "hover:bg-red-100"}`}
           >
             <AlertTriangle size={13} />
             ANULAR
@@ -288,7 +284,7 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
       )}
 
       {isEmitido && accion === "anular" && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/70 px-3 py-3">
+        <div className="flex flex-col gap-2 rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/70 px-3 py-3 mt-3">
           <div className="flex items-center gap-1.5">
             <AlertTriangle size={12} className="shrink-0 text-red-500" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#DC2626]">Confirmar anulacion</span>
@@ -302,59 +298,23 @@ function PanelDetalle({ selected, onVoid, onConvertir, puedeAnular, puedeConvert
             className="w-full rounded-xl border border-[#FECACA] bg-white px-3 py-2 text-[12px] text-[#374151] outline-none placeholder:text-[#c0cad4] focus:border-red-400"
           />
           <div className="flex gap-2">
-            <button
-              onClick={() => {
-                setAccion("none");
-                setMotivo("");
-              }}
-              className="flex-1 rounded-xl border border-[#e4e9f0] bg-white py-2 text-[11px] font-bold text-[#374151] transition hover:bg-[#f4f7fb]"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => onVoid(motivo.trim())}
-              disabled={!motivo.trim()}
-              className={`flex-1 rounded-xl py-2 text-[11px] font-bold text-white transition ${
-                motivo.trim() ? "bg-[#DC2626] hover:bg-[#B91C1C]" : "cursor-not-allowed bg-red-300"
-              }`}
-            >
-              Anular
-            </button>
+            <button onClick={() => { setAccion("none"); setMotivo(""); }} className="flex-1 rounded-xl border border-[#e4e9f0] bg-white py-2 text-[11px] font-bold text-[#374151] transition hover:bg-[#f4f7fb]">Cancelar</button>
+            <button onClick={() => onVoid(motivo.trim())} disabled={!motivo.trim()} className={`flex-1 rounded-xl py-2 text-[11px] font-bold text-white transition ${motivo.trim() ? "bg-[#DC2626] hover:bg-[#B91C1C]" : "cursor-not-allowed bg-red-300"}`}>Anular</button>
           </div>
         </div>
       )}
 
       {isEmitido && accion === "convertir" && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-[#dbe6ff] bg-[#edf4ff] px-3 py-3">
+        <div className="flex flex-col gap-2 rounded-2xl border border-[#dbe6ff] bg-[#edf4ff] px-3 py-3 mt-3">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#2154d8]">Convertir a formal</p>
           <div className="grid grid-cols-2 gap-2">
             {(["BOLETA", "FACTURA"] as const).map(tipo => (
-              <button
-                key={tipo}
-                onClick={() => setTipoFormal(tipo)}
-                className={`rounded-xl px-3 py-2 text-[11px] font-bold transition ${
-                  tipoFormal === tipo
-                    ? "bg-[#2154d8] text-white"
-                    : "border border-[#c9d8ff] bg-white text-[#2154d8] hover:bg-[#f8fbff]"
-                }`}
-              >
-                {tipo}
-              </button>
+              <button key={tipo} onClick={() => setTipoFormal(tipo)} className={`rounded-xl px-3 py-2 text-[11px] font-bold transition ${tipoFormal === tipo ? "bg-[#2154d8] text-white" : "border border-[#c9d8ff] bg-white text-[#2154d8] hover:bg-[#f8fbff]"}`}>{tipo}</button>
             ))}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setAccion("none")}
-              className="flex-1 rounded-xl border border-[#c9d8ff] bg-white py-2 text-[11px] font-bold text-[#2154d8] transition hover:bg-[#f8fbff]"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => onConvertir(tipoFormal)}
-              className="flex-1 rounded-xl bg-[#2154d8] py-2 text-[11px] font-bold text-white transition hover:bg-[#1d4cc2]"
-            >
-              Confirmar
-            </button>
+            <button onClick={() => setAccion("none")} className="flex-1 rounded-xl border border-[#c9d8ff] bg-white py-2 text-[11px] font-bold text-[#2154d8] transition hover:bg-[#f8fbff]">Cancelar</button>
+            <button onClick={() => onConvertir(tipoFormal)} className="flex-1 rounded-xl bg-[#2154d8] py-2 text-[11px] font-bold text-white transition hover:bg-[#1d4cc2]">Confirmar</button>
           </div>
         </div>
       )}
@@ -401,6 +361,7 @@ export function ComprobantesWorkspace() {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [detalleCompleto, setDetalleCompleto] = useState<Comprobante | null>(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [detalleOperadorAlias, setDetalleOperadorAlias] = useState("")
   const searchRef = useRef<HTMLInputElement>(null);
 
   const sessionKey = cashSession.isOpen && cashSession.cashBox && cashSession.openedAt
@@ -462,6 +423,7 @@ export function ComprobantesWorkspace() {
   useEffect(() => {
     if (!selectedId) {
       setDetalleCompleto(null);
+      setDetalleOperadorAlias("");
       return;
     }
     const comprobanteId = selectedId;
@@ -540,6 +502,7 @@ export function ComprobantesWorkspace() {
             })),
           };
           setDetalleCompleto(mapeado);
+          setDetalleOperadorAlias((c["operador_alias"] as string) ?? "");
         }
       } finally {
         if (!cancelled) setLoadingDetalle(false);
@@ -806,7 +769,7 @@ export function ComprobantesWorkspace() {
         </div>
       </div>
 
-      <div className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#7B4F6E]/50 bg-[#FDFCF9]">
+      <div className="flex w-[420px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-[#7B4F6E]/50 bg-[#FDFCF9]">
         <header className="flex shrink-0 h-[42px] items-center gap-2 border-b border-[#7B4F6E]/15 bg-[#F0EAF0] px-4">
           <FileText size={13} strokeWidth={2} className="shrink-0 text-[#7B4F6E]" />
           <span className="text-[13px] font-semibold uppercase tracking-tight leading-none text-[#121416]">DETALLE</span>
@@ -825,6 +788,7 @@ export function ComprobantesWorkspace() {
               onConvertir={handleConvertir}
               puedeAnular={puedeAnular}
               puedeConvertir={puedeConvertir}
+              operadorAlias={detalleOperadorAlias}
             />
           )}
         </div>

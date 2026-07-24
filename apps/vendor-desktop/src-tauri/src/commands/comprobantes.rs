@@ -271,7 +271,7 @@ pub async fn obtener_comprobante_detalle(
         .get("sqlite:disateq.db")
         .ok_or_else(|| String::from("Base de datos no inicializada"))?;
     let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
-    let comprobante = sqlx::query("SELECT * FROM comprobante WHERE id = ?")
+    let comprobante = sqlx::query("SELECT c.*, COALESCE(o.alias, c.operador_id) as operador_alias FROM comprobante c LEFT JOIN operador o ON c.operador_id = o.id WHERE c.id = ?")
         .bind(&comprobante_id)
         .fetch_optional(pool)
         .await
@@ -337,6 +337,7 @@ pub async fn obtener_comprobante_detalle(
             "caja_codigo": comprobante.try_get::<Option<String>, _>("caja_codigo").unwrap_or(None),
             "enviado_por_canal": comprobante.try_get::<String, _>("enviado_por_canal").map_err(|e| e.to_string())?,
             "emitido_en": comprobante.try_get::<String, _>("emitido_en").map_err(|e| e.to_string())?,
+            "operador_alias": comprobante.try_get::<String, _>("operador_alias").unwrap_or_default(),
             "creado_en": comprobante.try_get::<String, _>("creado_en").map_err(|e| e.to_string())?,
         },
         "lineas": lineas?,
