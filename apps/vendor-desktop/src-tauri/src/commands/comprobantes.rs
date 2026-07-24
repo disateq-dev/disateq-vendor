@@ -5,6 +5,7 @@ use tauri::State;
 use uuid::Uuid;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct LineaComprobanteInput {
     descripcion: String,
     cantidad: f64,
