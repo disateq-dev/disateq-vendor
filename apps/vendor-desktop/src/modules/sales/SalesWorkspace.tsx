@@ -15,6 +15,8 @@ import type { TipoValorOperacional } from "../../domains/catalog/valor-operacion
 import { useFarmaciaStore } from "../../domains/farmacia/farmacia.store";
 import { calcularAlertasStockEsencial } from "../../domains/farmacia/stock-esencial.utils";
 import { loadBusinessConfig } from "../../config/business";
+import { invoke } from "@tauri-apps/api/core";
+import { useCapacidad } from "../../hooks/useCapacidad";
 import { RUBROS } from "../../data/catalogs";
 import { PresentacionSheet } from "./PresentacionSheet";
 import { ConfirmacionRecetaPanel } from "./components/ConfirmacionRecetaPanel";
@@ -164,7 +166,9 @@ export function SalesWorkspace() {
   const [grupoActivo, setGrupoActivo] = useState<GrupoProducto | null>(null);
   const [confirmaReceta, setConfirmaReceta] = useState<{ producto: ProductoBuscable; condicion: "CON_RECETA" | "CONTROLADO" } | null>(null);
   const [confirmaVencimiento, setConfirmaVencimiento] = useState<{ producto: ProductoBuscable; nivel: string; dias: number } | null>(null);
-  const [puedeEditarPrecio] = useState<boolean>(false);
+  const puedeEditarPrecio = useCapacidad("editar_precio_venta");
+  const [precioEdicionModo, setPrecioEdicionModo] = useState<'SIN_LIMITE' | 'PISO_COSTO' | 'MARGEN_MINIMO'>('PISO_COSTO');
+  const [precioEdicionMargen, setPrecioEdicionMargen] = useState<number>(0.10);
   const lastAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
@@ -249,6 +253,18 @@ export function SalesWorkspace() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [enterSearch, cobroOpen, openCobro]);
+
+  useEffect(() => {
+    invoke<{ precioEdicionModo: string; precioEdicionMargenMinimo: number }>(
+      "obtener_config_precios_venta"
+    )
+      .then(cfg => {
+        const modo = cfg.precioEdicionModo as 'SIN_LIMITE' | 'PISO_COSTO' | 'MARGEN_MINIMO';
+        setPrecioEdicionModo(modo);
+        setPrecioEdicionMargen(cfg.precioEdicionMargenMinimo);
+      })
+      .catch(() => {});
+  }, []);
 
   // pos:focusSearch — restore focus after note save (blocked when cobro is open)
   useEffect(() => {
@@ -800,6 +816,8 @@ export function SalesWorkspace() {
           onConfirmar={handleConfirmarForma}
           onCancelar={() => setGrupoActivo(null)}
           puedeEditarPrecio={puedeEditarPrecio}
+          precioEdicionModo={precioEdicionModo}
+          precioEdicionMargen={precioEdicionMargen}
         />
       )}
     </>

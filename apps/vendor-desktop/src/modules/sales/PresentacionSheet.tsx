@@ -3,12 +3,15 @@ import type { ReactElement } from "react";
 import { X } from "lucide-react";
 import type { GrupoProducto, FormaVenta } from "../../domains/catalog/bridge-catalogo";
 import type { TipoValorOperacional } from "../../domains/catalog/valor-operacional.types";
+import { getHOVById } from "../../domains/catalog/hov.store";
 
 interface PresentacionSheetProps {
   grupo: GrupoProducto;
   onConfirmar: (hovId: string, valorFinal: number, tipoValor: TipoValorOperacional | null) => void;
   onCancelar: () => void;
   puedeEditarPrecio: boolean;
+  precioEdicionModo: 'SIN_LIMITE' | 'PISO_COSTO' | 'MARGEN_MINIMO';
+  precioEdicionMargen: number;
 }
 
 function stockChipClass(stockStatus: string): string {
@@ -37,15 +40,51 @@ export function PresentacionSheet({
   onConfirmar,
   onCancelar,
   puedeEditarPrecio,
+  precioEdicionModo,
+  precioEdicionMargen,
 }: PresentacionSheetProps): ReactElement {
   const [formaActiva, setFormaActiva] = useState<FormaVenta | null>(null);
   const [precioManual, setPrecioManual] = useState<string>("");
   const firstButtonRef = useRef<HTMLButtonElement>(null);
 
+  const TIPOS_AJUSTABLES: Array<TipoValorOperacional> = ['NORMAL', 'PREFERENCIAL', 'MAYORISTA'];
+
+  const costoBaseActivo = formaActiva
+    ? (getHOVById(formaActiva.hovId)?.costoBase ?? 0)
+    : 0;
+
+  const pisoPermitido = (() => {
+    if (!formaActiva || costoBaseActivo <= 0) return null;
+    if (precioEdicionModo === 'SIN_LIMITE') return 0;
+    if (precioEdicionModo === 'PISO_COSTO') return costoBaseActivo;
+    return costoBaseActivo * (1 + precioEdicionMargen);
+  })();
+
+  const puedeAjustarPrecioAsignado =
+    puedeEditarPrecio &&
+    formaActiva !== null &&
+    formaActiva.valorAplicado !== null &&
+    TIPOS_AJUSTABLES.includes(formaActiva.tipoValor as TipoValorOperacional) &&
+    costoBaseActivo > 0;
+
   const precioManualNumero = Number(precioManual);
-  const precioManualValido = Number.isFinite(precioManualNumero) && precioManualNumero > 0;
+  const precioManualValido =
+    Number.isFinite(precioManualNumero) &&
+    precioManualNumero > 0 &&
+    (pisoPermitido === null || precioManualNumero >= pisoPermitido);
+
+  const errorPrecio = (() => {
+    if (!precioManual || precioManual === '') return null;
+    const n = Number(precioManual);
+    if (!Number.isFinite(n) || n <= 0) return 'Ingresa un precio válido';
+    if (pisoPermitido !== null && n < pisoPermitido)
+      return `Precio mínimo permitido: S/ ${pisoPermitido.toFixed(2)}`;
+    return null;
+  })();
+
   const puedeAgregar = formaActiva !== null && (
-    formaActiva.valorAplicado !== null || precioManualValido
+    (formaActiva.valorAplicado !== null && !puedeAjustarPrecioAsignado) ||
+    precioManualValido
   );
 
   useEffect(() => {
@@ -66,6 +105,19 @@ export function PresentacionSheet({
   }, []);
 
   function confirmarForma(formaVenta: FormaVenta): void {
+    const costo = getHOVById(formaVenta.hovId)?.costoBase ?? 0;
+    const esAjustable =
+      puedeEditarPrecio &&
+      formaVenta.valorAplicado !== null &&
+      TIPOS_AJUSTABLES.includes(formaVenta.tipoValor as TipoValorOperacional) &&
+      costo > 0;
+
+    if (esAjustable) {
+      setFormaActiva(formaVenta);
+      setPrecioManual(formaVenta.valorAplicado!.toFixed(2));
+      return;
+    }
+
     if (formaVenta.valorAplicado !== null) {
       onConfirmar(formaVenta.hovId, formaVenta.valorAplicado, formaVenta.tipoValor);
       return;
@@ -134,23 +186,37 @@ export function PresentacionSheet({
             ))}
           </div>
 
-          {puedeEditarPrecio && formaActiva?.valorAplicado === null ? (
-            <div className="flex flex-col gap-1">
+          {(puedeAjustarPrecioAsignado || (puedeEditarPrecio && formaActiva?.valorAplicado === null)) && formaActiva !== null ? (
+            <div className="flex flex-col gap-1.5">
               <label className="px-1 text-[10px] font-bold uppercase tracking-widest text-[#c0cad4]">
-                PRECIO
+                {puedeAjustarPrecioAsignado ? 'AJUSTAR PRECIO' : 'PRECIO'}
               </label>
+              {puedeAjustarPrecioAsignado && pisoPermitido !== null && pisoPermitido > 0 && (
+                <p className="px-1 text-[9px] text-[#9ca3af]">
+                  Mínimo permitido: S/ {pisoPermitido.toFixed(2)}
+                </p>
+              )}
               <input
+                autoFocus
                 type="number"
                 value={precioManual}
                 onChange={event => setPrecioManual(event.target.value)}
                 onKeyDown={event => {
-                  if (event.key === "Enter" && precioManualValido) {
+                  if (event.key === "Enter" && precioManualValido && formaActiva !== null) {
                     event.preventDefault();
                     onConfirmar(formaActiva.hovId, precioManualNumero, "LIBRE");
                   }
                 }}
-                className="w-full rounded-xl border border-[#e4e9f0] px-3.5 py-2 text-[13px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:border-[#2154d8] focus:ring-2 focus:ring-[#2154d8]/10"
+                className={`w-full rounded-xl border px-3.5 py-2 text-[13px] text-[#111827] outline-none placeholder:text-[#d1d9e1] focus:ring-2 transition ${
+                  errorPrecio
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-200/30'
+                    : 'border-[#e4e9f0] focus:border-[#2154d8] focus:ring-[#2154d8]/10'
+                }`}
+                placeholder={puedeAjustarPrecioAsignado ? 'Precio ajustado' : 'Precio'}
               />
+              {errorPrecio && (
+                <p className="px-1 text-[10px] font-semibold text-red-500">{errorPrecio}</p>
+              )}
             </div>
           ) : null}
         </div>
