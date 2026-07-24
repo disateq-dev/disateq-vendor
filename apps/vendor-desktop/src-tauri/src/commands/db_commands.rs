@@ -70,3 +70,42 @@ pub async fn verificar_db(
 
     Ok(count)
 }
+
+#[derive(serde::Serialize)]
+pub struct ConfigPreciosVenta {
+    pub precio_edicion_modo: String,
+    pub precio_edicion_margen_minimo: f64,
+}
+
+#[tauri::command]
+pub async fn obtener_config_precios_venta(
+    db_instances: State<'_, tauri_plugin_sql::DbInstances>,
+) -> Result<ConfigPreciosVenta, String> {
+    let instances = db_instances.0.read().await;
+    let db = instances
+        .get("sqlite:disateq.db")
+        .ok_or_else(|| String::from("Base de datos no inicializada"))?;
+    let tauri_plugin_sql::DbPool::Sqlite(pool) = db;
+
+    let row = sqlx::query(
+        "SELECT precio_edicion_modo, precio_edicion_margen_minimo FROM config_establecimiento LIMIT 1"
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    match row {
+        Some(r) => Ok(ConfigPreciosVenta {
+            precio_edicion_modo: r
+                .try_get::<String, _>("precio_edicion_modo")
+                .unwrap_or_else(|_| "PISO_COSTO".to_string()),
+            precio_edicion_margen_minimo: r
+                .try_get::<f64, _>("precio_edicion_margen_minimo")
+                .unwrap_or(0.10),
+        }),
+        None => Ok(ConfigPreciosVenta {
+            precio_edicion_modo: "PISO_COSTO".to_string(),
+            precio_edicion_margen_minimo: 0.10,
+        }),
+    }
+}

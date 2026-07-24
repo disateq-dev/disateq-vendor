@@ -203,7 +203,9 @@ pub fn run() {
       commands::consultas_peru::obtener_config_integraciones,
       commands::consultas_peru::guardar_config_integraciones,
       commands::pedidos_venta::guardar_pedido_venta,
-      commands::pedidos_venta::obtener_pedidos_activos_venta])
+      commands::pedidos_venta::obtener_pedidos_activos_venta,
+      commands::db_commands::obtener_config_precios_venta])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
+

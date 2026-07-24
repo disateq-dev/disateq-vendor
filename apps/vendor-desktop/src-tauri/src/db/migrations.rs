@@ -48,6 +48,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v26_pedido_venta(db).await?;
     migrar_v27_evento_comprobante(db).await?;
     migrar_v28_config_integraciones(db).await?;
+    migrar_v29_politica_precio_edicion(db).await?;
 
     Ok(())
 }
@@ -2445,6 +2446,72 @@ async fn migrar_v28_config_integraciones(db: &sqlx::SqlitePool) -> Result<(), St
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (28)")
+        .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v29_politica_precio_edicion(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db).await.map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db).await.map_err(|e| e.to_string())?;
+
+    if version >= 29 { return Ok(()); }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    let cols: Vec<String> = sqlx::query_scalar(
+        "SELECT name FROM pragma_table_info('config_establecimiento')"
+    )
+    .fetch_all(&mut *tx).await.map_err(|e| e.to_string())?;
+
+    if !cols.iter().any(|c| c == "precio_edicion_modo") {
+        sqlx::query(
+            "ALTER TABLE config_establecimiento ADD COLUMN precio_edicion_modo TEXT NOT NULL DEFAULT 'PISO_COSTO'"
+        )
+        .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    if !cols.iter().any(|c| c == "precio_edicion_margen_minimo") {
+        sqlx::query(
+            "ALTER TABLE config_establecimiento ADD COLUMN precio_edicion_margen_minimo REAL NOT NULL DEFAULT 0.10"
+        )
+        .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    for codigo_rol in &["GES", "VEN"] {
+        let caps_raw = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT capacidades FROM rol WHERE codigo = ?"
+        )
+        .bind(codigo_rol)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| e.to_string())?
+        .flatten();
+
+        if let Some(caps_json) = caps_raw {
+            if !caps_json.contains("editar_precio_venta") {
+                let sin_cierre = caps_json.trim_end_matches(']');
+                let actualizada = if sin_cierre.trim_end() == "[" {
+                    "[\"editar_precio_venta\"]".to_string()
+                } else {
+                    format!("{},\"editar_precio_venta\"]", sin_cierre)
+                };
+                sqlx::query("UPDATE rol SET capacidades = ? WHERE codigo = ?")
+                    .bind(&actualizada)
+                    .bind(codigo_rol)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (29)")
         .execute(&mut *tx).await.map_err(|e| e.to_string())?;
 
     tx.commit().await.map_err(|e| e.to_string())
