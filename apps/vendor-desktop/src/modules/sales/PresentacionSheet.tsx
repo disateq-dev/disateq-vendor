@@ -129,6 +129,12 @@ export function PresentacionSheet({
 
   function confirmarActiva(): void {
     if (formaActiva === null) return;
+    if (puedeAjustarPrecioAsignado) {
+      if (precioManualValido) {
+        onConfirmar(formaActiva.hovId, precioManualNumero, "LIBRE");
+      }
+      return;
+    }
     if (formaActiva.valorAplicado !== null) {
       onConfirmar(formaActiva.hovId, formaActiva.valorAplicado, formaActiva.tipoValor);
       return;
@@ -171,7 +177,7 @@ export function PresentacionSheet({
                 ref={index === 0 ? firstButtonRef : null}
                 type="button"
                 onClick={() => confirmarForma(formaVenta)}
-                className="rounded-2xl border border-[#e4e9f0] px-3 py-3 text-left transition hover:border-[#45b356]/40 hover:bg-[#F0FAF1] active:scale-[0.98]"
+                className={`rounded-2xl ${formaActiva?.hovId === formaVenta.hovId ? "border-2 border-[#45b356] bg-[#F0FAF1]" : "border border-[#e4e9f0]"} px-3 py-3 text-left transition hover:border-[#45b356]/40 hover:bg-[#F0FAF1] active:scale-[0.98]`}
               >
                 <p className="truncate text-[13px] font-bold uppercase text-[#1f2937]">
                   {formaVenta.nombre}
