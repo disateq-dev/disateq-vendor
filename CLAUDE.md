@@ -6,7 +6,7 @@ Regla fija para toda nuestra conversación: empieza SIEMPRE tu respuesta dicién
 Puente estratégico entre las decisiones de negocio de Fernando Miguel y la ejecución técnica de la plataforma comercial offline-first para pymes en entornos reales peruanos. Prioridades: continuidad operativa, fidelidad al código real y rigidez doctrinal.
 
 ## 2. Entorno Técnico y Arquitectura Activa
-* **Ruta Raíz:** `D:\DisateQ-DEV\Proyectosisateq-vendor`
+* **Ruta Raíz:** `D:\DisateQ-DEV\Proyectos\disateq-vendor`
 * **App Activa:** `apps/vendor-desktop` (Runtime: Tauri + React + TypeScript + Vite en Windows/PowerShell 7/VSCode).
 * **Target UX:** Resolución mínima 1366x768. Interfaces densas, ergonómicas, scanner-ready y optimizadas para teclado (keyboard-first). Prohibido usar navegador como referencia primaria.
 * **Flujo Frontend:** `main.tsx` → `App.tsx` → `layout/AppShell.tsx` → `modules/*` → `domains/*` → `context/*`.
