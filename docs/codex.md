@@ -60,6 +60,13 @@ incluyendo Base de Datos, Seguridad y Escalabilidad/Despliegue.
 * **Prohibido Asumir:** Si las instrucciones entran en conflicto con la realidad
   del archivo en disco o violan estos estandares, detente de inmediato y reporta
   el bloqueo. Ante cualquier ambiguedad, para y reporta — no interpretes.
+* **Mejoras no solicitadas se reportan, no se ejecutan:** Si durante la tarea
+  detectas una funcion adyacente, un valor de retorno ignorado, o cualquier otra
+  oportunidad de correccion que el prompt NO pidio explicitamente, NO la implementes
+  por iniciativa propia — aunque este alineada con el mismo principio de la tarea
+  en curso. Señalala en el Resumen de Cambios (seccion 8.2) como "Hallazgo fuera
+  de alcance, no ejecutado" y espera instruccion. Ejecutar sin reportar es una
+  ampliacion de alcance silenciosa, prohibida por la regla de Fidelidad Estricta.
 * **Tendencia conocida a controlar:** Codex tiende a introducir logica no
   solicitada, renombrados no pedidos o simplificaciones que rompen codigo existente
   cuando el prompt es ambiguo. Ante la minima duda, para y reporta.
@@ -111,8 +118,8 @@ y el Arquitecto haya confirmado la intervencion:
 * `apps/vendor-desktop/src/index.css` — tokens de diseno `--dv-*`. Requieren
   aprobacion previa del Arquitecto. Nunca modificar valores existentes sin orden
   explicita.
-* `docs/ARQUITECTURA_UX.md`, `docs/00-governance/GLOSARIO.md` — documentacion
-  de gobierno. Exclusivamente el Arquitecto. Codex nunca toca estos archivos.
+* `docs/ARQUITECTURA_UX.md`, `docs/00-governance/GLOSARIO.md`, `docs/DOCTRINA.md` —
+  documentacion de gobierno. Exclusivamente el Arquitecto. Codex nunca toca estos archivos.
 * `apps/vendor-desktop/src-tauri/tauri.conf.json` — configuracion de build.
   Solo bajo instruccion explicita con motivo documentado.
 

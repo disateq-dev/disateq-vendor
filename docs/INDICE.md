@@ -11,7 +11,7 @@ Mapa de navegación de toda la documentación activa del proyecto. Creado 21-jun
 | Documento | Ubicación | Qué contiene | Estado |
 |---|---|---|---|
 | `CLAUDE.md` | raíz del repo | Protocolo de sesión, flujo de trabajo obligatorio, matriz de roles del equipo (Fernando/Claude/Codex/Claude Code), guardianía doctrinal | ✓ |
-| `README.md` | raíz del repo | Memorando de sucesión — formaliza a Claude como Arquitecto Senior, reemplazando a ChatGPT | ✓ |
+| `README.md` | raíz del repo | Carta de presentación del producto — filosofía, principios fundamentales, estado actual. **No contiene** protocolo de sesión, matriz de roles ni ningún "memorando de sucesión" — la descripción anterior de esta fila era incorrecta, no correspondía al archivo real. Corregido 24-jul-2026 tras verificación contra filesystem. | ⚠ descripción previa corregida |
 | `AGENTS.md` | raíz del repo | Configuración de agentes Codex | — |
 | `docs/codex.md` | `docs/` | Configuración/protocolo de Codex CLI | — |
 | `CHANGELOG.md` | raíz del repo | Historial de versiones del producto | — |
@@ -22,7 +22,7 @@ Mapa de navegación de toda la documentación activa del proyecto. Creado 21-jun
 
 | Documento | Ubicación | Qué contiene | Estado |
 |---|---|---|---|
-| `CONTRATO_ARQUITECTURA.md` | raíz del repo | Identidad fundacional del producto, modelo mental, anti-ERPización, mapa de dominios | — |
+| `CONTRATO_ARQUITECTURA.md` | raíz del repo | **NO EXISTE en el repositorio.** Residuo de una plantilla de apertura de sesión obsoleta, citado por error en versiones anteriores de `CLAUDE.md` y de este índice. Confirmado contra filesystem 24-jul-2026. Corregido en `CLAUDE.md` §4: `docs/DOCTRINA.md` es la única autoridad doctrinal citada. | ⚠ no existe |
 | `docs/DOCTRINA.md` | `docs/` | Doctrina operacional única — naturaleza del producto, principios irrenunciables, anti-patrones, modelo de operación humana. Consolida 19 documentos archivados | ✓ |
 | `docs/ARQUITECTURA_UX.md` | `docs/` | Jerarquía real del runtime, contrato de `SheetWork`, color verificado por módulo, semántica de color. Consolida 3 documentos archivados | ✓ |
 | `docs/03-arquitectura/ARQUITECTURA_SYNC.md` | `docs/03-arquitectura/` | Arquitectura de sincronización offline-first (cola de eventos, Nexo, rutas LAN/.dsync, failover). Todas las fases marcadas Pendiente — diseño aprobado, sin implementar | ✓ |
@@ -44,7 +44,8 @@ Mapa de navegación de toda la documentación activa del proyecto. Creado 21-jun
 
 | Documento | Ubicación | Qué contiene | Estado |
 |---|---|---|---|
-| `docs/context/CURRENT_CONTEXT.md` | `context/` | Último commit, estado de módulos, pendientes inmediatos. Se purga cada sesión | ✓ |
+| `docs/context/CURRENT_CONTEXT.md` | `context/` | Commit activo, estado de módulos, deuda activa, pendientes inmediatos. Resumen ejecutivo máximo 30 líneas (`CLAUDE.md` §3.6), se purga cada sesión | ✓ |
+| `docs/context/CURRENT_CONTEXT_HISTORICA.md` | `context/` | Detalle completo de sesiones cerradas (diagnósticos, iteraciones de corrección, hallazgos resueltos). Creado 24-jul-2026 aplicando el principio Activo/Histórico de `CLAUDE.md` §3.7, antes no aplicado a este documento. NO se lee por defecto | ✓ |
 
 ---
 
