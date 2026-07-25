@@ -330,6 +330,22 @@ export function SalesWorkspace() {
     inputRef.current?.focus();
   }, [catalogoActivo, cobroOpen, closeCobro, posContext]);
 
+  const addGroupToTicket = useCallback((grupo: GrupoProducto) => {
+    if (grupo.formasVenta.length > 1) {
+      if (!cashSession.isOpen) {
+        showNotice("Abre el turno para poder vender");
+        return;
+      }
+      if (cobroOpen) closeCobro();
+      setGrupoActivo(grupo);
+      return;
+    }
+    const unicaForma = grupo.formasVenta[0];
+    const producto = catalogoActivo.find(p => p.hovId === unicaForma.hovId);
+    if (!producto) return;
+    addProductToTicket(producto);
+  }, [catalogoActivo, cashSession.isOpen, showNotice, cobroOpen, closeCobro, addProductToTicket]);
+
   const handleConfirmarForma = useCallback((hovId: string, valorFinal: number, tipoValor: TipoValorOperacional | null) => {
     const hov = getHOVById(hovId);
     const producto = catalogoActivo.find(p => p.hovId === hovId);
@@ -645,20 +661,20 @@ export function SalesWorkspace() {
                 <p className="px-1 pb-1 pt-0 text-[10px] font-bold uppercase tracking-widest text-[#c0cad4]">
                   {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                 </p>
-                {filtered.map((product, idx) => {
-                  const isOut = product.stockStatus === "out";
+                {agruparPorProducto(filtered).map((grupo, idx) => {
+                  const principal = grupo.formasVenta[0];
+                  const productoRef = catalogoActivo.find(p => p.hovId === principal.hovId);
+                  const isOut = grupo.stockStatus === "out";
                   const isSelected = idx === selectedIndex;
-                  const formasCount = product.tieneMultiplesFormas
-                    ? agruparPorProducto(catalogoActivo).find(g => g.formasVenta.some(f => f.hovId === product.hovId))?.formasVenta.length ?? 1
-                    : 1;
+                  const formasCount = grupo.formasVenta.length;
 
                   return (
                     <div
-                      key={product.id}
+                      key={grupo.productoId}
                       ref={idx === selectedIndex ? selectedItemRef : null}
-                      onClick={() => addProductToTicket(product)}
+                      onClick={() => addGroupToTicket(grupo)}
                       className={`flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 transition ${
-                        lastAdded === product.hovId
+                        lastAdded === principal.hovId
                           ? "bg-[#dcfce7] ring-1 ring-[#45b356]/40"
                           : isSelected
                             ? "bg-[#F0FAF1] ring-1 ring-[#45b356]/20"
@@ -669,7 +685,7 @@ export function SalesWorkspace() {
                       <div className="flex min-w-0 items-center gap-3">
                         <div
                           className="h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: dotColor(product) }}
+                          style={{ backgroundColor: productoRef ? dotColor(productoRef) : "#34d399" }}
                         />
                         <div className="min-w-0">
                           <div
@@ -677,25 +693,25 @@ export function SalesWorkspace() {
                               isSelected ? "text-[#2d4f6b]" : isOut ? "text-[#9ca3af]" : "text-[#2F3E46]"
                             }`}
                           >
-                            {product.description}
+                            {grupo.nombre}
                           </div>
                           <div className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold">
                             <span className="tabular-nums text-[#374151]">
-                              {product.barcode || product.id}
+                              {grupo.barcode || grupo.productoId}
                             </span>
                             <span className="text-[#d1d9e1]">·</span>
-                            {statusChip(product)}
-                            {product.nivelVencimiento === "CRITICO" && (
+                            {productoRef && statusChip(productoRef)}
+                            {productoRef?.nivelVencimiento === "CRITICO" && (
                               <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
                                 Vence pronto
                               </span>
                             )}
-                            {product.nivelVencimiento === "ALERTA" && (
+                            {productoRef?.nivelVencimiento === "ALERTA" && (
                               <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">
                                 Vence pronto
                               </span>
                             )}
-                            {product.tieneMultiplesFormas && formasCount > 1 && (
+                            {formasCount > 1 && (
                               <span className="rounded-full bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#2563eb]">
                                 {formasCount} formas
                               </span>
@@ -706,7 +722,7 @@ export function SalesWorkspace() {
 
                       <div className="ml-4 flex shrink-0 items-center">
                         <span className="text-[14px] font-semibold text-[#2F3E46]">
-                          S/ {product.unitPrice.toFixed(2)}
+                          S/ {(principal.valorAplicado ?? 0).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -739,22 +755,22 @@ export function SalesWorkspace() {
                   }
                 </p>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 px-3 pb-3 pt-1">
-                  {visualItems.map((product) => {
-                    const isOut  = product.stockStatus === "out" && product.tipoRecurso !== 'SERVICIO';
-                    const price  = tilePrice(product);
-                    const formasCount = product.tieneMultiplesFormas
-                      ? agruparPorProducto(catalogoActivo).find(g => g.formasVenta.some(f => f.hovId === product.hovId))?.formasVenta.length ?? 1
-                      : 1;
+                  {agruparPorProducto(visualItems).map((grupo) => {
+                    const principal = grupo.formasVenta[0];
+                    const productoRef = catalogoActivo.find(p => p.hovId === principal.hovId);
+                    const isOut  = grupo.stockStatus === "out" && productoRef?.tipoRecurso !== 'SERVICIO';
+                    const price  = productoRef ? tilePrice(productoRef) : { prefix: "", cls: "text-[#2d4f6b]" };
+                    const formasCount = grupo.formasVenta.length;
 
                     return (
                       <button
-                        key={product.id}
-                        onClick={() => addProductToTicket(product)}
+                        key={grupo.productoId}
+                        onClick={() => addGroupToTicket(grupo)}
                         disabled={isOut}
                         className={`overflow-hidden rounded-2xl bg-white text-left transition active:scale-[0.96] ${
                           isOut
                             ? "border border-[#fef2f2] opacity-50 cursor-not-allowed shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
-                            : lastAdded === product.hovId
+                            : lastAdded === principal.hovId
                               ? "border border-[#45b356]/60 shadow-[0_4px_14px_rgba(69,179,86,0.18)] ring-2 ring-[#45b356]/15 cursor-pointer"
                               : "border border-[#eef2f8] shadow-[0_1px_4px_rgba(15,23,42,0.07)] hover:border-[#a8d9ac] hover:shadow-[0_4px_14px_rgba(69,179,86,0.10)] cursor-pointer"
                         }`}
@@ -764,22 +780,22 @@ export function SalesWorkspace() {
                           style={{ backgroundColor: "#F8FAFC" }}
                         >
                           <span className="text-[38px] leading-none select-none" />
-                          <TileBadge p={product} />
+                          {productoRef && <TileBadge p={productoRef} />}
                         </div>
                         <div className="px-2.5 pt-2 pb-2.5">
                           <p className="line-clamp-2 text-[11px] font-bold uppercase tracking-[0.025em] leading-snug text-[#2F3E46]">
-                            {product.description}
+                            {grupo.nombre}
                           </p>
                           <p className={`mt-1.5 text-[13px] font-extrabold tabular-nums ${price.cls}`}>
-                            {price.prefix}S/ {product.unitPrice.toFixed(2)}
+                            {price.prefix}S/ {(principal.valorAplicado ?? 0).toFixed(2)}
                           </p>
-                          {product.tieneMultiplesFormas && formasCount > 1 && (
+                          {formasCount > 1 && (
                             <span className="mt-1.5 inline-flex rounded-full bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#2563eb]">
                               {formasCount} formas
                             </span>
                           )}
-                          {product.stockStatus !== "normal" && (
-                            <div className="mt-1.5 text-[10px] leading-none">{statusChip(product)}</div>
+                          {grupo.stockStatus !== "normal" && productoRef && (
+                            <div className="mt-1.5 text-[10px] leading-none">{statusChip(productoRef)}</div>
                           )}
                         </div>
                       </button>
