@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
+import { logError } from '../logging/error-logger'
 import type { Pedido, PedidoStore } from './pedido.types'
 
 const _store: PedidoStore = { pedidos: [], ultimaSincronizacion: null }
@@ -23,8 +24,8 @@ function _persistirEnSQLite(pedido: Pedido): void {
       momentoAbandono: pedido.momentoAbandono ?? null,
       motivoAbandono: pedido.motivoAbandono ?? null,
     }
-  }).catch(() => {
-    // mirror async — fallo silencioso no bloquea la operacion en memoria
+  }).catch((error) => {
+    void logError('pedido-store', `Error persistiendo pedido ${pedido.codigo} en SQLite`, { error: String(error), pedidoId: pedido.id })
   })
 }
 
