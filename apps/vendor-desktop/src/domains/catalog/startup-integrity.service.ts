@@ -1,6 +1,6 @@
 import { resetHovStore } from './hov.store'
 import { resetValorStore } from './valor-operacional.store'
-import { proyectarAHov, sincronizarValorHov } from '../farmacia/hov-projector.service'
+import { proyectarAHov, sincronizarValorOperacionalFarmacia } from '../farmacia/hov-projector.service'
 import {
   obtenerProductosComerciales,
   obtenerPresentaciones,
@@ -19,9 +19,10 @@ import { logWarn, logCritical } from '../logging/error-logger'
  *         reconstruye las HOVs proyectando cada nodo vendible.
  *
  * Fase B: Si LS-VALOR está vacío y SQLite tiene valores operacionales activos,
- *         rehidrata el store sincronizando el valor NORMAL de cada nodo vendible.
+ *         rehidrata el store sincronizando todos los tipos de valor activos
+ *         (NORMAL, MAYORISTA, OFERTA) de cada nodo vendible.
  *
- * Ambas fases son idempotentes: proyectarAHov y sincronizarValorHov verifican
+ * Ambas fases son idempotentes: proyectarAHov y sincronizarValorOperacionalFarmacia verifican
  * existencia antes de crear. Seguro ejecutar aunque la caché no esté vacía.
  */
 export async function verificarIntegridadCacheFarmacia(): Promise<void> {
@@ -64,11 +65,9 @@ export async function verificarIntegridadCacheFarmacia(): Promise<void> {
           if (necesitaValores) {
             try {
               const valores = await obtenerValoresNodo(nodo.id)
-              const valorNormal = valores.find(
-                v => v.tipo === 'VENTA_NORMAL' && v.estado === 'ACTIVO',
-              )
-              if (valorNormal !== undefined) {
-                sincronizarValorHov(nodo, valorNormal.valor)
+              const valoresActivos = valores.filter(v => v.estado === 'ACTIVO')
+              for (const valor of valoresActivos) {
+                sincronizarValorOperacionalFarmacia(nodo, valor)
               }
             } catch (err) {
               void logWarn('startup-integrity', 'Valor no sincronizable', {
