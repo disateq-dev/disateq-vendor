@@ -9,18 +9,20 @@ function _esEstadoActivo(estado: string): boolean {
 
 function _persistirEnSQLite(pedido: Pedido): void {
   void invoke('guardar_pedido_venta', {
-    id: pedido.id,
-    codigo: pedido.codigo,
-    estado: pedido.estado,
-    contextoOperacionalId: pedido.contextoOperacionalId,
-    identidadOperacionalId: pedido.identidadOperacionalId,
-    operadorId: pedido.operadorId,
-    lineasJson: JSON.stringify(pedido.lineas),
-    eventosJson: JSON.stringify(pedido.eventos),
-    momentoApertura: pedido.momentoApertura,
-    momentoConcrecion: pedido.momentoConcrecion ?? null,
-    momentoAbandono: pedido.momentoAbandono ?? null,
-    motivoAbandono: pedido.motivoAbandono ?? null,
+    input: {
+      id: pedido.id,
+      codigo: pedido.codigo,
+      estado: pedido.estado,
+      contextoOperacionalId: pedido.contextoOperacionalId,
+      identidadOperacionalId: pedido.identidadOperacionalId,
+      operadorId: pedido.operadorId,
+      lineasJson: JSON.stringify(pedido.lineas),
+      eventosJson: JSON.stringify(pedido.eventos),
+      momentoApertura: pedido.momentoApertura,
+      momentoConcrecion: pedido.momentoConcrecion ?? null,
+      momentoAbandono: pedido.momentoAbandono ?? null,
+      motivoAbandono: pedido.motivoAbandono ?? null,
+    }
   }).catch(() => {
     // mirror async — fallo silencioso no bloquea la operacion en memoria
   })
