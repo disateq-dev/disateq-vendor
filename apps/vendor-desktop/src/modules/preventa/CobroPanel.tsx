@@ -251,6 +251,7 @@ export function CobroPanel() {
   async function _ejecutarSideEffects(
     comprobante: Comprobante,
     docNumberLocal: string,
+    pedidoIdResuelto: string | null,
   ): Promise<{ registroSQLite: { ok: boolean }; concrecionPedido: { ok: boolean } | null }> {
     const sesionId = cashSession.cashBox && cashSession.openedAt
       ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
@@ -269,11 +270,7 @@ export function CobroPanel() {
       await despacharConFefo(lines, docNumberLocal, activeOperator?.id ?? 'default');
     }
 
-    const pedidoActivo = preVentaService.obtenerPedidoActivoOCrear?.(
-      "default",
-      "default",
-      cashSession.cashBox?.code ?? "default"
-    );
+    const pedidoActivo = pedidoIdResuelto;
     let concrecionPedido: { ok: boolean } | null = null;
     if (pedidoActivo) {
       concrecionPedido = await preVentaService.concretarVenta(
@@ -294,8 +291,10 @@ export function CobroPanel() {
     comprobante: Comprobante;
     resultadoSideEffects: { registroSQLite: { ok: boolean }; concrecionPedido: { ok: boolean } | null };
   }> {
+    const contextoOperacionalId = cashSession.cashBox?.code ?? 'default';
+    const operadorIdActivo = activeOperator?.id ?? 'default';
     const pedidoId = preVentaService
-      .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
+      .obtenerPedidoActivoOCrear?.(contextoOperacionalId, operadorIdActivo, operadorIdActivo) ?? null;
     const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(cfg.series);
     const comprobante = emitirComprobante({
       tipo: mapearTipoComprobante(docType),
@@ -336,7 +335,7 @@ export function CobroPanel() {
       operadorId:  activeOperator?.id ?? "default",
       pedidoId:    pedidoId,
     });
-    const resultadoSideEffects = await _ejecutarSideEffects(comprobante, comprobante.codigoUnico);
+    const resultadoSideEffects = await _ejecutarSideEffects(comprobante, comprobante.codigoUnico, pedidoId);
     return { comprobante, resultadoSideEffects };
   }
 
