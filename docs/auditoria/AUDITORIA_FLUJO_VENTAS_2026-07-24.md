@@ -110,6 +110,26 @@ Dos defectos independientes que se combinan en el modal de selección de forma d
 
 ---
 
+### H-C10 — Falso positivo de diagnóstico: verificación apuntó a tabla equivocada del flujo de pedido (Paso 4/6)
+**Archivos:** `domains/sales/venta.service.ts`, `src-tauri/src/commands/ventas.rs`, `domains/sales/pedido.store.ts`, `src-tauri/src/commands/pedidos_venta.rs`
+
+Hallazgo original (sesión previa) diagnosticó que `guardar_pedido_venta` fallaba en silencio por invocarse sin el wrapper `input` requerido por Tauri 2 para deserializar structs. Fix aplicado en `4acce46` sobre `pedidos_venta.rs`/`pedido.store.ts`, agregando el wrapper correctamente.
+
+**Verificación en vivo (2026-07-25) reveló que el diagnóstico apuntó al comando equivocado.** El sistema tiene dos rutas de persistencia independientes y ambas legítimas:
+
+- `pedido_venta` (tabla) — espejo del pedido en curso, escrito en **cada** cambio de estado vía `pedidoStore.guardarPedido()` → `guardar_pedido_venta`. Propósito: recuperación de carrito ante cierre inesperado de la app (`cargarPedidosActivosDesdeSQLite()` al arranque).
+- `venta` + `linea_venta` (tablas) — registro fiscal/comercial definitivo, escrito **solo** al concretar cobro vía `registrarVentaEnSQLite()` → `registrar_venta`. Este comando recibe argumentos nombrados (no un struct único), por lo que nunca requirió wrapper `input` — el bug original nunca existió en esta ruta.
+
+La consulta de verificación de la sesión anterior (`SELECT COUNT(*) FROM pedido_venta`) apuntaba a la tabla de borrador, no a la de venta concretada. Verificación correcta con `SELECT COUNT(*) FROM venta` / `linea_venta` confirmó **17 y 25 filas respectivamente** — la persistencia de ventas concretadas funciona y siempre funcionó correctamente.
+
+**Conclusión:** H-C10 se cierra sin corrección de código — el fix de `4acce46` era válido y necesario para la ruta de borrador (`pedido_venta`), simplemente no era la causa del problema originalmente sospechado en la ruta de venta concretada, que nunca estuvo rota.
+
+**Hallazgo colateral derivado de esta verificación:** ver H-C14.
+
+**Prioridad:** cerrada — sin acción de código pendiente.
+
+---
+
 ## 🟡 Hallazgos medios
 
 | # | Hallazgo | Ubicación |
