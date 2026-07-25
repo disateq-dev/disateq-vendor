@@ -25,6 +25,10 @@ export function proyectarAHov(
   let hov = hovStore.getAllHOVs().find(h => h.nodoFraccionamientoId === nodo.id) ?? null
 
   if (!hov) {
+    const costoCompraBase = presentacion.costoCompra && presentacion.costoCompra > 0 ? presentacion.costoCompra : 0.01
+    const proporcionNodo = presentacion.factorConversionBase > 0 ? nodo.unidadesBase / presentacion.factorConversionBase : 1
+    const costoBaseProrrateado = costoCompraBase * proporcionNodo
+
     hov = crearHOV({
       nombre: `${productoComercial.nombreComercial} · ${nodo.nombreFormaVenta}`,
       productoId: productoComercial.id,
@@ -32,7 +36,7 @@ export function proyectarAHov(
       tipoRecurso,
       unidadDespacho: nodo.nombreFormaVenta,
       factorConversion: nodo.unidadesBase,
-      costoBase: presentacion.costoCompra && presentacion.costoCompra > 0 ? presentacion.costoCompra : 0.01,
+      costoBase: costoBaseProrrateado,
       codigoBarras: presentacion.codigoBarras,
       category: productoComercial.categoriaFarmacia,
       contextoOperacionalId,
