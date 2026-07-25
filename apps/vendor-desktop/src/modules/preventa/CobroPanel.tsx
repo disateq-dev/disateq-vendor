@@ -191,98 +191,6 @@ export function CobroPanel() {
     return { text: CLIENTES_VARIOS, warn: false };
   }
 
-  function buildComprobanteData(_: string): Comprobante {
-    const tipo = mapearTipoComprobante(docType);
-    const metodoPago = mapearMetodoPago(payMethod);
-    const biz = loadBusinessConfig();
-    const tipoAfectacionIGV =
-      affectation === "exonerado-onerosa"
-        ? "EXONERADO"
-        : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
-        ? "INAFECTO"
-        : "GRAVADO";
-    // tipoDocumento resuelto desde customer.tipoDocumento — inferencia por longitud eliminada
-
-    return {
-      id: crypto.randomUUID(),
-      tipo,
-      serie: cfg.series,
-      correlativo: nextCorrelative,
-      codigoUnico: `${cfg.series}-${String(nextCorrelative).padStart(8, "0")}`,
-      esFormal: tipo === "FACTURA" || tipo === "BOLETA",
-      requiereEnvioSUNAT: tipo === "FACTURA" || tipo === "BOLETA",
-      leyendaNoFormal: tipo === "TIQUE_VENTA"
-        ? "ESTE DOCUMENTO NO ES UN COMPROBANTE DE PAGO CON VALOR TRIBUTARIO"
-        : null,
-      pedidoId: preVentaService.obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null,
-      comprobanteReferenciadoId: null,
-      comprobanteOrigenId: null,
-      emisor: {
-        ruc: biz.ruc,
-        razonSocial: biz.razonSocial,
-        direccion: biz.direccion,
-      },
-      receptor: customer === null
-        ? {
-            tipoDocumento: "SIN_DOCUMENTO",
-            numeroDocumento: null,
-            nombre: "Clientes Varios",
-            direccion: null,
-            esGenerico: true,
-            fuente: "SIN_RECEPTOR" as const,
-            clienteId: null,
-            validadoSunat: false,
-            email: null,
-            whatsapp: null,
-            consentimientoContacto: false,
-          }
-        : {
-            tipoDocumento: customer.tipoDocumento,
-            numeroDocumento: customer.numeroDocumento,
-            nombre: customer.nombre,
-            direccion: customer.direccion,
-            esGenerico: false,
-            fuente: customer.clienteId ? "CLIENTE_REGISTRADO" as const : "INGRESO_MANUAL" as const,
-            clienteId: customer.clienteId,
-            validadoSunat: false,
-            email: customer.email,
-            whatsapp: customer.whatsapp,
-            consentimientoContacto: false,
-          },
-      lineas: lines.map(l => ({
-        id: crypto.randomUUID(),
-        descripcion: l.descripcion,
-        cantidad: l.cantidad,
-        valorUnitario: l.valorUnitario,
-        subtotal: l.subtotal,
-        codigoProductoSUNAT: null,
-        tipoAfectacionIGV,
-        tasaIGV: tipoAfectacionIGV === "GRAVADO" ? tasaIGV : 0,
-        montoISC: null,
-        notaLinea: l.nota ?? null,
-      })),
-      subtotal: baseImponible,
-      igv,
-      isc: 0,
-      total: netTotal,
-      moneda: "PEN",
-      metodoPago,
-      tributario: {
-        regimen: "GENERAL",
-        incluyeDetraccion: false,
-        porcentajeDetraccion: null,
-      },
-      estado: "EMITIDO",
-      estadoSUNAT: tipo === "FACTURA" || tipo === "BOLETA" ? "PENDIENTE" : "NO_APLICA",
-      cdr: null,
-      fechaEnvioSUNAT: null,
-      motivoAnulacion: null,
-      emitidoEn: new Date().toISOString(),
-      operadorId: activeOperator?.id ?? "default",
-      enviadoPorCanal: "NINGUNO",
-    };
-  }
-
   function mapearTipoComprobante(dt: DocType): TipoComprobante {
     switch (dt) {
       case 'factura':    return 'FACTURA'
@@ -311,17 +219,20 @@ export function CobroPanel() {
     if (!canConfirm) return;
     const tieneCanal = !customer?.esGenerico && !!(customer?.email || customer?.whatsapp);
     if (tieneCanal) {
-      despacharPorCanal();
+      void confirmEmit({
+        accion: 'enviar',
+        canal: customer?.whatsapp ? 'WhatsApp' : 'Email',
+      });
     } else {
       setCobroView("client");
     }
   }
 
-  function despacharPorCanal() {
+  function despacharPorCanal(comprobante: Comprobante) {
     const biz = loadBusinessConfig();
     const resumen = [
       `*${biz.nombreComercial}*`,
-      `Comprobante: ${docNumber}`,
+      `Comprobante: ${comprobante.codigoUnico}`,
       `Total: S/ ${netTotal.toFixed(2)}`,
       `Gracias por su preferencia.`,
     ].join('\n');
@@ -331,28 +242,29 @@ export function CobroPanel() {
       const url = `https://wa.me/51${numero}?text=${encodeURIComponent(resumen)}`;
       window.open(url, '_blank');
     } else if (customer?.email && !customer.esGenerico) {
-      const asunto = encodeURIComponent(`Comprobante ${docNumber} - ${biz.nombreComercial}`);
+      const asunto = encodeURIComponent(`Comprobante ${comprobante.codigoUnico} - ${biz.nombreComercial}`);
       const cuerpo = encodeURIComponent(resumen);
       window.open(`mailto:${customer.email}?subject=${asunto}&body=${cuerpo}`, '_blank');
     }
-
-    confirmEmit({
-      accion: 'enviar',
-      canal: customer?.whatsapp ? 'WhatsApp' : 'Email',
-    });
   }
 
-  async function _ejecutarSideEffects(comprobante: Comprobante, docNumberLocal: string): Promise<void> {
+  async function _ejecutarSideEffects(
+    comprobante: Comprobante,
+    docNumberLocal: string,
+  ): Promise<{ registroSQLite: { ok: boolean }; concrecionPedido: { ok: boolean } | null }> {
     const sesionId = cashSession.cashBox && cashSession.openedAt
       ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
       : null;
     const cajaCodigo = cashSession.cashBox?.code ?? null;
-    await registrarComprobanteEnSQLite(
+    const resultadoRegistro = await registrarComprobanteEnSQLite(
       comprobante,
       sesionId,
       cajaCodigo,
       comprobante.pedidoId,
     );
+    if (!resultadoRegistro.ok) {
+      throw new Error("No se pudo registrar el comprobante en SQLite");
+    }
     if (docType !== "cotizacion") {
       await despacharConFefo(lines, docNumberLocal, activeOperator?.id ?? 'default');
     }
@@ -362,15 +274,70 @@ export function CobroPanel() {
       "default",
       cashSession.cashBox?.code ?? "default"
     );
+    let concrecionPedido: { ok: boolean } | null = null;
     if (pedidoActivo) {
-      preVentaService.concretarVenta(
+      concrecionPedido = await preVentaService.concretarVenta(
         pedidoActivo,
         mapearMetodoPago(payMethod),
         mapearTipoComprobante(docType),
         sesionId,
         cajaCodigo,
       );
+      if (!concrecionPedido.ok) {
+        throw new Error("No se pudo concretar la venta");
+      }
     }
+    return { registroSQLite: resultadoRegistro, concrecionPedido };
+  }
+
+  async function emitirYRegistrarComprobante(): Promise<{
+    comprobante: Comprobante;
+    resultadoSideEffects: { registroSQLite: { ok: boolean }; concrecionPedido: { ok: boolean } | null };
+  }> {
+    const pedidoId = preVentaService
+      .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
+    const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(cfg.series);
+    const comprobante = emitirComprobante({
+      tipo: mapearTipoComprobante(docType),
+      serie: cfg.series,
+      correlativoExterno: correlativoSQLite,
+      tipoAfectacionIGV: affectation === "exonerado-onerosa"
+        ? "EXONERADO"
+        : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
+        ? "INAFECTO"
+        : "GRAVADO",
+      lineas: lines.map(l => ({
+        description: l.descripcion,
+        quantity:    l.cantidad,
+        unitPrice:   l.valorUnitario,
+        subtotal:    l.subtotal,
+        note:        l.nota ?? null,
+      })),
+      subtotal:    baseImponible,
+      igv:         igv,
+      isc:         0,
+      total:       netTotal,
+      metodoPago:  mapearMetodoPago(payMethod),
+      mixtoBreakdown: payMethod === 'mixto'
+        ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
+        : undefined,
+      customer:    customer && !customer.esGenerico
+        ? {
+            tipoDocumento: customer.tipoDocumento,
+            docNumber:     customer.numeroDocumento ?? '',
+            name:          customer.nombre,
+            address:       customer.direccion ?? null,
+            clienteId:     customer.clienteId,
+            email:         customer.email,
+            whatsapp:      customer.whatsapp,
+            consentimientoContacto: false,
+          }
+        : null,
+      operadorId:  activeOperator?.id ?? "default",
+      pedidoId:    pedidoId,
+    });
+    const resultadoSideEffects = await _ejecutarSideEffects(comprobante, comprobante.codigoUnico);
+    return { comprobante, resultadoSideEffects };
   }
 
   async function confirmEmit(confirmacion?: { accion: 'guardar' | 'enviar'; canal?: string }) {
@@ -379,87 +346,36 @@ export function CobroPanel() {
     const now = new Date();
     const p2  = (n: number) => String(n).padStart(2, "0");
     const dt  = `${p2(now.getDate())}/${p2(now.getMonth() + 1)}/${now.getFullYear()} ${p2(now.getHours())}:${p2(now.getMinutes())}`;
-    if (printFlow === "comprobante-despacho") {
-      printDispatchTicket({
-        correlative: dispatchCorrelative,
-        dateTime:    dt,
-        lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
-        opNumber:    docNumber,
-        comprobanteRef: loadBusinessConfig().imprimirRefComprobanteEnDespacho ? docNumber : undefined,
-      } satisfies DispatchData);
-      setDispatchCorrelative(prev => prev + 1);
-    }
-    recordSale(netTotal, payMethod, docType, cfg.series, nextCorrelative,
-      payMethod === "mixto" ? mixtoEfeNum : undefined,
-      payMethod === "mixto" ? mixtoYapNum : undefined,
-      payMethod === "mixto" ? mixtoTarNum : undefined);
     try {
-      const pedidoId = preVentaService
-        .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
-      const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(cfg.series)
-      const comprobante = emitirComprobante({
-        tipo: mapearTipoComprobante(docType),
-        serie: cfg.series,
-        correlativoExterno: correlativoSQLite,
-        tipoAfectacionIGV: affectation === "exonerado-onerosa"
-          ? "EXONERADO"
-          : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
-          ? "INAFECTO"
-          : "GRAVADO",
-        lineas: lines.map(l => ({
-          description: l.descripcion,
-          quantity:    l.cantidad,
-          unitPrice:   l.valorUnitario,
-          subtotal:    l.subtotal,
-          note:        l.nota ?? null,
-        })),
-        subtotal:    baseImponible,
-        igv:         igv,
-        isc:         0,
-        total:       netTotal,
-        metodoPago:  mapearMetodoPago(payMethod),
-        mixtoBreakdown: payMethod === 'mixto'
-          ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
-          : undefined,
-        customer:    customer && !customer.esGenerico
-          ? {
-              tipoDocumento: customer.tipoDocumento,
-              docNumber:     customer.numeroDocumento ?? '',
-              name:          customer.nombre,
-              address:       customer.direccion ?? null,
-              clienteId:     customer.clienteId,
-              email:         customer.email,
-              whatsapp:      customer.whatsapp,
-              consentimientoContacto: false,
-            }
-          : null,
-        operadorId:  activeOperator?.id ?? "default",
-        pedidoId:    pedidoId,
-      });
+      const { comprobante } = await emitirYRegistrarComprobante();
       addComprobante(comprobante);
-      await _ejecutarSideEffects(comprobante, docNumber);
+      if (printFlow === "comprobante-despacho") {
+        printDispatchTicket({
+          correlative: dispatchCorrelative,
+          dateTime:    dt,
+          lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
+          opNumber:    comprobante.codigoUnico,
+          comprobanteRef: loadBusinessConfig().imprimirRefComprobanteEnDespacho ? comprobante.codigoUnico : undefined,
+        } satisfies DispatchData);
+        setDispatchCorrelative(prev => prev + 1);
+      }
+      recordSale(netTotal, payMethod, docType, comprobante.serie, comprobante.correlativo,
+        payMethod === "mixto" ? mixtoEfeNum : undefined,
+        payMethod === "mixto" ? mixtoYapNum : undefined,
+        payMethod === "mixto" ? mixtoTarNum : undefined);
+      if (confirmacion?.accion === 'enviar') {
+        despacharPorCanal(comprobante);
+      }
+      setConfirmSheet({
+        accion: confirmacion?.accion ?? 'guardar',
+        docNumber: comprobante.codigoUnico,
+        total: netTotal,
+        metodo: payMethod,
+        canal: confirmacion?.canal,
+      });
     } catch {
-      const fallbackComprobante = buildComprobanteData(dt);
-      addComprobante(fallbackComprobante);
-      const sesionId = cashSession.cashBox && cashSession.openedAt
-        ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
-        : null;
-      const cajaCodigo = cashSession.cashBox?.code ?? null;
-      await registrarComprobanteEnSQLite(
-        fallbackComprobante,
-        sesionId,
-        cajaCodigo,
-        null
-      );
+      showNotice("No se pudo emitir el comprobante. Intenta nuevamente.");
     }
-
-    setConfirmSheet({
-      accion: confirmacion?.accion ?? 'guardar',
-      docNumber,
-      total: netTotal,
-      metodo: payMethod,
-      canal: confirmacion?.canal,
-    });
   }
 
   async function handleImprimir() {
@@ -469,51 +385,11 @@ export function CobroPanel() {
     const p        = (n: number) => String(n).padStart(2, "0");
     const dateTime = `${p(now.getDate())}/${p(now.getMonth() + 1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`;
     let receiptData: Parameters<typeof printTicket>[0];
+    let comprobante: Comprobante;
     try {
-      const pedidoId = preVentaService
-        .obtenerPedidoActivoOCrear?.("default", "default", cashSession.cashBox?.code ?? "default") ?? null;
-      const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(cfg.series)
-      const comprobante = emitirComprobante({
-        tipo: mapearTipoComprobante(docType),
-        serie: cfg.series,
-        correlativoExterno: correlativoSQLite,
-        tipoAfectacionIGV: affectation === "exonerado-onerosa"
-          ? "EXONERADO"
-          : affectation === "inafecto-onerosa" || affectation === "inafecto-retiro"
-          ? "INAFECTO"
-          : "GRAVADO",
-        lineas: lines.map(l => ({
-          description: l.descripcion,
-          quantity:    l.cantidad,
-          unitPrice:   l.valorUnitario,
-          subtotal:    l.subtotal,
-          note:        l.nota ?? null,
-        })),
-        subtotal:    baseImponible,
-        igv:         igv,
-        isc:         0,
-        total:       netTotal,
-        metodoPago:  mapearMetodoPago(payMethod),
-        mixtoBreakdown: payMethod === 'mixto'
-          ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
-          : undefined,
-        customer:    customer && !customer.esGenerico
-          ? {
-              tipoDocumento: customer.tipoDocumento,
-              docNumber:     customer.numeroDocumento ?? '',
-              name:          customer.nombre,
-              address:       customer.direccion ?? null,
-              clienteId:     customer.clienteId,
-              email:         customer.email,
-              whatsapp:      customer.whatsapp,
-              consentimientoContacto: false,
-            }
-          : null,
-        operadorId:  activeOperator?.id ?? "default",
-        pedidoId:    pedidoId,
-      });
+      const resultado = await emitirYRegistrarComprobante();
+      comprobante = resultado.comprobante;
       addComprobante(comprobante);
-      await _ejecutarSideEffects(comprobante, docNumber);
       receiptData = construirReceiptData(
         comprobante,
         dateTime,
@@ -527,56 +403,15 @@ export function CobroPanel() {
           : undefined
       ) as Parameters<typeof printTicket>[0];
     } catch {
-      const fallbackComprobante = buildComprobanteData(dateTime);
-      addComprobante(fallbackComprobante);
-      const sesionId = cashSession.cashBox && cashSession.openedAt
-        ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
-        : null;
-      const cajaCodigo = cashSession.cashBox?.code ?? null;
-      await registrarComprobanteEnSQLite(
-        fallbackComprobante,
-        sesionId,
-        cajaCodigo,
-        null
-      );
-      const biz = loadBusinessConfig();
-      receiptData = {
-        businessName:   biz.nombreComercial,
-        businessRuc:    biz.ruc,
-        businessAddr:   biz.direccion,
-        businessPhone:  biz.telefono,
-        docType,
-        docSeries:      cfg.series,
-        docCorrelative: nextCorrelative,
-        dateTime,
-        customer: customer && !customer.esGenerico
-          ? {
-              tipoDocumento: customer.tipoDocumento,
-              docNumber: customer.numeroDocumento ?? '',
-              name: customer.nombre,
-            }
-          : null,
-        customerAddress: customer?.direccion ?? null,
-        lines: lines.map(l => ({
-          description: l.descripcion,
-          quantity:    l.cantidad,
-          unitPrice:   l.valorUnitario,
-          subtotal:    l.subtotal,
-          note:        l.nota,
-        })),
-        baseImponible, igv, discountNum, total, netTotal,
-        payMethod, receivedNum, change,
-        mixtoBreakdown: payMethod === 'mixto'
-          ? { efe: mixtoEfeNum, yap: mixtoYapNum, tar: mixtoTarNum }
-          : undefined,
-      };
+      showNotice("No se pudo emitir el comprobante. Intenta nuevamente.");
+      return;
     }
     const dispatchData: DispatchData = {
       correlative: dispatchCorrelative,
       dateTime,
       lines:       lines.map(l => ({ description: l.descripcion, quantity: l.cantidad, note: l.nota })),
-      opNumber:    docNumber,
-      comprobanteRef: loadBusinessConfig().imprimirRefComprobanteEnDespacho ? docNumber : undefined,
+      opNumber:    comprobante.codigoUnico,
+      comprobanteRef: loadBusinessConfig().imprimirRefComprobanteEnDespacho ? comprobante.codigoUnico : undefined,
     };
     setDispatchCorrelative(prev => prev + 1);
     if (printFlow === "comprobante-despacho") {
@@ -593,14 +428,14 @@ export function CobroPanel() {
         printTicket(receiptData);
       }
     }
-    recordSale(netTotal, payMethod, docType, cfg.series, nextCorrelative,
+    recordSale(netTotal, payMethod, docType, comprobante.serie, comprobante.correlativo,
       payMethod === "mixto" ? mixtoEfeNum : undefined,
       payMethod === "mixto" ? mixtoYapNum : undefined,
       payMethod === "mixto" ? mixtoTarNum : undefined);
 
     setConfirmSheet({
       accion: 'imprimir',
-      docNumber,
+      docNumber: comprobante.codigoUnico,
       total: netTotal,
       metodo: payMethod,
     });
@@ -831,7 +666,7 @@ export function CobroPanel() {
               {isCtg && (
                 <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-extrabold tracking-widest text-amber-500">CTG</span>
               )}
-              <span className="tabular-nums text-[11px] font-semibold text-[#374151]">{docNumber}</span>
+              <span title="Número previsto — se confirma al emitir" className="tabular-nums text-[11px] font-semibold text-[#374151]">{docNumber}</span>
               <span className={`inline-block rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold tracking-wide ${CHIP_FISCAL[docType].color}`}>
                 {CHIP_FISCAL[docType].label}
               </span>

@@ -101,9 +101,9 @@ export async function obtenerSiguienteCorrelativoSQLite(
 ): Promise<number> {
   try {
     return await invoke<number>('obtener_siguiente_correlativo', { serie })
-  } catch {
+  } catch (error) {
     await logError('comprobante-sqlite', 'No se pudo obtener el siguiente correlativo')
-    return 1
+    throw error
   }
 }
 
