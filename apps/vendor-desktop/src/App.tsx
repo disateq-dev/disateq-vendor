@@ -63,21 +63,23 @@ function AppRoot() {
   }, [activeOperator]);
 
   // Al hacer login o reingresar (transición null → operador): si ya hay
-  // turno abierto (sesión recuperada), ir directo a VENTAS; si no, a TURNO.
+  // turno abierto Y pertenece a este operador (sesión recuperada), ir
+  // directo a VENTAS; si el turno abierto es de otro operador, o no hay
+  // turno, ir a Home (no VENTAS).
   useEffect(() => {
     if (activeOperator && activeOperator.id !== prevOpId.current) {
       if (rubro === 'farmacia') {
         void verificarIntegridadCacheFarmacia()
         void useFarmaciaStore.getState().cargarResumenInventario()
       }
-      if (cashSession.isOpen) {
+      if (cashSession.isOpen && cashSession.operatorId === activeOperator.id) {
         setActiveModule("sales");
       } else {
         setActiveModule(null);
       }
     }
     prevOpId.current = activeOperator?.id ?? null;
-  }, [activeOperator, cashSession.isOpen, rubro]);
+  }, [activeOperator, cashSession.isOpen, cashSession.operatorId, rubro]);
 
   if (!activeOperator) return <LoginScreen />;
 

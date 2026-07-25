@@ -162,7 +162,8 @@ export function ContextBar({
   const esVEN = activeOperator?.codigoRol === "VEN";
   const isBlocking = esVEN && pendingAuth !== null && !acknowledgedAuthIds.has(pendingAuth.id);
 
-  const puedeVerSales          = !isBlocking;
+  const cajaEsDeOtroOperador   = cashSession.isOpen && cashSession.operatorId !== undefined && cashSession.operatorId !== activeOperator?.id;
+  const puedeVerSales          = !isBlocking && !cajaEsDeOtroOperador;
   const puedeVerReportes       = useCapacidad("ver_reportes")          && !isBlocking;
   const puedeVerClientes       = useCapacidad("gestionar_clientes")    && !isBlocking;
   const contexto               = useContextoOperacional();
