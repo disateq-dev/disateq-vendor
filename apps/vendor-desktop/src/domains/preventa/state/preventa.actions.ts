@@ -1,3 +1,4 @@
+import type { TipoValorOperacional } from '../../catalog/valor-operacional.types'
 import type { LineaPreVenta } from "../dto/LineaPreVenta";
 import { moneyMul } from "../../../lib/money";
 
@@ -12,7 +13,7 @@ export const crearLineaPreVenta = (
     valorUnitario: number;
 
     presentacion?: string;
-    tipoPrecio?: string;
+    tipoPrecio?: TipoValorOperacional;
   }
 ): LineaPreVenta => {
   const subtotal = moneyMul(payload.cantidad, payload.valorUnitario);

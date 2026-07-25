@@ -1,3 +1,5 @@
+import type { TipoValorOperacional } from '../../catalog/valor-operacional.types'
+
 export interface LineaPreVenta {
   lineaId:       string;
   hovId:         string;
@@ -8,7 +10,7 @@ export interface LineaPreVenta {
   valorUnitario: number;
   subtotal:      number;
   presentacion?: string;   // "Blíster", "Caja x10", "1/4 Pollo"
-  tipoPrecio?:   string;   // "Normal", "Mayoreo", "Promoción", "Libre"
+  tipoPrecio?:   TipoValorOperacional;
   flags?: {
     esPrecioManual?: boolean;
     esRecuperada?:   boolean;

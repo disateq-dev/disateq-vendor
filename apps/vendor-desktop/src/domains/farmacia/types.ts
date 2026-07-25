@@ -2,6 +2,11 @@ export type TipoRecursoOperacional = 'MEDICAMENTO' | 'PRODUCTO_GENERAL' | 'SERVI
 
 export type CategoriaGeneral = 'CUIDADO_PERSONAL' | 'BEBE' | 'DISPOSITIVO_MEDICO' | 'SUPLEMENTO' | 'HIGIENE' | 'OTRO'
 
+/**
+ * Articulo no farmaceutico vendido en farmacia: higiene, bebe, dispositivo medico, suplemento, etc.
+ * Corresponde a TipoRecursoOperacional = 'PRODUCTO_GENERAL'.
+ * NO confundir con ProductoGenerico (entidad DCI/IFA farmaceutica — molecula, no articulo de anaquel).
+ */
 export interface ProductoGeneral {
   id: string
   nombre: string
@@ -67,6 +72,12 @@ export type TipoFormaVenta = 'PRESENTACION_ORIGINAL' | 'FRACCION' | 'PACK' | 'PR
 
 export type EstadoLote = 'VIGENTE' | 'POR_VENCER' | 'VENCIDO' | 'AGOTADO'
 
+/**
+ * Entidad farmaceutica canonica: molecula DCI (IFA) + forma farmaceutica + categoria terapeutica.
+ * Representa el medicamento en su forma generica, independiente de marca o fabricante.
+ * NO confundir con ProductoGeneral (articulo no farmaceutico de anaquel).
+ * Tampoco confundir con el concepto comercial 'generico' (medicamento sin marca): eso es condicionVenta = SIN_RECETA en ProductoComercial.
+ */
 export interface ProductoGenerico {
   id: string
   ifa: string

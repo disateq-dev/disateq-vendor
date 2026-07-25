@@ -1,3 +1,4 @@
+import type { TipoValorOperacional } from '../../catalog/valor-operacional.types'
 import { crearLineaPreVenta } from "../state/preventa.actions";
 import { usePreVentaStore } from "../state/preventa.store";
 import {
@@ -15,7 +16,7 @@ type AddProductInput = {
   codigoBarras?: string;
   valorUnitario: number;
   presentacion?: string;
-  tipoPrecio?:   string;
+  tipoPrecio?:   TipoValorOperacional;
 };
 
 let _pedidoActivoId: string | null = null;

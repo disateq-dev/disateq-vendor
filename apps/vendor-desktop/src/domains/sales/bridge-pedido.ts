@@ -3,6 +3,7 @@ import { crearPedido, confirmarPedido, iniciarCobro } from './pedido.service'
 import { pedidoOperations } from './pedido.operations'
 import { registrarVentaEnSQLite } from './venta.service'
 import type { LineaPreVenta } from '../preventa/dto/LineaPreVenta'
+import type { TipoValorOperacional } from '../catalog/valor-operacional.types'
 import { logError } from '../logging/error-logger'
 
 export interface AddProductBridgeInput {
@@ -18,6 +19,8 @@ export interface AddProductBridgeInput {
   operadorId: string
   margenMinimoConfigurable: number
   operadorTieneCapacidadLibre: boolean
+  tipoValor: TipoValorOperacional | null
+  codigoBarras?: string
 }
 
 export function traducirALineaPreVenta(
@@ -27,12 +30,12 @@ export function traducirALineaPreVenta(
     lineaId: crypto.randomUUID(),
     hovId: input.hovId,
     descripcion: input.descripcion,
-    codigoBarras: input.hovId,
+    codigoBarras: input.codigoBarras,
     cantidad: input.cantidad,
     valorUnitario: input.valorUnitario,
     subtotal: input.valorUnitario * input.cantidad,
     presentacion: input.presentacion,
-    tipoPrecio: input.requiereValorManual ? 'LIBRE' : 'RESUELTO',
+    tipoPrecio: input.requiereValorManual ? 'LIBRE' : (input.tipoValor ?? 'NORMAL'),
     flags: {
       esPrecioManual: input.requiereValorManual,
       esRecuperada: false,
