@@ -41,3 +41,11 @@ export interface CatalogoProyectado {
 export interface UmbralDisponibilidad {
   ultimasUnidades: number
 }
+
+/**
+ * Contexto operacional del catálogo (HOV, ValorOperacional) — NO del Pedido.
+ * El catálogo es compartido por todo el negocio, no depende de la caja/turno activo.
+ * Si en el futuro el negocio maneja catálogos distintos por sucursal, este es el único
+ * punto a modificar — no requiere rediseño, solo cambiar de dónde se deriva este valor.
+ */
+export const CONTEXTO_CATALOGO_NEGOCIO = 'default'

@@ -1,5 +1,6 @@
 import { resetHovStore } from './hov.store'
 import { resetValorStore } from './valor-operacional.store'
+import { CONTEXTO_CATALOGO_NEGOCIO } from './catalogo.types'
 import { proyectarAHov, sincronizarValorOperacionalFarmacia } from '../farmacia/hov-projector.service'
 import {
   obtenerProductosComerciales,
@@ -50,7 +51,7 @@ export async function verificarIntegridadCacheFarmacia(): Promise<void> {
                 nodo,
                 presentacion,
                 producto,
-                'default',
+                CONTEXTO_CATALOGO_NEGOCIO,
                 producto.tipoRecurso,
               )
             } catch (err) {

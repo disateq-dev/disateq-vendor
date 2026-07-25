@@ -1,4 +1,4 @@
-import type { ContextoCatalogo, DisponibilidadCatalogo, UmbralDisponibilidad } from './catalogo.types'
+import { CONTEXTO_CATALOGO_NEGOCIO, type ContextoCatalogo, type DisponibilidadCatalogo, type UmbralDisponibilidad } from './catalogo.types'
 import { construirCatalogo } from './catalogo.service'
 import { getHOVById } from './hov.store'
 import { resolverValor } from './valor-operacional.resolver'
@@ -178,8 +178,8 @@ export function agruparPorProducto(productos: ProductoBuscable[]): GrupoProducto
         const resultado = resolverValor({
           hovId: producto.hovId,
           cantidad: 1,
-          contextoOperacionalId: 'default',
-          identidadOperacionalId: 'default',
+          contextoOperacionalId: CONTEXTO_CATALOGO_NEGOCIO,
+          identidadOperacionalId: CONTEXTO_CATALOGO_NEGOCIO,
           momento: new Date().toISOString(),
           margenMinimoConfigurable: 0.15,
           operadorTieneCapacidadLibre: false,
