@@ -1,5 +1,5 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
-**Commit activo:** a59d9fa · **Rama:** main · **Migracion SQLite:** v29 · **Working tree:** LIMPIO
+**Commit activo:** d46ca2d · **Rama:** main · **Migracion SQLite:** v29 · **Working tree:** LIMPIO
 
 ## ESTADO DE MODULOS
 Auditoria Integral: Bloques 1 (cash/) y 2 (sales/+preventa/) CERRADOS. Bloques 3-8 PENDIENTES.
