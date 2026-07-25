@@ -89,6 +89,27 @@ preVentaService.obtenerPedidoActivoOCrear("default", "default", cashSession.cash
 
 ---
 
+> **Nota de proceso:** H-C6 a H-C10 fueron generados durante la Fase 3 (correcciones), posterior a la redacción original de este documento (2026-07-24), y quedaron registrados únicamente en `CURRENT_CONTEXT.md` en su momento. Pendiente trasladarlos aquí para no perder su detalle al purgarse el contexto. H-C11 se registra abajo como el primer hallazgo de esta serie posterior documentado directamente en el archivo permanente.
+
+---
+
+### H-C11 — Sin feedback visual de selección + AGREGAR ignora precio ajustado en formas con valor asignado (Paso 3)
+**Archivo:** `modules/sales/PresentacionSheet.tsx` (`confirmarForma`, `confirmarActiva`, render de tarjetas de forma de venta)
+
+Dos defectos independientes que se combinan en el modal de selección de forma de venta:
+
+**(a) Sin feedback visual de selección:** el `<button>` de cada tarjeta (CAJA X 10, CAPSULA, etc.) usa clases estáticas — no condicionadas a si esa tarjeta es la `formaActiva` actual. Al hacer clic, el estado interno sí cambia (`setFormaActiva`), pero nada en el render lo refleja (sin borde, check ni resaltado). El operador no puede saber cuál forma quedó seleccionada, lo que induce clics repetidos sobre distintas tarjetas y deja el campo "AJUSTAR PRECIO" precargado con el valor de una forma distinta a la que el operador cree haber elegido.
+
+**(b) `confirmarActiva()` ignora el precio ajustado cuando la forma ya tiene `valorAplicado` no nulo:** la condición evalúa `formaActiva.valorAplicado !== null` antes que `puedeAjustarPrecioAsignado`, por lo que siempre confirma con el precio original de catálogo — el valor escrito en el input "AJUSTAR PRECIO" nunca se usa en este camino. El flujo de ajuste manual sobre una forma con precio ya asignado (tipos NORMAL/PREFERENCIAL/MAYORISTA, con `puedeEditarPrecio=true`) está roto en la práctica.
+
+**Consecuencia real:** el operador cree estar agregando un producto a un precio ajustado y en su lugar (si `onConfirmar` llega a ejecutarse) se agrega al precio de catálogo sin ajuste — o, combinado con (a), puede terminar confirmando la forma/precio equivocados sin darse cuenta hasta revisar el ticket.
+
+**Prioridad:** alta — afecta directamente la captura de precio en el punto de venta, con riesgo de pérdida de margen o cobro incorrecto al cliente.
+
+**Confirmado con evidencia real:** reproducido por Fernando en sesión, `AMOXICILINA 500MG PRUEBA` — clic en CAJA X 10 (S/5.00) no mostró cambio visual; campo AJUSTAR PRECIO apareció con `0.50` (valor de CAPSULA, no de la forma clicada); AGREGAR se habilitó pero no produjo cambio visible en el ticket.
+
+---
+
 ## 🟡 Hallazgos medios
 
 | # | Hallazgo | Ubicación |
