@@ -30,6 +30,6 @@ Integraciones DNI/RUC: operativo y verificado (my.apidev.pro).
 2. git log --oneline -5.
 3. Presentar estado y prioridades — esperar confirmacion explicita de Fernando.
 4. Ejecutar paso a paso — nunca avanzar sin confirmacion.
-5. Tras cada decision tecnica: parrafo final en lenguaje no tecnico (2-3 lineas).
+5. Tras cada decision tecnica: parrafo final en lenguaje no tecnico (2-3 lineas), en *cursiva*.
 6. Ante duda arquitectonica: consultar docs/DOCTRINA.md, docs/ARQUITECTURA_UX.md o
    docs/00-governance/GLOSARIO.md antes de proponer solucion.
