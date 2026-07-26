@@ -114,7 +114,9 @@ Ninguna de las dos funciones invoca `pedido.service.ts::modificarCantidad()` —
 
 **Prioridad:** alta.
 
-**Estado:** abierto, pendiente de diseño y corrección.
+**Cerrado — commit `678d0bd` (2026-07-25).** Auditoría de código previa al diseño reveló que el defecto era más profundo que la ausencia de la llamada: `LineaPreVenta.lineaId` (store visual) y `LineaPedido.id` (pedido real) se generaban como dos UUIDs independientes sin correlación — `traducirALineaPreVenta()` en `bridge-pedido.ts` generaba su propio `lineaId` en vez de recibir el `id` real creado por `agregarLinea()`. Se unifico la identidad: `traducirALineaPreVenta` ahora recibe el `id` real como parametro, y `agregarProductoDesdeHOV` lo extrae de la ultima linea del `Pedido` devuelto (array append-only, sin depender de timestamps). Con la identidad unificada, `incrementarLinea`/`decrementarLinea` pasaron a llamar `modificarCantidad()`, con guard defensivo (si falla o no hay pedido activo, el store visual no se toca — mismo patron que H-C6/H-C4). Cambio abarco 4 archivos: `bridge-pedido.ts`, `preventa.service.ts`, `PreVentaGrid.tsx` (clic con mouse) y `SalesWorkspace.tsx` (atajos de teclado `+`/`-`/flechas — llamador adicional detectado por `tsc`, no incluido en el barrido inicial de la sesion).
+
+**Hallazgo colateral derivado, no corregido en este cierre:** `splitLinea()` (usePreVentaStore) crea una `LineaPreVenta` nueva con `crypto.randomUUID()` propio al disgregar una linea con nota, sin operacion equivalente en el pedido real — misma familia de identidad huerfana, ambito distinto (split, no cantidad). Fernando ademas indico que la funcionalidad de nota-por-linea debe ser configurable por rubro, no universal. Pendiente de numeracion y diseno independiente.
 
 ---
 
