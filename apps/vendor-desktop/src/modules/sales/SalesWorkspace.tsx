@@ -302,7 +302,7 @@ export function SalesWorkspace() {
     if (cobroOpen) closeCobro();
     const hov = getHOVById(p.hovId);
     const productoId = hov?.productoId ?? p.hovId;
-    const grupo = agruparPorProducto(catalogoActivo).find(g => g.productoId === productoId);
+    const grupo = agruparPorProducto(catalogoActivo, posContext.contextoOperacionalId ?? "default").find(g => g.productoId === productoId);
     if (grupo && grupo.formasVenta.length > 1) {
       setGrupoActivo(grupo);
       return;
@@ -661,7 +661,7 @@ export function SalesWorkspace() {
                 <p className="px-1 pb-1 pt-0 text-[10px] font-bold uppercase tracking-widest text-[#c0cad4]">
                   {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                 </p>
-                {agruparPorProducto(filtered).map((grupo, idx) => {
+                {agruparPorProducto(filtered, posContext.contextoOperacionalId ?? "default").map((grupo, idx) => {
                   const principal = grupo.formasVenta[0];
                   const productoRef = catalogoActivo.find(p => p.hovId === principal.hovId);
                   const isOut = grupo.stockStatus === "out";
@@ -755,7 +755,7 @@ export function SalesWorkspace() {
                   }
                 </p>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 px-3 pb-3 pt-1">
-                  {agruparPorProducto(visualItems).map((grupo) => {
+                  {agruparPorProducto(visualItems, posContext.contextoOperacionalId ?? "default").map((grupo) => {
                     const principal = grupo.formasVenta[0];
                     const productoRef = catalogoActivo.find(p => p.hovId === principal.hovId);
                     const isOut  = grupo.stockStatus === "out" && productoRef?.tipoRecurso !== 'SERVICIO';

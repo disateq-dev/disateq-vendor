@@ -153,7 +153,7 @@ export interface GrupoProducto {
   formasVenta: FormaVenta[]
 }
 
-export function agruparPorProducto(productos: ProductoBuscable[]): GrupoProducto[] {
+export function agruparPorProducto(productos: ProductoBuscable[], contextoOperacionalId: string): GrupoProducto[] {
   const grupos = new Map<string, ProductoBuscable[]>()
 
   productos.forEach(producto => {
@@ -178,7 +178,7 @@ export function agruparPorProducto(productos: ProductoBuscable[]): GrupoProducto
         const resultado = resolverValor({
           hovId: producto.hovId,
           cantidad: 1,
-          contextoOperacionalId: CONTEXTO_CATALOGO_NEGOCIO,
+          contextoOperacionalId: contextoOperacionalId,
           identidadOperacionalId: CONTEXTO_CATALOGO_NEGOCIO,
           momento: new Date().toISOString(),
           margenMinimoConfigurable: 0.15,
