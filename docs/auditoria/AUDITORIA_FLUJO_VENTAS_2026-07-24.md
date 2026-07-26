@@ -120,6 +120,31 @@ Ninguna de las dos funciones invoca `pedido.service.ts::modificarCantidad()` —
 
 ---
 
+### H-C17 — `quitarLinea` no propaga la eliminación al pedido operacional real (Paso 3)
+**Archivos:** `domains/sales/pedido.types.ts`, `domains/sales/pedido.service.ts`, `domains/preventa/services/preventa.service.ts` (`quitarLinea`)
+
+```ts
+quitarLinea(lineaId: string) {
+  usePreVentaStore.getState().quitarLinea(lineaId);   // solo store visual
+},
+```
+
+A diferencia de H-C6 y H-C16, aquí no había ni siquiera un intento fallido de conectar al dominio: `pedido.service.ts` no tenía ninguna función para quitar o suspender una línea. El tipo `EstadoLineaPedido` ya incluía `'SUSPENDIDA'` y `TipoEventoPedido` ya incluía `'LINEA_SUSPENDIDA'`, pero sin ninguna implementación que los usara — mecanismo previsto en el modelo de datos, nunca construido.
+
+**Consecuencia real (severidad revisada tras verificar `venta.service.ts` y `pedido.operations.ts`):** el comprobante fiscal que el cliente recibe se arma en `CobroPanel.tsx` desde el store visual, que sí refleja la eliminación correctamente — **no hay cobro incorrecto al cliente**. El riesgo real es de integridad de datos: `LineaPedido` permanece con `estado: 'ACTIVA'` en el `Pedido` guardado en SQLite pese a que el operador la quitó del ticket. `registrarVentaEnSQLite()` y `pedidoOperations.concretarPedido()` ya filtran por `estado === 'ACTIVA'`, por lo que el mecanismo de estado era la pieza correcta y suficiente — solo faltaba la función que lo aplicara. El riesgo latente es para cualquier lectura futura de `pedido.lineas` que no pase por esos dos filtros (reportes, auditoría, sincronización multi-POS).
+
+**Descubierto durante el barrido de rutas residuales del patrón catch-silencioso (H-C4), posterior al cierre de H-C16 (2026-07-25).**
+
+**Prioridad:** alta — integridad de dato, no cobro.
+
+**Cerrado — commit `0f379b4` (2026-07-25).** Se agregó `SuspenderLineaInput` (`pedido.types.ts`) y la función `suspenderLinea()` en `pedido.service.ts`, siguiendo el mismo molde que `agregarLinea`/`modificarCantidad` (valida pedido `ABIERTO` y línea `ACTIVA`, marca `estado: 'SUSPENDIDA'`, registra evento `LINEA_SUSPENDIDA`, no elimina del arreglo — conserva trazabilidad). `preVentaService.quitarLinea` ahora la invoca con guard defensivo (si falla o no hay pedido activo, el store visual no se toca). Conectados los dos llamadores reales: `PreVentaGrid.tsx` (ícono de basura) y `SalesWorkspace.tsx` (tecla `Supr`), ambos con `operadorId` real, sin recurrir al patrón `?? "default"`.
+
+**Verificación previa al diseño:** se confirmó con evidencia de código (no supuesto) que `agregarProducto` (ruta legacy sin HOV) no tiene ningún llamador activo en el árbol actual — código muerto, sin numerar como hallazgo, candidato a limpieza cosmética futura.
+
+**Hallazgo colateral derivado, no corregido en este cierre:** `preVentaService.limpiar()` descarta `_pedidoActivoId` sin invocar `abandonarPedido()` — si el operador limpia el ticket sin haber concretado venta, el `Pedido` real queda en estado `ABIERTO` en SQLite, sin motivo de abandono registrado. No genera cobro incorrecto (menor severidad que H-C17), pero sí pedidos huérfanos. Pendiente de numeración y diseño independiente.
+
+---
+
 ### H-C5 — Contexto operacional hardcodeado a "default" en el cobro real (Paso 6)
 **Archivo:** `modules/preventa/CobroPanel.tsx` (`_ejecutarSideEffects`, `emitirYRegistrarComprobante`)
 
@@ -236,4 +261,4 @@ Todas las transiciones tienen sus invariantes (no agregar línea a pedido no-ABI
 1. **Fase 2 — Barrido de interrelación:** confirmar cómo se conectan estos hallazgos entre sí (p. ej. H-C3 + H-C4 + H-C1 son la misma familia de "fallos silenciosos en la cadena de captura→pedido→concreción").
 2. **Fase 3 — Correcciones:** priorizar con Fernando, generar prompts atómicos para Codex por hallazgo o por grupo relacionado.
 3. Actualizar `README-preventa.md` (H-m1) y `CURRENT_CONTEXT.md` (deuda ya resuelta) como parte de la limpieza documental.
-4. Diseñar y corregir H-C16 (ajuste de cantidad en ticket no se propaga al pedido real) — mismo patrón que H-C6, siguiente en la cola.
+4. H-C16 y H-C17 cerrados (2026-07-25). Pendiente: numerar y diseñar los dos hallazgos colaterales derivados (split de línea sin conexión al dominio + configurabilidad por rubro de notas; `limpiar()` sin abandono formal del pedido).
