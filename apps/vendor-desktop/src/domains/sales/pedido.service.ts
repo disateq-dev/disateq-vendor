@@ -1,4 +1,4 @@
-import type { AgregarLineaInput, CrearPedidoInput, EventoPedido, LineaPedido, ModificarCantidadInput, Pedido } from './pedido.types'
+import type { AgregarLineaInput, CrearPedidoInput, EventoPedido, LineaPedido, ModificarCantidadInput, Pedido, SuspenderLineaInput } from './pedido.types'
 import { pedidoStore } from './pedido.store'
 import { getHOVById } from '../catalog/hov.store'
 import { resolverValor } from '../catalog/valor-operacional.resolver'
@@ -159,6 +159,41 @@ export function modificarCantidad(input: ModificarCantidadInput): Pedido {
       : item
   )
   const evento = crearEvento(input.pedidoId, 'CANTIDAD_MODIFICADA', input.operadorId, `${linea.nombreVisible} → ${input.nuevaCantidad}`)
+  const actualizado: Pedido = {
+    ...pedido,
+    lineas,
+    eventos: [...pedido.eventos, evento],
+  }
+
+  return pedidoStore.guardarPedido(actualizado)
+}
+
+export function suspenderLinea(input: SuspenderLineaInput): Pedido {
+  const pedido = pedidoStore.getPedidoById(input.pedidoId)
+  if (!pedido) {
+    throw new Error('Pedido no encontrado')
+  }
+
+  if (pedido.estado !== 'ABIERTO') {
+    throw new Error('Solo se puede quitar una línea de un pedido abierto')
+  }
+
+  const linea = pedido.lineas.find(item => item.id === input.lineaId)
+  if (!linea) {
+    throw new Error('Línea no encontrada')
+  }
+
+  if (linea.estado !== 'ACTIVA') {
+    throw new Error('La línea no está activa')
+  }
+
+  const now = new Date().toISOString()
+  const lineas = pedido.lineas.map(item =>
+    item.id === input.lineaId
+      ? { ...item, estado: 'SUSPENDIDA' as const, modificadoEn: now }
+      : item
+  )
+  const evento = crearEvento(input.pedidoId, 'LINEA_SUSPENDIDA', input.operadorId, linea.nombreVisible)
   const actualizado: Pedido = {
     ...pedido,
     lineas,

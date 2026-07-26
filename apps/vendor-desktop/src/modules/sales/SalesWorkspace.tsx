@@ -495,7 +495,7 @@ export function SalesWorkspace() {
         if (e.ctrlKey) break;
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.quitarLinea(targetLine.lineaId);
+        if (targetLine && posContext.operadorActivo?.id) preVentaService.quitarLinea(targetLine.lineaId, posContext.operadorActivo.id);
         break;
       }
       case "ArrowRight": {

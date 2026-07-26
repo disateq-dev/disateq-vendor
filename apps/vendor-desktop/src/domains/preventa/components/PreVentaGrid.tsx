@@ -242,7 +242,11 @@ export function PreVentaGrid() {
                     </button>
                     <button
                       title="Tecla [Supr]"
-                      onClick={e => { e.stopPropagation(); preVentaService.quitarLinea(line.lineaId); }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (!activeOperator) return;
+                        preVentaService.quitarLinea(line.lineaId, activeOperator.id);
+                      }}
                       className="flex items-center justify-center rounded-lg p-1.5 text-red-400 transition hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 size={12} />

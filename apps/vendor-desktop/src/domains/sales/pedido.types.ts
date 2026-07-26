@@ -94,6 +94,12 @@ export interface ModificarCantidadInput {
   operadorId: string
 }
 
+export interface SuspenderLineaInput {
+  pedidoId: string
+  lineaId: string
+  operadorId: string
+}
+
 export interface PedidoStore {
   pedidos: Pedido[]
   ultimaSincronizacion: string | null

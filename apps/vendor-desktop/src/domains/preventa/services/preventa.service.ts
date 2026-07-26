@@ -8,7 +8,7 @@ import {
   type AddProductBridgeInput
 } from "../../sales/bridge-pedido";
 import { cargarPedidosActivosDesdeSQLite } from "../../sales/pedido.store";
-import { agregarLinea, modificarCantidad } from '../../sales/pedido.service'
+import { agregarLinea, modificarCantidad, suspenderLinea } from '../../sales/pedido.service'
 
 type AddProductInput = {
   hovId:         string;
@@ -124,7 +124,18 @@ export const preVentaService = {
     state.actualizarCantidad(lineaId, line.cantidad - 1);
   },
 
-  quitarLinea(lineaId: string) {
+  quitarLinea(lineaId: string, operadorId: string) {
+    if (_pedidoActivoId) {
+      try {
+        suspenderLinea({
+          pedidoId: _pedidoActivoId,
+          lineaId,
+          operadorId,
+        });
+      } catch {
+        return;
+      }
+    }
     usePreVentaStore.getState().quitarLinea(lineaId);
   },
 
