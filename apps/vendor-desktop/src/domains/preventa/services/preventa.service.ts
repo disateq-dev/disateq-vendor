@@ -45,21 +45,21 @@ export const preVentaService = {
         input.operadorId
       );
     }
-    if (_pedidoActivoId) {
-      try {
-        agregarLinea({
-          pedidoId: _pedidoActivoId,
-          hovId: input.hovId,
-          cantidad: input.cantidad,
-          contextoOperacionalId: input.contextoOperacionalId,
-          identidadOperacionalId: input.identidadOperacionalId,
-          margenMinimoConfigurable: input.margenMinimoConfigurable,
-          operadorTieneCapacidadLibre: input.operadorTieneCapacidadLibre,
-          operadorId: input.operadorId,
-        });
-      } catch {
-        // fallo silencioso · el ticket visual no se ve afectado
-      }
+    if (!_pedidoActivoId) return;
+    try {
+      agregarLinea({
+        pedidoId: _pedidoActivoId,
+        hovId: input.hovId,
+        cantidad: input.cantidad,
+        contextoOperacionalId: input.contextoOperacionalId,
+        identidadOperacionalId: input.identidadOperacionalId,
+        margenMinimoConfigurable: input.margenMinimoConfigurable,
+        operadorTieneCapacidadLibre: input.operadorTieneCapacidadLibre,
+        operadorId: input.operadorId,
+        valorManual: input.tipoValor === 'LIBRE' ? input.valorUnitario : null,
+      });
+    } catch {
+      return;
     }
     usePreVentaStore.getState().agregarLinea(
       traducirALineaPreVenta(input),

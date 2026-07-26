@@ -70,34 +70,53 @@ export function agregarLinea(input: AgregarLineaInput): Pedido {
     throw new Error('La cantidad debe ser mayor a cero')
   }
 
-  const resultado = resolverValor({
-    hovId: input.hovId,
-    cantidad: input.cantidad,
-    contextoOperacionalId: input.contextoOperacionalId,
-    identidadOperacionalId: input.identidadOperacionalId,
-    momento: new Date().toISOString(),
-    margenMinimoConfigurable: input.margenMinimoConfigurable,
-    operadorTieneCapacidadLibre: input.operadorTieneCapacidadLibre,
-  })
-
-  if (resultado.valido === false && resultado.tipo !== 'LIBRE') {
-    throw new Error(resultado.error)
-  }
-
   const now = new Date().toISOString()
-  const linea: LineaPedido = {
-    id: generarLineaId(),
-    pedidoId: input.pedidoId,
-    hovId: input.hovId,
-    nombreVisible: hov.nombre,
-    cantidad: input.cantidad,
-    valorAplicado: resultado.valorAplicado ?? 0,
-    tipoValor: resultado.tipo ?? 'LIBRE',
-    esValorManual: resultado.tipo === 'LIBRE',
-    factorConversion: hov.factorConversion,
-    estado: 'ACTIVA',
-    creadoEn: now,
-    modificadoEn: now,
+  let linea: LineaPedido
+
+  if (input.valorManual !== null && input.valorManual > 0) {
+    linea = {
+      id: generarLineaId(),
+      pedidoId: input.pedidoId,
+      hovId: input.hovId,
+      nombreVisible: hov.nombre,
+      cantidad: input.cantidad,
+      valorAplicado: input.valorManual,
+      tipoValor: 'LIBRE',
+      esValorManual: true,
+      factorConversion: hov.factorConversion,
+      estado: 'ACTIVA',
+      creadoEn: now,
+      modificadoEn: now,
+    }
+  } else {
+    const resultado = resolverValor({
+      hovId: input.hovId,
+      cantidad: input.cantidad,
+      contextoOperacionalId: input.contextoOperacionalId,
+      identidadOperacionalId: input.identidadOperacionalId,
+      momento: new Date().toISOString(),
+      margenMinimoConfigurable: input.margenMinimoConfigurable,
+      operadorTieneCapacidadLibre: input.operadorTieneCapacidadLibre,
+    })
+
+    if (resultado.valido === false && resultado.tipo !== 'LIBRE') {
+      throw new Error(resultado.error)
+    }
+
+    linea = {
+      id: generarLineaId(),
+      pedidoId: input.pedidoId,
+      hovId: input.hovId,
+      nombreVisible: hov.nombre,
+      cantidad: input.cantidad,
+      valorAplicado: resultado.valorAplicado ?? 0,
+      tipoValor: resultado.tipo ?? 'LIBRE',
+      esValorManual: resultado.tipo === 'LIBRE',
+      factorConversion: hov.factorConversion,
+      estado: 'ACTIVA',
+      creadoEn: now,
+      modificadoEn: now,
+    }
   }
 
   const evento = crearEvento(input.pedidoId, 'LINEA_AGREGADA', input.operadorId, hov.nombre)

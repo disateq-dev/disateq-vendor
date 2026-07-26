@@ -84,6 +84,7 @@ export interface AgregarLineaInput {
   margenMinimoConfigurable: number
   operadorTieneCapacidadLibre: boolean
   operadorId: string
+  valorManual: number | null
 }
 
 export interface ModificarCantidadInput {
