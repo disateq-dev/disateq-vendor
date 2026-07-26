@@ -24,10 +24,11 @@ export interface AddProductBridgeInput {
 }
 
 export function traducirALineaPreVenta(
-  input: AddProductBridgeInput
+  input: AddProductBridgeInput,
+  lineaId: string
 ): LineaPreVenta {
   return {
-    lineaId: crypto.randomUUID(),
+    lineaId,
     hovId: input.hovId,
     descripcion: input.descripcion,
     codigoBarras: input.codigoBarras,

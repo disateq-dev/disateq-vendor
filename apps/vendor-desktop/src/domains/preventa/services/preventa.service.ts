@@ -8,7 +8,7 @@ import {
   type AddProductBridgeInput
 } from "../../sales/bridge-pedido";
 import { cargarPedidosActivosDesdeSQLite } from "../../sales/pedido.store";
-import { agregarLinea } from '../../sales/pedido.service'
+import { agregarLinea, modificarCantidad } from '../../sales/pedido.service'
 
 type AddProductInput = {
   hovId:         string;
@@ -46,8 +46,9 @@ export const preVentaService = {
       );
     }
     if (!_pedidoActivoId) return;
+    let pedidoActualizado;
     try {
-      agregarLinea({
+      pedidoActualizado = agregarLinea({
         pedidoId: _pedidoActivoId,
         hovId: input.hovId,
         cantidad: input.cantidad,
@@ -61,8 +62,9 @@ export const preVentaService = {
     } catch {
       return;
     }
+    const lineaCreada = pedidoActualizado.lineas[pedidoActualizado.lineas.length - 1];
     usePreVentaStore.getState().agregarLinea(
-      traducirALineaPreVenta(input),
+      traducirALineaPreVenta(input, lineaCreada.id),
     );
   },
 
@@ -86,17 +88,39 @@ export const preVentaService = {
     return resultado
   },
 
-  incrementarLinea(lineaId: string) {
+  incrementarLinea(lineaId: string, operadorId: string) {
     const state = usePreVentaStore.getState();
     const line = state.linesById[lineaId];
     if (!line) return;
+    if (!_pedidoActivoId) return;
+    try {
+      modificarCantidad({
+        pedidoId: _pedidoActivoId,
+        lineaId,
+        nuevaCantidad: line.cantidad + 1,
+        operadorId,
+      });
+    } catch {
+      return;
+    }
     state.actualizarCantidad(lineaId, line.cantidad + 1);
   },
 
-  decrementarLinea(lineaId: string) {
+  decrementarLinea(lineaId: string, operadorId: string) {
     const state = usePreVentaStore.getState();
     const line = state.linesById[lineaId];
     if (!line || line.cantidad <= 1) return;
+    if (!_pedidoActivoId) return;
+    try {
+      modificarCantidad({
+        pedidoId: _pedidoActivoId,
+        lineaId,
+        nuevaCantidad: line.cantidad - 1,
+        operadorId,
+      });
+    } catch {
+      return;
+    }
     state.actualizarCantidad(lineaId, line.cantidad - 1);
   },
 

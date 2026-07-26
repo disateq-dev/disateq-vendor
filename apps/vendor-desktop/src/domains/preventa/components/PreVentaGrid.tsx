@@ -14,7 +14,7 @@ export function PreVentaGrid() {
   const limpiarNotaPendiente  = usePreVentaStore(s => s.limpiarNotaPendiente);
   const indiceLineaActiva     = usePreVentaStore(s => s.indiceLineaActiva);
   const setIndiceLineaActiva  = usePreVentaStore(s => s.setIndiceLineaActiva);
-  const { openCobro, cashSession, cobroOpen } = usePOS();
+  const { openCobro, cashSession, cobroOpen, activeOperator } = usePOS();
 
   const [saleNumber] = useState(() => String(_saleCounter++).padStart(6, "0"));
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -190,7 +190,8 @@ export function PreVentaGrid() {
                       title="Tecla [←]"
                       onClick={e => {
                         e.stopPropagation();
-                        preVentaService.decrementarLinea(line.lineaId);
+                        if (!activeOperator) return;
+                        preVentaService.decrementarLinea(line.lineaId, activeOperator.id);
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-[15px] font-bold text-orange-500 transition hover:bg-orange-100 hover:text-orange-600"
                     >
@@ -203,7 +204,11 @@ export function PreVentaGrid() {
                     </span>
                     <button
                       title="Tecla [→]"
-                      onClick={e => { e.stopPropagation(); preVentaService.incrementarLinea(line.lineaId); }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (!activeOperator) return;
+                        preVentaService.incrementarLinea(line.lineaId, activeOperator.id);
+                      }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EEF3F8] text-[15px] font-bold text-[#4F7396] transition hover:bg-[#e0e9f0] hover:text-[#3d5c7a]"
                     >
                       +

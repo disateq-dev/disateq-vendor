@@ -482,13 +482,13 @@ export function SalesWorkspace() {
       case "*": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.incrementarLinea(targetLine.lineaId);
+        if (targetLine && posContext.operadorActivo?.id) preVentaService.incrementarLinea(targetLine.lineaId, posContext.operadorActivo.id);
         break;
       }
       case "-": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.decrementarLinea(targetLine.lineaId);
+        if (targetLine && posContext.operadorActivo?.id) preVentaService.decrementarLinea(targetLine.lineaId, posContext.operadorActivo.id);
         break;
       }
       case "Delete": {
@@ -501,13 +501,13 @@ export function SalesWorkspace() {
       case "ArrowRight": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.incrementarLinea(targetLine.lineaId);
+        if (targetLine && posContext.operadorActivo?.id) preVentaService.incrementarLinea(targetLine.lineaId, posContext.operadorActivo.id);
         break;
       }
       case "ArrowLeft": {
         if (query !== "") break;
         e.preventDefault();
-        if (targetLine) preVentaService.decrementarLinea(targetLine.lineaId);
+        if (targetLine && posContext.operadorActivo?.id) preVentaService.decrementarLinea(targetLine.lineaId, posContext.operadorActivo.id);
         break;
       }
       case "Insert":
