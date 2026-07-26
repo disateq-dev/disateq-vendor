@@ -56,6 +56,8 @@ El precio/tipo de valor que se persiste en el pedido operacional (SQLite) se cal
 
 **Prioridad:** alta.
 
+**Cerrado — commit `76b3c0e` (2026-07-25).** `agruparPorProducto()` (`bridge-catalogo.ts`) recibe ahora `contextoOperacionalId` real y lo propaga a `resolverValor()`, en vez de la constante fija `CONTEXTO_CATALOGO_NEGOCIO`. Corregidos los 3 llamantes reales en `SalesWorkspace.tsx` (modo dense, modo visual, `addProductToTicket`). `cantidad: 1` fijo e `identidadOperacionalId` ficticio en el tile se mantienen deliberadamente — confirmado correcto, no bug (MAYORISTA se resuelve bien en el motor real al agregar línea; PREFERENCIAL no puede resolverse en el tile porque la identidad del cliente aún no existe en ese punto del flujo).
+
 ---
 
 ### H-C4 — Fallo silencioso al agregar línea deja "producto fantasma" en el ticket (Paso 2)
@@ -71,6 +73,48 @@ Si `agregarLinea()` falla, la línea se agrega igual al ticket visual. El pedido
 **Consecuencia real:** si eso llega a cobro, hay una línea cobrada visualmente pero ausente del pedido persistido.
 
 **Prioridad:** alta — comentario en código revela que fue decisión consciente priorizando UX sobre integridad de dato.
+
+**Cerrado parcialmente — commit `076a59e` (2026-07-25).** El punto de entrada `agregarProductoDesdeHOV` ya no pinta el ticket visual si `agregarLinea()` falla o si no hay pedido activo (`catch { return }` reemplaza el catch silencioso). **Alcance reducido, no cerrado del todo:** el mismo patrón de divergencia ticket-visual-vs-pedido-real reaparece en un punto distinto de la cadena — ver H-C16.
+
+---
+
+### H-C6 — Precio manual se pierde en S/0.00 o se ignora al pasar por `agregarLinea` (Paso 2/3)
+**Archivos:** `domains/sales/pedido.types.ts` (`AgregarLineaInput`), `domains/sales/pedido.service.ts` (`agregarLinea`), `domains/preventa/services/preventa.service.ts` (`agregarProductoDesdeHOV`)
+
+`agregarLinea()` siempre recalculaba el precio vía `resolverValor()`, sin ninguna vía para recibir un valor manual ya decidido por el operador. Dos manifestaciones de la misma causa raíz:
+
+- **Caso A** — HOV sin `ValorOperacional` configurado (`requiereValorManual: true`): el operador ingresa un precio en `PresentacionSheet`, pero `resolverValor()` devuelve `tipo: 'LIBRE'` sin match → `valorAplicado: null ?? 0`. La venta se registraba en SQLite con **S/ 0.00**, aunque el ticket visual mostraba el precio correcto.
+- **Caso B** — ajuste manual sobre un precio NORMAL/PREFERENCIAL/MAYORISTA existente (capacidad `editar_precio_venta`): el operador sobrescribe el precio, `PresentacionSheet` lo envía correctamente (tras el fix de H-C11) como `tipoValor: "LIBRE"`, pero `agregarLinea()` no recibía ese valor y volvía a resolver desde catálogo — grabando el precio **original**, no el ajustado.
+
+**Consecuencia real:** discrepancia entre lo que el ticket muestra y lo que efectivamente se graba en la venta concretada — riesgo directo de integridad de caja, no detectable visualmente en el momento de la venta.
+
+**Prioridad:** alta.
+
+**Cerrado — commit `076a59e` (2026-07-25).** `AgregarLineaInput` incorpora `valorManual: number | null`. `agregarLinea()` bifurca: si `valorManual` viene con valor, lo usa directo (`tipoValor: 'LIBRE'`, `esValorManual: true`) sin invocar `resolverValor()`; si no, comportamiento original intacto. `agregarProductoDesdeHOV` propaga `valorManual: input.tipoValor === 'LIBRE' ? input.valorUnitario : null`, cubriendo ambos casos A y B con la misma condición.
+
+---
+
+### H-C16 — Ajuste de cantidad en el ticket (+/-) no se propaga al pedido operacional real (Paso 3)
+**Archivo:** `domains/preventa/services/preventa.service.ts` (`incrementarLinea`, `decrementarLinea`)
+
+```ts
+incrementarLinea(lineaId: string) {
+  const state = usePreVentaStore.getState();
+  const line = state.linesById[lineaId];
+  if (!line) return;
+  state.actualizarCantidad(lineaId, line.cantidad + 1);   // solo store visual
+},
+```
+
+Ninguna de las dos funciones invoca `pedido.service.ts::modificarCantidad()` — solo actualizan `usePreVentaStore` (el ticket visual en memoria). Cuando el operador ajusta cantidad con `+`/`-`/flechas (atajos de teclado en `SalesWorkspace.tsx`), el ticket cambia pero `LineaPedido.cantidad` en el pedido operacional real permanece con el valor original.
+
+**Consecuencia real:** misma familia que H-C6, ahora en cantidad en vez de precio — `registrarVentaEnSQLite()` lee `Pedido.lineas` (cantidad original, no ajustada) al concretar. La venta puede grabarse con menos o más unidades de las que el ticket mostró y el cliente pagó. Flujo de uso muy frecuente (ajustar cantidad con teclado es más común que editar precio manual), por lo que el riesgo de ocurrencia es alto.
+
+**Descubierto durante la revisión de cierre de H-C4 (2026-07-25)** — no estaba en el barrido original de Fase 1.
+
+**Prioridad:** alta.
+
+**Estado:** abierto, pendiente de diseño y corrección.
 
 ---
 
@@ -89,7 +133,7 @@ preVentaService.obtenerPedidoActivoOCrear("default", "default", cashSession.cash
 
 ---
 
-> **Nota de proceso:** H-C6 a H-C10 fueron generados durante la Fase 3 (correcciones), posterior a la redacción original de este documento (2026-07-24), y quedaron registrados únicamente en `CURRENT_CONTEXT.md` en su momento. Pendiente trasladarlos aquí para no perder su detalle al purgarse el contexto. H-C11 se registra abajo como el primer hallazgo de esta serie posterior documentado directamente en el archivo permanente.
+> **Nota de proceso:** H-C7 a H-C10 fueron generados durante la Fase 3 (correcciones), posterior a la redacción original de este documento (2026-07-24), y quedaron registrados únicamente en `CURRENT_CONTEXT.md` en su momento. Pendiente trasladarlos aquí para no perder su detalle al purgarse el contexto. H-C3 y H-C6 ya fueron trasladados e integrados arriba, con su estado de cierre. H-C11 se registra abajo como el primer hallazgo de esta serie posterior documentado directamente en el archivo permanente.
 
 ---
 
@@ -107,6 +151,8 @@ Dos defectos independientes que se combinan en el modal de selección de forma d
 **Prioridad:** alta — afecta directamente la captura de precio en el punto de venta, con riesgo de pérdida de margen o cobro incorrecto al cliente.
 
 **Confirmado con evidencia real:** reproducido por Fernando en sesión, `AMOXICILINA 500MG PRUEBA` — clic en CAJA X 10 (S/5.00) no mostró cambio visual; campo AJUSTAR PRECIO apareció con `0.50` (valor de CAPSULA, no de la forma clicada); AGREGAR se habilitó pero no produjo cambio visible en el ticket.
+
+**Cerrado — commit `f8f21f4` (sesión previa a 2026-07-25).** Verificado con evidencia visual real en la app.
 
 ---
 
@@ -188,3 +234,4 @@ Todas las transiciones tienen sus invariantes (no agregar línea a pedido no-ABI
 1. **Fase 2 — Barrido de interrelación:** confirmar cómo se conectan estos hallazgos entre sí (p. ej. H-C3 + H-C4 + H-C1 son la misma familia de "fallos silenciosos en la cadena de captura→pedido→concreción").
 2. **Fase 3 — Correcciones:** priorizar con Fernando, generar prompts atómicos para Codex por hallazgo o por grupo relacionado.
 3. Actualizar `README-preventa.md` (H-m1) y `CURRENT_CONTEXT.md` (deuda ya resuelta) como parte de la limpieza documental.
+4. Diseñar y corregir H-C16 (ajuste de cantidad en ticket no se propaga al pedido real) — mismo patrón que H-C6, siguiente en la cola.
