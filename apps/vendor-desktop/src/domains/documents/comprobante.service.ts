@@ -52,22 +52,6 @@ function generarCodigoUnico(serie: string, correlativo: number): string {
   return `${serie}-${String(correlativo).padStart(8, '0')}`
 }
 
-function calcularSubtotal(lineas: LineaComprobante[]): number {
-  return lineas.reduce((total, linea) => {
-    return total + (linea.valorUnitario * linea.cantidad)
-  }, 0)
-}
-
-function calcularIGV(lineas: LineaComprobante[]): number {
-  return lineas.reduce((total, linea) => {
-    if (linea.tipoAfectacionIGV !== 'GRAVADO') {
-      return total
-    }
-
-    return total + ((linea.valorUnitario * linea.cantidad) * linea.tasaIGV)
-  }, 0)
-}
-
 function calcularISC(lineas: LineaComprobante[]): number {
   return lineas.reduce((total, linea) => total + (linea.montoISC ?? 0), 0)
 }
@@ -75,6 +59,8 @@ function calcularISC(lineas: LineaComprobante[]): number {
 export function crearComprobante(
   input: CrearComprobanteInput,
   totalCalculado: number,
+  subtotalCalculado: number,
+  igvCalculado: number,
   serie: string,
   correlativo: number,
   comprobanteReferenciado?: Comprobante | null
@@ -86,10 +72,10 @@ export function crearComprobante(
 
   const clasificacion = clasificarTipo(input.tipo)
   const inputConReferencia = input as CrearComprobanteInputConReferencia
-  const subtotal = calcularSubtotal(input.lineas)
-  const igv = calcularIGV(input.lineas)
+  const subtotal = subtotalCalculado
+  const igv = igvCalculado
   const isc = calcularISC(input.lineas)
-  const total = subtotal + igv + isc
+  const total = totalCalculado
 
   const comprobante: Comprobante = {
     id: crypto.randomUUID(),

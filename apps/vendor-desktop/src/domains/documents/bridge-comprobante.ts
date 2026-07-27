@@ -126,6 +126,8 @@ export function emitirComprobante(input: EmitirComprobanteInput): Comprobante {
     return crearComprobante(
       comprobanteInput,
       input.total,
+      input.subtotal,
+      input.igv,
       input.serie,
       correlativoAUsar
     )
