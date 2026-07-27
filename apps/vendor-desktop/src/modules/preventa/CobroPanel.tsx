@@ -257,11 +257,23 @@ export function CobroPanel() {
       ? `${cashSession.cashBox.code}-${cashSession.openedAt.toISOString()}`
       : null;
     const cajaCodigo = cashSession.cashBox?.code ?? null;
+    const montoRecibido = payMethod === "efectivo"
+      ? Math.max(0, receivedNum)
+      : payMethod === "mixto"
+      ? Math.max(0, mixtoEfeNum)
+      : null;
+    const vuelto = payMethod === "efectivo"
+      ? Math.max(0, change)
+      : payMethod === "mixto"
+      ? 0
+      : null;
     const resultadoRegistro = await registrarComprobanteEnSQLite(
       comprobante,
       sesionId,
       cajaCodigo,
       comprobante.pedidoId,
+      montoRecibido,
+      vuelto,
     );
     if (!resultadoRegistro.ok) {
       throw new Error("No se pudo registrar el comprobante en SQLite");

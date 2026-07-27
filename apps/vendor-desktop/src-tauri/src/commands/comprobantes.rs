@@ -45,6 +45,8 @@ pub async fn registrar_comprobante(
     total: f64,
     moneda: String,
     metodo_pago: String,
+    monto_recibido: Option<f64>,
+    vuelto: Option<f64>,
     regimen: String,
     incluye_detraccion: bool,
     operador_id: String,
@@ -66,7 +68,7 @@ pub async fn registrar_comprobante(
         .map_err(|e| e.to_string())?;
 
     sqlx::query(
-        "INSERT INTO comprobante (id, venta_id, tipo, serie, correlativo, codigo_unico, es_formal, requiere_envio_sunat, leyenda_no_formal, estado, estado_sunat, motivo_anulacion, cdr, fecha_envio_sunat, emisor_ruc, emisor_razon_social, emisor_direccion, receptor_tipo_doc, receptor_num_doc, receptor_nombre, receptor_es_generico, receptor_cliente_id, subtotal, igv, isc, total, moneda, metodo_pago, regimen, incluye_detraccion, operador_id, sesion_id, caja_codigo, enviado_por_canal, emitido_en, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'EMITIDO', ?, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO comprobante (id, venta_id, tipo, serie, correlativo, codigo_unico, es_formal, requiere_envio_sunat, leyenda_no_formal, estado, estado_sunat, motivo_anulacion, cdr, fecha_envio_sunat, emisor_ruc, emisor_razon_social, emisor_direccion, receptor_tipo_doc, receptor_num_doc, receptor_nombre, receptor_es_generico, receptor_cliente_id, subtotal, igv, isc, total, moneda, metodo_pago, monto_recibido, vuelto, regimen, incluye_detraccion, operador_id, sesion_id, caja_codigo, enviado_por_canal, emitido_en, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'EMITIDO', ?, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&comprobante_id)
     .bind(&venta_id)
@@ -92,6 +94,8 @@ pub async fn registrar_comprobante(
     .bind(total)
     .bind(&moneda)
     .bind(&metodo_pago)
+    .bind(monto_recibido)
+    .bind(vuelto)
     .bind(&regimen)
     .bind(if incluye_detraccion { 1_i64 } else { 0_i64 })
     .bind(&operador_id)
@@ -331,6 +335,8 @@ pub async fn obtener_comprobante_detalle(
             "total": comprobante.try_get::<f64, _>("total").map_err(|e| e.to_string())?,
             "moneda": comprobante.try_get::<String, _>("moneda").map_err(|e| e.to_string())?,
             "metodo_pago": comprobante.try_get::<String, _>("metodo_pago").map_err(|e| e.to_string())?,
+            "monto_recibido": comprobante.try_get::<Option<f64>, _>("monto_recibido").unwrap_or(None),
+            "vuelto": comprobante.try_get::<Option<f64>, _>("vuelto").unwrap_or(None),
             "regimen": comprobante.try_get::<String, _>("regimen").map_err(|e| e.to_string())?,
             "incluye_detraccion": comprobante.try_get::<i64, _>("incluye_detraccion").unwrap_or(0) != 0,
             "operador_id": comprobante.try_get::<String, _>("operador_id").map_err(|e| e.to_string())?,

@@ -592,7 +592,7 @@ export function ComprobantesWorkspace() {
           try {
             const correlativoSQLite = await obtenerSiguienteCorrelativoSQLite(serie);
             const nuevo = convertirAFormal(detalleCompleto.id, tipo, serie, detalleCompleto.receptor, correlativoSQLite, operador);
-            await registrarComprobanteEnSQLite(nuevo, sesionId, cajaCodigo, null);
+            await registrarComprobanteEnSQLite(nuevo, sesionId, cajaCodigo, null, null, null);
             await marcarComprobanteReferenciadoEnSQLite(detalleCompleto.id);
             setRefreshNonce(prev => prev + 1);
             setSelectedId(null);

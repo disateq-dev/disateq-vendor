@@ -41,6 +41,8 @@ export async function registrarComprobanteEnSQLite(
   sesionId: string | null,
   cajaCodigo: string | null,
   ventaId: string | null,
+  montoRecibido: number | null,
+  vuelto: number | null,
 ): Promise<{ ok: boolean }> {
   const lineas: LineaComprobanteRust[] = comprobante.lineas.map(linea => ({
     descripcion: linea.descripcion,
@@ -80,6 +82,8 @@ export async function registrarComprobanteEnSQLite(
       total: comprobante.total,
       moneda: comprobante.moneda,
       metodoPago: comprobante.metodoPago,
+      montoRecibido: montoRecibido,
+      vuelto: vuelto,
       regimen: comprobante.tributario.regimen,
       incluyeDetraccion: comprobante.tributario.incluyeDetraccion,
       operadorId: comprobante.operadorId,

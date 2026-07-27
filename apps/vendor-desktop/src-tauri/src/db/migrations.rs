@@ -49,6 +49,7 @@ pub async fn ejecutar_migraciones(db: &sqlx::SqlitePool) -> Result<(), String> {
     migrar_v27_evento_comprobante(db).await?;
     migrar_v28_config_integraciones(db).await?;
     migrar_v29_politica_precio_edicion(db).await?;
+    migrar_v30_recibido_vuelto_comprobante(db).await?;
 
     Ok(())
 }
@@ -2512,6 +2513,44 @@ async fn migrar_v29_politica_precio_edicion(db: &sqlx::SqlitePool) -> Result<(),
     }
 
     sqlx::query("INSERT INTO schema_migrations (version) VALUES (29)")
+        .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+
+    tx.commit().await.map_err(|e| e.to_string())
+}
+
+async fn migrar_v30_recibido_vuelto_comprobante(db: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER)")
+        .execute(db).await.map_err(|e| e.to_string())?;
+
+    let version = sqlx::query_scalar::<_, i64>(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+    )
+    .fetch_one(db).await.map_err(|e| e.to_string())?;
+
+    if version >= 30 { return Ok(()); }
+
+    let mut tx = db.begin().await.map_err(|e| e.to_string())?;
+
+    let cols: Vec<String> = sqlx::query_scalar(
+        "SELECT name FROM pragma_table_info('comprobante')"
+    )
+    .fetch_all(&mut *tx).await.map_err(|e| e.to_string())?;
+
+    if !cols.iter().any(|c| c == "monto_recibido") {
+        sqlx::query(
+            "ALTER TABLE comprobante ADD COLUMN monto_recibido REAL"
+        )
+        .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    if !cols.iter().any(|c| c == "vuelto") {
+        sqlx::query(
+            "ALTER TABLE comprobante ADD COLUMN vuelto REAL"
+        )
+        .execute(&mut *tx).await.map_err(|e| e.to_string())?;
+    }
+
+    sqlx::query("INSERT INTO schema_migrations (version) VALUES (30)")
         .execute(&mut *tx).await.map_err(|e| e.to_string())?;
 
     tx.commit().await.map_err(|e| e.to_string())
