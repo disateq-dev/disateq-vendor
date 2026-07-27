@@ -254,6 +254,8 @@ const total = subtotal + igv + isc   // suma el IGV ENCIMA del precio que ya lo 
 
 **Prioridad:** máxima — a diferencia de H-C18 (dato de trazabilidad ausente), este defecto altera el **monto fiscal real del comprobante emitido**, el documento oficial que ve el cliente y que sustenta la venta ante SUNAT en los tipos formales (Boleta, Factura).
 
+**Cerrado — commit `156d5df` (2026-07-27).** `crearComprobante` amplía su firma para recibir `subtotalCalculado` e `igvCalculado` (además del ya existente `totalCalculado`), y los usa directamente en vez de derivarlos de las líneas. `emitirComprobante` (`bridge-comprobante.ts`) propaga `input.subtotal`/`input.igv` en la llamada. Las funciones `calcularSubtotal`/`calcularIGV` quedaron sin ningún llamador tras el cambio (confirmado por `tsc` con error `TS6133`) y se eliminaron del archivo; `calcularISC` permanece intacta y en uso. `convertirAFormal` no requirió cambios — ya copiaba `subtotal`/`igv`/`total` del comprobante origen sin recalcular. Verificado con `tsc` y `cargo check` limpios antes de commitear. **Pendiente:** verificación en runtime (venta real de prueba en efectivo, Gravado, confirmar que `comprobante.total` coincide exactamente con el total mostrado en pantalla) — no cerrar como validado en base de datos hasta ejecutar ese paso.
+
 ---
 
 ## 🟡 Hallazgos medios
@@ -316,4 +318,4 @@ Todas las transiciones tienen sus invariantes (no agregar línea a pedido no-ABI
 3. Actualizar `README-preventa.md` (H-m1) y `CURRENT_CONTEXT.md` (deuda ya resuelta) como parte de la limpieza documental.
 4. H-C16 y H-C17 cerrados (2026-07-25). Pendiente: numerar y diseñar los dos hallazgos colaterales derivados (split de línea sin conexión al dominio + configurabilidad por rubro de notas; `limpiar()` sin abandono formal del pedido).
 5. H-C18 cerrado (2026-07-27, commit `1e1131d`), con verificación en runtime completada.
-6. H-C19 registrado (2026-07-27) — pendiente de diseño de solución (`crearComprobante` debe recibir subtotal/igv ya calculados por `CobroPanel.tsx` en vez de recalcularlos desde las líneas) y prompt atómico para Codex. Sin corrección retroactiva sobre los 20 comprobantes de prueba ya emitidos (decisión explícita de Fernando — datos de laboratorio, no producción).
+6. H-C19 cerrado (2026-07-27, commit `156d5df`). Pendiente: verificación en runtime (venta real de prueba en efectivo, Gravado, confirmar que `comprobante.total` coincide con el total mostrado en pantalla) antes de darlo por validado a nivel de base de datos.
