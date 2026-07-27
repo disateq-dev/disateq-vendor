@@ -74,8 +74,9 @@ export function PreVentaGrid() {
       if (e.key === "Delete" && e.ctrlKey) {
         if (e.altKey || e.shiftKey || e.metaKey) return;
         if (inInput && sectionRef.current?.contains(document.activeElement)) return;
+        if (!activeOperator) return;
         e.preventDefault();
-        preVentaService.limpiar();
+        preVentaService.limpiar(activeOperator.id);
       }
     };
     window.addEventListener("keydown", handler);
@@ -265,7 +266,7 @@ export function PreVentaGrid() {
         {/* LIMPIAR ~30% */}
         <button
           title="Tecla [Ctrl + Supr]"
-          onClick={() => preVentaService.limpiar()}
+          onClick={() => activeOperator && preVentaService.limpiar(activeOperator.id)}
           disabled={lines.length === 0}
           className={`flex w-[28%] shrink-0 items-center justify-center rounded-2xl text-[13px] font-bold uppercase tracking-wider transition ${
             lines.length === 0

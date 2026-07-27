@@ -453,7 +453,7 @@ export function CobroPanel() {
   }
 
   function cerrarConConfirmacion(): void {
-    preVentaService.limpiar();
+    preVentaService.limpiar(activeOperator?.id ?? 'default');
     closeCobro();
     setConfirmSheet(null);
   }

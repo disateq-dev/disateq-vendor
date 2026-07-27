@@ -8,7 +8,7 @@ import {
   type AddProductBridgeInput
 } from "../../sales/bridge-pedido";
 import { cargarPedidosActivosDesdeSQLite } from "../../sales/pedido.store";
-import { agregarLinea, modificarCantidad, suspenderLinea } from '../../sales/pedido.service'
+import { agregarLinea, modificarCantidad, suspenderLinea, abandonarPedido } from '../../sales/pedido.service'
 
 type AddProductInput = {
   hovId:         string;
@@ -147,7 +147,12 @@ export const preVentaService = {
     usePreVentaStore.getState().splitLinea(lineaId, nota);
   },
 
-  limpiar() {
+  limpiar(operadorId: string) {
+    if (_pedidoActivoId) {
+      try {
+        abandonarPedido(_pedidoActivoId, operadorId, "Ticket limpiado por el operador");
+      } catch {}
+    }
     usePreVentaStore.getState().limpiarPreVenta();
     _pedidoActivoId = null;
   },
