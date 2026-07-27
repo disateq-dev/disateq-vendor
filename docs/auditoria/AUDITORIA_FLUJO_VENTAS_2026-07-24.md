@@ -218,7 +218,41 @@ Ninguno de los dos viaja hacia `registrarComprobanteEnSQLite()` ni hacia `regist
 
 **Prioridad:** alta — integridad de dato de caja, no cobro incorrecto al cliente (el vuelto en pantalla y en el ticket impreso sí es correcto en el momento; el problema es que no sobrevive al cierre del panel).
 
-**Cerrado — commit `1e1131d` (2026-07-27).** Migración v30 agrega `monto_recibido REAL` y `vuelto REAL` a la tabla `comprobante` (guard por `pragma_table_info`, mismo molde que v29). `registrar_comprobante` (Rust) recibe y persiste ambos campos; `obtener_comprobante_detalle` los expone en el JSON de respuesta. `registrarComprobanteEnSQLite` (TS) propaga los dos parámetros nuevos hacia el `invoke`. En `CobroPanel.tsx`, `_ejecutarSideEffects` calcula ambos valores por clausura justo antes del registro: EFECTIVO usa `receivedNum`/`change` reales (clamped a `Math.max(0, …)`); MIXTO usa el componente efectivo del breakdown como recibido y `0` como vuelto (no hay sobrante posible en un pago mixto por definición); YAPE/TARJETA quedan en `null`/`null`. Se detectó y corrigió en el mismo cierre una segunda llamada a `registrarComprobanteEnSQLite` en `ComprobantesWorkspace.tsx` (`handleConvertir`, flujo CONVERTIR A FORMAL) que `tsc` señaló como faltante de los nuevos argumentos — ese flujo no es un cobro nuevo, por lo que se le pasa `null, null` explícito, igual que Yape/Tarjeta. Verificado con `tsc` y `cargo check` limpios antes de commitear. **Pendiente:** verificación en runtime (venta real de prueba en efectivo + `SELECT monto_recibido, vuelto FROM comprobante ORDER BY creado_en DESC LIMIT 1`) — no cerrar como validado en base de datos hasta ejecutar ese paso, mismo error que quedó pendiente en H-C10.
+**Cerrado — commit `1e1131d` (2026-07-27).** Migración v30 agrega `monto_recibido REAL` y `vuelto REAL` a la tabla `comprobante` (guard por `pragma_table_info`, mismo molde que v29). `registrar_comprobante` (Rust) recibe y persiste ambos campos; `obtener_comprobante_detalle` los expone en el JSON de respuesta. `registrarComprobanteEnSQLite` (TS) propaga los dos parámetros nuevos hacia el `invoke`. En `CobroPanel.tsx`, `_ejecutarSideEffects` calcula ambos valores por clausura justo antes del registro: EFECTIVO usa `receivedNum`/`change` reales (clamped a `Math.max(0, …)`); MIXTO usa el componente efectivo del breakdown como recibido y `0` como vuelto (no hay sobrante posible en un pago mixto por definición); YAPE/TARJETA quedan en `null`/`null`. Se detectó y corrigió en el mismo cierre una segunda llamada a `registrarComprobanteEnSQLite` en `ComprobantesWorkspace.tsx` (`handleConvertir`, flujo CONVERTIR A FORMAL) que `tsc` señaló como faltante de los nuevos argumentos — ese flujo no es un cobro nuevo, por lo que se le pasa `null, null` explícito, igual que Yape/Tarjeta. Verificado con `tsc` y `cargo check` limpios antes de commitear.
+
+**Verificación en runtime (2026-07-27):** ejecutada la migración v30 al reiniciar la app (`schema_migrations` confirmado en versión 30, columnas `monto_recibido`/`vuelto` presentes en `comprobante`). Venta de prueba real en efectivo (correlativo T001-00000015) confirmó persistencia de ambos campos. Esta misma verificación cruzada reveló un segundo defecto, no relacionado con H-C18 en sí — ver H-C19.
+
+---
+
+### H-C19 — Doble cálculo de IGV: el total persistido en el comprobante no coincide con el total mostrado y cobrado en pantalla (Paso 6/7)
+**Archivo:** `domains/documents/comprobante.service.ts` (`crearComprobante`, funciones internas `calcularSubtotal`/`calcularIGV`)
+
+`CobroPanel.tsx` calcula correctamente el total a cobrar con el IGV **incluido** en el precio de venta al público (`netTotal`), y lo desglosa hacia adentro para mostrarlo en pantalla: `baseImponible = netTotal / (1 + tasaIGV)`, `igv = netTotal - baseImponible` (de modo que `baseImponible + igv = netTotal`, sin alterar el total). Ese `netTotal` correcto se envía como `input.total` a `emitirComprobante()` (`bridge-comprobante.ts`), pero esta función solo lo usa para *validar* el comprobante contra `validarComprobante()` — nunca lo asigna al comprobante final.
+
+`crearComprobante()` (`comprobante.service.ts`) ignora por completo el total recibido y **recalcula desde cero** a partir de las líneas, tratando `linea.valorUnitario` como si fuera un precio **sin IGV**, sumándole 18% encima:
+
+```ts
+function calcularSubtotal(lineas) { return lineas.reduce((t, l) => t + l.valorUnitario * l.cantidad, 0) }
+function calcularIGV(lineas) { return lineas.reduce((t, l) => l.tipoAfectacionIGV !== 'GRAVADO' ? t : t + (l.valorUnitario * l.cantidad * l.tasaIGV), 0) }
+// ...
+const total = subtotal + igv + isc   // suma el IGV ENCIMA del precio que ya lo incluía
+```
+
+**Consecuencia real:** el comprobante persistido en SQLite —el dato oficial, el que se imprime, el que exporta reportes, el que lee el módulo COMPROBANTES— queda con un total 18% mayor al que el operador vio y confirmó en pantalla, en toda venta con afectación Gravado. Confirmado con datos reales de prueba: carrito de S/10.00 (4× PARACETAMOL 500MG PRUEBA a S/2.50), pantalla de cobro mostró correctamente "TOTAL A COBRAR: S/10.00" con desglose Base S/8.47 + IGV S/1.53, pero el comprobante persistido (T001-00000015) quedó con Base S/10.00 + IGV S/1.80 = **Total S/11.80**.
+
+**Verificación de alcance (2026-07-27):** se confirmó con consulta directa contra los 20 comprobantes emitidos en el entorno de pruebas (correlativos T001-1 al T001-17, B001-1, F001-1, C001-1, fechas 2026-07-24 a 2026-07-27) que **el 100% presenta el mismo patrón** `subtotal × (1 + tasaIGV) = total`, es decir, el defecto existe desde el primer comprobante emitido — no es una regresión de esta sesión, es el comportamiento del sistema desde el origen, recién detectado al cruzar el nuevo dato de `monto_recibido`/`vuelto` (H-C18) contra el `total` ya existente.
+
+**El arqueo de sesión en memoria (`sessionStats`, `useSessionStats.ts`) NO está afectado** — `recordSale(netTotal, ...)` recibe el `netTotal` correcto directamente desde `CobroPanel.tsx`, no el `comprobante.total` recalculado. Confirmado por lectura de código: `recordSale` se invoca con `netTotal` como primer argumento tanto en `confirmEmit` como en `handleImprimir`. El arqueo visible durante el turno (cuánto efectivo, Yape, tarjeta) es correcto.
+
+**Grieta colateral detectada:** `revertirVenta(c: Comprobante)` (invocado al anular un comprobante) resta `c.total` —el inflado, no el correcto— de `sessionStats.total`. Al día de este registro no se ha confirmado el efecto en producción porque no se ha anulado ningún comprobante de prueba, pero la lectura de código indica que anular un comprobante afectado por este bug descuadraría el arqueo de sesión en sentido contrario (restaría de más). Este efecto colateral se resuelve automáticamente en cuanto se aplique el fix de H-C19, ya que todo comprobante nuevo tendrá `total` correcto.
+
+**`convertirAFormal()` no recalcula** — copia `subtotal`/`igv`/`total` directamente del comprobante origen sin volver a pasar por `calcularSubtotal`/`calcularIGV`, por lo que hereda automáticamente el total ya correcto una vez aplicado el fix, sin requerir cambios en esa función.
+
+**Datos de prueba, no producción:** los 20 comprobantes con total inflado corresponden al entorno de pruebas de Fernando, no a operación real — decisión explícita de no aplicar corrección retroactiva sobre esos registros; quedan como evidencia de que el defecto fue capturado en fase de pruebas antes de producción.
+
+**Detectado por Fernando en sesión (2026-07-27)**, durante la verificación en runtime de H-C18, verificado contra código real (`comprobante.service.ts`, `bridge-comprobante.ts`, `comprobante.validator.ts`, `useSessionStats.ts`) antes de registrar.
+
+**Prioridad:** máxima — a diferencia de H-C18 (dato de trazabilidad ausente), este defecto altera el **monto fiscal real del comprobante emitido**, el documento oficial que ve el cliente y que sustenta la venta ante SUNAT en los tipos formales (Boleta, Factura).
 
 ---
 
@@ -281,4 +315,5 @@ Todas las transiciones tienen sus invariantes (no agregar línea a pedido no-ABI
 2. **Fase 3 — Correcciones:** priorizar con Fernando, generar prompts atómicos para Codex por hallazgo o por grupo relacionado.
 3. Actualizar `README-preventa.md` (H-m1) y `CURRENT_CONTEXT.md` (deuda ya resuelta) como parte de la limpieza documental.
 4. H-C16 y H-C17 cerrados (2026-07-25). Pendiente: numerar y diseñar los dos hallazgos colaterales derivados (split de línea sin conexión al dominio + configurabilidad por rubro de notas; `limpiar()` sin abandono formal del pedido).
-5. H-C18 cerrado (2026-07-27, commit `1e1131d`). Pendiente: verificación en runtime (venta real de prueba en efectivo + consulta SQL directa) antes de darlo por validado a nivel de base de datos.
+5. H-C18 cerrado (2026-07-27, commit `1e1131d`), con verificación en runtime completada.
+6. H-C19 registrado (2026-07-27) — pendiente de diseño de solución (`crearComprobante` debe recibir subtotal/igv ya calculados por `CobroPanel.tsx` en vez de recalcularlos desde las líneas) y prompt atómico para Codex. Sin corrección retroactiva sobre los 20 comprobantes de prueba ya emitidos (decisión explícita de Fernando — datos de laboratorio, no producción).
