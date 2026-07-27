@@ -203,6 +203,25 @@ La consulta de verificación de la sesión anterior (`SELECT COUNT(*) FROM pedid
 
 ---
 
+### H-C18 — Monto recibido y vuelto entregado no se persisten en ningún lugar (Paso 6)
+**Archivos:** `modules/preventa/CobroPanel.tsx`, `domains/documents/comprobante-sqlite.service.ts`, `src-tauri/src/commands/sesion_caja.rs`, `src-tauri/src/commands/comprobantes.rs` (tabla `venta`)
+
+En pago en efectivo, `CobroPanel.tsx` calcula `receivedNum` (monto recibido) y `change` (vuelto) como estado de React en memoria. Ambos valores se usan únicamente para:
+- Mostrarse en pantalla mientras el panel está abierto.
+- Imprimirse en el ticket físico (`construirReceiptData()` los recibe como parámetros del recibo).
+
+Ninguno de los dos viaja hacia `registrarComprobanteEnSQLite()` ni hacia `registrarMovimientoCajaEnSQLite()`. Se confirmó contra el backend Rust que la tabla `venta` solo persiste `total`, `metodo_pago` y `tipo_comprobante`; la tabla `movimiento_caja` no tiene ningún movimiento asociado al cobro en efectivo de una venta (solo a ingresos/egresos de fondo). El fondo de apertura (`sesion_caja.apertura`) sí se persiste y es consultable — el defecto es específico de recibido/vuelto por venta.
+
+**Consecuencia real:** una vez cerrado el panel de cobro, no queda ningún registro en base de datos de con cuánto efectivo pagó el cliente ni cuánto vuelto se le entregó en una venta puntual. La única evidencia que sobrevive es el ticket de papel, si se imprimió — no hay forma de auditar o reconstruir esa cifra desde el sistema. El arqueo de caja (fondo + total vendido) sigue siendo reconstruible porque `venta.total` sí persiste, pero cualquier reporte o reclamo que necesite el detalle de "recibido vs. vuelto" de una venta específica no tiene fuente de datos.
+
+**Detectado por Fernando en sesión (2026-07-27)**, verificado contra código real antes de registrar.
+
+**Prioridad:** alta — integridad de dato de caja, no cobro incorrecto al cliente (el vuelto en pantalla y en el ticket impreso sí es correcto en el momento; el problema es que no sobrevive al cierre del panel).
+
+**Cerrado — commit `1e1131d` (2026-07-27).** Migración v30 agrega `monto_recibido REAL` y `vuelto REAL` a la tabla `comprobante` (guard por `pragma_table_info`, mismo molde que v29). `registrar_comprobante` (Rust) recibe y persiste ambos campos; `obtener_comprobante_detalle` los expone en el JSON de respuesta. `registrarComprobanteEnSQLite` (TS) propaga los dos parámetros nuevos hacia el `invoke`. En `CobroPanel.tsx`, `_ejecutarSideEffects` calcula ambos valores por clausura justo antes del registro: EFECTIVO usa `receivedNum`/`change` reales (clamped a `Math.max(0, …)`); MIXTO usa el componente efectivo del breakdown como recibido y `0` como vuelto (no hay sobrante posible en un pago mixto por definición); YAPE/TARJETA quedan en `null`/`null`. Se detectó y corrigió en el mismo cierre una segunda llamada a `registrarComprobanteEnSQLite` en `ComprobantesWorkspace.tsx` (`handleConvertir`, flujo CONVERTIR A FORMAL) que `tsc` señaló como faltante de los nuevos argumentos — ese flujo no es un cobro nuevo, por lo que se le pasa `null, null` explícito, igual que Yape/Tarjeta. Verificado con `tsc` y `cargo check` limpios antes de commitear. **Pendiente:** verificación en runtime (venta real de prueba en efectivo + `SELECT monto_recibido, vuelto FROM comprobante ORDER BY creado_en DESC LIMIT 1`) — no cerrar como validado en base de datos hasta ejecutar ese paso, mismo error que quedó pendiente en H-C10.
+
+---
+
 ## 🟡 Hallazgos medios
 
 | # | Hallazgo | Ubicación |
@@ -262,3 +281,4 @@ Todas las transiciones tienen sus invariantes (no agregar línea a pedido no-ABI
 2. **Fase 3 — Correcciones:** priorizar con Fernando, generar prompts atómicos para Codex por hallazgo o por grupo relacionado.
 3. Actualizar `README-preventa.md` (H-m1) y `CURRENT_CONTEXT.md` (deuda ya resuelta) como parte de la limpieza documental.
 4. H-C16 y H-C17 cerrados (2026-07-25). Pendiente: numerar y diseñar los dos hallazgos colaterales derivados (split de línea sin conexión al dominio + configurabilidad por rubro de notas; `limpiar()` sin abandono formal del pedido).
+5. H-C18 cerrado (2026-07-27, commit `1e1131d`). Pendiente: verificación en runtime (venta real de prueba en efectivo + consulta SQL directa) antes de darlo por validado a nivel de base de datos.
