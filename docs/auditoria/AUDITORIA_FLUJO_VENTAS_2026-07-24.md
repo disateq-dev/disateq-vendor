@@ -141,7 +141,7 @@ A diferencia de H-C6 y H-C16, aquí no había ni siquiera un intento fallido de 
 
 **Verificación previa al diseño:** se confirmó con evidencia de código (no supuesto) que `agregarProducto` (ruta legacy sin HOV) no tiene ningún llamador activo en el árbol actual — código muerto, sin numerar como hallazgo, candidato a limpieza cosmética futura.
 
-**Hallazgo colateral derivado, no corregido en este cierre:** `preVentaService.limpiar()` descarta `_pedidoActivoId` sin invocar `abandonarPedido()` — si el operador limpia el ticket sin haber concretado venta, el `Pedido` real queda en estado `ABIERTO` en SQLite, sin motivo de abandono registrado. No genera cobro incorrecto (menor severidad que H-C17), pero sí pedidos huérfanos. Pendiente de numeración y diseño independiente.
+**Hallazgo colateral derivado, no corregido en este cierre:** `preVentaService.limpiar()` descarta `_pedidoActivoId` sin invocar `abandonarPedido()` — si el operador limpia el ticket sin haber concretado venta, el `Pedido` real queda en estado `ABIERTO` en SQLite, sin motivo de abandono registrado. No genera cobro incorrecto (menor severidad que H-C17), pero sí pedidos huérfanos. Numerado y cerrado como H-C20.
 
 ---
 
@@ -260,6 +260,30 @@ const total = subtotal + igv + isc   // suma el IGV ENCIMA del precio que ya lo 
 
 ---
 
+### H-C20 — `limpiar()` descarta el pedido activo sin registrar abandono formal (Paso 3)
+**Archivos:** `domains/preventa/services/preventa.service.ts` (`limpiar`), `domains/preventa/components/PreVentaGrid.tsx` (botón LIMPIAR, atajo `Ctrl+Supr`), `modules/preventa/CobroPanel.tsx` (`cerrarConConfirmacion`)
+
+```ts
+limpiar() {
+  usePreVentaStore.getState().limpiarPreVenta();
+  _pedidoActivoId = null;
+},
+```
+
+Cuando el operador limpia el ticket sin haber concretado la venta (botón LIMPIAR, atajo `Ctrl+Supr`, o al cerrar la pantalla de confirmación tras cobro), el método descartaba la referencia local `_pedidoActivoId` directamente, sin invocar ninguna función de dominio. El `Pedido` real en SQLite permanecía en estado `ABIERTO`, sin `motivoAbandono` ni `momentoAbandono` — un registro huérfano indistinguible de un pedido genuinamente en curso.
+
+**Consecuencia real:** menor severidad que H-C17 (no hay cobro incorrecto ni pérdida de dato de venta), pero acumula pedidos `ABIERTO` en SQLite que nunca se resuelven — ruido para cualquier lectura futura de pedidos activos (recuperación de carrito al arrancar la app, reportes, sincronización multi-POS).
+
+**Descubierto y documentado como hallazgo colateral durante el cierre de H-C17 (2026-07-25)** — sin numerar ni diseñar en ese momento.
+
+**Prioridad:** media-alta — integridad de dato, sin riesgo de cobro incorrecto.
+
+**Cerrado — commit `651bd26` (2026-07-27).** `abandonarPedido(pedidoId, operadorId, motivo)` ya existía completa y correcta en `pedido.service.ts` (validación de estado, evento `PEDIDO_ABANDONADO`, persistencia) — no requirió cambios. `limpiar()` gana parámetro `operadorId: string`; si hay `_pedidoActivoId` activo, invoca `abandonarPedido()` con motivo fijo `"Ticket limpiado por el operador"` dentro de un `try/catch {}` vacío (guard defensivo: la limpieza visual procede igual aunque el abandono falle, mismo patrón que `incrementarLinea`/`decrementarLinea`/`quitarLinea`). Conectados los tres llamadores reales: botón LIMPIAR y atajo `Ctrl+Supr` en `PreVentaGrid.tsx` (con guard `activeOperator` ya presente en el componente), y `cerrarConConfirmacion()` en `CobroPanel.tsx` — este último detectado por `tsc` (`TS2554`), no incluido en el diseño inicial de la sesión; en ese punto `_pedidoActivoId` ya es `null` en la práctica (lo pone `concretarVenta()`), por lo que `abandonarPedido` no se ejecuta ahí, pero el parámetro se pasa por consistencia de firma (`activeOperator?.id ?? 'default'`). Decisión deliberada de no exigir motivo escrito al operador — un motivo fijo es suficiente para trazabilidad en un flujo de limpieza rápida de un solo clic. Verificado con `tsc` y `cargo check` limpios antes de commitear.
+
+**Pendiente:** verificación en runtime (limpiar un ticket con pedido activo y confirmar en SQLite que el `Pedido` queda en estado `ABANDONADO` con `motivoAbandono` registrado).
+
+---
+
 ## 🟡 Hallazgos medios
 
 | # | Hallazgo | Ubicación |
@@ -318,6 +342,7 @@ Todas las transiciones tienen sus invariantes (no agregar línea a pedido no-ABI
 1. **Fase 2 — Barrido de interrelación:** confirmar cómo se conectan estos hallazgos entre sí (p. ej. H-C3 + H-C4 + H-C1 son la misma familia de "fallos silenciosos en la cadena de captura→pedido→concreción").
 2. **Fase 3 — Correcciones:** priorizar con Fernando, generar prompts atómicos para Codex por hallazgo o por grupo relacionado.
 3. Actualizar `README-preventa.md` (H-m1) y `CURRENT_CONTEXT.md` (deuda ya resuelta) como parte de la limpieza documental.
-4. H-C16 y H-C17 cerrados (2026-07-25). Pendiente: numerar y diseñar los dos hallazgos colaterales derivados (split de línea sin conexión al dominio + configurabilidad por rubro de notas; `limpiar()` sin abandono formal del pedido).
+4. H-C16 y H-C17 cerrados (2026-07-25). El hallazgo colateral de `limpiar()` quedó numerado y cerrado como H-C20 (2026-07-27). Pendiente: numerar y diseñar el hallazgo colateral de `splitLinea()` (identidad huérfana al disgregar línea con nota) + configurabilidad por rubro de notas.
 5. H-C18 cerrado (2026-07-27, commit `1e1131d`), con verificación en runtime completada.
 6. H-C19 cerrado (2026-07-27, commit `156d5df`), con verificación en runtime completada (correlativo T001-00000018 — `total` y `vuelto` coherentes con lo mostrado en pantalla).
+7. H-C20 cerrado (2026-07-27, commit `651bd26`). Pendiente: verificación en runtime (limpiar ticket con pedido activo, confirmar en SQLite que el `Pedido` queda `ABANDONADO`).
