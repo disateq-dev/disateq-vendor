@@ -116,6 +116,20 @@ invoke("print_arqueo")
 
 ---
 
+## printCorreccion(data)
+
+Impresión HTML corrección de comprobante.
+
+---
+
+## printCorreccionThermal(printer, data)
+
+Corrección térmica.
+
+invoke("print_correccion")
+
+---
+
 # Papel operacional oficial
 
 ## 58mm
