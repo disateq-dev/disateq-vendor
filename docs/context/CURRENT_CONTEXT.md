@@ -16,6 +16,12 @@ SalesWorkspace.tsx teclado).
 ca790b8 doc cierre H-C16 · 678d0bd fix H-C16 · 0f379b4 fix H-C17 · 416859f doc cierre H-C17
 
 ## PENDIENTE — ORDEN PROXIMA SESION
+0. Documentar en detalle practico el envio electronico de comprobantes a SUNAT. Diseno
+   conceptual ya esbozado en sesion 2026-07-27 (JSON interno VENDOR->OSE, cola separada
+   con plazo legal, boleta por resumen diario vs. factura individual e inmediata) -- pero
+   sin bajar aun a decisiones operativas concretas: que OSE/PSE se usara, gestion del CDT,
+   y confirmar plazos vigentes contra la resolucion SUNAT actual al momento de implementar.
+   Fernando senalo expresamente que el tema "no esta claro" y lo pidio como primer punto.
 1. Auditoria UX del listado de busqueda -- Fernando tiene hallazgos sin detallar, pendiente
    de que los comparta al abrir la sesion.
 2. Numerar y disenar hallazgo colateral de `limpiar()`: no invoca abandonarPedido(), deja
