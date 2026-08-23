@@ -53,7 +53,7 @@ elaborado sin perder trazabilidad, control, normatividad y seguridad."
 
 El diferencial del producto no es la facturación electrónica ni la
 integración SUNAT — es continuidad operacional real bajo condiciones
-comerciales peruanas reales. DISATEQ Vendor™ y DisateQ Integrador CPE™ son
+comerciales peruanas reales. DISATEQ Vendor™ y DisateQ CPE API™ son
 sistemas desacoplados: la operación comercial nunca depende completamente de
 SUNAT, conectividad o servicios externos.
 
