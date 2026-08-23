@@ -160,3 +160,108 @@ los campos actuales de DISATEQ.
 **Estado:** PENDIENTE DE IMPLEMENTAR — `estadoRegistroSanitario` es el
 único campo de alta relevancia para la fase actual. Los demás se difieren
 a fases posteriores (facturación electrónica, reportes DIGEMID avanzados).
+
+---
+
+## 2026-07-27 — Instrumentalización de IA en el proceso de construcción · reafirmación de identidad de producto
+
+**Contexto:** Junta de equipo motivada por preocupación de Fernando (Director
+de Producto) sobre la velocidad de cambio del desarrollo de software impulsado
+por IA agéntica, y el riesgo de que modelos de producto tipo SaaS/ERP/POS
+clásico queden desplazados. Se analizó, con evidencia de código real (no
+especulación), si el producto DISATEQ Vendor™ debía reestructurarse en clave
+"agéntica" para el operador final.
+
+**Análisis realizado:** revisión de `fefo-despacho.service.ts` y
+`hov-projector.service.ts` confirmó que la lógica de negocio actual (FEFO,
+proyección HOV, resolución de precio) es determinista por diseño y debe
+seguirlo siendo — un LLM ahí sería regresión, no mejora (no determinista,
+más lento, sin la propiedad de auditoría exacta que exige el negocio
+farmacéutico). No se identificó, con evidencia concreta, ningún punto del
+producto hoy donde IA agéntica resuelva algo que la arquitectura determinista
+actual resuelva mal. Sí se identificó un caso de uso agéntico verificable y
+de bajo riesgo: instrumentalizar el propio proceso de desarrollo (ver decisión
+2 abajo).
+
+**Decisión 1 — El producto NO se reestructura en clave "agéntico".**
+Se descarta la premisa inicial de junta ("SaaS/ERP/POS están condenados,
+hay que volver el producto agéntico o la empresa muere"). Esta decisión
+reafirma, no modifica, lo ya consolidado en `DOCTRINA.md` §1: DISATEQ Vendor
+no busca ser ERP, SaaS ni POS clásico, pero tampoco persigue "agéntico" como
+identidad de producto por moda de mercado. El criterio se mantiene: tomar lo
+mejor de esos modelos sin parecerse a ninguno, validado contra dolor
+operacional real del negocio peruano, nunca contra tendencia de industria sin
+evidencia. Enterprise inflation y complejidad especulativa (`DOCTRINA.md` §4)
+aplican explícitamente a "IA por moda" tanto como a cualquier otro patrón.
+
+**Decisión 2 — El PROCESO de construcción sí se instrumentaliza y formaliza
+con IA, de forma acotada.** Se aprueba explorar la incorporación de Claude
+Code como cuarta pieza del equipo (ya prevista como "pendiente de
+incorporación"), con un rol inicial deliberadamente estrecho: Auditor de
+Cierre de Bloque — verifica que el archivo real en disco coincide con lo que
+Codex reportó, corre `tsc`/`cargo check` automáticamente al cierre de cada
+bloque, y señala si el diff se excede del alcance exacto del prompt (la
+"tendencia conocida a controlar" ya nombrada en `docs/codex.md` §5). No
+diseña, no decide arquitectura, no toca documentos de gobierno — mismo
+perímetro de autoridad que ya rige para Codex.
+
+**Plan de prueba:** informal, en la próxima faena de desarrollo activo, antes
+de formalizar cualquier cambio a `AGENTS.md` o `docs/codex.md`. Fernando
+decide, tras la prueba, si el auditor corre automáticamente tras cada bloque
+de Codex o si permanece como verificación manual bajo demanda.
+
+**Estado:** CONSOLIDADO — decisión de dirección tomada por Fernando en junta.
+La prueba del rol de Claude Code queda PENDIENTE DE IMPLEMENTAR como acción
+derivada, no como parte abierta de esta decisión.
+
+---
+
+## 2026-08-02 — Impresión no soporta logo (ni HTML ni térmica)
+
+**Contexto:** Al auditar `printing-architecture.md` contra el código real
+(`printTicket.ts`, `thermal.rs`), se confirmó que ninguna función de
+impresión (HTML ni ESC/POS) incluye logo o imagen de negocio. Los tickets
+son texto puro: encabezado con razón social/RUC, detalle de operación, pie.
+No existe comando ESC/POS raster (`GS v 0`) ni `<img>` en el HTML de
+impresión.
+
+**Decisión:** ninguna aún — es un hallazgo, no una decisión de producto.
+Si se requiere logo a futuro, es una funcionalidad nueva a diseñar
+(impacto: overhead en impresión térmica de 58mm por limitación de ancho/
+velocidad; en HTML es trivial).
+
+**Estado:** A EVALUAR — Fernando debe confirmar si es una necesidad real
+antes de diseñar.
+
+---
+
+## 2026-08-02 — Doble ruta de anulación de comprobante con persistencia divergente
+
+**Contexto:** Al auditar la implementación completa de comprobantes
+(`domains/documents/*`, `commands/comprobantes.rs`, `ComprobantesWorkspace.tsx`,
+`DocumentosPanel.tsx`) para construir `comprobantes-architecture.md`, se
+encontraron dos rutas de anulación con comportamiento distinto:
+
+- `DocumentosPanel.tsx` (panel dentro de CAJA/TURNO) llama
+  `anularComprobanteEnSQLite()` → persiste correctamente en la base real.
+- `ComprobantesWorkspace.tsx` (módulo COMPROBANTES, la superficie "oficial"
+  de gestión de documentos) llama `anularComprobante()` de `usePOS()` →
+  `useComprobantes.ts` → `comprobante.store.ts`, un store en memoria cuyo
+  `loadStore()` siempre devuelve `createEmptyStore()` — nunca se hidrata
+  desde SQLite. El botón ANULAR de COMPROBANTES probablemente no persiste
+  el cambio en la base de datos real.
+
+Hallazgo adicional relacionado: `comprobante.store.ts` y
+`correlativo.store.ts` son ambos stores en memoria sin conexión a SQLite;
+`correlativoStore.hidratarDesdeDb()` existe pero no tiene ningún caller —
+sugiere una migración a SQLite que quedó a medias. `DocumentosPanel.tsx`
+además filtra por tipos `'BOLETA_VENTA'` / `'FACTURA_ELECTRONICA'`, que no
+existen en `TipoComprobante` (los reales son `'BOLETA'` / `'FACTURA'`) — el
+filtro de tipo en ese panel nunca coincide con datos reales.
+
+**Decisión:** ninguna aún — requiere verificación en runtime (anular un
+comprobante de prueba desde COMPROBANTES y confirmar en base de datos si
+el estado cambia) antes de decidir si se corrige.
+
+**Estado:** PENDIENTE DE IMPLEMENTAR — severidad alta, verificar antes de
+confiar en el botón ANULAR de COMPROBANTES en operación real.
