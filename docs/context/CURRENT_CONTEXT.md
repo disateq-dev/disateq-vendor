@@ -1,4 +1,7 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
+
+**Aviso de standard (13-10-2026)**: las instrucciones del Project «disateq-vendor» se reemplazaron por el puntero de arranque de `E-102` (`disateq-standard/docs/ARQUITECTO.md`) — `E-102` — al retomar Vendor, revisar `docs/00-governance/INSTRUCCIONES-PROJECT-ANTERIOR.md`, llevar sus reglas de dominio a la documentación del producto y armonizar el `CLAUDE.md` de este repositorio con `ARQUITECTO.md`. Lo retira la sesión que lo absorba.
+
 **Commit activo:** 1fec6c5 · **Rama:** main · **Migracion SQLite:** v30 · **Working tree:** limpio (verificar tras commit de este archivo)
 
 ## ⚠️ NOTA DE PROCESO — LEER PRIMERO
