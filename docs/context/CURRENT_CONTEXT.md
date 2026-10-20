@@ -1,5 +1,7 @@
 # CURRENT_CONTEXT — DISATEQ Vendor™
 
+**Aviso de standard (19-10-2026), memoria y cierre verificado**: `E-110` — la próxima sesión de este producto poda la memoria de su Project y deja solo preferencias, horarios, entorno y equipo (el estado vive en disco, no en la memoria); desde ahora, al cerrar cada ventana se corren el check, los HEADs y el `git status` y se contrasta la memoria con lo cerrado (`ROLES.md` R-10 y R-20). Lo retira la sesión que haga la poda.
+
 **Aviso de standard (13-10-2026)**: las instrucciones del Project «disateq-vendor» se reemplazaron por el puntero de arranque de `E-102` (`disateq-standard/docs/ARQUITECTO.md`) — `E-102` — al retomar Vendor, revisar `docs/00-governance/INSTRUCCIONES-PROJECT-ANTERIOR.md`, llevar sus reglas de dominio a la documentación del producto y armonizar el `CLAUDE.md` de este repositorio con `ARQUITECTO.md`. Lo retira la sesión que lo absorba.
 
 **Commit activo:** 1fec6c5 · **Rama:** main · **Migracion SQLite:** v30 · **Working tree:** limpio (verificar tras commit de este archivo)
